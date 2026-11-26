@@ -79,6 +79,22 @@ export function weatherFacts(j, describe, L) {
   return facts;
 }
 
+/** WHO ANSWERED, and which of the numbers printed above are theirs (atlas-capability-inputs).
+ *  `IntMapWx.point` stamps the response with the supplier that really answered (`_src`: Open-Meteo, or MET Norway when
+ *  Open-Meteo failed), so the statement is read off the response, never assumed. The numbers are the ones weatherFacts
+ *  prints, unrounded as received; js/atlas-answer-sources.js puts a [n] only on a printed number equal to one of them.
+ *  Null when the response names no supplier — a source is not guessed. */
+export function weatherProvenance(j, place) {
+  if (!j || !j.current || !j._src) return null;
+  const SUPPLIERS = { 'Open-Meteo': { url: 'https://open-meteo.com/', licence: 'CC BY 4.0' }, 'MET Norway': { url: 'https://api.met.no/', licence: 'NLOD / CC BY 4.0' } };
+  const sup = SUPPLIERS[j._src]; if (!sup) return null;
+  const c = j.current, D = j.daily || {}, values = [];
+  const take = (v) => { if (v != null && isFinite(+v)) values.push(+v, Math.round(+v * 10) / 10); };
+  [c.temperature_2m, c.apparent_temperature, c.relative_humidity_2m, c.wind_speed_10m, c.wind_gusts_10m, c.precipitation].forEach(take);
+  ['temperature_2m_max', 'temperature_2m_min', 'precipitation_sum', 'precipitation_probability_max'].forEach((k) => (D[k] || []).slice(0, 5).forEach(take));
+  return [{ kind: 'number', what: 'Weather', of: place || '', unit: '', source: j._src, licence: sup.licence, url: sup.url, date: String(c.time || ''), origin: 'raw', values }];
+}
+
 /** The journey the router returned — every alternative with its legs — as numbers and names. */
 export function routeFacts(r) {
   try {

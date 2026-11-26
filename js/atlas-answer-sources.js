@@ -68,6 +68,13 @@ export function makeAtlasAnswerSources(deps) {
   /* a number glued to a LATIN letter is part of a name — «R515», «A4», «COVID-19», «M5.2» — and is not read; one glued
      to kana or kanji is not, because Japanese writes «人口3,124,000人» with no space */
   const NUMBER = /(^|[^\d.,A-Za-z])([-−]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)(?![\d,]*\d)/g;
+  /* (atlas-capability-inputs) A NUMBER WRITTEN WITH ITS SCALE WORD IS THE SAME QUANTITY — 「120万人」 is 1,200,000 rounded to the
+     nearest ten thousand, «3.1 million» is 3,100,000 rounded to the nearest hundred thousand. The token used to stop at the digits,
+     so the one rounding every prose answer uses for a population carried no mark (dev-notes/2026-11-16-atlas-cited-answers.md §2).
+     The scale words are the closed set of magnitude words the two answer languages write; the token still has to equal the value
+     AT THE PRECISION IT WAS WRITTEN (sameAt), so «120万» marks 1,200,000 and not 1,500,000. */
+  const SCALE_WORD = /^ ?(万|億|兆|千|thousand|million|billion|trillion)(?![A-Za-z])/i;
+  const SCALE_OF = { '千': 1e3, '万': 1e4, '億': 1e8, '兆': 1e12, thousand: 1e3, million: 1e6, billion: 1e9, trillion: 1e12 };
   /** numbersIn(text) → [{ raw, value, decimals, digits, index, length }] in reading order */
   function numbersIn(text) {
     const s = String(text == null ? '' : text).replace(NOT_A_QUANTITY, (m) => ' '.repeat(m.length));
@@ -80,14 +87,18 @@ export function makeAtlasAnswerSources(deps) {
       const value = Number(plain);
       if (!isFinite(value)) continue;
       const dot = plain.indexOf('.');
-      out.push({ raw, value, decimals: dot < 0 ? 0 : plain.length - dot - 1, digits: plain.replace(/[^\d]/g, '').length,
-        index: m.index + m[1].length, length: raw.length });
+      const at = m.index + m[1].length, sw = SCALE_WORD.exec(s.slice(at + raw.length));
+      const scale = sw ? SCALE_OF[sw[1].toLowerCase()] : 1;
+      const nd = plain.replace(/[^\d]/g, '').length;
+      out.push({ raw, value, scale, decimals: dot < 0 ? 0 : plain.length - dot - 1, digits: sw ? Math.max(2, nd) : nd,   /* a scale word says it is a measurement, not a count */
+        index: at, length: raw.length + (sw ? sw[0].length : 0) });
     }
     return out;
   }
   /* equal at the precision the prose wrote it: «35.68» is 35.6789 rounded to two places; «3,124,000» is exact */
   function sameAt(tok, v) {
     if (typeof v !== 'number' || !isFinite(v)) return false;
+    if (tok.scale && tok.scale !== 1) return Number((v / tok.scale).toFixed(tok.decimals)) === tok.value;
     return Number(v.toFixed(tok.decimals)) === tok.value;
   }
 

@@ -45,7 +45,7 @@ function entryLines(items, C, esc, lang) {
 
 export default [
   {
-    row: ['community.browse',           'communityMaps',  'browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory', 'community', 'none', 'panel.community', 'explanation', 'session', 'none', '', '', 'external'],
+    row: ['community.browse',           'communityMaps',  'browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory', 'community', 'shown', 'panel.community', 'explanation', 'session', 'none', '', '', 'external'],
     ui: { at: ['#acct-community', '#cmm-q'], login: true },
     doc: [
       { in: 'more-features', at: 680, text: '{"type":"communityMaps","query"?:str,"sort"?:"new"|"reused"|"updated","area"?:bool,"limit"?:num,"show"?:bool} = COMMUNITY MAPS / みんなの地図 — the directory of collections (places, saved maps, tours, Atlas answers) that READERS made and chose to list for everyone. Returns each one\'s title, the name it is listed under, its summary, what it holds, where on the globe it is, how many other readers kept a copy and how many listed collections were built on it, the collection it was built on, and its token (for communityMapOpen). "query" matches titles, summaries and names; "sort" new | reused (most kept) | updated; "area":true only those about the area the map is showing now; "show":true also opens the Community maps sheet with the same search for the reader. Use for 「みんなの地図を見せて」「他の人が作った京都の地図はある？」「授業で使える地図を探して」「この辺りの誰かの地図は？」, "find maps other people made about Rome", "what community maps are popular?"; quote only what it returns; ' },

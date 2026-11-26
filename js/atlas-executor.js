@@ -313,6 +313,18 @@ function makeAtlasExecutor(HOST, CTX) {
         /* 3 — argument schema */
         var v = API.validateArgs(cap.inputSchema, args);
         if (!v.ok) return fail('bad_args', { messageKey: 'atlas.code.bad_args', observed: { errors: v.errors } });
+        /* (atlas-capability-inputs) AN ARGUMENT THE SCHEMA DOES NOT DECLARE IS NOT REFUSED (a spelling the case reads and the
+           schema forgot must keep working) — BUT IT IS SAID. `sim.rfCoverage` documented `power`, declared nothing and read
+           nothing, and every call that passed it ran without it and reported success. The names are carried on the result's
+           `observed.unknownArgs`; tests/atlas-capability-inputs-checks.test.mjs holds the documentation to the schema so the
+           list stays empty for a capability that documents its own arguments. */
+        var unknownArgs = [];
+        try {
+          var _decl = (cap.inputSchema && cap.inputSchema.properties) || {};
+          if (Object.keys(_decl).length && args && typeof args === 'object') {
+            unknownArgs = Object.keys(args).filter(function (k) { return k !== 'type' && k.charAt(0) !== '_' && !Object.prototype.hasOwnProperty.call(_decl, k); });
+          }
+        } catch (_) { unknownArgs = []; }
 
         /* 4 — required inputs. A capability that needs a point and was given none does NOT get the
                map centre; it gets `needs_input` with a resume token. (#R302's regression condition.) */
@@ -499,6 +511,7 @@ function makeAtlasExecutor(HOST, CTX) {
              this. What survives is the case's own account of ITSELF, which is the part no observer
              can re-derive from the outside. The verdict wins any key it also sets. */
           _base.meta = Object.assign({}, (raw && typeof raw === 'object' && raw.meta) || null, _base.meta || null);
+          if (unknownArgs.length) _base.observed = Object.assign({}, _base.observed || null, { unknownArgs: unknownArgs });
           /* ══ ⚠⚠⚠ (#R493) …AND THE CASE'S `exec` DIED THE SAME DEATH, ONE FIELD OVER ═══════════
              js/atlas-results.js's `toLegacy` reads the mechanical block back out of `observed.exec`
              — and the only function that ever put it there is `fromLegacy`, which the app never

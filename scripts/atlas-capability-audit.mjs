@@ -399,6 +399,8 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
       /* (data-studio) the "dataStudio" observer asks js/data-studio.js what the studio holds (its panel, binding and colouring)
          and whether the dataset it drew is still a layer on the map — the map and a panel. */
       dataStudio: ['map', 'panel'],
+      /* (atlas-capability-inputs) the "shown" observer reads open panels, the object ledger, visible layers, the clock and the camera */
+      shown: ['panel', 'map', 'object', 'time', 'camera', 'explanation', 'view'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

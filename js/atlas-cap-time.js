@@ -124,7 +124,7 @@ export default [
     async run(a, dctx, K) { const { BorderProvenanceCard } = await import('./border-provenance-card.js'); return BorderProvenanceCard.atlas(a, K); },
   },
   {
-    row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],
+    row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'shown',    'time',                   'explanation',         'session', 'none',   '',         ''],
     ui: { at: ['#ntl-yearbook'] },
     /* (map-layer-system) THE YEAR BOOK — the instant read off the records the map draws (js/year-book.js): the polities
        the border record draws (largest by the area of the drawn shape), the days inside the year on which it changes and
@@ -298,7 +298,7 @@ export default [
     ],
     phrases: () => ['領土の変化', '持ち主が変わ', '割譲', '併合された土地', 'どこからどこへ', '失った領土', '得た領土'].concat(['changed hands', 'territorial changes', 'lost territory', 'gained territory', 'ceded']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
     chips: 'highlight',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) — the polygon layer drawPolygon paints */
-    schema: () => ({ type: 'object', properties: { from: loose(), to: loose(), fromYear: int(), toYear: int(), fromDate: str(), toDate: str(), place: str(), region: str(), bbox: list(num(), 4, 4), stepKm: num(0), stepDeg: num(0), drawRenamed: bool() },
+    schema: () => ({ type: 'object', properties: { from: loose(), to: loose(), fromYear: int(), toYear: int(), fromDate: str(), toDate: str(), place: str(), region: str(), bbox: list(num(), 4, 4), stepKm: num(0), stepDeg: num(0), drawRenamed: bool(), drawNameOnly: bool(), estimateOnly: bool() },
       anyOf: [{ required: ['from'] }, { required: ['fromYear'] }, { required: ['fromDate'] }] }),
     async run(a, dctx, K) { const { atlasRun } = await import('./territory-change.js'); return atlasRun(a, K); },
   },

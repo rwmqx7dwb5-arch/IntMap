@@ -18,7 +18,7 @@
  * ==========================================================================*/
 import { str, num, int, one, list, obj, lat, lng, loose, bool } from './atlas-caps.js';
 import { toSpec } from './atlas-table.js';   /* data.table — rows → a dataset */
-import { weatherFacts } from './atlas-result-facts.js';
+import { weatherFacts, weatherProvenance } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
 import { clockFor } from './proxy-fetch.js';
@@ -47,8 +47,8 @@ export default [
     schema: () => ({ type: 'object', properties: { place: str() }, required: ['place'] }),
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, L = K.L, R = K.R, note = K.note, esc = K.esc, warn = K.warn;
       { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)});
-          let facts=''; try{ const WX=window.IntMapWx, WP=window.IntMapWeather; const j=WX&&WX.point?await WX.point(ll.lat,ll.lng,{days:5,uv:false,gusts:true,ttl:300000}):null; facts=weatherFacts(j, WP&&WP.describe, L); }catch(_){}   /* the card's own numbers on the result (js/atlas-result-facts.js) — it used to say only 「🌤 大阪市」 */
-          return R(ok, ok?note(icon('cloud-sun')+' '+esc(ll.name||a.place)+esc(facts)):warn('')); } return R(false, warn(esc(a.place||''))); }
+          let facts='', prov=null; try{ const WX=window.IntMapWx, WP=window.IntMapWeather; const j=WX&&WX.point?await WX.point(ll.lat,ll.lng,{days:5,uv:false,gusts:true,ttl:300000}):null; facts=weatherFacts(j, WP&&WP.describe, L); prov=weatherProvenance(j, ll.name||a.place); }catch(_){}   /* the card's own numbers on the result (js/atlas-result-facts.js) — it used to say only 「🌤 大阪市」 */
+          return R(ok, ok?note(icon('cloud-sun')+' '+esc(ll.name||a.place)+esc(facts)):warn(''), prov?{meta:{provenance:prov}}:undefined); } return R(false, warn(esc(a.place||''))); }
     },
   },
   /* ⚠⚠ (#R495) THE JOIN. Every row above answers about ONE dataset — rank a metric, read a point,
@@ -795,7 +795,7 @@ export default [
     async run(a, dctx, K) { const F = await import('./world-flows.js'); return F.atlas(a, K); },
   },
   {
-    row: ['data.sanctions',             'sanctions',      'sanctionsList,designatedParties,sanctionedCountries',          'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
+    row: ['data.sanctions',             'sanctions',      'sanctionsList,designatedParties,sanctionedCountries',          'data',    'shown',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
     ui: { at: ['#dl-sanctions'] },
     /* (geopolitics-layers) WHO SANCTIONS WHOM — the designated-party lists of the U.S. (OFAC SDN), the UK (UK Sanctions List) and the
        EU (FSF), as data/sanctions.json holds them (scripts/build-sanctions.mjs) and the Sanctions layer draws them. The rule is
@@ -808,7 +808,7 @@ export default [
     async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.sanctions(a, K); },
   },
   {
-    row: ['data.unVote',                'unVote',         'unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote',   'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
+    row: ['data.unVote',                'unVote',         'unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote',   'data',    'shown',    'map.layerOption',        'explanation',         'session', 'none',   '',         ''],
     ui: { at: ['#dl-unvotes'] },
     /* (geopolitics-layers) ONE RECORDED VOTE OF THE UN GENERAL ASSEMBLY, every member's vote — data/unga-votes/ (Voeten, Strezhnev &
        Bailey, CC0; sessions 1–77, 1946-01 – 2023-09), the record the UN votes layer draws. Read-only unless `show` (the layer colours
@@ -821,7 +821,7 @@ export default [
     async run(a, dctx, K) { const G = await import('./geopolitics-atlas.js'); return G.unVote(a, K); },
   },
   {
-    row: ['data.borderCrossings',       'borderCrossings', 'borderControl,borderCheckpoint,landBorderCrossing',           'data',    'none',    'map.layerOption',        'explanation',         'session', 'none',   'point',    ''],
+    row: ['data.borderCrossings',       'borderCrossings', 'borderControl,borderCheckpoint,landBorderCrossing',           'data',    'shown',    'map.layerOption',        'explanation',         'session', 'none',   'point',    ''],
     ui: { at: ['#dl-crossings'] },
     /* (geopolitics-layers) THE BORDER CONTROL POSTS NEAREST A POINT, with who may cross, how, and whether the published schedule is open
        at the clock's instant in the post's own zone — data/border-crossings.json (OpenStreetMap barrier=border_control; zones from

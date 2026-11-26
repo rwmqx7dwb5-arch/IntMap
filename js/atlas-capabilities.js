@@ -206,7 +206,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["map.volume3d","volume3d","volume","map","object","map.object,map.volume","object,map","session","none","place",""],
       ["routing.drone","drone","","routing","route","map.drone","route,map,panel","session","none","",""],
       ["navigation.start","startNavigation","startNav,beginNavigation,guideMe,driveThere","routing","route","map.route,navigation","route,map,panel","external","explicit","","navigation"],
-      ["navigation.stop","stopNavigation","endNavigation,stopNav","routing","none","navigation","panel","session","none","",""],
+      ["navigation.stop","stopNavigation","endNavigation,stopNav","routing","shown","navigation","panel","session","none","",""],
       ["navigation.status","navStatus","howLongLeft,etaNow,remaining,nextTurn,arrivalTime","routing","none","","explanation","read","none","",""],
       ["navigation.camera","navCamera","recenter,overview,followMe,northUp","routing","camera","camera,camera.follow","map,camera","session","none","",""],
       ["navigation.voice","navVoice","mute,unmute,voiceGuidance","routing","setting","navigation","setting","session","none","",""],
@@ -302,7 +302,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["places.show","showPlaces","showMyPlaces,mapMyPlaces,openSavedPlaces","places","object","map.object","object,map","session","none","",""],
       ["places.remove","removePlace","deletePlace,forgetPlace,unsavePlace","places","none","account.places","explanation","persist","explicit","",""],
       ["layers.electionPlay","electionPlay","electionTimelapse,playElections","data","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
-      ["layers.electionSwing","electionSwing","seatsChangedHands","data","none","map.layerOption","explanation","session","none","",""],
+      ["layers.electionSwing","electionSwing","seatsChangedHands","data","shown","map.layerOption","explanation","session","none","",""],
       ["layers.electionFreshness","electionFreshness","electionDataAge","data","none","","explanation","read","none","",""],
       ["layers.indicator","indicator","countryIndicator,showIndicator,worldBankIndicator","layers","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
       ["news.pulse","newsPulse","countryNews,newsByCountry,newsHeat","data","layer","map.layer","map,explanation","session","none","","newsIntel"],
@@ -317,7 +317,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.gallery","gallery","exampleGallery,showcaseGallery,examplesGallery,tourGallery","panel","panel","panel.gallery","panel","session","none","",""],
       ["research.placeProfile","placeProfile","placeDossier,pointProfile,whatIsHere","research","none","","explanation","read","none","point",""],
       ["sim.ashPlume","ashPlume","volcanicAsh,ashFall,ashCloud,eruptionSim,tephraFall","sim","sim","map.ashPlume","map,explanation","session","none","","ashPlume"],
-      ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
+      ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","shown","time","explanation","session","none","",""],
       ["research.object","worldObject","realWorldObject,whatIsThis","research","none","","explanation","read","none","",""],
       ["research.related","worldRelated","related,relatedObjects,whatIsAround","research","none","","explanation","read","none","","","external"],
       ["research.scenario","scenario","whatIf,runScenario,scenarioRun","research","none","","explanation","session","none","","","external"],
@@ -347,8 +347,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["system.connections","connections","pageConnections,networkActivity,thirdParties,whoIsThisPageTalkingTo","system","none","","explanation","read","none","",""],
       ["system.whatsNew","whatsNew","whatsnew,changelog,releaseNotes,updates,newFeatures","system","none","","explanation","read","none","",""],
       ["time.onThisDay","onThisDay","thisDayInHistory,todayInHistory,onThisDate","time","time","camera,map.layer,time","map,time,explanation","session","none","",""],
-      ["view.openShared","openShared","openLink,openMapLink,openLocationLink,geoLink,openSharedLink","view","none","camera,map.object","explanation","session","none","text",""],
-      ["learn.quest","quest","learnQuest,geoQuest,questLink,challengeLink,quizSet","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
+      ["view.openShared","openShared","openLink,openMapLink,openLocationLink,geoLink,openSharedLink","view","shown","camera,map.object","explanation","session","none","text",""],
+      ["learn.quest","quest","learnQuest,geoQuest,questLink,challengeLink,quizSet","panel","shown","panel.quest,map.quest,camera,time","panel","session","none","",""],
       ["time.weeklyEarth","weeklyEarth","thisWeekOnEarth,weeklyDigest,worldThisWeek,earthThisWeek","time","time","camera,map.myMap,time","map,time,explanation","session","none","",""],
       ["data.studio","dataStudio","tableToMap,mapMyTable,tableStudio,spreadsheetMap","data","dataStudio","map.dataStudio","map,panel","session","none","","","external"],
       ["time.cityPopulation","cityPopulation","historicalPopulation,largestCities,urbanPopulation","time","none","","explanation","read","none","",""],
@@ -357,14 +357,14 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.borderSource","borderSource","borderProvenance,lineSource,whyThisBorder,boundarySource","time","none","","explanation","read","none","place?",""],
       ["time.thenNow","thenNow","thenAndNow,swipeCompare,compareThenNow","time","timeView","panel.compare,time.compare,time","panel,time","session","none","",""],
       ["time.placeHistory","placeHistory","placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities","time","none","","explanation","read","none","point",""],
-      ["learn.daily","dailyQuest","todayQuest,dailyChallenge,questStreak,dailyStreak","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
+      ["learn.daily","dailyQuest","todayQuest,dailyChallenge,questStreak,dailyStreak","panel","shown","panel.quest,map.quest,camera,time","panel","session","none","",""],
       ["panel.cite","cite","citeMap,citation,mapCitation,bordersData","panel","panel","panel.share","panel","session","none","",""],
       ["time.polityArc","polityArc","riseAndFall,polityLife,greatestExtent,polityExtent","time","time","camera,time","map,time,explanation","session","none","",""],
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
       ["data.worldFlows","worldFlows","countryFlows,countryConnections,migrationFlows,diaspora,migrantStock","data","panel","panel.worldFlows,camera,time","panel,explanation","session","none","country",""],
-      ["community.browse","communityMaps","browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory","community","none","panel.community","explanation","session","none","","","external"],
+      ["community.browse","communityMaps","browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory","community","shown","panel.community","explanation","session","none","","","external"],
       ["community.open","communityMapOpen","openCommunityMap,openListedCollection,showCommunityMap","community","panel","map.object,camera","panel","session","none","","","external"],
       ["community.list","listCommunityMap","listInCommunityMaps,shareWithEveryone,makeMapPublic","community","none","account.places","explanation","external","explicit","","","external"],
       ["community.unlist","unlistCommunityMap","takeOutOfCommunityMaps,stopListing","community","none","account.places","explanation","persist","none","",""],
@@ -382,9 +382,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.textMap","textMap","mapText,textToEraMap,passageMap,eraMapFromText","time","mapCompose","map.compose,map.highlight,time","map,explanation","session","none","",""],
       ["news.eventPast","eventPast","eventPlacePast,eventHistory,newsPlaceHistory,eventBackground","data","none","","explanation","read","none","text?","newsEvents"],
       ["settings.atlasDisplay","atlasDisplay","atlasFloat,floatingAtlas","settings","setting","settings.atlasDisplay","setting","persist","none","",""],
-      ["data.sanctions","sanctions","sanctionsList,designatedParties,sanctionedCountries","data","none","map.layerOption","explanation","session","none","",""],
-      ["data.unVote","unVote","unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote","data","none","map.layerOption","explanation","session","none","",""],
-      ["data.borderCrossings","borderCrossings","borderControl,borderCheckpoint,landBorderCrossing","data","none","map.layerOption","explanation","session","none","point",""],
+      ["data.sanctions","sanctions","sanctionsList,designatedParties,sanctionedCountries","data","shown","map.layerOption","explanation","session","none","",""],
+      ["data.unVote","unVote","unGeneralAssemblyVote,unResolutionVote,howDidCountriesVote","data","shown","map.layerOption","explanation","session","none","",""],
+      ["data.borderCrossings","borderCrossings","borderControl,borderCheckpoint,landBorderCrossing","data","shown","map.layerOption","explanation","session","none","point",""],
       ["research.delegate","delegate","delegateResearch,parallelResearch","research","none","","explanation","read","none","","","external"],
       ["data.gisExport","gisExport","exportDataset,downloadDataset,saveDatasetAsFile,exportGis","data","none","","explanation","persist","none","","gisCore"],
       ["sim.skyTonight","skyTonight","almanac,tonightSky,whatsUpTonight,moonPhase,moonrise,sunriseSunset,twilight,visiblePlanets,meteorShowers,nextEclipse,eclipseFromHere","sim","panel","panel.skyAlmanac","panel,explanation","session","none","point","skyAlmanac"],
@@ -401,12 +401,12 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["mcp.connect","mcpConnect","addMcpServer,removeMcpServer,registerMcp","mcp","none","mcp.servers","explanation","persist","always","","",""],
       ["mcp.call","mcpCall","callMcpTool","mcp","none","","explanation","external","explicit","","","external"],
       ["mcp.act","mcpAct","actMcpTool","mcp","none","mcp.external","explanation","external","always","","","external"],
-      ["board.compose","board","composeBoard","panel","none","panel.board","panel,explanation","session","none","","board"],
-      ["board.restore","boardRestore","openBoard,savedBoards","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.compose","board","composeBoard","panel","shown","panel.board","panel,explanation","session","none","","board"],
+      ["board.restore","boardRestore","openBoard,savedBoards","panel","shown","panel.board","panel,explanation","session","none","","board"],
       ["data.gisOverture","gisOverture","overtureMaps,worldBuildings,worldPlaces,buildingFootprints,geoparquet","data","none","","explanation","read","none","","gisCore"],
       ["data.imageryInfo","imageryInfo","imageryAt,photoDate,satelliteDate,imagerySource","data","none","","explanation","session","none","",""],
       ["data.table","dataTable","rowsToDataset,tableFromRows,registerTable,makeTable","data","none","","explanation","read","none","","gisCore"],
-      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","none","panel.board","panel,explanation","session","none","","board"],
+      ["board.edit","boardEdit","editBoard,editTable,editWorkspace,changeCell,setCell","panel","shown","panel.board","panel,explanation","session","none","","board"],
       ["board.delta","boardDelta","boardChanges,whatDidIChange,workspaceDiff","panel","none","","explanation","read","none","","board"],
       ["file.create","makeFile","createFile,makePdf,createPdf,exportPdf,saveAsPdf,makeDocument,createDocument,makeDocx,makeSlides,makeSpreadsheet,saveAsFile","research","none","","explanation","persist","none","",""],
       ["geo.regionStat","regionStat","regionPopulation,adminPopulation,prefecturePopulation,countyPopulation,nutsPopulation,colourByPopulation","data","none","gis.dataset,map.object","explanation","session","none","",""],
@@ -425,7 +425,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.session","session","operateBrowser,clickThrough,fillAndSearch,browserSession,operateSite,siteSession","research","none","","explanation","session","none","","","external"],
       ["web.fetchFile","fetchFile","downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile","data","none","gis.dataset,map.object","explanation","session","none","","","external"],
       ["model.find","modelDiscover","findModel,specialistModels,whichModel,listModels","data","none","","explanation","read","none","","",""],
-      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","none","map.object","explanation","session","none","place?","","external"],
+      ["model.run","modelRun","runModel,specialistModel,floodForecast,riverForecast,airQualityForecast","data","shown","map.object","explanation","session","none","place?","","external"],
       ["work.job","work","workProduct,workProducts,saveWork,myWork,deliverable,deliverables,continueWork","research","none","","explanation","persist","none","",""],
       ["jobs.resume","jobResume","resumeJob,retryJob,continueJob,rerunFailed","research","none","","explanation","external","explicit","",""],
       ["geo.imageChange","geoImageChange","imageChange,changeDetection,satelliteChange,landCoverChange,embeddingChange,radarChange,beforeAfter","data","none","gis.dataset","explanation","read","none","place?","","external"],
@@ -433,6 +433,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["system.command","command","appCommand,kernelCommand","system","control","ui.any","panel","session","none","",""],
       ["web.search","webSearch","searchTheWeb,parallelSearch,searchSeveral,lookUpOnline,webLookup","research","none","","explanation","read","none","","","external"],
       ["web.evidence","webEvidence","rereadEvidence,whatDidWeFind,readSavedPage,evidenceById","research","none","","explanation","read","none","",""],
+      ["map.elevationProfile","elevationProfile","crossSection,terrainProfile,elevationCrossSection,heightProfile,climbProfile","map","none","panel.profile","panel,explanation","session","none","points",""],
+      ["routing.export","routeExport","exportRoute,downloadRoute,routeGpx,routeGeoJson,saveRoute,routeFile","routing","none","","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -930,6 +932,28 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
         }
       },
+      /* ══ (atlas-capability-inputs) `shown` — A WRITE THE READER CAN SEE, JUDGED BY WHAT CHANGED ═══════════════════
+         Fourteen rows that open a panel, move the camera, set a layer option or change the clock sat on `none`, whose
+         verdict is the case's own `ok:true` — so «completed» was only a claim. This reads the five things such a
+         write shows up in (open panels, the object ledger, the visible layers, the clock, the camera) before and
+         after, and the verdict is what it SAW: something moved → completed, with what moved; nothing moved → `unobserved`
+         (the call ran and returned ok, and we could not see it change anything — a panel that was already open, a
+         layer option with no map consequence). Never `partial`/`no_change`: that says the call did nothing, which is a
+         claim about the world this observer cannot make (.agents/rules/one-pass-or-a-reason.md §5). A refusal the case
+         reports is read exactly as `none` reads it. */
+      shown: {
+        observe: function () {
+          return { panels: openPanelIds(), objects: objectIds(), layers: visibleLayerIds(), time: timeNow(), camera: cameraNow() };
+        },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return OBSERVERS.none.verify(ctx, args, before, after, raw);
+          var html = (raw && raw.html) || '';
+          if (!before || !after) return { status: 'unobserved', produced: [], code: 'not_confirmed', html: html };
+          var moved = Object.keys(after).filter(function (k) { return changed(before[k], after[k]); });
+          if (moved.length) return { status: 'completed', code: legacyCode(raw) || 'ok', observed: { moved: moved }, html: html };
+          return { status: 'unobserved', produced: [], code: 'not_confirmed', observed: { moved: [] }, html: html };
+        }
+      },
       /* ══ ⚠⚠ (#R543) A CHART IS PRODUCED INTO THE REPLY, NOT ONTO THE MAP ═══════════════════════
          So `observe()` has nothing global to sample — `paintNow()` would report the same numbers
          before and after and call every chart `not_rendered`. What CAN be observed is the artefact
@@ -1024,7 +1048,11 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           /* #R73's real question, kept: the dispatch case already polls the style for a delta and
              flags `meta.unverified` when nothing painted. Honour that flag rather than re-deriving. */
-          if (raw && raw.meta && raw.meta.unverified) return { status: 'partial', produced: [], code: 'no_change', html: raw.html || '' };
+          /* (atlas-capability-inputs) «we could not CONFIRM it painted» is the status `unobserved`, not `partial`/`no_change`:
+             the box is on (the case checked), the layer kept no record of its own and nothing we can see changed. A negative
+             code here told Atlas the layer failed and sent it to switch it again (one-pass-or-a-reason.md §5). An OBSERVED
+             failure — the layer's own record says its request failed — arrives as raw.ok === false above. */
+          if (raw && raw.meta && raw.meta.unverified) return { status: 'unobserved', produced: [], code: 'not_confirmed', observed: { layers: after, layerState: (raw.meta && raw.meta.layerState) || 'unconfirmed' }, html: raw.html || '' };
           if (raw && raw.meta && raw.meta.already) return { status: 'completed', code: 'ok', html: raw.html || '' };
           return { status: 'completed', code: 'ok', observed: { layers: after }, html: (raw && raw.html) || '' };
         }
@@ -1661,22 +1689,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       return { required: !optional, accepts: accepts, mapCenterAllowed: false, kind: kind };
     }
 
-    /* Does this argument set already carry the target the capability needs? Purely structural —
-       it asks whether a value is PRESENT, never whether it is good. */
-    function hasTarget(kind, args) {
+    /* Does this argument set already carry what the capability's OWN SCHEMA says it cannot run without?
+       Purely structural — it asks whether a value is PRESENT, never whether it is good. The names come from the
+       schema (`required` all present, and one `anyOf` set wholly present), not from a table kept here: a
+       hand-written list of spellings per target kind rejected calls the schema and the documentation both allow
+       (`data.volcano {name}`, `sim.earthquake {epicentre}`, `map.outline {on:false}`), because every new
+       argument a capability learned had to be added to a second list nobody was reading. The schema is the one
+       place a capability's arguments are declared (js/atlas-schemas.js rule 1). A schema that declares neither
+       `required` nor `anyOf` says nothing is demanded, so nothing is asked for. */
+    function present(args, k) { var v = args[k]; return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length); }
+    function schemaDemandMet(schema, args) {
       args = args || {};
-      var any = function (keys) { return keys.some(function (k) { var v = args[k]; return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length); }); };
-      switch (kind) {
-        case 'place': return any(['place', 'from', 'to', 'country', 'name', 'target', 'region', 'location', 'at', 'origin', 'center', 'destination']) || (args.lng != null && args.lat != null);
-        case 'point': return (args.lng != null && args.lat != null) || any(['place', 'at', 'location', 'point']);
-        case 'area': return any(['area', 'target', 'place', 'region', 'polygon', 'radiusKm', 'km', 'bbox']);
-        case 'points': return any(['points', 'places', 'stops', 'from', 'to']);
-        case 'country': return any(['country', 'countries', 'place', 'name', 'target']);
-        case 'layer': return any(['name', 'layer', 'layers', 'all']);
-        case 'metric': return any(['metric', 'metricA', 'metricY', 'components', 'key']);
-        case 'text': return any(['query', 'text', 'question', 'value', 'place', 'term']);   /* (#R491) a phrase to explain is a text target like any other */
-        default: return true;
-      }
+      /* no schema bound (Atlas not loaded): nothing names what is demanded, so the only structural fact left is that SOMETHING was given — an empty call still asks (#R302) */
+      if (!schema) return Object.keys(args).some(function (k) { return k !== 'type' && present(args, k); });
+      schema = schema || {};
+      var all = function (keys) { return (keys || []).every(function (k) { return present(args, k); }); };
+      if (!all(schema.required)) return false;
+      var sets = (schema.anyOf || []).map(function (b) { return b && b.required; }).filter(function (r) { return Array.isArray(r) && r.length; });
+      return !sets.length || sets.some(all);
     }
 
     /* ══ (capability-facets) WHAT A CAPABILITY DOES, AS INDEPENDENT FACTS ═══════════════════════════════════
@@ -1784,7 +1814,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         },
         resolveInputs: function (ctx, args) {
           if (!target.required) return null;
-          if (hasTarget(target.kind, args)) return null;
+          var sc = null; try { sc = runtime.schemas ? runtime.schemas.schemaFor(id) : null; } catch (_) { sc = null; }
+          if (schemaDemandMet(sc, args)) return null;
           /* 「map centerを暗黙の選択地点にしないでください。」 — the whole reason this branch exists. */
           return { inputRequest: { kind: (target.kind === 'points' ? 'polyline' : target.kind === 'area' ? 'polygon' : target.kind === 'point' || target.kind === 'place' ? 'point' : 'text'),
             promptKey: 'atlas.input.' + (target.kind === 'points' ? 'polyline' : target.kind === 'area' ? 'polygon' : target.kind === 'point' || target.kind === 'place' ? 'point' : 'text'),

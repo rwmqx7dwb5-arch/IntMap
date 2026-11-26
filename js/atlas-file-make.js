@@ -165,5 +165,13 @@ function atlasFile() {
     if (!ok) b.textContent = (document.documentElement.lang || '').startsWith('ja') ? '期限切れ（作り直してください）' : 'Expired — ask Atlas to make it again';
   });
 
-  return { make, act };
+  /** (atlas-capability-inputs) a file some OTHER capability already built (a route as GPX / GeoJSON) is put on the same card registry,
+   *  so it is saved by the same two buttons and nothing is downloaded until the reader presses one → { id, name, size } */
+  function offer(name, mime, bytes) {
+    const id = 'file-' + (++seq) + '-' + Date.now().toString(36);
+    registry.set(id, { name, mime, bytes });
+    return { id, name, size: bytes.length };
+  }
+
+  return { make, act, offer };
 }

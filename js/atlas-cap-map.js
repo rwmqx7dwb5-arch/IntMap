@@ -1000,6 +1000,39 @@ export default [
       { const _r=await window.IntMapOutbreaks.run(a); return R(_r.ok,_r.html,_r.meta); }   /* (#R650) map.outbreaks — js/outbreaks.js owns the body for the same reason shakemap does: this file has no line left */
     },
   },
+  /* (atlas-capability-inputs) THE ELEVATION CROSS-SECTION, FOR ATLAS. js/elevation-profile.js draws the profile of any line over the terrain model (the
+     Measure tool's «Elevation profile» button and the freehand Draw tool's reach it through window._profileFromCoords); nothing in this table did, so
+     «how steep is the climb from A to B» was answered with a guess about the terrain while the product could draw the section. This asks the SAME
+     function, waits for the panel to finish sampling, and reports the numbers the panel itself holds — never a second computation. */
+  {
+    row: ['map.elevationProfile',       'elevationProfile', 'crossSection,terrainProfile,elevationCrossSection,heightProfile,climbProfile', 'map', 'none', 'panel.profile', 'panel,explanation', 'session', 'none', 'points', ''],
+    ui: { at: ['#tp-profile', '#draw-profile'] },
+    doc: [
+      { in: 'tools-panels', at: 136, text: '{"type":"elevationProfile","points":[[lng,lat],…]|"places":[str,…]|"from":str,"to":str} = ELEVATION PROFILE / 標高断面 — the terrain under a line: opens the profile panel (the same one the Measure and Draw tools open) and the RESULT carries its numbers — the length, the lowest and highest point, the total climb and descent along the sampled path — read from the terrain model the panel drew from (sub-sea terrain is negative). Two places make a straight great-circle line; more points make a path. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { points: list(list(), 2), places: list(str(), 2), from: str(), to: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }, { required: ['from', 'to'] }] }),
+    async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, esc = K.esc, note = K.note;
+      let pts = [];
+      if (Array.isArray(a.points)) pts = a.points.filter((p) => Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1])).map((p) => [+p[0], +p[1]]);
+      const names = Array.isArray(a.places) && a.places.length ? a.places.slice(0, 12) : (a.from && a.to ? [a.from, a.to] : []);
+      if (!pts.length) for (const n of names) { const g = await geocode(String(n)); if (g) pts.push([g.lng, g.lat]); }
+      if (pts.length < 2) return R(false, warn(esc(L('Need at least two points for a profile.', '標高断面には2点以上が必要です。'))), { meta: { code: 'NEEDS_INPUT' } });
+      if (typeof window._profileFromCoords !== 'function') return R(false, warn(esc(L('The elevation profile is not available here.', 'この環境では標高断面を使えません。'))));
+      let prof = null; try { prof = await window._profileFromCoords(pts); } catch (_) { prof = null; }
+      const drawn = !!document.getElementById('elev-svg');
+      if (!prof || !prof.els || !drawn) return R(false, warn(esc(L('No elevation data could be read along that line.', 'その線に沿った標高データを読み取れませんでした。'))));
+      const known = prof.els.filter((e) => e != null && !isNaN(e));
+      if (!known.length) return R(false, warn(esc(L('No elevation data could be read along that line.', 'その線に沿った標高データを読み取れませんでした。'))));
+      let up = 0, down = 0, prev = null;
+      prof.els.forEach((e) => { if (e == null || isNaN(e)) return; if (prev != null) { const d = e - prev; if (d > 0) up += d; else down -= d; } prev = e; });
+      const km = prof.dist[prof.dist.length - 1] || 0, mn = Math.min.apply(null, known), mx = Math.max.apply(null, known);
+      const m = (v) => Math.round(v).toLocaleString() + ' m';
+      const facts = L('Elevation profile', '標高断面') + ' — ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km · '
+        + L('lowest', '最低') + ' ' + m(mn) + ' · ' + L('highest', '最高') + ' ' + m(mx) + ' · ' + L('climb', '登り') + ' ' + m(up) + ' · ' + L('descent', '下り') + ' ' + m(down)
+        + ' (' + known.length + ' ' + L('samples', '標本点') + ')';
+      return R(true, note(icon('chart') + ' ' + esc(facts)), { meta: { provenance: [{ kind: 'number', what: L('Elevation profile', '標高断面'), of: names.length ? names.join(' → ') : '', unit: 'm', source: 'Mapzen / AWS Terrain Tiles — elevation model (DEM)', licence: '', url: 'https://registry.opendata.aws/terrain-tiles/', date: '', origin: 'raw', values: [mn, mx, up, down].concat([mn, mx, up, down].map((v) => Math.round(v))) }] } });
+    },
+  },
 ];
 
 /* ══ (map-next) map.myMap — js/my-map.js through its published controller ═══════════════════════════════

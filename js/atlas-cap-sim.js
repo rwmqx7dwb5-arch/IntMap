@@ -346,7 +346,7 @@ export default [
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     chips: 'map.los',   /* ⚠ the line-of-sight kind, because that is what it switched before; its own painter claims nothing */
-    schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), height: num(0), antennaHeight: num(0), frequency: num(0), freq: num(0) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
+    schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), height: num(0), antennaHeight: num(0), power: num(0, 60), frequency: num(0), freq: num(0) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* (#R89) RF / radio coverage from an antenna */
       /* (#R318) `lineOfSight` WAS ALSO LISTED HERE, AND WAS UNREACHABLE. A switch enters the FIRST
          matching case and `case 'los': case 'lineOfSight':` above already claims that spelling, so
@@ -362,7 +362,7 @@ export default [
           /* ⚠ (#R296) ONE PANEL — 「電波・通信圏と見通し線解析を統合して」. `IntMapRF` is gone; this is `IntMapLOS` with a frequency. */
           try{ if(window.IntMapLOS){ const L2=window.IntMapLOS;
             if(L2.setMode) L2.setMode(/^(los|lineOfSight|viewshed)$/.test(String(a.type||''))?'los':'radio');
-            if(L2.setParams) L2.setParams((+a.height||+a.antennaHeight||null), null, null, 1.3333, (+a.frequency||+a.freq||null));
+            if(L2.setParams) L2.setParams((+a.height||+a.antennaHeight||null), null, null, 1.3333, (+a.frequency||+a.freq||null), (a.power!=null&&a.power!==''?+a.power:null));
             L2.open(ll); } }catch(_){}
           return R(true, note(icon('antenna')+' '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+' — '+L('line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.','実地形上の見通し到達域。パネルでアンテナ高・出力・周波数を設定、クリックで基地局を移動。','Sichtlinie über echtem Gelände.','зона прямой видимости.','área de línea de vista.'))); }
     },

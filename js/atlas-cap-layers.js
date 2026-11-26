@@ -62,19 +62,35 @@ export default [
              instead of reporting success. */
           const preSnap=_visSnapshot();
           const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
-          let verifyNote='', unverified=false;
+          let verifyNote='', unverified=false, layerFailed=null;
           if(!r.already){ let changed=false;
-            for(let i2=0;i2<6&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); }
-            if(!changed&&r.want){ /* one honest retry: re-fire THIS checkbox's change handler (r.cb — never a re-resolved guess) */
-              try{ if(r.cb&&r.cb.checked){ r.cb.checked=false; r.cb.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r2=>setTimeout(r2,250)); r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
-              for(let i2=0;i2<4&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); } }
+            /* (atlas-capability-inputs) ASKED OF THE LAYER, NOT OF THE STYLE. This used to compare the set of visible style
+               layers (and a DOM count) before and after, and when nothing differed it unticked and re-ticked the box and waited
+               another 2.8 s — so a layer that paints by changing a filter or paint property, or one whose data is genuinely empty,
+               was reported as «could not confirm it painted» after ~7 s of side effects. The one who painted knows: js/layer-state.js
+               holds what happened to each box's request (loading / ok / failed / unobserved / nodata). That record is the answer
+               when there is one; the style delta is only EXTRA evidence that something drew; and a layer that keeps no record and
+               changed nothing we can see is «not confirmed» — said as such, never re-fired and never called a failure
+               (.agents/rules/one-pass-or-a-reason.md §1, §5). A turn-OFF is not evidence about painting (#R747), so it waits for nothing. */
+            const LS=window.IntMapLayerState, cbId=r.cb&&r.cb.id, own=()=>{ try{ return (cbId&&LS&&LS.get)?LS.get(cbId):null; }catch(_){ return null; } };
+            let st=null, layerNodata=null;
+            if(r.want){ const t0=Date.now();
+              for(;;){ await new Promise(r2=>setTimeout(r2,300)); st=own();
+                if(st&&(st.state==='ok'||st.state==='failed'||st.state==='unobserved'||st.state==='nodata')) break;
+                if(_visDelta(preSnap,_visSnapshot())){ changed=true; break; }
+                if(Date.now()-t0>(st&&st.state==='loading'?12000:1500)) break; }
+              if(st&&st.state==='ok') changed=true;
+              else if(st&&st.state==='failed'){ layerFailed=st; changed=true; }
+              else if(st&&st.state==='nodata'){ layerNodata=st; changed=true; } }
             /* (#R142) a turn-ON that never changed the map is UNVERIFIED — flag it so runActions suppresses the planner's
                optimistic "…をオンにしました" say (#2); the honest ⚠ note below leads instead. */
             /* ⚠⚠⚠ (#R747) A LAYER ASKED TO GO OFF IS NOT EVIDENCE ABOUT PAINTING. `unverified` already
                asked only of a turn-ON; the WARNING did not, so 「✓ Waves★ — off」 shipped followed by
                「⚠ Could not confirm the layer actually painted … toggling it again may help」 (measured
                on production 2026-09-15). The 「— off」 line already states the outcome. */
-            if(!changed&&r.want){ unverified=true; verifyNote=warn(L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
+            if(layerFailed) verifyNote=warn(esc(layerFailed.message||L('This layer could not be loaded','このレイヤーを読み込めませんでした','Diese Ebene konnte nicht geladen werden','Слой не удалось загрузить','No se pudo cargar la capa')));
+            else if(layerNodata) verifyNote=note(esc(layerNodata.message||L('This layer has nothing to show for this moment','この時点で表示できるデータがありません','Für diesen Zeitpunkt gibt es keine Daten','Для этого момента нет данных','No hay datos para este momento')));
+            else if(!changed&&r.want){ unverified=true; verifyNote=warn(L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
             else if(r.want) verifyNote=note(icon('check')+' '+L('verified on the map','地図上での描画を確認','auf der Karte bestätigt','отрисовка подтверждена','verificado en el mapa')); }
           const onTxt=r.want?L('on','オン','an','вкл','activado'):L('off','オフ','aus','выкл','desactivado');
           /* (#R72/#R142) a WORKING inline toggle appears right in the reply — for BOTH on AND off (turning a layer off still
@@ -86,7 +102,7 @@ export default [
             if(r.want){ const sl=layerOpacityControl(r.cb);
               if(sl) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(r.label)+'"'+cbRef+' min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
             ctl+='</div>'; } }catch(_){}
-          return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, unverified?{meta:{unverified:true}}:undefined); }
+          return R(!layerFailed, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, layerFailed?{meta:{layerState:'failed',reason:layerFailed.reason||''}}:unverified?{meta:{unverified:true,layerState:'unconfirmed'}}:undefined); }
     },
   },
   {
@@ -374,7 +390,7 @@ export default [
     },
   },
   {
-    row: ['layers.electionSwing',       'electionSwing',  'seatsChangedHands',                                           'data',    'none',    'map.layerOption',                        'explanation',         'session', 'none',   '',         ''],
+    row: ['layers.electionSwing',       'electionSwing',  'seatsChangedHands',                                           'data',    'shown',    'map.layerOption',                        'explanation',         'session', 'none',   '',         ''],
     ui: { at: ['#data-legend-elect .elec-swing'] },
     doc: [
       { in: 'layers', at: 87, text: '{"type":"electionSwing","election"?:str,"polity"?:str} = HOW MANY DISTRICTS CHANGED HANDS (勝者が変わった選挙区) in one election of the National elections layer since the previous election of the same chamber — read from the layer, which outlines them on the map. comparable:false means the two were fought on DIFFERENT boundary maps, and then no number exists: say that the districts were redrawn instead of giving one. Use for 「前回から何議席入れ替わった？」「2019年から勝者が変わった選挙区」, "how many seats flipped since the last election".\n' },

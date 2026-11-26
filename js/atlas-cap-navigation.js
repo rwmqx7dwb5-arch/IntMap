@@ -67,7 +67,7 @@ export default [
     },
   },
   {
-    row: ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
+    row: ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'shown',    'navigation',             'panel',               'session', 'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
       { in: 'navigation', at: 20, text: '{"type":"stopNavigation"} = end it and put the map back (「案内停止」「ナビをやめて」, "stop navigation"); ' },
