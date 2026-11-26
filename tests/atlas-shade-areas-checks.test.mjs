@@ -21,14 +21,14 @@ test('a numeric table becomes a graduated ladder on the real outlines, and says 
   const r = await run({ title: 'Share 65+', source: 'Statistics Bureau, 2025 census', unit: '%', country: 'Japan', rows: [{ area: 'Aomori', value: 36.1 }, { area: 'Akita', value: 40 }, { area: 'Atlantis', value: 1 }] });
   assert.equal(r.ok, true);
   assert.equal(calls.add.at(-1).fc.features.length, 2);
-  assert.deepEqual(calls.style.at(-1).spec, { field: 'value', mode: 'graduated', method: 'quantile', classes: 5 });
+  assert.deepEqual(calls.style.at(-1).spec, { field: 'value', mode: 'graduated', method: 'quantile', classes: 5, compare: undefined, cuts: undefined });
   assert.match(r.html, /Atlantis/, 'a name that is not a unit is listed, not painted');
   assert.equal(r.meta.shadeAreas.unplaced, 1);
 });
 
 test('a grouped table is categorical; a mixture, or no source, or a name two countries share without a country is refused or left unpainted', async () => {
   const g = await run({ source: 's', country: 'Japan', rows: [{ area: 'Aomori', group: 'north' }, { area: 'Akita', group: 'north' }] });
-  assert.deepEqual(calls.style.at(-1).spec, { field: 'group', mode: 'categorical' });
+  assert.deepEqual(calls.style.at(-1).spec, { field: 'group', mode: 'categorical', compare: 'shadeAreas' });
   assert.equal(g.ok, true);
   assert.equal((await run({ source: 's', rows: [{ area: 'Aomori', value: 1 }, { area: 'Akita', group: 'x' }] })).meta.code, 'ROWS_SHAPE');
   assert.equal((await run({ source: '', rows: [{ area: 'Aomori', value: 1 }] })).meta.code, 'NO_SOURCE');
