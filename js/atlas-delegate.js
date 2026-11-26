@@ -549,7 +549,7 @@ export function toolCallsOf(data) {
    (js/atlas-attach-log.js) and the turn's frame ledger (js/atlas-view-capture.js). A host that does not expose one leaves that source out.
    research.delegate and jobs.start both read their tasks' `images` through THIS, so the two cannot mean different things by a name. */
 export function imageSourceOf(K) {
-  const h = K || {};
+  const h = K || {};   /* the caller passes { ATTACH_LOG, VFRAMES, _curTurn } read off its K at the call site, so what each run reads from K stays visible there */
   return {
     attachment: (h.ATTACH_LOG && typeof h.ATTACH_LOG.find === 'function') ? (n) => h.ATTACH_LOG.find(h._curTurn, n) : undefined,
     attachmentNames: (h.ATTACH_LOG && typeof h.ATTACH_LOG.names === 'function') ? () => h.ATTACH_LOG.names(h._curTurn) : undefined,

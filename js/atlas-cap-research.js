@@ -1174,7 +1174,7 @@ export default [
          may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
       /* a NUMBER bounds; null (the server states no count) stays null, which runs the worker on progress and not on a count; no policy at all → undefined (the plain two-request worker) */
       const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : (pol && pol.childMaxCalls === null ? null : undefined);
-      const executorImages = imageSourceOf(K);   /* js/atlas-delegate.js — the one place that says where a task's images are read from (jobs.start reads the same) */
+      const executorImages = imageSourceOf({ ATTACH_LOG: K.ATTACH_LOG, VFRAMES: K.VFRAMES, _curTurn: K._curTurn });   /* js/atlas-delegate.js — the one place that says where a task's images are read from (jobs.start reads the same) */
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
           capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null,   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */

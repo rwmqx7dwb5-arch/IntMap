@@ -21,7 +21,7 @@
 --
 --  ③ THE TABLE'S OWNER COULD WRITE A POSITIVE COUNT. The CHECK (count >= 0) stops a negative count; nothing stopped
 --     `update ai_usage set count = 0` (give a reader a day's uses back) or an insert with a count. A count now changes only inside the
---     ledger functions — each carries `set intmap.ai_ledger = 'rpc'`, which is in force for the duration of the call and no longer —
+--     ledger functions — each raises the setting `intmap.ai_ledger` to 'rpc' around its write and lowers it again —
 --     and a write that arrives any other way is refused (42501). An administrator who really must correct a count says so in the same
 --     transaction:  set local intmap.ai_ledger = 'admin';  — the way is not closed, it is made deliberate and visible in the statement.
 --     The trigger is AFTER the row is written, so the CHECK still answers first for a negative value (23514, as before).
@@ -31,18 +31,22 @@ alter table public.ai_usage add column if not exists updated_at timestamptz not 
 alter table public.ai_usage alter column usage_date set default ((now() at time zone 'utc')::date);
 
 -- ── ① the live definition of the two counters ────────────────────────────────
+-- THE LEDGER SETTING is raised at the top of each function that writes a count and lowered before it returns: set_config(…, true) lasts for the
+-- TRANSACTION, so a function that left it up would leave the table open to the next statement of the same transaction. (A function-level
+-- `SET intmap.ai_ledger = …` would scope it by itself, but the platform refuses a custom parameter there — migration 20261201110000's first CI run.)
 drop function if exists public.increment_ai_usage(uuid, integer);
 create function public.increment_ai_usage(p_user uuid, p_limit integer)
 returns table (allowed boolean, used integer, lim integer)
 language plpgsql
 security definer
 set search_path = ''
-set intmap.ai_ledger = 'rpc'
 as $$
 declare
   cur   integer;
+  v_ok  boolean := false;
   v_day date := (now() at time zone 'utc')::date;
 begin
+  perform set_config('intmap.ai_ledger', 'rpc', true);
   insert into public.ai_usage (user_id, usage_date, count)
   values (p_user, v_day, 0)
   on conflict (user_id, usage_date) do nothing;
@@ -51,16 +55,14 @@ begin
    where u.user_id = p_user and u.usage_date = v_day
    for update;
 
-  if cur >= p_limit then
-    return query select false, cur, p_limit;
-    return;
+  if cur < p_limit then
+    update public.ai_usage u set count = u.count + 1, updated_at = now()
+     where u.user_id = p_user and u.usage_date = v_day
+     returning u.count into cur;
+    v_ok := true;
   end if;
-
-  update public.ai_usage u set count = u.count + 1, updated_at = now()
-   where u.user_id = p_user and u.usage_date = v_day
-   returning u.count into cur;
-
-  return query select true, cur, p_limit;
+  perform set_config('intmap.ai_ledger', '', true);
+  return query select v_ok, cur, p_limit;
 end;
 $$;
 revoke execute on function public.increment_ai_usage(uuid, integer) from public, anon, authenticated;
@@ -73,11 +75,12 @@ returns void
 language plpgsql
 security definer
 set search_path = ''
-set intmap.ai_ledger = 'rpc'
 as $$
 begin
+  perform set_config('intmap.ai_ledger', 'rpc', true);
   update public.ai_usage u set count = greatest(0, u.count - 1), updated_at = now()
    where u.user_id = p_user and u.usage_date = coalesce(p_date, (now() at time zone 'utc')::date);
+  perform set_config('intmap.ai_ledger', '', true);
 end;
 $$;
 revoke execute on function public.refund_ai_usage_on(uuid, date) from public, anon, authenticated;
@@ -90,23 +93,22 @@ returns void
 language sql
 security definer
 set search_path = ''
-set intmap.ai_ledger = 'rpc'
 as $$ select public.refund_ai_usage_on(p_user, null::date); $$;
 revoke execute on function public.refund_ai_usage(uuid) from public, anon, authenticated;
 grant  execute on function public.refund_ai_usage(uuid) to service_role;
 comment on function public.refund_ai_usage(uuid) is
   'Give one use back to TODAY (UTC). A caller that knows the day it charged on uses refund_ai_usage_on.';
 
--- refund_ai_turn: the live body, now inside the ledger guard (the keyed branch writes ai_usage directly)
+-- refund_ai_turn: the live body, its ledger write inside the setting (one exit, so the setting is always lowered)
 create or replace function public.refund_ai_turn(p_user uuid, p_turn text, p_gen uuid default null)
 returns text
 language plpgsql
 security definer
 set search_path = ''
-set intmap.ai_ledger = 'rpc'
 as $$
 declare
   v_key   text := coalesce(nullif(btrim(p_turn), ''), '');
+  v_out   text;
   r       record;
 begin
   if v_key = '' then
@@ -121,28 +123,30 @@ begin
      and (p_gen is null or t.attempt_gen = p_gen)
    for update;
   if not found then
-    return 'not_found';              -- already refunded, expired, or a later generation of the key
-  end if;
-  if r.succeeded then
+    v_out := 'not_found';              -- already refunded, expired, or a later generation of the key
+  elsif r.succeeded then
     if p_gen is not null then
       update public.ai_turns t set inflight = greatest(0, t.inflight - 1)
        where t.user_id = p_user and t.turn_key = v_key and t.attempt_gen = p_gen;
     end if;
-    return 'answered';               -- an answer exists: nothing is given back
-  end if;
-  if p_gen is not null and r.inflight > 1 then
+    v_out := 'answered';               -- an answer exists: nothing is given back
+  elsif p_gen is not null and r.inflight > 1 then
     update public.ai_turns t set inflight = t.inflight - 1
      where t.user_id = p_user and t.turn_key = v_key and t.attempt_gen = p_gen;
-    return 'held';                   -- another attempt of this turn is still running: it decides
+    v_out := 'held';                   -- another attempt of this turn is still running: it decides
+  else
+    delete from public.ai_turns t
+     where t.user_id = p_user and t.turn_key = v_key and (p_gen is null or t.attempt_gen = p_gen);
+    if coalesce(r.charged, false) then
+      perform set_config('intmap.ai_ledger', 'rpc', true);
+      update public.ai_usage u
+         set count = greatest(0, u.count - 1), updated_at = now()
+       where u.user_id = p_user and u.usage_date = coalesce(r.usage_date, current_date);
+      perform set_config('intmap.ai_ledger', '', true);
+    end if;
+    v_out := 'refunded';
   end if;
-  delete from public.ai_turns t
-   where t.user_id = p_user and t.turn_key = v_key and (p_gen is null or t.attempt_gen = p_gen);
-  if coalesce(r.charged, false) then
-    update public.ai_usage u
-       set count = greatest(0, u.count - 1), updated_at = now()
-     where u.user_id = p_user and u.usage_date = coalesce(r.usage_date, current_date);
-  end if;
-  return 'refunded';
+  return v_out;
 end;
 $$;
 

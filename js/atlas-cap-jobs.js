@@ -78,7 +78,7 @@ export default [
       let images;
       if (named.length) {
         const D = await import('./atlas-delegate.js');
-        const src = D.imageSourceOf(K);
+        const src = D.imageSourceOf({ ATTACH_LOG: K.ATTACH_LOG, VFRAMES: K.VFRAMES, _curTurn: K._curTurn });
         images = {};
         const unseen = [];
         for (const name of named) { const got = D.resolveTaskImages([name], src); if (got.urls.length) images[name] = got.urls; else unseen.push(got.notes[0] || ('"' + name + '" could not be shown')); }

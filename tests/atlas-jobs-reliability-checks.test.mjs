@@ -213,7 +213,7 @@ test('⑥ the ledger migration: the live definition, the day-named refund, and a
   for (const fn of ['increment_ai_usage', 'refund_ai_usage_on', 'refund_ai_usage', 'refund_ai_turn']) {
     const body = new RegExp('function public\\.' + fn + '\\([\\s\\S]*?\\n\\$\\$;').exec(m);
     assert.ok(body, fn);
-    assert.match(body[0], /set intmap\.ai_ledger = 'rpc'/, fn + ' carries the ledger setting');
+    if (fn !== 'refund_ai_usage') { assert.match(body[0], /set_config\('intmap\.ai_ledger', 'rpc', true\)/, fn + ' raises the ledger setting'); assert.match(body[0], /set_config\('intmap\.ai_ledger', '', true\)/, fn + ' and lowers it again'); }
     assert.match(body[0], /set search_path = ''/, fn + ' pins an empty search_path');
   }
   assert.match(m, /after insert on public\.ai_usage[\s\S]*when \(new\.count <> 0\)/);

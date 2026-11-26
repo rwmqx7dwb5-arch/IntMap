@@ -156,7 +156,8 @@ test('a capability run by a delegated worker asks the model under the worker\'s 
   assert.match(read('atlas-executor.js'), /turnKey: op\.turnKey/);
   assert.match(read('atlas-console.js'), /turnKey:\(o&&o\.turnKey\)\|\|undefined/);
   const r = read('atlas-cap-research.js');
-  assert.match(r, /const callKey = \(dctx, K\) => \(dctx && dctx\.turnKey \? \{ turnId: dctx\.turnKey, parentTurnId: K\._curTurnKey \} : \{ turnId: K\._curTurnKey \}\)/);
-  assert.equal((r.match(/callKey\(dctx,K\)/g) || []).length, 2, 'both model-asking capabilities use the one rule');
+  assert.match(read('atlas-model-call-key.js'), /export const modelCallKey = \(dctx, K\) => \(dctx && dctx\.turnKey \? \{ turnId: dctx\.turnKey, parentTurnId: K\._curTurnKey \} : \{ turnId: K\._curTurnKey \}\)/);
+  assert.equal((r.match(/modelCallKey\(dctx,\s*K\)/g) || []).length, 3, 'every model-asking capability of research uses the one rule (brief, situation, longform)');
+  assert.match(read('atlas-cap-web.js'), /\.\.\.modelCallKey\(dctx, K\)/, 'and so does web.search: a worker\'s search is the worker\'s call');
   assert.match(read('atlas-answer-pipeline.js'), /parentTurnId: opts\.parentTurnId \|\| undefined/);
 });
