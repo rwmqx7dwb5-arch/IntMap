@@ -66,3 +66,15 @@ test('⑥ the bottom bar is on the shared glass material', () => {
   const css = read('css/intmap.css');
   assert.match(css, /\.map-search,\.map-credit,[\s\S]*?background-color:var\(--glass-fill\) !important;\s*backdrop-filter:saturate\(var\(--glass-sat\)\) blur\(var\(--glass-blur\)\)/);
 });
+
+test('⑦ Isolate frames a country by where it is, not by the far territories it owns', () => {
+  const sq = (x, y, d) => [[[x, y], [x + d, y], [x + d, y + d], [x, y + d], [x, y]]];
+  /* a mainland, a stepping-stone island near it and a remote island 90° away — any country of this shape, none named */
+  const geom = { type: 'MultiPolygon', coordinates: [sq(5, 58, 25), sq(10, 80, 1), sq(3, -54.5, 0.2)] };
+  const h = CE.homeExtent(geom, null);
+  assert.ok(h[1] > 50, 'the remote island does not stretch the frame south: ' + h);
+  const full = CE.fullExtent(geom);
+  assert.ok(full[1] < -50 && h[3] - h[1] < full[3] - full[1]);
+  assert.match(read('js/map-tools.js'), /function bbox\(feat\)\{ try\{ const CE=window\.IntMapCountryExtent/);
+  assert.match(read('js/map-tools.js'), /const ub=bboxUnion\(feat\)/);
+});
