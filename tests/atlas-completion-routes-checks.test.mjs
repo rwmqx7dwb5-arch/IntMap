@@ -322,7 +322,12 @@ test('B2b: the object list holds what is drawn — found from the renderer\'s cl
   assert.ok(byId['surface:route-src'], 'the sea route');
   assert.ok(byId.route && !byId['surface:imroute-src'], 'a surface a subsystem already lists is listed once');
   /* × removes through the painter's own remover, and the list follows the map */
+  /* deleting ONE figure takes that one: the other place of the same composed map stays drawn and listed (the owner removes by id; only clear() empties the map) */
   assert.equal(globalThis.IntMapObjects.remove(placedIds[0]), true);
+  assert.equal(GE.layers.sourceData('atl-compose-src').features.length, placedIds.length - 1, 'one place gone, the rest of the map still drawn');
+  assert.ok(!globalThis.IntMapObjects.list().some((o) => o.id === placedIds[0]), 'the removed place is no longer listed');
+  assert.ok(placedIds.slice(1).every((id) => globalThis.IntMapObjects.list().some((o) => o.id === id)), 'the other places are still listed');
+  /* and the last one empties it */
+  placedIds.slice(1).forEach((id) => globalThis.IntMapObjects.remove(id));
   assert.equal(GE.layers.sourceData('atl-compose-src').features.length, 0);
-  assert.ok(!globalThis.IntMapObjects.list().some((o) => placedIds.includes(o.id)));
 });
