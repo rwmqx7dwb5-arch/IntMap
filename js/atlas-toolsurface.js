@@ -469,6 +469,8 @@ export function makeAtlasToolSurface(deps) {
            last one was «partial», until the turn hit its working limit. The verdict already knows
            the word; this is the line that was not saying it. */
         code: meta.code || undefined,
+        /* (atlas-early-results) where a call that waits for the next arrival stands: what is still running, so asking again is not a repeat */
+        progressKey: meta.progressKey ? String(meta.progressKey).slice(0, 300) : undefined,
         /* (#R760) the capability's own statement that this refusal is about the KIND of request */
         permanentFailure: meta.permanent ? true : undefined,
         /* ⚠ (#R760) `auditNote` TRAVELS WITH `auditFindings` — they are one fact in two fields, and
