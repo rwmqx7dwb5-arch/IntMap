@@ -182,7 +182,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. Every level is weight 600 in
          --text-main; nothing below may introduce a hue, and #R159's 600 is never raised to 750/800. */
       +'.atl-md{font-size:15px;line-height:1.7;}'   /* hierarchy: answer 15px > action row 12px > sources 12px muted (js/atlas-answer-sources.js) */
-      +'.atl-p{margin:0 0 1.35em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
+      +'.atl-p{margin:0 0 1.5em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
       +'.atl-ps{margin-bottom:.82em;}'                                              /* (#R150) sentence-end + single newline = a softer gap */
       +'.atl-p:last-child{margin-bottom:0;}'
       +'.atl-h{font-weight:560;color:var(--text-main);text-wrap:balance;}'          /* (#R494) balance: a two-line heading no longer leaves one orphan word */

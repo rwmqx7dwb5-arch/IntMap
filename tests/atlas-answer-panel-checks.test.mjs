@@ -55,7 +55,7 @@ test('⑥⑦⑧ the floating conversation is reachable, white-with-glow, and has
   assert.match(fl, /\.atl-chat>\.atl-b,#atlas-float #atlas-panel \.atl-chat>\.atl-msgt/, 'bubbles and their tool bars take the pointer');
   assert.ok(!/\.atl-chat>\.atl-b\{pointer-events:none;\}/.test(fl), 'no rule hands the bubbles back to the map');
   assert.match(fl, /--text-muted:#fff/, 'no grey ink');
-  assert.match(fl, /\.atl-b\.u\{text-shadow:none;--atlas-glass:linear-gradient\(135deg,rgba\(0,122,255,\.66\)/, 'the reader\'s bubble is more opaque');
+  assert.match(fl, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:none/, 'off the pane the reader message is text with the same glow, not a bubble standing in for it');
   assert.match(fl, /atl-float-bg/); assert.match(fl, /#atlas-float\.bg #atlas-panel \.atl-chat\{[^}]*text-shadow:none[^}]*backdrop-filter/, 'background on = frosted pane and no glow');
   assert.ok(!/filter:drop-shadow|box-shadow[^;]*#atlas-float #atlas-panel \.atl-chat\{/.test(fl), 'the glow is on glyphs, not on a rectangle');
   assert.match(read('js/locales/ui.en.js'), /atlFloatBg:/); assert.match(read('js/locales/ui.jp.js'), /atlFloatBg:/);
