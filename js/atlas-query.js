@@ -497,7 +497,11 @@ export function atlasQuery(HOST) {
         if (m) { bbox = m.bbox; vertices = m.vertices; lng = (m.bbox[0] + m.bbox[2]) / 2; lat = (m.bbox[1] + m.bbox[3]) / 2; derivedPoint = true; derived++; }
       }
       const p = f.properties || {};
-      rows.push({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : ds.title + ' ' + (i + 1))),
+      /* (atlas-result-delivery) A ROW WITH NO `name` IS NAMED BY WHAT IT CARRIES, NOT BY ITS DATASET'S TITLE AND A COUNTER. A computed table of «rank, country, population» has no
+         `name` field, so every row used to be called «<title> 1», «<title> 2» … in the table the reader was shown. The first text value of the row is what names it
+         (the country); only a row with no text at all falls back to the title and its place in the list. */
+      const _txt = Object.keys(p).map((k) => p[k]).find((v) => typeof v === 'string' && v.trim());
+      rows.push({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : (_txt != null ? _txt : ds.title + ' ' + (i + 1)))),
         lng, lat, _fid: f.id != null ? f.id : null, _p: p, _g: g, _bbox: bbox, _gv: vertices, _derivedPoint: derivedPoint });
     }
     const prov = ds.provenance || {};
@@ -1538,17 +1542,17 @@ export function atlasQuery(HOST) {
     const u = res.universe;
     const steps = [];
     if (u && u.classified) {
-      steps.push(esc(tableName(TABLES[res.table]) + ' ' + u.loaded.toLocaleString() + ' · '
+      steps.push(esc(tableName(TABLES[res.table]) + ' ' + u.loaded.toLocaleString() + ' '
         + L('source records', '件の元レコード', 'Quelldatensätze', 'исходных записей', 'registros de origen')));
-      steps.push(esc(u.eligible.toLocaleString() + ' · '
+      steps.push(esc(u.eligible.toLocaleString() + ' '
         + L('are a place in its own right', '件がそれ自体で1つの場所', 'sind ein eigenständiger Ort', 'являются самостоятельным местом', 'son un lugar por sí mismo')));
     } else {
-      steps.push(esc(tableName(TABLES[res.table]) + ' ' + (u ? u.loaded : res.offered).toLocaleString() + ' · '
+      steps.push(esc(tableName(TABLES[res.table]) + ' ' + (u ? u.loaded : res.offered).toLocaleString() + ' '
         + L('source records', '件の元レコード', 'Quelldatensätze', 'исходных записей', 'registros de origen')));
     }
-    steps.push(esc(res.scanned.toLocaleString() + ' · '
+    steps.push(esc(res.scanned.toLocaleString() + ' '
       + L('evaluated', '件を評価', 'ausgewertet', 'проверено', 'evaluadas')));
-    steps.push(esc(res.matched.toLocaleString() + ' · '
+    steps.push(esc(res.matched.toLocaleString() + ' '
       + L('match', '件が該当', 'Treffer', 'совпадений', 'coinciden')));
     let h = line('<b>' + esc(L('How this was decided', '判定方法', 'Wie das entschieden wurde', 'Как это определено', 'Cómo se decidió')) + '</b> · '
       + steps.join(' → '));
@@ -1565,7 +1569,7 @@ export function atlasQuery(HOST) {
       const what = (typeof s.what === 'string') ? s.what : L.arr(s.what);
       const k = what + '|' + s.src; if (!s.src || seen.has(k)) continue; seen.add(k);
       /* (#R620) …and HOW, not only WHERE FROM (see `origin` at the column registry). */
-      h += line(esc(what + ' — ' + s.src + (s.origin ? (' · ' + originLabel(s.origin)) : '')));
+      h += line(esc((what === s.src ? what : what + ' — ' + s.src) + (s.origin ? (' · ' + originLabel(s.origin)) : '')));
     }
     for (const c of res.caps) {
       h += line((icon('warning')+' ') + esc(L.arr(c.what) + ' — ' + L('limited to', '制限', 'begrenzt auf', 'ограничено до', 'limitado a')
@@ -1639,11 +1643,14 @@ export function atlasQuery(HOST) {
     const U = ui || {};
     if (a && (a.list === true || a.from === '?')) {
       const ls = await tableListing();
+      /* (atlas-result-delivery) a note several tables share (the three Japan tables of one file each carried the file's gaps and completeness) is said once, at its first table */
+      const _said = new Set();
+      ls.forEach((t) => { const own = (t.gaps || []).concat(t.completeness ? [t.completeness] : []).filter((x) => { if (_said.has(x)) return false; _said.add(x); return true; }); t._notes = own; });
       const html = ls.map((t) => '<div style="margin:4px 0;"><b>' + esc(t.id) + '</b> — ' + esc(t.title) + (t.rows != null ? ' · ' + t.rows + ' rows' : '')
         + '<br><span style="color:var(--text-muted);font-size:11px;">' + esc(t.columns.map((c) => c.id + (c.unit ? ' [' + c.unit + ']' : '') + (c.label && c.label !== c.id ? ' = ' + c.label : '')).join(' · ')) + '</span>'
         + (t.source ? '<br><span style="color:var(--text-muted);font-size:10.5px;">' + esc(t.source) + '</span>' : '')
-        + ((t.gaps && t.gaps.length) || t.completeness ? '<br><span style="color:var(--text-muted);font-size:10.5px;">' + esc(((t.gaps || []).concat(t.completeness ? [t.completeness] : [])).join(' · ')) + '</span>' : '') + '</div>').join('');
-      return { ok: true, html, result: { ok: true, tables: ls } };
+        + (t._notes.length ? '<br><span style="color:var(--text-muted);font-size:10.5px;">' + esc(t._notes.join(' · ')) + '</span>' : '') + '</div>').join('');
+      return { ok: true, html, result: { ok: true, tables: ls.map((t) => { const c = Object.assign({}, t); delete c._notes; return c; }) } };
     }
     const res = await run(a);
     if (res.ok) announce(res);

@@ -241,7 +241,8 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
      BYTE FOR BYTE — `const aiv=bubble('a',stageDots('read'))` — so wrapping that bubble to open a
      work trace failed a routing test while the routing was untouched. What #R540 states is a
      property with three parts, and each is asked for on its own below. */
-  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,600}?\breturn;\s*\}/.exec(html);
+  /* (atlas-gis-first-arrival) THE BRANCH STILL ROUTES TO THE VISION TURN FIRST AND STILL RETURNS — unless the READER ITSELF asked for tools (`continueWithTools`), in which case it carries on into the agent loop with the reading and the images. So the branch ends at `_atlRecallImgs=imgs;` and the `return;` is inside it. */
+  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,900}?\breturn;[\s\S]{0,160}?_atlRecallImgs=imgs;\s*\}/.exec(html);
   assert.ok(visionBranch, 'run() has a branch for an attached image that returns');
   assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*imgs\s*,\s*gen\s*,\s*_atts\s*\)/,
     'it hands the image to the vision pipeline, with the files/docs channels riding along (R540)');
