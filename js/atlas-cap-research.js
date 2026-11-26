@@ -36,13 +36,13 @@ import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's
 import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
 import { planOutline, runLongform, assemble, storageStore } from './atlas-longform.js';   /* (atlas-longform) research.longform: chapter by chapter, kept as it goes */
 import { makeResearchSearch } from './atlas-research-search.js';   /* (atlas-research-search) research.search — the tool side of an investigation Atlas steers */
-import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, imagesShown, CONTRACT_KINDS } from './atlas-delegate.js';
+import { makeDelegation, makeWorkerExecutor, pageDelegationStore, delegationKey, imagesShown, imageSourceOf, CONTRACT_KINDS } from './atlas-delegate.js';
 import { integrate, mergeFacts, makeFactResolver, makeCapabilityExecutor, makeRouterExecutor, verifyContract, verifyOutcome } from './atlas-orchestrate.js';   /* (atlas-orchestration) what is built on the substrate: the lane that runs one read capability, the router, and what several results say together */   /* (atlas-delegation) research.delegate — the substrate and its worker executor */
 const liveRuns = new Map();   /* (delegate-streaming) research.delegate lists still running, by list identity — see run() */
 /* (atlas-verify-metrics) WHOSE MODEL CALL THIS IS. A capability run by a delegated worker (dctx.turnKey = the worker's child key) asks the model under that
    child key with the reader's turn as its parent, so the journal and the ledger attribute the call, its cost and its wait to the child that made it; a
    capability run by Atlas itself keeps the reader's turn key. One rule for every capability that asks the model. */
-const callKey = (dctx, K) => (dctx && dctx.turnKey ? { turnId: dctx.turnKey, parentTurnId: K._curTurnKey } : { turnId: K._curTurnKey });
+import { modelCallKey } from './atlas-model-call-key.js';   /* the rule is one file now: web.search and longform follow it too */
 import { decideClaims } from './atlas-claim-check.js';   /* (atlas-claim-check) */
 const researchMemory = { search: null };   /* research.search's per-turn memory — built on first use; a const holder (the kernel copy never runs it) */
 
@@ -258,7 +258,7 @@ export default [
              headlines) and the call is webMode:'required' so the proxy forces the search. */
           const sysB=personaPrompt('working here as IntMap\'s geopolitical and area-studies research desk')/* (#R285) this opened with a DIFFERENT character from the one answering two panels away; the task role stays, the name and the character are Atlas's */+'The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
-          let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,Object.assign({task:'brief',webMode:'required'},callKey(dctx,K))); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
+          let txtB='', _envB=null; try{ _envB=await askAIJSONEnvelope(pB,sysB,null,Object.assign({task:'brief',webMode:'required'},modelCallKey(dctx,K))); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
           try{ if(_envB&&_envB.meta&&_envB.meta.webUsed) keepTurnPages(K._curTurnKey, (_envB.citations||[]).map(c=>({url:c&&c.url,title:c&&c.title,retrievedAt:new Date().toISOString()}))); }catch(_){}   /* (atlas-completion) what this brief's search retrieved, for the turn's next answer call */
           if(!String(txtB||'').trim()) return R(false, warn(L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
@@ -811,7 +811,7 @@ export default [
                  sentence, which is the layer this round removed. */
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
-              ...callKey(dctx,K), webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
+              ...modelCallKey(dctx,K), webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
               webSources:turnPages(K._curTurnKey).concat(webEvidence.turnSources(K._curTurnKey)).filter((x,i,all)=>all.findIndex(y=>y.url===x.url)===i),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ return datasetFactsOnPage(a&&a.datasets); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
@@ -1174,12 +1174,7 @@ export default [
          may make (policy.childMaxCalls), so the retry can never ask for more than the server allows. */
       /* a NUMBER bounds; null (the server states no count) stays null, which runs the worker on progress and not on a count; no policy at all → undefined (the plain two-request worker) */
       const childMax = (pol && Number.isInteger(pol.childMaxCalls)) ? pol.childMaxCalls : (pol && pol.childMaxCalls === null ? null : undefined);
-      const executorImages = {
-        attachment: (K.ATTACH_LOG && typeof K.ATTACH_LOG.find === 'function') ? (n) => K.ATTACH_LOG.find(K._curTurn, n) : undefined,
-        attachmentNames: (K.ATTACH_LOG && typeof K.ATTACH_LOG.names === 'function') ? () => K.ATTACH_LOG.names(K._curTurn) : undefined,
-        frames: (K.VFRAMES && typeof K.VFRAMES.urls === 'function') ? () => K.VFRAMES.urls() : undefined,
-        framesText: (K.VFRAMES && typeof K.VFRAMES.promptBlock === 'function') ? () => K.VFRAMES.promptBlock() : undefined,
-      };
+      const executorImages = imageSourceOf(K);   /* js/atlas-delegate.js — the one place that says where a task's images are read from (jobs.start reads the same) */
       const executor = makeRouterExecutor({
         worker: makeWorkerExecutor({ ask: K.askAIJSONEnvelope, parentTurn: parent, signal, maxCalls: childMax,
           capability: typeof K.runReadCapability === 'function' ? { run: K.runReadCapability, classify: K.classifyCapability, describe: K.describeCapability, find: K.findCapabilities } : null,   /* (delegation-agency) a worker granted `tools` runs read capabilities itself, through the same lane */
@@ -1363,7 +1358,7 @@ export default [
       let ls = null; try { ls = window.localStorage; } catch (_) { ls = null; }
       /* the time budget is UNDER the loop's tool clock (js/atlas-agent.js toolTimeoutMs = 240 s; one section measured at roughly 40-70 s): 150 s leaves a section in flight room to finish. Expires with: a change to either number */
       const out = await runLongform({ plan, store: storageStore(ls), signal, budgetMs: 150000,
-        ask: (prompt, system, img, o) => K.askAIJSONEnvelope(prompt, system, img, Object.assign({}, o, turn ? { turnId: turn } : {})) });
+        ask: (prompt, system, img, o) => K.askAIJSONEnvelope(prompt, system, img, Object.assign({}, o, turn ? modelCallKey(dctx, K) : {})) });
       const doc = assemble(plan, out.chapters);
       const n = out.chapters.length, written = out.chapters.filter((c) => c.text).length;
       const cut = out.chapters.filter((c) => c.state === 'cut').map((c) => c.title);

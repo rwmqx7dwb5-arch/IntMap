@@ -41,12 +41,12 @@ export function makeJobsClient(o) {
   const fetchFn = (o && o.fetch) || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
   const need = () => { if (!sb) throw Object.assign(new Error('Sign in to use background jobs.'), { code: 'no_session' }); return sb; };
   return {
-    /* start({ tasks, title?, idem }) → { ok, jobId?, created?, status?, code?, status_http? } — the server states every refusal by name */
+    /* start({ tasks, title?, idem, images? }) → (images: { name: [data URL, …] } — what the tasks' `images` names resolved to on the page; the server keeps them with the job) → { ok, jobId?, created?, status?, code?, status_http? } — the server states every refusal by name */
     async start(a) {
       if (!fetchFn || !endpoint) return { ok: false, code: 'not_configured' };
       const headers = typeof authHeaders === 'function' ? await authHeaders() : { 'Content-Type': 'application/json' };
       let r;
-      try { r = await fetchFn(endpoint, { method: 'POST', headers, body: JSON.stringify({ op: 'create', idem: a.idem, title: a.title || '', tasks: a.tasks }) }); }
+      try { r = await fetchFn(endpoint, { method: 'POST', headers, body: JSON.stringify({ op: 'create', idem: a.idem, title: a.title || '', tasks: a.tasks, ...(a.images && typeof a.images === 'object' ? { images: a.images } : null) }) }); }
       catch (e) { return { ok: false, code: 'unreachable' }; }
       let j = null; try { j = await r.json(); } catch (_) { j = null; }
       if (!r.ok || !j || !j.jobId) return { ok: false, code: (j && (j.code || j.error)) || ('http_' + r.status), at: j && j.at, httpStatus: r.status, available: j && Array.isArray(j.available) ? j.available : undefined };
@@ -68,7 +68,7 @@ export function makeJobsClient(o) {
       return jobFacts(j.data, (t && t.data) || []);
     },
     async cancel(id) { const r = await need().rpc('atlas_job_cancel', { p_job: id }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: true, state: r.data }; },
-    /* resume(id, only?) — put back in the queue what did not finish (failed, refused, cancelled); done pieces are never run again (RPC atlas_job_resume) → { ok, state } where state is the RPC's word: queued | running | nothing_to_resume | user_active_limit | busy | disabled | not_found */
+    /* resume(id, only?) — put back in the queue what did not finish (failed, refused, cancelled); done pieces are never run again (RPC atlas_job_resume) → { ok, state } where state is the RPC's word: queued | running | nothing_to_resume | disabled | not_found */
     async resume(id, only) { const r = await need().rpc('atlas_job_resume', { p_job: id, p_only: Array.isArray(only) && only.length ? only.map((x) => s(x, 64)).slice(0, 8) : null }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: r.data === 'queued', state: r.data }; },
     async amend(id, note) { const r = await need().rpc('atlas_job_amend', { p_job: id, p_note: s(note, 1000) }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: true, state: r.data }; },
   };

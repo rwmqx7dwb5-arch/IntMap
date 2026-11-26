@@ -114,6 +114,9 @@ export async function openTurn(db, account, o) {
   const opt = o || {};
   if (account && account.isDev) return { allowed: true, charged: false, used: 0, calls: 0, reason: "" };
   let row = null;
+  /* (atlas-jobs-reliability) THE DAY THIS CHARGE BELONGS TO, taken before the request: a call with no turn key leaves no row that remembers it, and
+     its refund must go to this day's counter, not to whichever day the refund happens on (refundTurn's chargedOn). The ledger's day is UTC. */
+  const chargedOn = new Date().toISOString().slice(0, 10);
   try {
     const { data, error } = await db.rpc("consume_ai_turn", {
       p_user: account.id, p_limit: account.limit, p_turn: String(opt.turn || ""),
@@ -129,6 +132,7 @@ export async function openTurn(db, account, o) {
     used: Number(row.used) || 0,
     calls: Number(row.calls) || 0,
     reason: row.allowed ? "" : String(row.reason || "limit"),
+    chargedOn,
     /* (security-review-nov) the generation of the turn row this attempt opened — handed back to
        settleTurn / refundTurn so a late close cannot land on a row made again under the same key */
     gen: typeof row.gen === "string" && row.gen ? row.gen : null,
@@ -217,9 +221,15 @@ const REFUND_STATES = new Set(["refunded", "held", "answered", "not_found"]);
 
 /* refundTurn — an attempt of a turn closed without an answer (public.refund_ai_turn). The ledger gives
    the charge back only when the LAST attempt of the turn closes without one (#R801, security-review-nov). */
-export async function refundTurn(db, account, turn, gen) {
+export async function refundTurn(db, account, turn, gen, chargedOn) {
   if (!account || account.isDev) return "skipped";
   try {
+    /* a call with no turn key charged ONE day's counter (the day it was opened — openTurn's chargedOn) and is given back to that day, even when the failure
+       arrives after midnight UTC (public.refund_ai_usage_on). Without a day the ledger says «today», as it always did. */
+    if (!String(turn || "") && /^\d{4}-\d{2}-\d{2}$/.test(String(chargedOn || ""))) {
+      const { error } = await db.rpc("refund_ai_usage_on", { p_user: account.id, p_date: String(chargedOn) });
+      return error ? "error" : "refunded";
+    }
     const args = { p_user: account.id, p_turn: String(turn || "") };
     if (gen) args.p_gen = String(gen);
     const { data, error } = await db.rpc("refund_ai_turn", args);

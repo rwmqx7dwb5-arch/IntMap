@@ -1935,6 +1935,7 @@ overpass.js                       **Overpass の唯一のクライアント** `o
                                   window.IntMapOverpass ＋ ES import の両方（同一の関数）
 atlas-longform.js                 Atlas の**長文を章ごとに書く部品**（`research.longform`）——アウトライン→章ごとに 1 リクエスト→書いた端から保存→最後に結合。モデルが途中で切った章は続きを書かせ、同じアウトラインで頼み直すと書いた章は再実行しない
 atlas-delegate.js                 Atlas の**委譲の基盤**——仕事の契約・実行者・追記だけの事象記録（関係つき）・作業場・実費・子のモデルの実行役（許可された読み取り能力を呼び、能力表を語で引く）・委譲を端末に残して再開する保存口（`research.delegate` が使う。docs/architecture/05-ai.md「委譲」）
+atlas-model-call-key.js           **モデル呼び出しの鍵**（`modelCallKey`）——worker が走らせた能力は子の鍵で、Atlas 自身が走らせた能力は利用者のターンの鍵で記録する、という 1 つの規則。`research.brief` 系・`web.search`・`research.longform` が共有する
 atlas-job-core.js                 **契約と計画の核**——仕事の契約（`normaliseContract`）・同じ仕事の鍵（`contractKey`）・循環の検出・worker への指示文と答えの形（`workerSystem`/`workerPrompt`/`shapeOf`）・一覧を永続ジョブに計画する `planJob` と、次に始められる仕事を選ぶ `readyTasks`。import も globals も持たない純モジュールで、`atlas-delegate.js`（ページ）と Edge Function `atlas-jobs`（サーバ。`supabase/functions/_shared/atlas-job-core.js` が**逐語の写し**、`node scripts/sync-atlas-job-core.mjs`）が同じものを使う。docs/architecture/05-ai.md「永続ジョブ」
 atlas-server-class.js             **永続ジョブが能力をどこで動かせるか**——能力の記録から導く 3 つの区分（`read`＝サーバの twin を持てる／`parkable`＝地図やセッションを変えるのでジョブが保存し、ページが戻ったときに適用／`page-only`）。`js/cap-bridge.js` の `effectClass` の上に立ち、手で並べた一覧を持たない。Edge Function 側の写しは `scripts/sync-atlas-cap-classes.mjs` が生成する（検査は tests/exec-platform-checks.test.mjs）
 atlas-job-products.js            **終わった永続ジョブが残すもの**——ジョブ 1 件につき作業 1 件（`wk-job-<uuid>`）を作業ストアへ。分担ごとに `answer`・統合結果を `document` として、内容が変わらなければ足さず、変われば次の版にする。作業記憶へ「ジョブが未了」（kind `job`＝ターンをまたいで残る）と終了を伝える。検査は tests/exec-platform-checks.test.mjs
@@ -2280,7 +2281,7 @@ supabase/
                                   tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
                                   schema / media / provider-call / providers/* / models / replay）。
                                   構成の正本は docs/architecture/06-supabase.md §6.2
-  functions/_shared/              関数ではないライブラリ（ai-provider.js / embedding-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
+  functions/_shared/              関数ではないライブラリ（ai-provider.js / embedding-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / ai-quota-class.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-history.js / news-backfill.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-session.js / who-don-extract.js /

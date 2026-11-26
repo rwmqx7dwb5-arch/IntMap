@@ -545,6 +545,18 @@ export function toolCallsOf(data) {
    A name that cannot be shown is SAID in `notes` (they go to the worker's prompt and the result's gaps) — a worker that was not
    shown what it was told to look at must not answer as if it had been. No count: every image named is handed on; the server
    states what it attaches (ai-proxy MAX_IMAGES / MAX_IMAGES_BYTES). */
+/* imageSourceOf(K) → the `source` resolveTaskImages reads from, built from the capability host K: the conversation's attachment ledger
+   (js/atlas-attach-log.js) and the turn's frame ledger (js/atlas-view-capture.js). A host that does not expose one leaves that source out.
+   research.delegate and jobs.start both read their tasks' `images` through THIS, so the two cannot mean different things by a name. */
+export function imageSourceOf(K) {
+  const h = K || {};
+  return {
+    attachment: (h.ATTACH_LOG && typeof h.ATTACH_LOG.find === 'function') ? (n) => h.ATTACH_LOG.find(h._curTurn, n) : undefined,
+    attachmentNames: (h.ATTACH_LOG && typeof h.ATTACH_LOG.names === 'function') ? () => h.ATTACH_LOG.names(h._curTurn) : undefined,
+    frames: (h.VFRAMES && typeof h.VFRAMES.urls === 'function') ? () => h.VFRAMES.urls() : undefined,
+    framesText: (h.VFRAMES && typeof h.VFRAMES.promptBlock === 'function') ? () => h.VFRAMES.promptBlock() : undefined,
+  };
+}
 export function resolveTaskImages(names, source) {
   const list = Array.isArray(names) ? names : [];
   const out = { urls: [], seen: [], notes: [], frameText: '' };

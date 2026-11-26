@@ -19,6 +19,7 @@
  * ==========================================================================*/
 import { str, int, one, obj, bool, list } from './atlas-caps.js';
 import { webEvidence, queryKey } from './atlas-web-evidence.js';
+import { modelCallKey } from './atlas-model-call-key.js';
 import { webBrowseDoor, handoffText, sayFor, WEB_BROWSE_NOTICE } from './web-browse.js';
 
 const door = webBrowseDoor;   /* the one instance lives in js/web-browse.js (a capability module holds no `let`: scripts/atlas-caps-split.mjs) */
@@ -231,7 +232,7 @@ export default [
         const out = { q: x.q };
         const got = await webEvidence.acquire('search', x.key, async () => {
           let env;
-          try { env = await askEnv('Search the web: ' + x.q + (x.lang ? '\nRead sources written in: ' + x.lang + ' as well as any other language that has them.' : ''), sys, null, { task: 'web_search', webMode: 'required', turnId: K._curTurnKey, signal: dctx && dctx.signal }); }
+          try { env = await askEnv('Search the web: ' + x.q + (x.lang ? '\nRead sources written in: ' + x.lang + ' as well as any other language that has them.' : ''), sys, null, { task: 'web_search', webMode: 'required', ...modelCallKey(dctx, K), signal: dctx && dctx.signal }); }
           catch (e) { return { ok: false, error: e }; }
           const text = String((env && env.text) || '').trim(), meta = (env && env.meta) || {};
           const ran = meta.webUsed === true;

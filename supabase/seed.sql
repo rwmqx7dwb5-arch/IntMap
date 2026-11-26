@@ -56,10 +56,13 @@ insert into public.favorites (user_id, article_link, article_title) values
 on conflict (user_id, article_link) do nothing;
 
 -- 5) ai_usage — A has consumed 5 uses today, B has consumed 2 (isolation + RPC tests).
+--    A count is written only by the ledger functions; a seed is the deliberate by-hand write (migration 20261201110000), said so here.
+select set_config('intmap.ai_ledger', 'admin', false);
 insert into public.ai_usage (user_id, usage_date, count) values
   ('11111111-1111-1111-1111-111111111111', current_date, 5),
   ('22222222-2222-2222-2222-222222222222', current_date, 2)
 on conflict (user_id, usage_date) do nothing;
+select set_config('intmap.ai_ledger', '', false);
 
 -- 6) community — A posts, B posts, B comments on A's post, B upvotes A's post.
 insert into public.community_posts (id, user_id, author_name, title, body, lat, lng, category) values
