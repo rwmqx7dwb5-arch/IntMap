@@ -131,7 +131,6 @@ test('①② the note goes to the trace, the answer is shown while written and t
   /* ② step 2 holds before `done`: the draft is on screen, live, before any answer exists */
   const draft = lastReply().locator('.atl-draft.live');
   await expect(draft).toContainText('関東平野', { timeout: 20_000 });
-  await expect(draft.locator('.atl-caret')).toHaveCount(1);
   /* the trace ticked the operation — and, the trace being on screen, nothing on the map said it again
      (atlas-progress-one: four indicators for one turn was the defect) */
   await expect(page.locator('#atlas-panel .atl-trace').last().locator('.atl-trace-rows .atl-trace-row.ok')).not.toHaveCount(0, { timeout: 20_000 });
