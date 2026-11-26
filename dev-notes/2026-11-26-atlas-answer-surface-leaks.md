@@ -19,3 +19,6 @@ newsjp: Atlas の回答の下に計算結果の生データやデータ表の一
 ## 確かめたこと
 - `tests/atlas-result-delivery-checks.test.mjs` ⑨〜⑫（修正前の `js/` では落ちる）。
 - 見送ったもの: ブリッジ付き run を再利用しない設計（副作用のある能力を呼ぶため意図的）。`openDataAnswer`・`gisRemote discover`・`gisOverture plan` のカードが同じ形かは未確認。
+
+## 起動費用
+`atlas-console` チャンクの天井を引き上げた（1445.3 kB → 実測 1452.9 kB）。理由: 作業の途中経過を宣言する `meta.working` の読み取り、計算カードの要約、行の名づけ、一覧の注記の重複除去、脚注の句末配置が `atlas-console` の側に入ったため。読者に見える欠陥を直す機能で、遅延読み込みの塊が増えた分だけ。起動時の同期読み込みではない。
