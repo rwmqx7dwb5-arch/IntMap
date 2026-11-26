@@ -27,11 +27,13 @@ test('② the draft has no blinking caret, and nothing styles one', () => {
   assert.ok(!/atl-caret|CARET/.test(live), 'a text cursor is still drawn after the answer text');
 });
 
-test('③ cost, model names and tool names are the developer view\'s; so are a failed step\'s raw warnings', () => {
+test('③ cost, model names, tool names and a failed step\'s raw text reach the developer only — in the trace\'s expanded detail, never under the reply', () => {
   const c = read('js/atlas-console.js');
-  assert.match(c, /_isDevView\(\)&&AGENT\.runLine/, 'the run line is not gated on the developer view');
-  assert.match(c, /_shown=_devView\?_interim:_interim\.filter\(r=>r&&r\.ok!==false\)/, 'a failed step\'s raw warning is listed for every reader');
-  assert.match(c, /AGENT\.runLine/, 'the measurement itself was removed — it is only hidden');
+  assert.match(c, /PROG\.devNote\(ai,_rl0\)/, 'the run line is not handed to the trace detail');
+  assert.doesNotMatch(c, /ai\.appendChild\(_d\)/, 'the run line is appended under the reply again');
+  assert.doesNotMatch(c, /_shown=_devView\?/, 'the owner\'s account (the developer view) sees a failed step under the reply');
+  assert.match(c, /_shown=_interim\.filter\(r=>r&&r\.ok!==false&&!\(r\.meta&&r\.meta\.modelOnly\)\)/);
+  assert.match(c, /AGENT\.runLine/, 'the measurement itself was removed — it is only moved');
 });
 
 test('④ the head says how the turn ended without a separator, and the trace has no left bar', () => {
@@ -50,6 +52,6 @@ test('⑤ parallel workers are lines under their operation, written from the tas
 
 test('⑥ a plan is drawn into the trace only in the turn that declared it', () => {
   const pl = read('js/atlas-plan.js');
-  assert.match(pl, /!s\.thisTurn\) return/, 'an earlier turn\'s plan is drawn into every new trace');
+  assert.match(pl, /!s\.declaredThisTurn\) return/, 'an earlier turn\'s plan is drawn into every new trace');
   assert.ok(!/lastSlot !== slot\) \{ try \{ lastSlot\.innerHTML = ''/.test(pl), 'the earlier trace is emptied when a later turn starts');
 });

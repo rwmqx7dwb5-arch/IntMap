@@ -251,7 +251,17 @@ export function makeAtlasAgent() {
       }
       if (planSnap && planSnap.thisTurn && Array.isArray(planSnap.steps)) {
         planSnap.steps.forEach((st) => {
-          if (st && st.state !== 'completed' && st.state !== 'noop') out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
+          /* ⚠ A STEP NOBODY FILED A CALL UNDER IS NOT AN OBSERVED FAILURE. 'pending' is «no operation was attributed to this step», and the ledger
+             cannot tell «skipped» from «done under the step that was current» (a model that drew everything in step 1 and never moved
+             `current` leaves steps 2..n pending while the map is complete). A reader was told 「完了していないもの: 計画の手順 2」 over a finished
+             drawing. What IS observed — a call that failed, stayed partial, was not confirmed, is waiting or was stopped — is still listed. */
+          if (!st || st.state === 'completed' || st.state === 'noop' || st.state === 'pending') return;
+          /* a step that holds a completed call and whose OTHER calls failed ('partial' by mixture, js/atlas-plan.js stepState) delivered what it was for: the failure
+             was an alternative path or a look-up that did not matter, and Atlas's answer says so when it did. A step whose non-completed calls are partial,
+             unobserved, waiting, stopped or running is still listed. */
+          const ops = Array.isArray(st.ops) ? st.ops : [];
+          if (st.state === 'partial' && ops.some((o) => o && o.state === 'completed') && !ops.some((o) => o && o.state !== 'completed' && o.state !== 'failed')) return;
+          out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
         });
       }
       return out;
