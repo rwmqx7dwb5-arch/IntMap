@@ -1,0 +1,158 @@
+{
+  "id": "drawn-line-restyled-by-id-across-turns",
+  "text": "ロンドンからパリまで線を引いて。次に、さっきの線を赤くして、太くして、少し透かして。",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map."
+  },
+  "question": {
+    "set": "records",
+    "id": "restyle-drawn-line-across-turns"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.drawLine",
+            "args": {
+              "places": [
+                "London",
+                "Paris"
+              ],
+              "label": "London-Paris"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "map.object",
+            "args": {
+              "op": "set",
+              "id": "line_1",
+              "color": "red",
+              "width": 5,
+              "opacity": 0.6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "places": [
+            "London",
+            "Paris"
+          ],
+          "label": "London-Paris",
+          "type": "drawLine"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>London-Paris</div>",
+          "objectIds": [
+            "line_1"
+          ],
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map",
+              "object"
+            ],
+            "objectIds": [
+              "line_1"
+            ]
+          }
+        }
+      },
+      {
+        "action": {
+          "op": "set",
+          "id": "line_1",
+          "color": "red",
+          "width": 5,
+          "opacity": 0.6,
+          "type": "object"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>✓ set · line_1 · color=#ff0000, width=5, opacity=0.6</div>",
+          "objectIds": [
+            "line_1"
+          ],
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "object"
+            ],
+            "objectIds": [
+              "line_1"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {
+      "objects": {
+        "n": 1,
+        "items": [
+          {
+            "id": "line_1",
+            "kind": "line",
+            "name": "London-Paris",
+            "color": "#ff0000",
+            "width": 5,
+            "opacity": 0.6,
+            "geom": "line",
+            "editable": [
+              "color",
+              "width",
+              "opacity",
+              "name"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:map.drawLine",
+        "status": "completed"
+      },
+      {
+        "name": "run_capability:map.object",
+        "status": "completed"
+      }
+    ],
+    "text": "ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。"
+  },
+  "expect": {
+    "verdict": "pass",
+    "dispatched": 2,
+    "map": "match"
+  }
+}

@@ -2,7 +2,7 @@
   "eager": {
     "raw": 4891491,
     "gzip": 1606272,
-    "brotli": 1225118,
+    "brotli": 1231597,
     "requests": 12,
     "modules": 927,
     "cssRaw": 394673,
@@ -27,7 +27,7 @@
       "atlas-caps": 7364,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1497836,
+      "atlas-console": 1507106,
       "atlas-delegate": 471,
       "atlas-executor": 64612,
       "atlas-file-make": 60133,
@@ -241,7 +241,7 @@
   "dist": {
     "total": 1620603887,
     "data": 1255418025,
-    "assets": 23581546
+    "assets": 23711869
   },
   "phone": {
     "bytes": 342631,

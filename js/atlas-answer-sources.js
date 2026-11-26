@@ -325,6 +325,24 @@ export function makeAtlasAnswerSources(deps) {
   /* ── (atlas-answer-sources) WHAT ATLAS PUT ON THE MAP, AS THINGS THE READER CAN GO TO ───────────────────────────────────
      A route or a zone the run drew was filed under 「途中の調査結果と操作のメッセージ」 — a name that says it is leftovers. It is the deliverable. Each
      drawn thing is one button that moves the map to it; what it names is what the tool said it showed (exec.shown), else its subject, else its kind. */
+  /* What a chip says when the call named nothing: WHAT was drawn (the capability's own word), not 「図形」 — which told the reader nothing about what it was or why it was there. */
+  function drewWord(kind) {
+    const k = String(kind || '').split('.').pop();
+    switch (k) {   /* calls, not a table of pairs: a pair held as data is an English-only fallback the i18n gate counts (PAIR_CEILING) */
+      case 'line': return T('Line drawn by Atlas', 'ライン');
+      case 'polygon': return T('Polygon', 'ポリゴン');
+      case 'poi': return T('Markers', 'マーカー');
+      case 'compose': return T('Map explanation', '説明の図');
+      case 'highlight': return T('Highlight', 'ハイライト');
+      case 'choropleth': return T('Colour map', '色分け地図');
+      case 'outline': return T('Border line', '境界線');
+      case 'pin': return T('Pin dropped', 'ピン');
+      case 'radius': return T('Circle', '円');
+      case 'isochrone': return T('Reachable area', '到達圏');
+      case 'route': return T('Route', '経路');
+      default: return T('Drawing', '描画');
+    }
+  }
   function artifacts(results) {
     const out = [], seen = Object.create(null);
     (results || []).forEach((r) => {
@@ -335,15 +353,15 @@ export function makeAtlasAnswerSources(deps) {
         if (!d || !d.kind || !Array.isArray(d.surfaces) || !d.surfaces.length) return;
         const k = d.kind + '|' + d.surfaces.join(',');
         if (seen[k]) return; seen[k] = 1;
-        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || (String(d.kind).indexOf('.') > 0 ? T('Shape ', '図形 ') + (out.length + 1) : d.kind)), surfaces: d.surfaces.slice() });
+        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || (String(d.kind).indexOf('.') > 0 ? drewWord(d.kind) + ' ' + (out.length + 1) : d.kind)), surfaces: d.surfaces.slice() });
       });
     });
     return out;
   }
   function artifactsHtml(list) {
     if (!(list && list.length)) return '';
-    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('Drawn by Atlas', '地図上の成果物')) + '</span>'
-      + list.map((a) => '<button type="button" class="atl-art" data-atl-art="' + a.i + '" title="' + esc(T('Move the map to this', '地図をここへ移動')) + '">' + esc(a.label) + '</button>').join('') + '</div>';
+    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('Atlas drew this on the map', 'Atlas が地図に描いたもの')) + '</span>'
+      + list.map((a) => '<button type="button" class="atl-art" data-atl-art="' + a.i + '" title="' + esc(T('Show this on the map', '地図でこの場所を表示')) + '">' + esc(a.label) + '</button>').join('') + '</div>';
   }
 
   /** plainItems(items) → the list as stored data and as text (the notebook, a briefing, a copy): no values, no markup */

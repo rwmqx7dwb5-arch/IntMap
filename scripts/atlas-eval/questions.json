@@ -289,6 +289,40 @@
         ]
       },
       "unset": {}
+    },
+    {
+      "id": "restyle-drawn-line-across-turns",
+      "lang": "jp",
+      "text": "ロンドンからパリまで線を引いて。次に、さっきの線を赤くして、太くして、少し透かして。",
+      "sendable": true,
+      "source": {
+        "round": "atlas-objects-unify",
+        "where": "the order sheet (IntMap発注書, 2026-11-26): 「Atlas が自分で描いた線の色を変えられなかった」",
+        "text": "paraphrased from the reported case; the two instructions are one request here so the whole path — draw, keep the id, restyle that object — is one scripted turn"
+      },
+      "expect": {
+        "reach": [
+          "map.object"
+        ],
+        "minOperations": 2
+      },
+      "unset": {
+        "replyMustNotMatch": "the report names no sentence the reply must or must not carry.",
+        "map": "the report does not name coordinates; only that a line exists as a map-object."
+      },
+      "mapState": {
+        "drawn": [
+          {
+            "anyOf": [
+              {
+                "path": "objects.kind:line",
+                "min": 1
+              }
+            ],
+            "why": "「ロンドンからパリまで線を引いて」"
+          }
+        ]
+      }
     }
   ],
   "placeProbes": {

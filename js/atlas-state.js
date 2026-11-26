@@ -233,7 +233,16 @@ export function makeAtlasState(HOST) {
         if (!OB || typeof OB.list !== 'function') return null;
         var list = OB.list() || [];
         return { n: list.length, items: list.map(function (o) {
-          return { id: String(o.id), kind: o.kind, name: String(o.name == null ? '' : o.name) }; }) };
+          /* what Atlas can read of an object is what it can change: look (colour · width · opacity), what it is (geom, area) and which of those the object takes */
+          var it = { id: String(o.id), kind: o.kind, name: String(o.name == null ? '' : o.name) };
+          if (o.color) it.color = o.color;
+          if (o.width != null) it.width = o.width;
+          if (o.opacity != null) it.opacity = o.opacity;
+          if (o.geom) it.geom = o.geom;
+          if (o.areaKm2 != null) it.areaKm2 = o.areaKm2;
+          if (o.hidden) it.hidden = true;
+          if (o.editable && o.editable.length) it.editable = o.editable;
+          return it; }) };
       });
 
       /* ⚠ THESE THREE ARE THREE QUESTIONS AND MUST NEVER BE COLLAPSED INTO ONE (#R299): `hasRoute` is

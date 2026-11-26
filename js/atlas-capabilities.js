@@ -557,6 +557,16 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         return (O.list() || []).map(function (o) { return String(o && (o.id != null ? o.id : o)); });
       } catch (_) { return []; }
     }
+    /* what each object LOOKS like (colour · width · opacity · hidden · name), id → one string. The `object` observer reads it before and after, so a restyle is a change
+       it can see — an id list alone cannot tell a recoloured line from one nobody touched (that blind spot reported every restyle `no_change`). */
+    function objectSig() {
+      var out = {};
+      try {
+        var O = window.IntMapObjects;
+        if (O && O.list) (O.list() || []).forEach(function (o) { if (o) out[String(o.id)] = [o.color, o.width, o.opacity, o.hidden ? 1 : 0, o.name].join('|'); });
+      } catch (_) { }
+      return out;
+    }
     /* ══ ⚠⚠⚠ 「IS IT ON THE MAP」 IS ASKED OF THE RENDERER, ONCE (render.drawn — js/geo-engine.js) ══════
        This file used to answer it itself, from source ids typed into `paintNow()`, the isochrone
        observer and the faction observer — and every typed id was a surface somebody else had to
@@ -1333,9 +1343,17 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         }
       },
       object: {
-        observe: function () { return { ids: objectIds() }; },
+        observe: function () { return { ids: objectIds(), sig: objectSig() }; },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
+          /* a restyle (op set): the object must still be there and its look must be what the call says it made it — read from the map, not from the reply */
+          var op = String((args && (args.op || args.action)) || '').toLowerCase();
+          if (op === 'set' || op === 'style') {
+            var sid = raw && raw.objectIds && raw.objectIds[0], sb = (before && before.sig) || {}, sa = (after && after.sig) || {};
+            if (!sid || sa[sid] === undefined) return { status: 'failed', code: 'not_rendered', observed: { objects: after }, html: (raw && raw.html) || '' };
+            if (sb[sid] === sa[sid]) return { status: 'completed', code: 'already_there', objectIds: [sid], observed: { objects: after, already: true }, html: (raw && raw.html) || '' };
+            return { status: 'completed', code: 'ok', objectIds: [sid], observed: { objects: after }, html: (raw && raw.html) || '' };
+          }
           var made = [];
           try {
             var had = (before && before.ids) || [];

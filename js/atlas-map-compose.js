@@ -162,6 +162,24 @@ export function makeAtlasMapCompose(deps) {
     const norm = (s) => String(s == null ? '' : s).toLowerCase().replace(/[‘’“”'".,()（）、。]/g, '').replace(/\s+/g, ' ').trim();
     const isArea = (kind) => AREA_KINDS.indexOf(String(kind || '').toLowerCase()) >= 0;
 
+    /* ── How a drawn figure LOOKS (the "satellite image, with geography rising out of it" brief): a fill is the colour with
+       its saturation pulled down and sits at 15–20 % opacity; an outline is 1–1.5 px in a quieter version of the same hue.
+       Both are DERIVED from the one colour the item carries (so a recolour — by Atlas or in the Objects panel — moves them
+       together) and are written onto the feature, where the layers read them. ── */
+    function rgbOf(c) {
+      const t = String(c == null ? '' : c).trim(); let m;
+      if ((m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(t))) { let h = m[1]; if (h.length === 3) h = h.replace(/./g, '$&$&'); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+      if ((m = /^rgba?\(\s*(\d+)[ ,]+(\d+)[ ,]+(\d+)/i.exec(t))) return [+m[1], +m[2], +m[3]];
+      return null;
+    }
+    function soften(c, k, lift) {
+      const p = rgbOf(c); if (!p) return c;
+      const r = p[0] / 255, g = p[1] / 255, b = p[2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+      let h = 0, sat = 0;
+      if (d > 1e-9) { sat = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; }
+      return 'hsl(' + Math.round(h) + ',' + Math.round(Math.min(1, sat * k) * 100) + '%,' + Math.round(Math.min(0.9, l + (lift || 0)) * 100) + '%)';
+    }
+
     function colourOf(v, i) {
       const s = str(v, 40);
       if (s) {
@@ -221,31 +239,33 @@ export function makeAtlasMapCompose(deps) {
         const font = ['literal', ['Noto Sans Regular']];
         /* (atlas-real-shapes) shapes first, so lines and markers sit on them. A DERIVED shape is drawn dashed — the map says
            「approximate」 in the same place the legend does. */
+        const HOV = ['==', ['get', 'hov'], 1];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
-          paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 } }, before);
+          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 0.34, 0.17]] } }, before);
         g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived']],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['==', ['get', 'g'], 'line'], 3.4, 1.8], 'line-opacity': 0.95 } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
         g.layers.add({ id: 'atl-compose-sld', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'basis'], 'derived']],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['==', ['get', 'g'], 'line'], 3.4, 1.8], 'line-opacity': 0.9, 'line-dasharray': [2.2, 1.6] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.78]], 'line-dasharray': [2.2, 1.6] } }, before);
         g.layers.add({ id: 'atl-compose-line', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['!=', ['get', 'dash'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'w'], 'line-opacity': 0.85 } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.8] } }, before);
         g.layers.add({ id: 'atl-compose-dash', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['==', ['get', 'dash'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'w'], 'line-opacity': 0.8, 'line-dasharray': [2, 2] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.75], 'line-dasharray': [2, 2] } }, before);
         g.layers.add({ id: 'atl-compose-arrow', type: 'symbol', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['==', ['get', 'arrow'], 1]],
-          layout: { 'symbol-placement': 'line', 'symbol-spacing': 110, 'text-field': '›', 'text-font': font, 'text-size': 18, 'text-keep-upright': false,
+          layout: { 'symbol-placement': 'line', 'symbol-spacing': 110, 'text-field': '›', 'text-font': font, 'text-size': 16, 'text-keep-upright': false,
             'text-rotation-alignment': 'map', 'text-allow-overlap': true, 'text-ignore-placement': true },
-          paint: { 'text-color': ['get', 'color'], 'text-halo-color': 'rgba(255,255,255,0.85)', 'text-halo-width': 1.2 } }, before);
+          paint: { 'text-color': ['get', 'lc'], 'text-opacity': ['coalesce', ['get', 'op'], 1], 'text-halo-color': 'rgba(0,0,0,0.35)', 'text-halo-width': 0.8 } }, before);
         g.layers.add({ id: 'atl-compose-hl', type: 'circle', source: SRC, filter: ['all', ['==', ['get', 't'], 'pt'], ['==', ['get', 'hl'], 1]],
-          paint: { 'circle-radius': 17, 'circle-color': ['get', 'color'], 'circle-opacity': 0.28, 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 1.5, 'circle-stroke-opacity': 0.9 } }, before);
+          paint: { 'circle-radius': 12, 'circle-color': ['get', 'color'], 'circle-opacity': 0.3, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.2, 'circle-stroke-opacity': 0.9 } }, before);
         g.layers.add({ id: 'atl-compose-c', type: 'circle', source: SRC, filter: ['==', ['get', 't'], 'pt'],
-          paint: { 'circle-radius': 11, 'circle-color': ['get', 'color'], 'circle-opacity': 0.96, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } }, before);
+          paint: { 'circle-radius': 7.5, 'circle-color': ['get', 'color'], 'circle-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.95], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.3, 'circle-stroke-opacity': ['coalesce', ['get', 'op'], 1] } }, before);
+        /* the number reserves its place (it is NOT ignore-placement), so a basemap name — placed after it, see liftLabels — gives way instead of printing across it; the number itself is never dropped */
         g.layers.add({ id: 'atl-compose-n', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'],
-          layout: { 'text-field': ['get', 'n'], 'text-font': font, 'text-size': 11.5, 'text-allow-overlap': true, 'text-ignore-placement': true },
-          paint: { 'text-color': '#ffffff' } }, before);
+          layout: { 'text-field': ['get', 'n'], 'text-font': font, 'text-size': 9, 'text-allow-overlap': true, 'text-ignore-placement': false, 'text-padding': 4 },
+          paint: { 'text-color': '#ffffff', 'text-opacity': ['coalesce', ['get', 'op'], 1] } }, before);
         addNameLayer(g, before);
         bindMap(g);
         return true;
@@ -262,8 +282,8 @@ export function makeAtlasMapCompose(deps) {
       let sub = 11;
       try { if (window.IntMapLabelScale && window.IntMapLabelScale.sub) sub = window.IntMapLabelScale.sub(0.9); } catch (_) { sub = 11; }
       g.layers.add({ id: 'atl-compose-t', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'], minzoom: 3,
-        layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-size': sub, 'text-offset': [0, 1.25], 'text-anchor': 'top', 'text-padding': 2 },
-        paint: { 'text-color': ['get', 'color'], 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } }, before);
+        layout: { 'text-field': ['get', 'name'], 'text-font': font, 'text-size': sub, 'text-variable-anchor': ['top', 'bottom', 'right', 'left'], 'text-radial-offset': 0.95, 'text-justify': 'auto', 'text-padding': 3 },
+        paint: { 'text-color': '#ffffff', 'text-opacity': ['coalesce', ['get', 'op'], 1], 'text-halo-color': 'rgba(0,0,0,0.42)', 'text-halo-width': 1, 'text-halo-blur': 1.2 } }, before);
     }
     function liftLabels() {
       if (!GE) return false;
@@ -276,26 +296,105 @@ export function makeAtlasMapCompose(deps) {
         if (!ids.some((l, i) => i > at && l.type === 'symbol' && String(l.id).indexOf('atl-') !== 0)) return false;   /* already above every other label */
         g.layers.remove('atl-compose-t');
         addNameLayer(g, anchorBefore(g));
+        try { /* the number goes back with it, just under the name: both are placed before any basemap label */
+          if (g.layers.has('atl-compose-n')) { const spec = g.scene.getStyle().layers.find((l) => l.id === 'atl-compose-n'); if (spec) { g.layers.remove('atl-compose-n'); g.layers.add(spec, 'atl-compose-t'); } }
+        } catch (_) { /* the number stays where it was */ }
         return true;
       } catch (_) { return false; }
     }
 
+    /* ── Style the reader (or Atlas) changed after the figure was drawn. Keyed by the item's id, so it outlives the redraw a revision does. ── */
+    const styleOv = Object.create(null);
+    const ovOf = (id) => styleOv[id] || null;
+    let shapeSeq = 0, relSeq = 0;
+    const shapeId = (sh) => (sh.id || (sh.id = 'shape_' + (++shapeSeq) + '_' + sh.item));
+    const relId = (rel) => (rel.id || (rel.id = 'rel_' + (++relSeq) + '_' + rel.fromN + '_' + rel.toN));
+
+    /* Markers that would sit on top of each other are fanned out on a small ring — in what is DRAWN only; the record keeps its true coordinates.
+       The distance that counts is in pixels, so it is asked of the camera and redone when the zoom settles. */
+    function spreadOf(recs) {
+      const out = Object.create(null);
+      let z = null;
+      try { z = GE ? GE().camera.getZoom() : null; } catch (_) { z = null; }
+      if (z == null || !isFinite(z) || recs.length < 2) return out;
+      const pxPerDeg = 512 * Math.pow(2, z) / 360, MIN = 15;
+      const placed = [];
+      recs.forEach((r) => {
+        const x = r.lng * pxPerDeg, y = -r.lat * pxPerDeg;
+        const near = placed.filter((p) => Math.hypot(p.x - x, p.y - y) < MIN);
+        if (!near.length) { placed.push({ x, y, id: r.id }); return; }
+        const k = near.length, ang = k * 2.399963, rad = MIN * 0.62 * Math.sqrt(k + 1);
+        const nx = x + Math.cos(ang) * rad, ny = y + Math.sin(ang) * rad;
+        out[r.id] = [nx / pxPerDeg, -ny / pxPerDeg];
+        placed.push({ x: nx, y: ny, id: r.id });
+      });
+      return out;
+    }
+
     function features() {
       const out = [];
+      const hovRec = hoverId ? records.find((x) => x.id === hoverId) : null;
       shapes.forEach((sh) => {
+        const o = ovOf(shapeId(sh)); const col = (o && o.color) || sh.color;
         out.push({ type: 'Feature', id: out.length, geometry: sh.geometry,
-          properties: { t: 'shape', g: sh.want, name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, color: sh.color } });
+          properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, color: col,
+            fc: soften(col, 0.55, 0), lc: soften(col, 0.7, 0.06), op: o && o.op != null ? o.op : null, w: o && o.w != null ? o.w : null,
+            hov: hovRec && hovRec.item === sh.item ? 1 : 0 } });
       });
+      const spread = spreadOf(records);
       records.forEach((r) => {
-        out.push({ type: 'Feature', id: out.length, geometry: { type: 'Point', coordinates: [r.lng, r.lat] },
-          properties: { t: 'pt', id: r.id, n: String(r.n), name: r.name, kind: r.kind, role: r.role, color: r.color, hl: (hoverId && hoverId === r.id) ? 1 : 0 } });
+        const o = ovOf(r.id); const p = spread[r.id] || [r.lng, r.lat];
+        out.push({ type: 'Feature', id: out.length, geometry: { type: 'Point', coordinates: p },
+          properties: { t: 'pt', id: r.id, n: String(r.n), name: r.name, kind: r.kind, role: r.role, color: (o && o.color) || r.color, op: o && o.op != null ? o.op : null, hl: (hoverId && hoverId === r.id) ? 1 : 0 } });
       });
       relations.forEach((rel) => {
+        const o = ovOf(relId(rel)); const col = (o && o.color) || rel.color;
         out.push({ type: 'Feature', id: out.length, geometry: rel.geo,
-          properties: { t: 'rel', from: rel.from, to: rel.to, type: rel.type, label: rel.label, color: rel.color, w: rel.w, dash: rel.dash ? 1 : 0, arrow: rel.arrow ? 1 : 0,
+          properties: { t: 'rel', id: relId(rel), from: rel.from, to: rel.to, type: rel.type, label: rel.label, color: col, lc: soften(col, 0.8, 0.04), w: o && o.w != null ? o.w : Math.min(rel.w, 2.4), op: o && o.op != null ? o.op : null, dash: rel.dash ? 1 : 0, arrow: rel.arrow ? 1 : 0,
             basis: rel.basis, sea: rel.sea.checked ? (rel.sea.onSea ? 'sea' : 'land') : 'unchecked' } });
       });
       return { type: 'FeatureCollection', features: out };
+    }
+
+    /* ── The figures as OBJECTS: what the universal object list (js/map-tools.js) and Atlas's `object` capability read and edit.
+       One entry per marker, per real shape and per relation, under the id each carries on the map; colour, width and opacity are the
+       same three things the Objects panel offers for a reader's own drawings, and the redraw happens here, in the painter that owns the data. ── */
+    function areaKm2(geom) {
+      try {
+        const ring = (r) => { let t = 0; for (let i = 0, n = r.length; i < n - 1; i++) { const p = r[i], q = r[i + 1]; t += (q[0] - p[0]) * Math.PI / 180 * (2 + Math.sin(p[1] * Math.PI / 180) + Math.sin(q[1] * Math.PI / 180)); } return Math.abs(t * 6371.0088 * 6371.0088 / 2); };
+        const poly = (c) => c.reduce((acc, r, i) => acc + (i === 0 ? ring(r) : -ring(r)), 0);
+        if (!geom) return null;
+        if (geom.type === 'Polygon') return poly(geom.coordinates);
+        if (geom.type === 'MultiPolygon') return geom.coordinates.reduce((acc, c) => acc + poly(c), 0);
+      } catch (_) { /* no area */ }
+      return null;
+    }
+    function setStyle(id, patch) {
+      const o = styleOv[id] || (styleOv[id] = {});
+      if (patch.color != null) o.color = String(patch.color);
+      if (patch.width != null && isFinite(+patch.width)) o.w = Math.max(0.3, Math.min(24, +patch.width));
+      if (patch.opacity != null && isFinite(+patch.opacity)) o.op = Math.max(0.05, Math.min(1, +patch.opacity));
+      return paint();
+    }
+    function objects() {
+      const out = [];
+      shapes.forEach((sh) => {
+        const id = shapeId(sh), o = ovOf(id) || {}, area = sh.want === 'area';
+        out.push({ id, kind: 'shape', geom: area ? 'area' : 'line', name: sh.name, color: o.color || sh.color, width: o.w != null ? o.w : (area ? 1.2 : 2.2), alpha: o.op != null ? o.op : 1,
+          areaKm2: area ? areaKm2(sh.geometry) : null, geometry: sh.geometry, src: [SRC],
+          setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
+      });
+      records.forEach((r) => {
+        const o = ovOf(r.id) || {};
+        out.push({ id: r.id, kind: 'place', geom: 'point', name: r.n + ' ' + r.name, color: o.color || r.color, width: null, alpha: o.op != null ? o.op : 1, center: [r.lng, r.lat], src: [SRC],
+          setColor: (c) => setStyle(r.id, { color: c }), setOpacity: (v) => setStyle(r.id, { opacity: v }) });
+      });
+      relations.forEach((rel) => {
+        const id = relId(rel), o = ovOf(id) || {};
+        out.push({ id, kind: 'link', geom: 'line', name: (rel.fromName || '') + ' → ' + (rel.toName || '') + (rel.label ? ' · ' + rel.label : ''), color: o.color || rel.color, width: o.w != null ? o.w : Math.min(rel.w, 2.4), alpha: o.op != null ? o.op : 1, geometry: rel.geo, src: [SRC],
+          setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
+      });
+      return out;
     }
 
     function paint() {
@@ -326,6 +425,7 @@ export function makeAtlasMapCompose(deps) {
     /** clear() — a new conversation, a reset, or a «clear the map». */
     function clear() {
       records = []; relations = []; shapes = []; hoverId = '';
+      Object.keys(styleOv).forEach((k) => { delete styleOv[k]; });
       try { clearFlash(); hideTip(); } catch (_) { /* nothing shown */ }
       try { if (GE && GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) { /* no renderer */ }
     }
@@ -842,7 +942,9 @@ export function makeAtlasMapCompose(deps) {
         compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, links: relOut, fills: fills.length,
           shapes: shapes.map(shapePub), shapesUnresolved: shapeMiss } };
       if (!ok) { meta.category = 'input'; meta.retryable = true; meta.message = 'None of the named places could be placed.'; }
-      return { ok, html, meta, exec };
+      /* every figure just drawn is a map-object under its own id (the same ids js/map-tools.js lists): the next turn can restyle or remove ONE of them */
+      const objectIds = ok ? placed.map((r) => r.id).concat(shapes.map(shapeId), drawn.map(relId)) : [];
+      return Object.assign({ ok, html, meta, exec }, objectIds.length ? { objectIds } : null);
     }
 
     /* (atlas-real-shapes) what the reader asked to SEE of an item: 'area' | 'line' | '' (a point) */
@@ -1100,8 +1202,8 @@ export function makeAtlasMapCompose(deps) {
       hideTip();
       const d = document.createElement('div');
       d.className = 'atl-geo-tip'; d.setAttribute('role', 'tooltip');
-      d.style.cssText = 'position:fixed;z-index:calc(var(--z-toast) + 1);max-width:min(260px,80vw);pointer-events:none;padding:8px 11px;border-radius:12px;color:#fff;font:12.5px/1.45 -apple-system,system-ui,sans-serif;'
-        + 'background:rgba(28,28,30,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 22px rgba(0,0,0,.35);';
+      d.style.cssText = 'position:fixed;z-index:calc(var(--z-toast) + 1);max-width:min(260px,80vw);pointer-events:none;padding:8px 12px;border-radius:14px;color:#fff;font:12.5px/1.45 -apple-system,system-ui,sans-serif;'
+        + 'background:rgba(34,34,38,.42);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.22);box-shadow:0 8px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.16);text-shadow:0 1px 2px rgba(0,0,0,.35);';
       const nm = document.createElement('div'); nm.style.cssText = 'font-weight:600;';
       nm.textContent = r.n + '  ' + r.name; d.appendChild(nm);
       if (why) { const w = document.createElement('div'); w.style.cssText = 'opacity:.85;margin-top:2px;'; w.textContent = why; d.appendChild(w); }
@@ -1124,12 +1226,13 @@ export function makeAtlasMapCompose(deps) {
           const target = document.querySelector('.atl-geo-ref[data-geo="' + String(id).replace(/"/g, '') + '"]') || document.querySelector('[data-geo="' + String(id).replace(/"/g, '') + '"]');
           if (target) { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); target.classList.add('atl-geo-flash'); setTimeout(() => { try { target.classList.remove('atl-geo-flash'); } catch (_) { /* gone */ } }, 1400); } } catch (_) { /* cosmetic */ } });
         g.events.on('styledata', () => { if (records.length || relations.length) setTimeout(() => { try { paint(); } catch (_) { /* renderer swapped */ } }, 160); });
+        try { g.events.on('zoomend', () => { if (records.length > 1) { try { paint(); } catch (_) { /* renderer swapped */ } } }); } catch (_) { /* an engine without zoomend: the fan-out waits for the next paint */ }
       } catch (_) { /* engine without layer events */ }
     }
 
     const API = { SRC, LAYERS, PALETTE, run, clear, paint, focus, bind, linkProse, recordsFor, refsFor, reveal, setVisible, isVisible,
       records: () => records.map(pub), relations: () => relations.map((r) => ({ from: r.from, to: r.to, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(), sea: Object.assign({}, r.sea) })),
-      gcPoints, splitAntimeridian };
+      objects, setStyle, areaKm2, soften, gcPoints, splitAntimeridian };
     try { window.IntMapAtlasCompose = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

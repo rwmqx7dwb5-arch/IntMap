@@ -246,6 +246,21 @@ export const SCENARIOS = [
      (「フォッサマグナをマッピングして」 — dev-notes 2026-11-18-atlas-real-shapes). The snapshot's `shapes` is what
      js/atlas-console.js _atlasOverlayState tallies for the drawing the world reports. */
   {
+    id: 'drawn-line-restyled-by-id-across-turns',
+    ...textOf('records', 'restyle-drawn-line-across-turns'),
+    origin: { kind: 'scripted', from: 'atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map.' },
+    model: [
+      step(run('map.drawLine', { places: ['London', 'Paris'], label: 'London-Paris' })),
+      step(run('map.object', { op: 'set', id: 'line_1', color: 'red', width: 5, opacity: 0.6 })),
+      say('ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。'),
+    ],
+    respond: (a) => (a && a.op === 'set'
+      ? { ok: true, html: '<div>✓ set · line_1 · color=#ff0000, width=5, opacity=0.6</div>', objectIds: ['line_1'], meta: { status: 'completed', produced: ['object'], objectIds: ['line_1'] } }
+      : { ok: true, html: '<div>London-Paris</div>', objectIds: ['line_1'], meta: { status: 'completed', produced: ['map', 'object'], objectIds: ['line_1'] } }),
+    snapshot: { objects: { n: 1, items: [{ id: 'line_1', kind: 'line', name: 'London-Paris', color: '#ff0000', width: 5, opacity: 0.6, geom: 'line', editable: ['color', 'width', 'opacity', 'name'] }] } },
+    expect: { verdict: 'pass', dispatched: 2, map: 'match' },
+  },
+  {
     id: 'river-traced-on-its-course',
     ...textOf('answers', 'shinano-river-length'),
     origin: { kind: 'scripted', from: 'representative: map.highlight on a river → the waterway\'s own course (fetchRiverLine), basis real' },
