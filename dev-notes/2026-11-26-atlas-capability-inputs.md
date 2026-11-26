@@ -56,3 +56,4 @@ newsjp: Atlas が、画面の経路を GPX / GeoJSON として保存でき、線
 
 - `check:surface`: `window.IntMapRouting`（+1・`routing.export`）と `window._profileFromCoords`（+2・`map.elevationProfile`）は、`js/app-body.js` が window に出すだけで import できる持ち主モジュールが無い（`routing()`／`_profileFromCoords` はそこで組まれる）。`IntMapLayerState` は import に替えて増やさなかった。上の 2 つは `--update` で台帳へ。
 - `check:perf`: eager が +3.3 kB raw（レジストリの生成行 2 行と `shown` 観測器・`schemaDemandMet`）。新しい能力 2 つと観測器の分であり、起動時のリクエスト数・モジュール数は 0 の増加。天井を `--update` で上げた。
+- 実際に上がった天井は eager ではなく遅延チャンク `atlas-cap-runs`: 1125.6 kB → 1134.4 kB（+8.8 kB）。買ったもの: `map.elevationProfile`・`routing.export` の run、共有のファイルカード、`layers.toggle` の読み替え。起動時のリクエスト数・モジュール数は増えていない。
