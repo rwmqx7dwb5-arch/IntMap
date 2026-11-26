@@ -250,7 +250,7 @@ export function makeAtlasAnswerSources(deps) {
        content is source chips (and the separators between them) is folded into the paragraph before it — decided by what the paragraph
        CONTAINS, not by where the model happened to break the line. The first paragraph of an answer has nothing before it and stays. */
     /* what a chip paragraph is made of, read without a nested pattern: the host names are the chips' only text, the tags are markup, and «+N» is the fold button's */
-    const chipsOnly = (body) => body.replace(/<span class="atl-sc-name">[^<]*<\/span>/g, '').replace(/<[^>]*>/g, '').replace(/[\s,、;；·・+0-9]+/g, '') === '';
+    const chipsOnly = (body) => /^(?:<[^<>]*>|[\s,、;；·・+0-9])*$/.test(body.replace(/<span class="atl-sc-name">[^<]*<\/span>/g, ''));   /* tags, and whitespace/separators/«+N» between them — and nothing else; tested, never stripped */
     out = out.replace(/<\/p>\s*<p class="atl-p[^"]*">(<span class="atl-scs">[\s\S]*?)<\/p>/g, (m, body) => (chipsOnly(body) ? ' ' + body + '</p>' : m));
     return { html: out, sources };
   }
