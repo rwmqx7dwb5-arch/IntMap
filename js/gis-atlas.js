@@ -1245,11 +1245,14 @@ export function makeGisAtlas(core) {
           + esc(L('licence', 'ライセンス')) + ': ' + esc(r.collection.rights.license == null ? L('not stated', '記載なし') : r.collection.rights.license)
           + '<br>' + esc(JSON.stringify(r.evidence)) + '<br>' + esc(L('read it with', '読むには')) + ': <code>' + esc([r.refs.features].concat(r.refs.grids).join('</code> <code>')) + '</code></div>' });
       }
-      if (act === 'search') {
-        const r = give(await M.search({ q: a.q, bbox: win, time: a.time, maxGsd: a.maxGsd, minGsd: a.minGsd, maxCloud: a.maxCloud, licensed: a.licensed, kinds: a.kinds, origins: a.origins, strict: a.strict, catalogs: a.catalogs, limit: a.limit, items: a.items, signal: a.signal || null }));
+      if (act === 'search' || act === 'follow') {
+        /* until:"ready" returns the first candidate whose data was read and found usable and leaves the rest of the search running; follow:<handle> (or action follow) returns the finished list */
+        const handle = act === 'follow' ? (a.follow != null ? a.follow : a.ref) : a.follow;
+        const r = give(handle != null && handle !== '' ? await M.follow(handle) : await M.search({ q: a.q, bbox: win, time: a.time, maxGsd: a.maxGsd, minGsd: a.minGsd, maxCloud: a.maxCloud, licensed: a.licensed, kinds: a.kinds, origins: a.origins, strict: a.strict, catalogs: a.catalogs, limit: a.limit, items: a.items, until: a.until, width: a.width, height: a.height, band: a.band, asset: a.asset, signal: a.signal || null }));
         if (r.ok === false) return r;
         const silent = r.catalogs.filter((c) => !c.answered);
-        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets matching', '条件に合うデータセット')) + '</b> — ' + r.total + '<br>'
+        const earlyHtml = r.early ? '<div class="atlas-gis-detail"><b>' + esc(L('READY NOW (first usable candidate, data read and inspected)', 'すぐ使える候補（データを実際に読んで確認済み）')) + '</b>: <code>' + esc(r.early.ref) + '</code> · ' + esc(r.early.state.analysis) + (r.early.datasets.length ? ' · ' + esc(L('datasets', 'データセット')) + ' <code>' + esc(r.early.datasets.join(', ')) + '</code>' : '') + '<br>' + esc(L('still asking: ', 'まだ問い合わせ中: ')) + esc(r.stillAsking.join(', ') || '-') + ' · ' + esc(L('finished list: search with follow:', '完了後の一覧: follow を指定して search: ')) + '<code>' + esc(r.follow) + '</code></div>' : '';
+        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets matching', '条件に合うデータセット')) + '</b> — ' + (r.total == null ? esc(L('(early, list unfinished)', '（先着・一覧は未完了）')) : r.total) + earlyHtml + '<br>'
           + r.entries.map((e) => '<code>' + esc(e.ref) + '</code> ' + esc(e.title) + ' · ' + esc([e.match.spatial, e.match.temporal, e.match.resolution].join('/')) + (e.resolution ? ' · ' + esc(String(e.resolution.min)) + ' m' : '') + ' · ' + esc(e.rights.license == null ? L('licence not stated', 'ライセンス記載なし') : e.rights.license)).join('<br>')
           + (silent.length ? '<div class="atlas-gis-detail">' + esc(L('NOT ANSWERED (this is not "nothing there"): ', '応答なし（「無かった」ではありません）: ')) + esc(silent.map((c) => c.id + ' (' + (c.kind_of_silence || c.why) + ')').join(', ')) + '</div>' : '')
           + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });

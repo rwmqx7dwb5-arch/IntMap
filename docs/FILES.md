@@ -1088,6 +1088,8 @@ atlas-plan.js                     Atlas — 計画の台帳と地図の上の計
                                   宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
                                   `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
                                   手順が描いたものへの移動（`makePlanView`）。⚠ 手順を決めない・観測できなかったものを完了にしない
+atlas-image-continue.js            Atlas — 画像添付ターンが画像読解で終わらず通常のエージェント経路（GIS・Web・委譲）へ続く仕組み。続けるかは画像読解モデル自身の
+                                  `continueWithTools`（質問文への文字列規則ではない）。読解結果を文脈として渡す（`agentContext`）。DOM なし。
 atlas-geoplan.js                  Atlas — 地理空間分析の仕様（`plan` 道具の `geo`）。対象地域・時点・必要データ（出所と完全性と解像度）・演算・実行環境・
                                   成果物を構造として持ち、書かれていない項目（gaps）を列挙し、`check:true` のとき IntMap の
                                   レイヤーと世界のカタログ（STAC/OGC）に存在を問う（`preflight`）。DOM なし。

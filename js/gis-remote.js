@@ -620,39 +620,98 @@ export function makeGisRemote(deps) {
         which = which.filter((c) => o.catalogs.map(String).indexOf(c.id) >= 0);
       }
       const askCatalogues = !(Array.isArray(o.origins) && o.origins.length && o.origins.indexOf('catalogue') < 0);
-      const answers = askCatalogues ? await Promise.all(which.map(async (cat) => ({ cat: cat, res: await collectionsOf(cat, o.signal || null, !!o.fresh) }))) : [];
-      if (o.signal && o.signal.aborted) return refuse('cancelled');
-      const recs = [], report = [];
-      for (const a of answers) {
-        const r = a.res;
-        const row = { id: a.cat.id, kind: a.cat.kind, label: a.cat.label, answered: !!r.ok, collections: r.collections ? r.collections.length : 0, pages: r.pages || 0, complete: !!r.ok && r.complete !== false };
-        if (isNum(r.ms)) row.ms = r.ms;
-        if (!r.ok) { row.why = r.why; row.detail = r.detail || null; if (PIPE()) row.kind_of_silence = PIPE().classify(r.why, r.detail).kind; }
-        else if (r.complete === false) row.why = r.why;
-        report.push(row);
-        if (PIPE() && !r.cached) PIPE().noteCatalog(a.cat.id, row);
-        if (r.ok) for (const c of r.collections) recs.push(toRecord(c, a.cat));
+      /* until:'ready' — start from the FIRST candidate whose data was actually read and found usable, while the other catalogues keep answering.
+         The usability test is acquire() on REAL data (window read, values inspected: not empty, not all nodata), never the catalogue's own text. */
+      const early = o.until === 'ready';
+      if (early) {
+        if (!box) return refuse('bad-param', { param: 'bbox', reason: 'until:"ready" reads data for a window; state it (bounds:[w,s,e,n])' });
+        if (!(isNum(o.width) && isNum(o.height) && o.width >= 1 && o.height >= 1)) return refuse('bad-param', { param: 'width/height', reason: 'until:"ready" reads a grid at a resolution the caller states' });
       }
-      let held = [];
-      try { held = Array.isArray(o.local) ? o.local : (D.data && typeof D.data.list === 'function' ? D.data.list() : []); } catch (_) { held = []; }
-      for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds)); } catch (_) { } }
-      const res = searchRecords(recs, { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict },
-        { spatial: spatialRelation, temporal: temporalRelation });
-      const limit = (isNum(o.limit) && o.limit > 0) ? Math.floor(o.limit) : 25;
-      const shown = res.entries.slice(0, limit);
-      if (PIPE()) for (const e of shown) if (e.origin === 'catalogue') PIPE().record(e.ref, 'discovered', { status: 'ok', say: 'stated by ' + e.catalog, facts: e.match });
-      let itemsOf = null;
-      if (o.items && shown.length) {
-        /* the item-level look at the best few: which scenes, when, how fine — one STAC search each, and each says if it did not answer */
-        const top = shown.filter((e) => e.origin === 'catalogue' && e.kind === 'stac').slice(0, 3);
-        itemsOf = await Promise.all(top.map(async (e) => { const r = await items(e.ref, { bbox: box, time: o.time, maxCloud: o.maxCloud, limit: 5, signal: o.signal || null }); return r.ok ? r : { ok: false, ref: e.ref, why: r.why, detail: r.detail || null }; }));
-      }
-      return {
-        ok: true, entries: shown, total: res.total, truncated: res.total > shown.length, facets: res.facets, dropped: res.dropped,
-        catalogs: report, items: itemsOf,
-        asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), maxGsd: o.maxGsd == null ? null : o.maxGsd, minGsd: o.minGsd == null ? null : o.minGsd, maxCloud: o.maxCloud == null ? null : o.maxCloud, licensed: !!o.licensed, strict: !!o.strict },
-        note: 'Every filter is judged on what the record STATES; a record that states nothing for a filter is kept and marked unstated (strict:true drops it). A catalogue listed as not answering is not «nothing there». `stated` counts the facts a record gives about itself, not the quality of the data.',
+      const answers = [];
+      let fire = null;          /* early mode: resolves the caller's wait with the first usable candidate */
+      const tried = new Set();
+      const compose = () => {
+        const recs = [], report = [];
+        for (const a of answers) {
+          const r = a.res;
+          const row = { id: a.cat.id, kind: a.cat.kind, label: a.cat.label, answered: !!r.ok, collections: r.collections ? r.collections.length : 0, pages: r.pages || 0, complete: !!r.ok && r.complete !== false };
+          if (isNum(r.ms)) row.ms = r.ms;
+          if (!r.ok) { row.why = r.why; row.detail = r.detail || null; if (PIPE()) row.kind_of_silence = PIPE().classify(r.why, r.detail).kind; }
+          else if (r.complete === false) row.why = r.why;
+          report.push(row);
+          if (r.ok) for (const c of r.collections) recs.push(toRecord(c, a.cat));
+        }
+        let held = [];
+        try { held = Array.isArray(o.local) ? o.local : (D.data && typeof D.data.list === 'function' ? D.data.list() : []); } catch (_) { held = []; }
+        for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds)); } catch (_) { } }
+        const res = searchRecords(recs, { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict },
+          { spatial: spatialRelation, temporal: temporalRelation });
+        return { res: res, report: report };
       };
+      /* a catalogue answered: judge what has arrived so far. A candidate is tried only if the catalogue STATES it covers the window (and, when a
+         resolution was asked, states a resolution that meets it); whether it is USABLE is decided by reading it. Which one the caller uses is the caller's. */
+      const askedRes = o.maxGsd != null || o.minGsd != null;
+      const tryArrived = async () => {
+        if (!fire || fire.done) return;
+        const res = compose().res;
+        const cands = res.entries.filter((e) => e.origin === 'catalogue' && e.kind === 'stac' && e.match.spatial === 'covers' && (!askedRes || (e.match.resolution !== 'unstated' && e.match.resolution !== 'misses')) && !tried.has(e.ref)).slice(0, 2);
+        for (const e of cands) {
+          tried.add(e.ref);
+          let r = null;
+          try { r = await acquire(e.ref, { bbox: box, time: o.time, width: o.width, height: o.height, band: o.band, asset: o.asset, signal: o.signal || null }); } catch (_) { r = null; }
+          if (fire.done) return;
+          if (r && r.ok && r.state && r.state.analysis === 'ready' && r.datasets && r.datasets.length) { fire.done = true; fire.resolve({ entry: e, acquired: r }); return; }
+        }
+      };
+      const arrivals = askCatalogues ? which.map((cat) => collectionsOf(cat, o.signal || null, !!o.fresh).then(async (res) => {
+        answers.push({ cat: cat, res: res });
+        if (early) await tryArrived();
+        return res;
+      })) : [];
+      const finish = async () => {
+        await Promise.all(arrivals);
+        if (o.signal && o.signal.aborted) return refuse('cancelled');
+        const composed = compose(), res = composed.res, report = composed.report;
+        if (PIPE()) for (const row of report) { const a = answers.find((x) => x.cat.id === row.id); if (a && !a.res.cached) PIPE().noteCatalog(row.id, row); }
+        const limit = (isNum(o.limit) && o.limit > 0) ? Math.floor(o.limit) : 25;
+        const shown = res.entries.slice(0, limit);
+        if (PIPE()) for (const e of shown) if (e.origin === 'catalogue') PIPE().record(e.ref, 'discovered', { status: 'ok', say: 'stated by ' + e.catalog, facts: e.match });
+        let itemsOf = null;
+        if (o.items && shown.length) {
+          /* the item-level look at the best few: which scenes, when, how fine — one STAC search each, and each says if it did not answer */
+          const top = shown.filter((e) => e.origin === 'catalogue' && e.kind === 'stac').slice(0, 3);
+          itemsOf = await Promise.all(top.map(async (e) => { const r = await items(e.ref, { bbox: box, time: o.time, maxCloud: o.maxCloud, limit: 5, signal: o.signal || null }); return r.ok ? r : { ok: false, ref: e.ref, why: r.why, detail: r.detail || null }; }));
+        }
+        return {
+          ok: true, entries: shown, total: res.total, truncated: res.total > shown.length, facets: res.facets, dropped: res.dropped,
+          catalogs: report, items: itemsOf,
+          asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), maxGsd: o.maxGsd == null ? null : o.maxGsd, minGsd: o.minGsd == null ? null : o.minGsd, maxCloud: o.maxCloud == null ? null : o.maxCloud, licensed: !!o.licensed, strict: !!o.strict },
+          note: 'Every filter is judged on what the record STATES; a record that states nothing for a filter is kept and marked unstated (strict:true drops it). A catalogue listed as not answering is not «nothing there». `stated` counts the facts a record gives about itself, not the quality of the data.',
+        };
+      };
+      if (!early) return finish();
+      /* early mode: the full search keeps running under a handle; the caller may start now and ask for the rest later (follow) */
+      const full = finish();
+      const handle = 'search-' + (++followSeq);
+      follows.set(handle, full);
+      const first = new Promise((resolve) => { fire = { done: false, resolve: resolve }; });
+      const hit = await Promise.race([first, full.then(() => { if (!fire.done) { fire.done = true; fire.resolve(null); } return first; })]);
+      if (!hit) return full;     /* nothing usable arrived early: the finished search is the answer */
+      const pendingIds = which.filter((c) => !answers.some((x) => x.cat.id === c.id)).map((c) => c.id);
+      const first_ = { ref: hit.entry.ref, title: hit.entry.title, catalog: hit.entry.catalog, match: hit.entry.match, state: hit.acquired.state, datasets: hit.acquired.datasets, parts: hit.acquired.parts, acrossAntimeridian: !!hit.acquired.acrossAntimeridian };
+      return {
+        ok: true, early: first_, follow: handle, stillAsking: pendingIds, entries: [hit.entry], total: null, truncated: true, catalogs: compose().report, items: null,
+        note: 'EARLY RESULT: this candidate states it covers the window and its data was READ and inspected (analysis: ready) while ' + pendingIds.length + ' catalogue(s) were still answering. It is one usable candidate, not the best one: ask search with follow:"' + handle + '" for the finished list (other catalogues may hold finer or newer data) and choose.',
+      };
+    }
+
+    /* the finished list of an early search, by the handle it returned; the search never stopped, so this only waits for the remainder */
+    const follows = new Map();
+    let followSeq = 0;
+    async function follow(handle) {
+      const f = follows.get(String(handle));
+      if (!f) return refuse('bad-param', { param: 'follow', reason: 'no search with this handle in this session', handles: Array.from(follows.keys()) });
+      return f;
     }
 
     /* ── scenes(): 「この場所・この時期に、どんな衛星画像・SAR・LiDAR・標高が在るか」 — ACROSS collections and catalogues ──────────
@@ -842,10 +901,10 @@ export function makeGisRemote(deps) {
     }
 
     const API = {
-      catalogs, add, discover, inspect, signHref, search, items, scenes, probeAsset, acquire,
+      catalogs, add, discover, inspect, signHref, search, follow, items, scenes, probeAsset, acquire,
       publicUrl, resolveHref, refusals: () => REFUSALS.slice(), kinds: () => KINDS.slice(),
       /* what the Atlas door may ask of this module — one declaration, read by the door */
-      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'search', 'items', 'scenes', 'acquire'],
+      actions: () => ['catalogs', 'add', 'discover', 'inspect', 'search', 'follow', 'items', 'scenes', 'acquire'],
       /* the pure parts, published so a check can drive them without a network */
       _spatialRelation: spatialRelation, _temporalRelation: temporalRelation, _timeSpan: timeSpan,
     };
