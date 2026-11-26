@@ -3006,3 +3006,67 @@ test('chronos-peek-scrub the collapsed Chronos rail scrubs continuously by drag 
     if (before) await page.setViewportSize(before);
   }
 });
+
+
+/* ══ atlas-objects-unify — draw → restyle → open the same object, for a line and an area ═══════════════
+   A line Atlas drew could not be recoloured. Asked through the door Atlas uses (IntMapConsole.dispatch), over several calls:
+   ① drawLine / drawPolygon return an object id that is in the universal list; ② `object set` restyles THAT id and the list reads it back;
+   ③ the Objects panel opens the same objects (frosted, colour, area); ④ an object that cannot take a change says so. (Lives here: one boot, not a spec of its own.) */
+const dispatch = (a) => page.evaluate((x) => window.IntMapConsole.dispatch(x), a);
+const obj = (id) => page.evaluate((i) => window.IntMapObjects.getObj(i), id);
+
+test('atlas-objects-unify ① a line and an area Atlas draws come back with an id that is in the object list', async () => {
+  await page.evaluate(() => window.IntMapLazy.need('atlasConsole'));
+  await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.dispatch && window.IntMapObjects), null, { timeout: 45_000 });
+  const line = await dispatch({ type: 'drawLine', points: [[-0.12, 51.5], [2.35, 48.85]], label: 'LP', color: '#0a84ff' });
+  expect(line.ok).toBeTruthy();
+  const lid = (line.objectIds || [])[0];
+  expect(lid, 'drawLine returns an object id').toBeTruthy();
+  const area = await dispatch({ type: 'drawPolygon', points: [[0, 50], [3, 50], [3, 52], [0, 52]], label: 'PG' });
+  const aid = (area.objectIds || [])[0];
+  expect(aid, 'drawPolygon returns an object id').toBeTruthy();
+  const l = await obj(lid), a = await obj(aid);
+  expect(l.kind).toBe('line');
+  expect(l.editable).toEqual(expect.arrayContaining(['color', 'width', 'opacity']));
+  expect(a.kind).toBe('poly');
+  expect(a.areaKm2, 'an area has its size').toBeGreaterThan(1000);
+  test.info().annotations.push({ type: 'ids', description: lid + ' ' + aid });
+  await page.evaluate(([x, y]) => { window.__ids = { line: x, area: y }; }, [lid, aid]);
+});
+
+test('atlas-objects-unify ② object set restyles that id — colour, width, opacity — and the list reads it back (a line and an area)', async () => {
+  const { line, area } = await page.evaluate(() => window.__ids);
+  const r = await dispatch({ type: 'object', op: 'set', id: line, color: 'red', width: 6, opacity: 0.5 });
+  expect(r.ok).toBeTruthy();
+  const l = await obj(line);
+  expect(l.color).toBe('#ff0000');
+  expect(l.width).toBe(6);
+  expect(l.opacity).toBe(0.5);
+  /* the same turn on the map: the line source carries what the object now says */
+  const fe = await page.evaluate(() => { const s = window.__imap.getSource('nlq-line-src'); const d = s && (s._data || s.serialize().data); return d && d.features && d.features[0] && d.features[0].properties; });
+  if (fe) { expect(fe.color).toBe('#ff0000'); expect(fe.w).toBe(6); }
+  const r2 = await dispatch({ type: 'object', op: 'set', id: area, color: '#00aa55', opacity: 0.8, width: 3 });
+  expect(r2.ok).toBeTruthy();
+  const a = await obj(area);
+  expect(a.color).toBe('#00aa55');
+});
+
+test('atlas-objects-unify ③ the Objects panel opens the same objects: frosted, with the colour and the area', async () => {
+  await page.evaluate(() => window.IntMapObjects.open());
+  const panel = page.locator('#iol-panel');
+  await expect(panel).toBeVisible();
+  const bf = await panel.evaluate((el) => getComputedStyle(el).backdropFilter || getComputedStyle(el).webkitBackdropFilter);
+  expect(bf).toMatch(/blur/);
+  await expect(panel.locator('.iol-ar').first()).toContainText(/km²|m²/);
+  const { line } = await page.evaluate(() => window.__ids);
+  const row = panel.locator('.iol-row', { hasText: 'LP' }).first();
+  await expect(row).toBeVisible();
+  await expect(row.locator('input[data-act="color"]')).toHaveValue('#ff0000');
+});
+
+test('atlas-objects-unify ④ an object that cannot take a change says so', async () => {
+  const r = await dispatch({ type: 'object', op: 'set', id: 'no-such-object', color: 'red' });
+  expect(r.ok).toBeFalsy();
+  const bad = await dispatch({ type: 'object', op: 'set', id: (await page.evaluate(() => window.__ids)).line, color: 'not-a-colour' });
+  expect(bad.ok).toBeFalsy();
+});

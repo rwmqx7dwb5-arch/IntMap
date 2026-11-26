@@ -312,13 +312,17 @@ test('B2b: the object list holds what is drawn — found from the renderer\'s cl
   GE.render.claim('imroute-src', 'map.route');
   const L = globalThis.IntMapObjects.list();
   const byId = Object.fromEntries(L.map((o) => [o.id, o]));
-  assert.ok(byId['surface:atl-compose-src'], 'the composed map is not in the object list');
-  assert.deepEqual(byId['surface:atl-compose-src'].features.map((f) => f.id), r.meta.compose.placed.map((p) => p.id), 'the list and the compose result name the same features');
+  /* (atlas-objects-unify) a composed map is listed as ITS figures — one object per placed place, shape and link, under the id the compose result reports — not as one anonymous surface */
+  const placedIds = r.meta.compose.placed.map((p) => p.id);
+  assert.deepEqual(placedIds.filter((id) => byId[id] && byId[id].kind === 'place'), placedIds, 'every placed place is an object in the list, under the id the compose result reports');
+  assert.deepEqual(r.objectIds.slice(0, placedIds.length), placedIds, 'the compose result hands the ids back as objectIds');
+  assert.ok(!byId['surface:atl-compose-src'], 'the composed map is listed once, as its figures (not again as a surface)');
+  assert.ok(placedIds.every((id) => byId[id].editable.includes('color') && byId[id].editable.includes('opacity')), 'a place takes a colour and an opacity');
   assert.equal(byId['surface:nlq-poi-src'].features.length, 4, 'the four answer pins');
   assert.ok(byId['surface:route-src'], 'the sea route');
   assert.ok(byId.route && !byId['surface:imroute-src'], 'a surface a subsystem already lists is listed once');
   /* × removes through the painter's own remover, and the list follows the map */
-  assert.equal(globalThis.IntMapObjects.remove('surface:atl-compose-src'), true);
+  assert.equal(globalThis.IntMapObjects.remove(placedIds[0]), true);
   assert.equal(GE.layers.sourceData('atl-compose-src').features.length, 0);
-  assert.ok(!globalThis.IntMapObjects.list().some((o) => o.id === 'surface:atl-compose-src'));
+  assert.ok(!globalThis.IntMapObjects.list().some((o) => placedIds.includes(o.id)));
 });

@@ -13,7 +13,7 @@ date: 2026-11-26
 - **Atlas の入口**: `map.object` に `op: get / set`（`color`・`width`・`opacity`・`hidden`・`name`）。schema の `kind` は列挙をやめ（実在しない `nogo`/`pt` を持ち、`line`/`place`/`shape`/`link`/`poi`/`drawn` を持たなかった）。
 - **状態**: `atlas-state` の `objects.items` に色・太さ・不透明度・geom・面積・`editable` を載せた（以前は id・種類・名前だけ）。
 - **観測器**: `object` の観測器が id 一覧だけでなく各物体の見た目の署名（色|太さ|不透明度|hidden|名前）を前後で読む。`set` は「その id が残り、見た目が呼びの言うとおりになった」を地図から読み、同じ値への再設定は `already_there`。以前は id が変わらない操作はすべて `no_change` だった。
-- **Eval**: 複数ステップで既存物体を編集する場面（線を引く → id を持ち越す → 同じ id を赤・太く・透かす）を scripted cassette `drawn-line-restyled-by-id-across-turns` と記録 `restyle-drawn-line-across-turns` に足した。ブラウザでの実測は `tests/atlas-objects-unify.spec.js`（線・面の描画 → set → Objects パネルで同じ物体を開く）。
+- **Eval**: 複数ステップで既存物体を編集する場面（線を引く → id を持ち越す → 同じ id を赤・太く・透かす）を scripted cassette `drawn-line-restyled-by-id-across-turns` と記録 `restyle-drawn-line-across-turns` に足した。ブラウザでの実測は `tests/smoke.spec.js` の atlas-objects-unify ①〜④（線・面の描画 → set → Objects パネルで同じ物体を開く）。
 
 ## 描画の見た目（`js/atlas-map-compose.js`・ハイライトの面）
 
@@ -48,5 +48,12 @@ scout の静的な全数で 17 件。このラウンドで開放したのは次�
 
 ## 検証
 
-- `node --test` で eval 3 本・answer-sources 通過。`tests/atlas-objects-unify.spec.js` 4/4（線・面の id → set → 一覧の読み戻し → パネルのガラス/面積/色）。
+- `node --test` で eval 3 本・answer-sources 通過。`tests/smoke.spec.js` の ①〜④（線・面の id → set → 一覧の読み戻し → パネルのガラス/面積/色）。
 - 本番での確認（線・面・点それぞれ）は deploy 後に実施し、下に追記する。
+
+## CI で見つかった構造の変更点（同じ PR で直した）
+
+- `check:surface`: `window._imHlLines`・`window._imHlPoi`（`_imHlPolys` と同じ「描画を物体として手渡す」形）と、`IntMapAtlasCompose.objects` の読みが増えた。物体の一覧は描画を持つモジュールが持つ手持ちの状態を読むほかなく、import すると遅延チャンクが本体側へ割れる（起動時リクエスト増・`check:perf`）。ので window の手渡しにして、`tests/global-surface-baseline.json` を更新した。
+- `check:perf`: `atlas-console` と `atlas-cap-runs` のチャンクが物体基盤（属性・面積・汎用スタイル・観測器の署名）ぶん増えた。起動時リクエストは増えていない。
+- `tests/atlas-completion-routes-checks.test.mjs` B2b: 「合成した地図は 1 つの匿名の面として一覧にある」という旧設計の主張を、「場所・形状・つながりがそれぞれ compose の結果が報告する id で一覧にあり、編集できる」に更新した（能力は減っていない。1 つの面だったものが、個別に編集できる物体になった）。
+- `check:testbudget`: 専用の spec（起動 17 秒）は全体の天井を超えるので、既存の `tests/smoke.spec.js` の起動を共有する 4 テストにした。
