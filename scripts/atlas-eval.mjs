@@ -89,13 +89,17 @@ export function loadAnswerKey() {
 export function loadOpenQuestions() {
   return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/open-questions.json'), 'utf8'));
 }
+/** (atlas-autonomy) the reader's own cases — a question and the outcome they would have wanted (scripts/atlas-eval/user-cases.json). Asked and graded as open questions; `ideal` is shown to the grader as a reference, never a key. */
+export function loadUserCases() {
+  try { return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/user-cases.json'), 'utf8')); } catch (_) { return { questions: [] }; }
+}
 /** askable(which) — the questions a run asks, each tagged with the set it came from. An answer-key row
  *  judges by its answer (judge.mjs grades `q.answer`); it has no recorded expectations of its own. */
 export function askable(which = 'all') {
   const out = [];
   if (which === 'all' || which === 'records') for (const q of loadQuestions().questions) out.push(Object.assign({ set: 'records' }, q));
   if (which === 'all' || which === 'answers') for (const q of loadAnswerKey().questions) out.push(Object.assign({ set: 'answers', sendable: true, expect: {}, unset: {} }, q));
-  if (which === 'all' || which === 'open') for (const q of loadOpenQuestions().questions) out.push(Object.assign({ set: 'open', sendable: true, expect: {}, unset: {} }, q));
+  if (which === 'all' || which === 'open') for (const q of loadOpenQuestions().questions.concat(loadUserCases().questions)) out.push(Object.assign({ set: 'open', sendable: true, expect: {}, unset: {} }, q));
   return out;
 }
 

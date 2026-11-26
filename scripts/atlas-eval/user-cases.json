@@ -1,0 +1,9 @@
+{
+  "$comment": [
+    "(atlas-autonomy) THE READER'S OWN CASES. Questions the reader met while using Atlas, each with the outcome they would have wanted, in their own words. Appended with `node scripts/atlas-eval/add-case.mjs --text \"…\" --ideal \"…\"`; nothing else writes this file.",
+    "They are asked like the open questions (scripts/atlas-eval/open-questions.json — an ordinary question, no instruction about HOW to show the answer) and graded on the same axes. `ideal` is a REFERENCE handed to the independent grader beside the reply — what a reader who knows the subject would have wanted to come away with — and never a key: the verdict does not turn on matching it, and no machine check reads it. Anything a machine CAN decide (the same object, a colour, a count, a control that changes what is shown) belongs in questions.json's mapState/deliverables, where it is checked against the real map, not here.",
+    "Write `ideal` as the outcome, not the method: what the reader should understand or be able to do afterwards. A method written here would be a thing to memorise."
+  ],
+  "version": 1,
+  "questions": []
+}

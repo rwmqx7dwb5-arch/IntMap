@@ -23,6 +23,7 @@ import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `s
 import { personaPrompt } from './atlas-persona.js';
 import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
 import { settleWithin, lateNote } from './atlas-deadlines.js';
+import { lateCostSink } from './atlas-run-ledger.js';   /* (atlas-autonomy) the cost of a worker that ends after the answer that left it running */
 import { webEvidence } from './atlas-web-evidence.js';   /* (atlas-search-evidence-store) the pages and searches this turn's web readers retrieved — one store with the parent and the workers */
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
@@ -1288,6 +1289,20 @@ export default [
       } finally {
         unsub();
         await entry.saved();   /* the record of every task that ended is written before the answer leaves */
+      }
+      /* (atlas-autonomy) A WORKER LEFT RUNNING STILL COSTS. The answer names it as running and counts nothing for it; if the model never asks again, nobody
+         else would — so when it ends, its cost goes to the turn that left it (the sink is read now: a later turn is never handed it). `reported` keeps it
+         from being counted twice if a second ask does return it first. */
+      if (pendingIds.length) {
+        const sink = lateCostSink.current;
+        entry.reported = entry.reported || new Set();
+        entry.run.handles.filter((h) => pendingIds.includes(h.id)).forEach((h) => {
+          h.promise.then((r) => {
+            if (!r || r.reused || entry.reported.has(h.id)) return;
+            entry.reported.add(h.id);
+            if (typeof sink === 'function') sink(Number(r.costUsd) || 0);
+          }, () => {});
+        });
       }
       const saves = entry.saves();
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
