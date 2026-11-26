@@ -215,5 +215,28 @@
     return seen ? [w, s, e, n] : null;
   }
 
-  window.IntMapCountryExtent = { homeExtent, fullExtent, GAP_DEG, MAJOR_SHARE };
+  /* ══ HOW MUCH OF THE VIEW A COUNTRY FILLS, AS A RATIO ═════════════════════════════════════
+     A country's NAME is for a reader who is looking AT the country. Once the view holds only a part of it the reader is
+     inside, and the name — printed once, at one point of a country that is now bigger than the screen — is either off screen
+     or a stray word over the street they are reading. The question is therefore a ratio and not a zoom number: the extent's
+     size on screen over the view's size, so Monaco and Russia, a phone and a 4K window, each answer for themselves and no
+     country is listed anywhere. `extent` is [w, s, e, n] from homeExtent (e may exceed 180); the screen size is the Web
+     Mercator one at `zoom` on a 512 px tile (MapLibre's world: 512 * 2^zoom px). The LONGER side decides, so a long thin
+     country (Chile, Norway) leaves the view as its length does. */
+  const WORLD_PX_AT_Z0 = 512;
+  function mercY(latDeg){ const c = Math.max(-85.0511, Math.min(85.0511, latDeg)) * D2R; return Math.log(Math.tan(Math.PI / 4 + c / 2)); }
+  function viewShare(extent, zoom, viewW, viewH){
+    if(!extent || !(viewW > 0) || !(viewH > 0) || !isFinite(zoom)) return 0;
+    const world = WORLD_PX_AT_Z0 * Math.pow(2, zoom);
+    const wPx = Math.abs(extent[2] - extent[0]) / 360 * world;
+    const hPx = Math.abs(mercY(extent[3]) - mercY(extent[1])) / (2 * Math.PI) * world;
+    return Math.max(wPx / viewW, hPx / viewH);
+  }
+  /* The share at which the name goes: the view holds at most half of the country's longer side. Not a measurement — the one
+     value of this rule, chosen so a country is named while most of it can be seen at once; at 1400 px wide it is Russia
+     (164° across) from z≈3.6 and France (≈ 12° across) from z≈6.9. Expires with the label's font size changing so much that
+     «most of it» means something else. */
+  const NAME_GONE_SHARE = 2;
+
+  window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE };
 })();

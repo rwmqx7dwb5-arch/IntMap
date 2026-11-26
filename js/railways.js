@@ -281,10 +281,10 @@ export function railways(HOST) {
      construction is drawn dashed — the two things you must not have to read a
      legend to tell apart. */
   const widthExpr = ['interpolate', ['linear'], ['zoom'],
-    2, ['case', ['==', ['get', 'k'], 'rail'], 0.7, 0.4],
-    6, ['case', ['==', ['get', 'k'], 'rail'], 1.5, 0.9],
-    10, ['case', ['match', ['get', 'k'], ['subway', 'tram', 'light_rail'], true, false], 1.6, 2.6],
-    14, ['case', ['match', ['get', 'k'], ['subway', 'tram', 'light_rail'], true, false], 2.4, 4.2]];
+    2, ['case', ['==', ['get', 'k'], 'rail'], 0.5, 0.3],
+    6, ['case', ['==', ['get', 'k'], 'rail'], 1.05, 0.65],
+    10, ['case', ['match', ['get', 'k'], ['subway', 'tram', 'light_rail'], true, false], 1.1, 1.8],
+    14, ['case', ['match', ['get', 'k'], ['subway', 'tram', 'light_rail'], true, false], 1.7, 2.9]];
 
   function lineLayer(id, source, extra) {
     return Object.assign({

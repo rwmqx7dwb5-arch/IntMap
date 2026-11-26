@@ -2108,18 +2108,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(!GE().layers.has('ref-roads')) GE().layers.add({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
-        paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
+        paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.3,10,1.1,14,2.4]}}, before);
       /* (#R41) Railways: gray was still hard to see ("灰色は視認性が悪すぎる"). Render the standard two-part rail
          symbol that reads on BOTH light AND dark basemaps: a strong dark SOLID base (visible on light terrain)
          with WHITE cross-tie dashes on top (visible on dark/satellite). */
       if(!GE().layers.has('ref-rail')) GE().layers.add({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
-        paint:{'line-color':'#2b2f36','line-opacity':0.96,'line-width':['interpolate',['linear'],['zoom'],5,1.1,9,2.2,12,3.6,15,5.2]}}, before);
+        paint:{'line-color':'#2b2f36','line-opacity':0.96,'line-width':['interpolate',['linear'],['zoom'],5,0.8,9,1.5,12,2.5,15,3.6]}}, before);
       if(!GE().layers.has('ref-rail-dash')) GE().layers.add({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
         filter:['==',['get','class'],'rail'],
         layout:{visibility:'none','line-join':'round','line-cap':'butt'},
-        paint:{'line-color':'#f4f6fa','line-opacity':0.95,'line-dasharray':[1.4,3.2],'line-width':['interpolate',['linear'],['zoom'],6,1,9,1.8,12,2.8,15,4]}}, before);
+        paint:{'line-color':'#f4f6fa','line-opacity':0.95,'line-dasharray':[1.4,3.2],'line-width':['interpolate',['linear'],['zoom'],6,0.7,9,1.3,12,2,15,2.8]}}, before);
       return true;
     }catch(e){ console.warn('ensureRefLayers',e); return false; }
   }

@@ -509,7 +509,7 @@ export function isolate(HOST){
     function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
       /* (#R11) Exit pill lives at the BOTTOM-center, clear of the timebar / mobile sheet / other UI. */
       /* (#R108) sits a bit LOWER (96→64) and dark-mode gets a WHITE bg / black text (see the #iso-exit-btn CSS rule). */
-      btn.style.cssText='display:none;position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:calc(var(--z-sheet) + 50);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
+      btn.style.cssText='display:none;position:absolute;bottom:44px;left:50%;transform:translateX(-50%);z-index:calc(var(--z-sheet) + 50);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
       btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
     /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
@@ -546,7 +546,14 @@ export function isolate(HOST){
     /* (#R39) ALWAYS route through the data-ready promise (idempotent — resolves instantly if already loaded).
        The old `if(!window.countryGeo)` short-circuit ran go() even when countryGeo was set-but-still-populating,
        so the very first isolate after a cold load could hit an empty feature list and toast "border not found". */
-    function withGeo(go){ try{ if(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length){ go(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(go); return; } }catch(_){} go(); }
+    /* ROOT CAUSE of "the isolate outline sits beside the real border": the mask hole was cut from whatever tier of Natural Earth
+       countryGeo held at that moment — the 110 m stand-in for the first seconds of a session (and, on a phone, until the camera
+       reached z4) — while the border drawn on screen is the finer OFM line. A reader that is DRAWN against the visible border asks for
+       the fine collection first (js/countries-ui.js, window._imRequireFineCountryGeo; it settles at once when countryGeo is already
+       fine, and on a failed upgrade falls through to what is loaded). */
+    function withFine(go){ let p=null; try{ if(typeof window._imRequireFineCountryGeo==='function') p=window._imRequireFineCountryGeo(); }catch(_){}
+      if(p&&typeof p.then==='function') p.then(go,go); else go(); }
+    function withGeo(go){ try{ if(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length){ withFine(go); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>withFine(go)); return; } }catch(_){} go(); }
     function enter(id){ withGeo(()=>applyFeature(findFeature(id))); }
     function enterByName(name){ withGeo(()=>applyFeature(findByName(name))); }
     /* (#R29.1) enter by the tapped point first (reliable), fall back to the label name. */
