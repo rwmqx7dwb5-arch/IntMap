@@ -617,7 +617,10 @@ async function withCoverage(res, K) {
     if (!res || !res.ok || !LT || !T || T.isLive()) return res;
     const c = await LT.coverage(null, { on: true });
     if (!c || (!c.unstated.length && !c.carried.length)) return res;
-    return Object.assign({}, res, { html: (res.html || '') + coverageHtml(c, K, false), coverage: c });
+    /* ⚠ FOR THE MODEL, NOT THE READER (2026-11-26). The model reads this result as text (js/atlas-toolsurface.js textOf), so what the map cannot state for the new date has to be in
+       it — and it was printed under every reply as «Not drawn — no source states this date (1): Water & terrain labels — … states the present only». The same facts are
+       in each layer's own row (its title says what its source states), which is where a reader looks for them. `hidden` keeps the words in the text and off the page. */
+    return Object.assign({}, res, { html: (res.html || '') + '<div class="atl-model-only" hidden>' + coverageHtml(c, K, false) + '</div>', coverage: c });
   } catch (_) { return res; }
 }
 
