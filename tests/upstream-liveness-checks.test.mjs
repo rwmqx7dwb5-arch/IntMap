@@ -260,7 +260,10 @@ test('⑥b SIMBAD: the credit row and the builder ask one canonical host first, 
   const rec = decl && decl.declaration && decl.declaration['data/deep-sky.json'];
   assert.ok(rec && rec.url, 'scripts/build-deepsky.mjs declares where data/deep-sky.json comes from');
   const canonical = new URL(rec.url).hostname;
-  assert.equal(new URL(row.u).hostname, canonical, 'the credit names the host the builder declares');
+  /* the credit is the publisher's front — the parent domain of the service host — because a service
+     host can leave DNS during an incident while the publisher's site stays up (2026-11-18) */
+  const credit = new URL(row.u).hostname;
+  assert.ok(canonical === credit || canonical.endsWith('.' + credit), 'the credit names the publisher of the host the builder declares');
 
   const M = 110;
   const rows = Array.from({ length: M }, (_, i) => ['M ' + (i + 1), 'M ' + (i + 1), 10 + i / 10, 20, 'G', 1]);
