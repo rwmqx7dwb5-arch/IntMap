@@ -188,18 +188,18 @@ update public.atlas_jobs set created_at = now() - interval '3 minutes' where id 
 update public.atlas_jobs set created_at = now() - interval '2 minutes' where id = (select job_id from _qa3);
 update public.atlas_jobs set created_at = now() - interval '1 minutes' where id = (select job_id from _qb1);
 select is((select count(*)::int from public.atlas_jobs where status = 'queued'), 4, 'four jobs were accepted, none refused');
-select is((select job_id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa1), 'the oldest is claimed first');
-select is((select job_id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), '… then the next of the same reader (two may run)');
-select is((select job_id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qb1), 'a reader at their limit is skipped, so another reader is not made to wait behind them');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa1), 'the oldest is claimed first');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), '… then the next of the same reader (two may run)');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qb1), 'a reader at their limit is skipped, so another reader is not made to wait behind them');
 select is((select count(*)::int from public.atlas_job_claim('runner-q', 60)), 0, 'the third of the first reader waits: nothing else is claimable');
 select is((select status from public.atlas_jobs where id = (select job_id from _qa3)), 'queued', '… and it is still queued, not refused');
 select is(public.atlas_job_finish((select job_id from _qa1), 'runner-q', 'done', '', null, ''), true, 'a job ends…');
-select is((select job_id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa3), '… and the one that waited takes its place');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa3), '… and the one that waited takes its place');
 update public.atlas_jobs_control set max_active_total = 1;
 create temp table _qa4 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'qa4', 'qa4', pg_temp._tasks(1));
 select is((select count(*)::int from public.atlas_job_claim('runner-q', 60)), 0, 'past the project-wide limit a new job waits as well');
 update public.atlas_jobs set lease_until = now() - interval '1 second' where id = (select job_id from _qa2);
-select is((select job_id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), 'but a job that already runs (its lease lapsed) is taken over whatever waits');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), 'but a job that already runs (its lease lapsed) is taken over whatever waits');
 update public.atlas_jobs_control set max_active_total = 20;
 select is(public.atlas_jobs_waiting(), 1, 'the function can ask whether anything waits');
 
