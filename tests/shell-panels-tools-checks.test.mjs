@@ -95,7 +95,9 @@ test('R231 screenshot: both layers are drawn into the container box, and capture
   /* the class comes off on every path: the capture owns it when it set it. (country-analysis-unify) The button that owned it
      across its own flash and download (js/screenshot.js) is gone — 「Screenshot」 is the share panel's Image tab, whose
      picture lets the capture set and clear the class itself. */
-  assert.match(src, /\} finally \{[\s\S]{0,240}classList\.remove\(CAPTURE_CLASS\)/, 'the capture clears what it set');
+  /* (atlas-ui-parts) THE PROPERTY, RESTATED: the class used to go on the live body and come off in `finally`; a capture abandoned mid-way could leave every control hidden, and a completed one hid them for seconds. It now goes on html2canvas's CLONE only, so there is nothing to clear on the reader's screen. */
+  assert.ok(!/document\.body\.classList\.add\(CAPTURE_CLASS\)/.test(src), 'the live body is never marked');
+  assert.match(src, /onclone:.*doc\.body\.classList\.add\(CAPTURE_CLASS\)/, 'the clone is');
   assert.match(read('js/atlas-view-capture.js'), /const CAPTURE_CLASS = 'capture-mode';/, 'one spelling of the class, in one place');
   /* the phone's own controls are controls */
   const css = read('css/intmap.css');
