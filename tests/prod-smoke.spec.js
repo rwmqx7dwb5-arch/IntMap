@@ -761,9 +761,14 @@ test('(#R533) the Companies tab ships resolved Commons logos and no dead logo ho
      MEASURED 2026-10-08 and 10-10: all three requests timed out (status 0) from the GitHub runner
      while Commons served the same files to browsers. Only an ANSWER — a 4xx, a non-image — says the
      data path is broken; when Commons gave no answer at all the claim is unmeasured, and it says so. */
-  if (!ok.length && got.every((g) => g.status === 0)) {
-    test.info().annotations.push({ type: 'unobserved', description: 'Commons did not answer from this runner: ' + got.map((g) => g.id + '=' + g.type).join(', ') });
-    test.skip(true, 'Commons did not answer any of the three requests from this runner (timeouts) — not observed, not refused');
+  /* ⚠ A THROTTLE IS NOT AN ANSWER ABOUT THE DATA PATH EITHER. 429 is the server saying «not now, from
+     you» — observed 2026-11-26 on the main run after the CDS credit fix: Commons returned 429 to all
+     three samples from the GitHub runner, text/html, while the same URLs serve browsers. Like a timeout
+     it is «not observed»; a 403/404/non-image is still the real defect and still fails. */
+  const unobservedStatus = (g) => g.status === 0 || g.status === 429;
+  if (!ok.length && got.every(unobservedStatus)) {
+    test.info().annotations.push({ type: 'unobserved', description: 'Commons did not answer from this runner: ' + got.map((g) => g.id + '=' + g.status + ' ' + g.type).join(', ') });
+    test.skip(true, 'Commons gave no usable answer to any of the three requests from this runner (timeouts or 429 throttling) — not observed, not refused');
   }
   expect(ok.length, 'Commons must serve the shipped logos to ' + origin + ' — got '
     + got.map((g) => g.id + '=' + g.status + ' ' + g.type).join(', ')).toBeGreaterThan(0);
