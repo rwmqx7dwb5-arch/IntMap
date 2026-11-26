@@ -35,3 +35,7 @@ MapLibre 6.19 の `ScrollZoomHandler` はカーソルを `_start` で 1 度だ�
 
 ## 検査
 `tests/map-display-fixes-checks.test.mjs`。
+
+## 併せて動かした台帳
+- 新しい window の結合: `window._imRequireFineCountryGeo`（countries-ui が公開し map-tools の Isolate が読む。`_imFlushCountryGeo` と同じ型）と、place-labels から `IntMapCountryExtent` への読み。global-surface の台帳を更新。
+- i18n: AI brief の訳 4 行（de/es/ru/fr/ko/zh の positional・inline 表）は、その機能ごと不要になった（読む場所が無い）ので dead-key codemod で外し、床を下げた。何かが同じ働きをしている: Atlas の `research.brief` は Atlas 自身の文言で答える。

@@ -406,7 +406,7 @@ IntMapLang.define('fr', { ui: {
     "live web search":"recherche web en direct", "Stopped":"Arrêté", "Voice input":"Saisie vocale",
     "Attach a file":"Joindre un fichier", 
     "Ask Atlas anything…":"Demandez ce que vous voulez à Atlas…", 
-    "Research: ":"Recherche : ", "Researching…":"Recherche en cours…", "Regenerate":"Régénérer",
+    "Research: ":"Recherche : ", "Regenerate":"Régénérer",
     "Seismic waves":"Ondes sismiques", "P wave":"Onde P", "S wave":"Onde S",
     "Rayleigh wave":"Onde de Rayleigh (de surface)", "Love wave":"Onde de Love (de surface)",
     "Method & sources":"Méthode et sources", "Observed at the time":"Valeurs observées à l'époque",

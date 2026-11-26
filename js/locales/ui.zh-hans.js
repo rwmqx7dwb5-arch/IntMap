@@ -1708,7 +1708,7 @@ IntMapLang.define('zh-hans', {
     'Rename': "重新命名",   /* map-tools.js */
     'Reports': "报告",
     'Research: ': "研究：",   /* analysis-panels.js atlas-console.js */
-    'Researching…': "研究中…",   /* atlas-console.js */
+    /* atlas-console.js */
     /* analysis-panels.js */
     'Reset': "重置",   /* stats-compare.js terrain-water.js */
     'RESET': "重置",   /* flight-sim.js */
