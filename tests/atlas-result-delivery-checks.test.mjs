@@ -205,7 +205,7 @@ test('⑫ a row with no `name` is named by the first text it carries, not by «<
   const { liftFunction } = await import('./helpers/lift-function.mjs');
   const src = codeOnly(readFileSync(new URL('../js/atlas-query.js', import.meta.url), 'utf8'));
   /* the shipped function, evaluated; what it reads from the module (the geometry measure, the table registry) is stood in for */
-  const userRows = new Function('geomMeasure', 'TABLES', 'return (' + liftFunction(src, 'userRows').replace(/^function userRows/, 'function userRows') + ')')(() => null, {});
+  const userRows = new Function('geomMeasure', 'TABLES', 'return (' + liftFunction(src, 'userRows') + ')')(() => null, {});
   const ds = { id: 'ds1', title: 'World Bank population · top40', provenance: {}, features: () => [
     { properties: { '順位': 1, '国名': 'インド', '人口（人）': 1463865525 } }, { properties: { '順位': 2, '国名': '中国', '人口（人）': 1406585000 } },
     { properties: { v: 3 } }, { properties: { name: 'Osaka', '国名': 'x' } }] };
