@@ -156,3 +156,60 @@ test('④ ⑤ structured meta, objectIds and unresolved reach the model without 
   assert.equal('fn' in r.details, false);
   assert.equal('status' in r.details, false, 'what mechanical already states is not said twice');
 });
+
+/* ══ what the READER is shown under an answer (atlas-result-delivery, from a production answer read in full) ═══════ */
+const { makeAtlasAnswerSources } = await import('../js/atlas-answer-sources.js');
+const { importModule } = await import('./helpers/import-module.mjs');
+
+test('⑨ a source mark never splits a number from its unit: 全40か国, 11月11日, 1,463,865,525人, 40位', () => {
+  const core = makeAtlasAnswerSources({ lang: () => 'jp', esc: (s) => String(s) });
+  const items = core.collect([{ ok: true, meta: { provenance: [{ kind: 'number', what: ['Population', '人口'], source: 'World Bank', values: [40, 11, 1463865525, 38980376] }] } }], {});
+  const out = core.linkNumbers('<p>表の1位から40位まで、全40か国の人口は2026年11月11日更新で、1位はインド（1,463,865,525人）です。</p>', items, 't');
+  assert.doesNotMatch(out, /\d<sup/, 'no mark directly after a digit');
+  assert.doesNotMatch(out, /40<sup[^>]*>.*?<\/sup>(位|か国)/, 'the unit stays with its number');
+  const marks = out.match(/data-atl-srcn="1"/g) || [];
+  assert.ok(marks.length >= 1 && marks.length <= 4, 'one mark per phrase, not one per digit: ' + marks.length);
+  assert.match(out, /11月11日更新で<sup/, 'a date is cited once, after the phrase it belongs to');
+});
+
+test('⑩ the table list says a note that several tables share once', async () => {
+  const pick = () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a)); return f; };
+  const { atlasQuery } = await importModule('js/atlas-query.js', {
+    globals: { window: { IntMapGazetteer: { warm: async () => [], worldMeta: () => ({ count: 0, placeKinds: null }) } }, document: { baseURI: 'http://localhost/' } },
+    mocks: { 'js/lang-registry.js': { IntMapLang: { pick, pickArgs: () => ((...a) => a) } } },
+  });
+  const API = atlasQuery({ lang: 'en', addPin: () => null });
+  API.bind({ countryStats: () => ({}), countryName: (s) => s.nameEn });
+  const out = await API.answer({ list: true }, { pin: false });
+  assert.ok(out.ok && out.html);
+  const notes = (out.html.match(/<span style="color:var\(--text-muted\);font-size:10\.5px;">([^<]*)<\/span>/g) || []).map((x) => x.replace(/<[^>]+>/g, '')).flatMap((x) => x.split(' · '));
+  /* the attribution line (it ends in the file) is per table; the gap and completeness notes are per FILE */
+  const dup = notes.filter((n, i) => n.length > 40 && !/\(data\/[^)]*\)$/.test(n) && notes.indexOf(n) !== i);
+  assert.deepEqual(dup, [], 'no note appears twice in one list');
+  assert.ok(out.result && Array.isArray(out.result.tables) && out.result.tables.every((t) => !('_notes' in t)), 'the structured list carries no card scratch');
+});
+
+test('⑪ a result that declares itself working material is filed under the results fold, in the console', async () => {
+  /* read, not run: the console builds the reply inside a closure over the page (js/atlas-console.js), so the one place that reads the fact is matched */
+  const { readFileSync } = await import('node:fs');
+  const con = readFileSync(new URL('../js/atlas-console.js', import.meta.url), 'utf8');
+  assert.match(con, /r\.meta&&r\.meta\.working===true\) return true/);
+  for (const f of ['../js/atlas-cap-compute.js', '../js/atlas-cap-data.js']) {
+    assert.match(readFileSync(new URL(f, import.meta.url), 'utf8'), /working\s*[:=]\s*true|\{working:true\}/, f + ' declares it');
+  }
+});
+
+test('⑫ a row with no `name` is named by the first text it carries, not by «<title> 1», «<title> 2»', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { codeOnly } = await import('../scripts/code-only.mjs');
+  const { liftFunction } = await import('./helpers/lift-function.mjs');
+  const src = codeOnly(readFileSync(new URL('../js/atlas-query.js', import.meta.url), 'utf8'));
+  /* the shipped function, evaluated; what it reads from the module (the geometry measure, the table registry) is stood in for */
+  const userRows = new Function('geomMeasure', 'TABLES', 'return (' + liftFunction(src, 'userRows').replace(/^function userRows/, 'function userRows') + ')')(() => null, {});
+  const ds = { id: 'ds1', title: 'World Bank population · top40', provenance: {}, features: () => [
+    { properties: { '順位': 1, '国名': 'インド', '人口（人）': 1463865525 } }, { properties: { '順位': 2, '国名': '中国', '人口（人）': 1406585000 } },
+    { properties: { v: 3 } }, { properties: { name: 'Osaka', '国名': 'x' } }] };
+  const out = userRows(ds);
+  const rows = out.rows || out;
+  assert.deepEqual(rows.map((r) => r.name), ['インド', '中国', 'World Bank population · top40 3', 'Osaka']);
+});
