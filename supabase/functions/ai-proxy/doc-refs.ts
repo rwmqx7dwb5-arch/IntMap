@@ -7,7 +7,7 @@
 //  reference instead of the bytes on the turn's later calls.
 //  · the file is uploaded with expires_after = 1 hour (the shortest the Files API takes) — a reader's PDF is not left at the
 //    provider; a turn lasts at most EDGE_WALL_CLOCK_MS (400 s), so the reference outlives every turn it is made for;
-//  · a reference is `{ name, mime, id, sig }` and `sig` is an HMAC of (account, id) under the service key, so a page can only
+//  · a reference is `{ name, mime, id, sig }` and `sig` is an HMAC of (account, id) under the project secret key, so a page can only
 //    name a file THIS server uploaded FOR THIS ACCOUNT — a file id is not a capability the caller can bring from elsewhere;
 //  · a failed upload is not a failed turn: the document simply stays inline, as it was.
 // ============================================================================
@@ -15,11 +15,12 @@
 import { providerCall } from "./provider-call.ts";
 import type { Meter } from "./provider-call.ts";
 import type { DocPart } from "./media.ts";
+import { secretKey } from "../_shared/supabase-keys.js";
 
 const FILE_ID = /^file-[A-Za-z0-9_-]{6,80}$/;
 
 async function hmacHex(account: string, id: string): Promise<string> {
-  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SB_SECRET_KEY") || "";
+  const secret = secretKey((k: string) => Deno.env.get(k) || "");   /* the one resolver of the project key */
   if (!secret) return "";
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode("docref\n" + account + "\n" + id)));

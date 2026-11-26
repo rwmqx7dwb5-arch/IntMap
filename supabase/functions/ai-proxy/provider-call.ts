@@ -59,14 +59,14 @@ export async function providerCall(url: string, init: RequestInit, ms: number | 
    ⚠ A retry that cannot fit is not made: when what is left of the reader request's window (providerBudgetMs)
    is shorter than the attempt that just failed took, the next one would run out of time too.
    Expires: when the journal's attempts column shows a retry that never recovered — then the cause is not transient. */
-export function isTransient(e: unknown): { transient: boolean; why: string; waitMs: number } {
+export function isTransient(e: unknown, attempt = 1): { transient: boolean; why: string; waitMs: number } {
   if (!(e instanceof ProviderError)) return { transient: false, why: "", waitMs: 0 };
   const m = (e.meta || {}) as Record<string, unknown>;
   const ps = typeof m.providerStatus === "number" ? m.providerStatus as number : 0;
   if (e.code === "provider_unavailable" && e.retryable && !m.timeout && !m.tooLarge && !m.ceiling && (ps === 0 || ps >= 500)) {
     return { transient: true, why: ps ? "http_" + ps : "unreachable", waitMs: 0 };
   }
-  if (e.code === "provider_rate_limit" && e.retryable && ps === 429) {
+  if (e.code === "provider_rate_limit" && e.retryable && ps === 429 && attempt < 2) {   /* a 429 draws on the same per-minute budget: ONE more try after a pause, never two (the Gemini path left it out for that reason) */
     const ra = parseInt(String(m.retryAfter || ""), 10);
     return { transient: true, why: "http_429", waitMs: Number.isFinite(ra) && ra > 0 ? Math.min(5000, ra * 1000) : 2000 };
   }
@@ -79,7 +79,7 @@ export async function transientRetry<T>(call: () => Promise<T>, meter?: Meter): 
     try {
       return await call();
     } catch (e) {
-      const t = isTransient(e);
+      const t = isTransient(e, attempt);
       const took = Date.now() - t0;
       if (!t.transient || attempt >= MAX) throw e;
       const wait = t.waitMs || 700 * attempt;

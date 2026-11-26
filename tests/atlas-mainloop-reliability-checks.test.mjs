@@ -32,6 +32,9 @@ test('① a 5xx, an unreachable host and a per-minute 429 are retried and counte
     assert.equal(out, 'ok'); assert.equal(n, 2); assert.equal(seen.length, 1);
   }
   let n = 0;
+  await assert.rejects(transientRetry(async () => { n++; throw new ProviderError('provider_rate_limit', 'x', 503, true, { providerStatus: 429, retryAfter: '0s' }); }, {}), (e) => e instanceof ProviderError);
+  assert.equal(n, 2, 'a 429 is tried one more time, not two');
+  n = 0;
   await assert.rejects(transientRetry(async () => { n++; throw unavailable(503); }, {}), (e) => e instanceof ProviderError);
   assert.equal(n, 3, '1 attempt + 2 retries, the policy the Gemini path always had');
 });
@@ -107,7 +110,7 @@ test('③ a cache write is priced at 1.25x the input price (Anthropic, 5-minute 
 
 test('③ the Anthropic turn keeps the search blocks, continues pause_turn and sets no search cap of its own', () => {
   const src = read('supabase/functions/ai-proxy/providers/anthropic.ts');
-  assert.ok(!/max_uses:/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')), 'a fixed max_uses is back');
+  assert.ok(!/max_uses\s*:/.test(src), 'a fixed max_uses is back');
   assert.ok(/pause_turn/.test(src) && /provider_block/.test(src) && /withPromptCache\(body, \{ messages: true \}\)/.test(src));
 });
 
