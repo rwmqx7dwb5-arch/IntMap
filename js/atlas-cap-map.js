@@ -1029,7 +1029,7 @@ export default [
       const m = (v) => Math.round(v).toLocaleString() + ' m';
       const facts = L('Elevation profile', '標高断面') + ' — ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km · '
         + L('lowest', '最低') + ' ' + m(mn) + ' · ' + L('highest', '最高') + ' ' + m(mx) + ' · ' + L('climb', '登り') + ' ' + m(up) + ' · ' + L('descent', '下り') + ' ' + m(down)
-        + ' (' + known.length + ' ' + L('samples', '標本点') + ')';
+        + ' (' + known.length + ' ' + L('samples', '標本') + ')';
       return R(true, note(icon('chart') + ' ' + esc(facts)), { meta: { provenance: [{ kind: 'number', what: L('Elevation profile', '標高断面'), of: names.length ? names.join(' → ') : '', unit: 'm', source: 'Mapzen / AWS Terrain Tiles — elevation model (DEM)', licence: '', url: 'https://registry.opendata.aws/terrain-tiles/', date: '', origin: 'raw', values: [mn, mx, up, down].concat([mn, mx, up, down].map((v) => Math.round(v))) }] } });
     },
   },

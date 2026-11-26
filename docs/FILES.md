@@ -1296,7 +1296,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数でなく進展で止まる）
 atlas-skills.js                   **Skill**（手順書）の発見・段階読み・門 — `searchSkills`（find_capability の答えに名前と1行だけ添える）／`readSkill`（1節ずつ）／`audit`（本文が名指す能力・引数が実在するか。`npm run check:capabilities`）
 atlas-skills-data.js              Skill の宣言データ（en+jp の散文だけ。使う能力は本文から導出する）。初期: 歴史的国境の比較・衛星画像の変化検出・産業立地の一次分析・港湾物流リスクの比較
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 294 を検索・到達可能 289）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全 294 を検索・到達可能 291）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
