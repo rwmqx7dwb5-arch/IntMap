@@ -39,8 +39,9 @@ import { schemaOk, openAiSchemaFormat } from "./schema.ts";
 import { TASKS, maxOutputFor, HARD_MAX_OUTPUT } from "./tasks/index.ts";
 import { hintedMaxOutput, fitOutputToRoom } from "./tasks/spec.ts";
 import { parseDataUrl, b64Bytes } from "./media.ts";
+import { acceptDocRefs, signDocRefs } from "./doc-refs.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "./media.ts";
-import { ProviderError, webOutcome } from "./provider-call.ts";
+import { ProviderError, webOutcome, transientRetry } from "./provider-call.ts";
 import type { Meter, StreamSink } from "./provider-call.ts";
 import { callOpenAI } from "./providers/openai.ts";
 import { callGemini, callGeminiRetry, callGeminiTurn, geminiRetry } from "./providers/gemini.ts";
@@ -52,7 +53,7 @@ import { awaitAnswer, claimAnswer, beatAnswer, finishAnswer, replayed, replayKey
    (see its use in ask()). Never an identity: getUser() is what decides who the caller is. */
 function jwtSubject(authHeader: string): string {
   try {
-    const tok = String(authHeader || "").replace(/^Bearers+/i, "");
+    const tok = String(authHeader || "").replace(/^Bearer\s+/i, "");
     const part = tok.split(".")[1]; if (!part) return "";
     const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
     const sub = JSON.parse(atob(b64))?.sub;
@@ -262,10 +263,12 @@ export async function ask(req: Request): Promise<Response> {
   /* (ai-quota-fairness) …and which part of the project ceiling it is drawn from: a newcomer's share,
      or the whole. Decided from the account's age as the auth server reports it (see NEWCOMER_SHARE). */
   let fellBackTo = "";
+  let retries = 0;   /* (atlas-mainloop-reliability) retries after an observed transient failure (provider-call.ts transientRetry) */
   let attempts = 0;   /* (atlas-turn-observability) provider requests this ONE request made — providerCall calls attempt() before each */
   const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
     startedAt: Date.now(),   /* the clock every provider request of this reader request shares — providerBudgetMs (_shared/ai-provider.js) */
     attempt() { attempts += 1; },
+    retry() { retries += 1; },
     fallback(to: string) { fellBackTo = to; },
     ceiling: cohortOf(user.created_at, Date.now()) === NEWCOMER ? NEWCOMER_CEILING : CEILING,
   });
@@ -289,6 +292,7 @@ export async function ask(req: Request): Promise<Response> {
     /* (#R540) the two attachment channels — extracted text, and documents the provider parses */
     files?: { name?: string; text?: string; truncated?: boolean }[];
     docs?: { name?: string; mime?: string; b64?: string }[];
+    docRefs?: unknown;   /* (atlas-mainloop-reliability) references to documents an earlier call of the turn uploaded — doc-refs.ts */
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
     effortHint?: string; turnId?: string;
     /* (atlas-unbounded-turns) the output budget Atlas chose for THIS request — honoured on a task whose file says outputHint */
@@ -489,6 +493,8 @@ export async function ask(req: Request): Promise<Response> {
     return await bail({ error: "no_independent_grader", message: "No provider other than the one answering Atlas is configured, so no independent grade can be given." }, 503);
   }
   const provider = (graderProvider || devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();   /* devPick is null for atlas_grade (above) */
+  /* (atlas-mainloop-reliability) the documents an earlier call of this turn already put at the provider — named, not re-sent */
+  if (provider === "openai" && turnReq) for (const d of await acceptDocRefs(user.id, (payload as { docRefs?: unknown }).docRefs)) if (docs.length < MAX_DOCS) docs.push(d);
   // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
   // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
   // json_object format has no such issue and guarantees parseable plans — a large share of the
@@ -635,13 +641,13 @@ export async function ask(req: Request): Promise<Response> {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey, meter, sink || undefined);
+        out = await transientRetry(() => callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey, meter, sink || undefined), meter);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.max(maxTokens, Math.min(retryRoof, maxTokens + 1200)), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter, sink || undefined);
+          out = await transientRetry(() => callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.max(maxTokens, Math.min(retryRoof, maxTokens + 1200)), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter, sink || undefined), meter);
         } else {
           throw e;
         }
@@ -652,7 +658,7 @@ export async function ask(req: Request): Promise<Response> {
       if (turnReq) {
         /* (atlas-native-tools) the same MALFORMED rule as below, in the turn's terms: once more with calling turned
            off (the declarations stay — the conversation names them), so the model answers in words */
-        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens, meter, sink || undefined)); }
+        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens, meter, sink || undefined), meter); }
         catch (e) {
           if (!(e instanceof ProviderError && e.code === "provider_malformed")) throw e;
           out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens, meter, sink || undefined);
@@ -680,8 +686,8 @@ export async function ask(req: Request): Promise<Response> {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
-      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens, meter, sink || undefined)
-        : await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens, meter);
+      out = await transientRetry(() => turnReq ? callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens, meter, sink || undefined)
+        : callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens, meter), meter);
     }
     // (#R350) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
     // other provider failure — the client must never be handed prose it cannot audit.
@@ -725,6 +731,8 @@ export async function ask(req: Request): Promise<Response> {
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,
+        retries: retries || undefined,   /* (atlas-mainloop-reliability) how many times a transient provider failure was retried inside this request */
+        ...(provider === "openai" && turnReq && docs.length > 0 && docs.every((d) => d.fileId) ?   /* all or none: the page replaces its whole document list by the references */ { docRefs: await signDocRefs(user.id, docs) } : {}),
         streamed: sink ? true : undefined,   /* (atlas-live-stream) this body is the `done` event of a stream */
         maxOutput: maxTokens,   /* (atlas-unbounded-turns) the visible-output budget this request ran with — the task's, or the one Atlas chose */
         ...(outputFitted ? { maxOutputFitted: outputFitted } : {}),   /* …and, when the money fences could not hold the one asked, what was asked and what ran */
@@ -757,7 +765,7 @@ export async function ask(req: Request): Promise<Response> {
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
-      return { status: e.http, body: { error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...e.meta } } };
+      return { status: e.http, body: { error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...(retries ? { retries } : {}), ...e.meta } } };
     }
     /* ⚠ AN UNCLASSIFIED FAILURE IS STILL NOT A PLACE TO PUT AN EXCEPTION MESSAGE. Anything that
        reaches here came from code that has the prompt, the provider key and the caller's JWT in

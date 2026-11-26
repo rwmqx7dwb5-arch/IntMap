@@ -370,6 +370,7 @@ export function aiCore(HOST){
          server-side, the way `system` did in #R285. js/atlas-attach.js decides what a file IS. */
       if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;
       if(Array.isArray(opts.docs)&&opts.docs.length) body.docs=opts.docs;
+      if(Array.isArray(opts.docRefs)&&opts.docRefs.length) body.docRefs=opts.docRefs;   /* (atlas-mainloop-reliability) the documents an earlier call of this turn put at the provider — named instead of re-sent (supabase/functions/ai-proxy/doc-refs.ts) */
       /* ══ (atlas-native-tools) PROTOCOL 2 — THE ATLAS TURN AS ITEMS AND NATIVE FUNCTIONS ══════════════════════
          js/atlas-agent.js composeInput builds `input`; `tools` are the functions Atlas holds. ai-proxy
          answers with `output` (the provider's items) and meta.protocol 2. Forwarded only when asked for,

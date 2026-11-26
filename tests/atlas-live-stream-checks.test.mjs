@@ -257,6 +257,16 @@ test('atlas-live-stream ② a refused reasoning summary costs one request, once,
   assert.equal(doneOf(second).status, 200);
 });
 
+test('atlas-mainloop-reliability: a 400 that does not name the summary leaves the summary alone', () => {
+  const [o, next] = run({ env: ENV('openai'), user: USER,
+    provider: [{ status: 400, json: { error: { message: 'Invalid schema for function set_layer.' } } }, { sse: OA_SSE }, { sse: OA_SSE }],
+    requests: [rq('t-s1', { ...TURN, stream: true }), rq('t-s2', { ...TURN, stream: true })] });
+  const p = next.calls.filter((c) => c.provider).map((c) => c.body);
+  assert.equal(p.length >= 1, true);
+  assert.equal(p[0].reasoning.summary, 'auto', 'an unrelated 400 took the readable reasoning from every later turn of the isolate');
+  assert.ok(doneOf(o));
+});
+
 test('atlas-live-stream ② only an Atlas turn streams; every refusal before the provider is plain JSON', () => {
   const [plainTask, badTask, emptyTurn] = run({ env: ENV('openai'), user: USER, provider: [{ json: OA_FINAL }],
     requests: [rq('t-a', { task: 'free_text', prompt: 'hi', stream: true }), rq('t-b', { ...TURN, task: 'no_such_task', stream: true }), rq('t-c', { ...TURN, input: [], stream: true })] });

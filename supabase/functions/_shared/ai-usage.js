@@ -121,7 +121,12 @@ function countBreakpoints(body) {
   return k;
 }
 
-export function withPromptCache(body) {
+/* (atlas-mainloop-reliability) `opts.messages` — a breakpoint on the LAST block of the conversation too. The tools and the system prompt were the
+   only marked parts, so every step of a turn re-billed the whole conversation so far at the full input price; the next step's request starts with exactly this
+   one's messages, so a breakpoint at their end makes them a read (Anthropic looks back up to 20 positions from a breakpoint). Only a TURN asks for it:
+   a single-shot call is never repeated, and a cache WRITE costs more than a plain read of the same tokens. Not on an empty text block (the
+   provider refuses a marker there). */
+export function withPromptCache(body, opts) {
   if (!body || typeof body !== "object") return body;
   const out = { ...body };
   let used = countBreakpoints(body);
@@ -139,6 +144,17 @@ export function withPromptCache(body) {
       const last = body.system[body.system.length - 1];
       if (last && typeof last === "object" && !last.cache_control) {
         out.system = body.system.slice(0, -1).concat([{ ...last, cache_control: { ...EPHEMERAL } }]);
+      }
+    }
+  }
+  if (opts && opts.messages && Array.isArray(body.messages) && body.messages.length) {
+    const used2 = countBreakpoints(out);
+    const msgs = body.messages;
+    const lastMsg = msgs[msgs.length - 1];
+    if (used2 < ANTHROPIC_MAX_CACHE_BREAKPOINTS && lastMsg && Array.isArray(lastMsg.content) && lastMsg.content.length) {
+      const blk = lastMsg.content[lastMsg.content.length - 1];
+      if (blk && typeof blk === "object" && !blk.cache_control && !(blk.type === "text" && !String(blk.text || "").trim())) {
+        out.messages = msgs.slice(0, -1).concat([{ ...lastMsg, content: lastMsg.content.slice(0, -1).concat([{ ...blk, cache_control: { ...EPHEMERAL } }]) }]);
       }
     }
   }

@@ -13,6 +13,7 @@ import { providerCall, ProviderError, classifyGemini, streamedBody } from "../pr
 import type { Meter, StreamSink } from "../provider-call.ts";
 import { filesBlock } from "../media.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "../media.ts";
+import { uploadDocs } from "../doc-refs.ts";
 import { fnParameters, placeAttachments, CALL_ID_OK } from "../turn.ts";
 import type { TurnReq, TurnItem } from "../turn.ts";
 
@@ -30,8 +31,10 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
   // subscripts (the vision_read OCR/maths win); "auto" (default) is unchanged for every other caller.
   /* (#R540) documents → attached text → the user's prompt (same order as the other two providers);
      the images keep their place after the prompt, where they have always been. */
+  /* (atlas-mainloop-reliability) a turn uploads its documents once (doc-refs.ts); every later call names them */
+  if (turn && docs.length) await uploadDocs(key, docs, meter);
   const content: unknown[] = [];
-  for (const dp of docs) content.push({ type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
+  for (const dp of docs) content.push(dp.fileId ? { type: "input_file", file_id: dp.fileId } : { type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
   const attached = filesBlock(files);
   if (attached) content.push({ type: "input_text", text: attached });
   content.push({ type: "input_text", text: prompt });
@@ -65,7 +68,7 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     const out: unknown[] = [];
     for (const it of placeAttachments<unknown>(turn!.items, (ch) => {
       const parts: unknown[] = [];
-      if (ch.includes("docs")) for (const dp of docs) parts.push({ type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
+      if (ch.includes("docs")) for (const dp of docs) parts.push(dp.fileId ? { type: "input_file", file_id: dp.fileId } : { type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
       if (ch.includes("files") && attached) parts.push({ type: "input_text", text: attached });
       if (ch.includes("images")) for (const ip of imgs) parts.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
       return parts;
@@ -176,7 +179,11 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));
   }
   /* (atlas-live-stream) the rung below every other: a summary this project may not request costs one request, once per isolate */
-  if (!r.ok && r.status === 400 && summary) {
+  /* (atlas-mainloop-reliability) ONLY A 400 THAT NAMES THE SUMMARY. This rung used to fire on ANY 400 while a summary was asked for and
+     set summaryRefused for the isolate's life — so a 400 about the schema, the replayed reasoning or the model took the readable
+     reasoning away from every later turn of that isolate, though the summary was never the cause. Same test as the retention rung
+     above: the refusal's own words. A 400 about something else falls to the rungs below, which own those. */
+  if (!r.ok && r.status === 400 && summary && /summar/i.test(await r.clone().text().catch(() => ""))) {
     summary = false;
     summaryRefused = true;
     r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools));

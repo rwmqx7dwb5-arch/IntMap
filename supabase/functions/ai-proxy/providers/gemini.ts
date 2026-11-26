@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { providerStream } from "../../_shared/ai-stream.js";
-import { providerCall, ProviderError, classifyGemini, streamedBody } from "../provider-call.ts";
+import { providerCall, ProviderError, classifyGemini, streamedBody, transientRetry } from "../provider-call.ts";
 import type { Meter, StreamSink } from "../provider-call.ts";
 import { filesBlock } from "../media.ts";
 import type { ImgPart, FilePart, DocPart, WebCitation } from "../media.ts";
@@ -95,26 +95,11 @@ export async function callGemini(model: string, key: string, prompt: string, sys
 // model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
 // short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
 export async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webCount?: number; webSources?: number | null; served?: string }> {
-  return await geminiRetry(() => callGemini(model, key, prompt, system, imgs, files, docs, opts));
+  return await geminiRetry(() => callGemini(model, key, prompt, system, imgs, files, docs, opts), opts.meter);
 }
 /* (atlas-native-tools) the retry policy above, as a wrapper, so the turn path gets the SAME policy rather than a copy */
-export async function geminiRetry<T>(call: () => Promise<T>): Promise<T> {
-  const MAX = 3;   // 1 attempt + up to 2 retries
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await call();
-    } catch (e) {
-      const ps = (e instanceof ProviderError && e.meta && typeof e.meta.providerStatus === "number") ? e.meta.providerStatus as number : 0;
-      // (#R113e) Retry ONLY a 5xx overload — NOT a 429. Retrying a rate/quota 429 immediately just consumes another
-      // request of the SAME per-minute/per-day budget (making it worse); those need the caller to wait ~a minute.
-      const transient = e instanceof ProviderError && e.code === "provider_unavailable" && ps >= 500;
-      if (transient && attempt < MAX) {
-        await new Promise((r) => setTimeout(r, 700 * attempt));
-        continue;
-      }
-      throw e;
-    }
-  }
+export async function geminiRetry<T>(call: () => Promise<T>, meter?: Meter): Promise<T> {
+  return await transientRetry(call, meter);   /* (atlas-mainloop-reliability) the one policy, shared by every provider (provider-call.ts) */
 }
 
 /* ══ (atlas-native-tools) THE TURN, IN GEMINI'S NATIVE SHAPE — functionCall / functionResponse ═════════════════

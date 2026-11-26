@@ -207,6 +207,20 @@ export function makeAtlasAgent() {
       return { code: o.code != null ? String(o.code) : null, status: Number.isFinite(+o.status) && o.status != null ? +o.status : null,
         retryable: typeof o.retryable === 'boolean' ? o.retryable : null, message: String((o.message) || (e ? String(e) : '') || 'model error') };
     }
+    /* ── (atlas-mainloop-reliability) WHAT TO SAY WHEN A LATER STEP'S MODEL CALL FAILED. A turn that already ran tools and then lost
+          its next model call stops as 'transport' with no written answer; the screen said «No written answer this time», which names no
+          cause and reads as Atlas choosing silence. trace.transportErrorInfo (errorInfo above) holds the cause — the sentence js/ai-core.js
+          wrote for the server's code (rate limit, provider down, quota …), the code, and whether sending again can help — and nothing read
+          it. `L` is the console's picker (en, jp). Returns '' for any other stop, so the caller's own sentence stands. */
+    function transportSay(out, L) {
+      if (!out || out.stopped !== 'transport') return '';
+      const info = (out.trace && out.trace.transportErrorInfo) || {};
+      const why = String(info.message || (out.trace && out.trace.transportError) || '').trim();
+      const head = L('The AI request failed partway, so this answer stopped.', 'AI への問い合わせが途中で失敗したため、ここで回答が止まりました。');
+      const tail = info.retryable === false ? '' : L(' Sending the question again usually works.', ' もう一度送ると通ることが多いです。');
+      const have = out.results && out.results.length ? L(' What was gathered before it failed is below.', ' 失敗するまでに集めた結果は下にあります。') : '';
+      return head + (why ? ' (' + why + ')' : '') + tail + have;
+    }
     /* ── (atlas-completion) WHETHER THE TURN DELIVERED WHAT IT DECLARED. Two declarations, each held
           against the machine's record of the same thing — never against the prose:
           · `answer_mode` against `produced` — by the SAME rule the output gate uses (MODE_NEEDS read
@@ -445,7 +459,13 @@ export function makeAtlasAgent() {
          (js/atlas-working-memory.js block), so the prefix a provider caches stays the same bytes from step to step. */
       const memText = String(o.memory || '').trim();
       const memItem = memText ? { type: 'message', role: 'user', content: memText } : null;
-      const fixed = itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0) + (memItem ? itemChars(memItem) : 0);
+      /* (atlas-mainloop-reliability) THE PART THAT DOES NOT CHANGE GOES FIRST. A provider's prompt cache is a PREFIX match. The request item
+         starts with the map state, which differs every turn, and the layer names and the delegation policy — the same for the whole
+         session — sat behind it, so nothing after the first byte of a turn could be reused by the next. They are one item now, before the
+         history, so the cached prefix is instructions + functions + this block however far the history has slid. */
+      const stableText = String(o.stable || '').trim();
+      const stableItem = stableText ? { type: 'message', role: 'user', content: stableText } : null;
+      const fixed = (stableItem ? itemChars(stableItem) : 0) + itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0) + (memItem ? itemChars(memItem) : 0);
       /* ② the oldest history goes first, whole messages, and ONE item says what went */
       let kept = hist.slice();
       while (kept.length && (fixed + sum(kept)) > B.total) {
@@ -465,6 +485,7 @@ export function makeAtlasAgent() {
         }
       }
       const input = [];
+      if (stableItem) input.push(stableItem);
       if (trim.droppedHistory) {
         input.push({ type: 'message', role: 'user', content: '[EARLIER CONVERSATION NOT SHOWN — the ' + trim.droppedHistory
           + ' oldest messages of this conversation (' + trim.droppedHistoryChars + ' characters) were left out to fit. '
@@ -1676,7 +1697,7 @@ export function makeAtlasAgent() {
         } };
     }
 
-    const API = { LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
+    const API = { transportSay, LIMITS, FINAL_SCHEMA, ANSWER_MODES, TURN_STATES, CUT_STOPS, INPUT_BUDGET, READ_RESULT_TOOL, conflicts, keysOverlap,
       runTurn, runLine, runHistory: RUN_HISTORY, reject, readReply, validateAgainst, composeInput, historyItems, resultText };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;

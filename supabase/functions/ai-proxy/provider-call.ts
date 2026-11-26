@@ -47,6 +47,50 @@ export async function providerCall(url: string, init: RequestInit, ms: number | 
   }
 }
 
+/* ══ (atlas-mainloop-reliability) THE ONE PLACE A TRANSIENT FAILURE IS RETRIED — every provider, every call ═════
+   A turn's step that met a 5xx, a cut stream, an unreachable host or a per-minute 429 used to end the turn: only
+   the Gemini path retried (geminiRetry), OpenAI and Anthropic threw at once. one-pass-or-a-reason §5 allows a
+   repeat after a failure that was OBSERVED and that differs from the first try, with the count on record:
+     · observed  — a ProviderError that classifyGemini / providerCall produced (status ≥ 500, no status = could not
+       be reached or the stream stopped, or a 429 that is not a quota). A timeout is NOT retried (it already
+       spent the window), nor a too-large answer, a quota, a safety block, a 4xx.
+     · different — a pause first (700 ms × n; a 429 waits for the provider's retryAfter up to 5 s, else 2 s).
+     · on record — console line + meter.retry(why); each request is also counted by meter.attempt (health rows).
+   ⚠ A retry that cannot fit is not made: when what is left of the reader request's window (providerBudgetMs)
+   is shorter than the attempt that just failed took, the next one would run out of time too.
+   Expires: when the journal's attempts column shows a retry that never recovered — then the cause is not transient. */
+export function isTransient(e: unknown): { transient: boolean; why: string; waitMs: number } {
+  if (!(e instanceof ProviderError)) return { transient: false, why: "", waitMs: 0 };
+  const m = (e.meta || {}) as Record<string, unknown>;
+  const ps = typeof m.providerStatus === "number" ? m.providerStatus as number : 0;
+  if (e.code === "provider_unavailable" && e.retryable && !m.timeout && !m.tooLarge && !m.ceiling && (ps === 0 || ps >= 500)) {
+    return { transient: true, why: ps ? "http_" + ps : "unreachable", waitMs: 0 };
+  }
+  if (e.code === "provider_rate_limit" && e.retryable && ps === 429) {
+    const ra = parseInt(String(m.retryAfter || ""), 10);
+    return { transient: true, why: "http_429", waitMs: Number.isFinite(ra) && ra > 0 ? Math.min(5000, ra * 1000) : 2000 };
+  }
+  return { transient: false, why: "", waitMs: 0 };
+}
+export async function transientRetry<T>(call: () => Promise<T>, meter?: Meter): Promise<T> {
+  const MAX = 3;   // 1 attempt + up to 2 retries — the policy geminiRetry has always had
+  for (let attempt = 1; ; attempt++) {
+    const t0 = Date.now();
+    try {
+      return await call();
+    } catch (e) {
+      const t = isTransient(e);
+      const took = Date.now() - t0;
+      if (!t.transient || attempt >= MAX) throw e;
+      const wait = t.waitMs || 700 * attempt;
+      if (providerBudgetMs(meter?.longWindow === true, meter?.startedAt, Date.now()) < took + wait) throw e;
+      try { meter?.retry?.(t.why); } catch (_) { /* observation only */ }
+      try { console.error("ai-proxy transient retry", JSON.stringify({ attempt, why: t.why, waitMs: wait })); } catch (_) { /* ignore */ }
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
+
 // (#R113) Typed provider failure → mapped to an HTTP status that is NEVER 429
 // (429 means the IntMap daily quota) so the client can tell them apart.
 export type AIProxyErrorCode =
@@ -137,7 +181,7 @@ export function streamedBody(ps: Streamed, provider: string, meter?: Meter): Rec
    object every provider call site of a request already receives, so the cohort's share travels with
    it rather than through a second parameter at each site; absent (the developer's model list, which
    has no request meter) means the project ceiling alone. */
-export type Meter = { add(provider: string, answer: unknown): unknown; startedAt?: number; longWindow?: boolean; attempt?(): void; fallback?(to: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
+export type Meter = { add(provider: string, answer: unknown): unknown; startedAt?: number; longWindow?: boolean; attempt?(): void; fallback?(to: string): void; retry?(why: string): void; ceiling?: { take(cost?: number): Promise<unknown>; share?: string } };
 
 /* ══ (atlas-completion) WHAT THE ANSWER IS, BESIDES ITS TEXT — did it end, and what did the search do ══
    Two facts each provider used to read and then drop:

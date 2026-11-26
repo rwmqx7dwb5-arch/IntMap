@@ -90,8 +90,10 @@ export async function callAnthropic(model: string, key: string, prompt: string, 
   content.push({ type: "text", text: prompt });
   const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: [{ role: "user", content }] };
   if (system) body.system = system;
-  // Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
-  if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
+  /* Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
+     (atlas-mainloop-reliability) NO `max_uses`: it was a fixed 3 per request — a limit of ours on how much Atlas may search, which
+     the project does not set anywhere else (the spending fences are the bound). */
+  if (web) body.tools = [{ type: "web_search_20250305", name: "web_search" }];
   /* (ai-one-ledger) the system prompt (and the web tool) end in a cache breakpoint — _shared/ai-usage.js */
   const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -132,6 +134,7 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
     return parts;
   })) {
     if ("attach" in it) { it.attach.forEach((p) => add("user", p)); continue; }
+    if (it.type === "provider_block") { if (it.provider === "anthropic") add("assistant", it.block); continue; }   /* (atlas-mainloop-reliability) what the search left in the last reply, replayed as the provider wrote it */
     if (it.type === "message") add(it.role === "assistant" ? "assistant" : "user", { type: "text", text: it.content });
     else if (it.type === "function_call") {
       let input: unknown = {};
@@ -146,7 +149,7 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
      one keeps the unchanged prefix a hit. At most three breakpoints in all — under Anthropic's four. */
   const lastFixed = turn.tools.map((t) => !t.promoted).lastIndexOf(true);
   if (lastFixed >= 0 && lastFixed < tools.length - 1) tools[lastFixed] = { ...tools[lastFixed], cache_control: { type: "ephemeral" } };
-  if (web) tools.push({ type: "web_search_20250305", name: "web_search", max_uses: 3 });
+  if (web) tools.push({ type: "web_search_20250305", name: "web_search" });
   const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: msgs };
   if (system) body.system = system;
   if (tools.length) body.tools = tools;
@@ -157,22 +160,41 @@ export async function callAnthropicTurn(model: string, key: string, turn: TurnRe
      Breakpoints at the end of the tools and of the system prompt — _shared/ai-usage.js withPromptCache
      says why these two and why this changes nothing the model reads. */
   /* (atlas-live-stream) asked to stream when the page is watching; folded back into this same `j` below */
-  const ps = sink ? providerStream("anthropic", sink) : null;
-  if (ps) body.stream = true;
-  const r = await providerCall("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify(withPromptCache(body)),
-  }, undefined, meter, ps ? ps.onChunk : undefined);
-  if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
+  /* (atlas-mainloop-reliability) ⚠ A reply that stops with stop_reason "pause_turn" is the hosted search being paused mid-way: the
+     documented way on is to send the same conversation back with that reply appended. It used to be returned as an answer that
+     ended there (reported incomplete, nothing continued it). The loop ends when the provider says it is done; what bounds it is
+     the request's own time window and the spending ceilings every request here goes through, not a number of ours. */
   // deno-lint-ignore no-explicit-any
-  const j: any = ps ? streamedBody(ps, "anthropic", meter) : await r.json();
-  meter?.add("anthropic", j);
+  const blocks: any[] = [];
+  // deno-lint-ignore no-explicit-any
+  let j: any = null;
+  for (;;) {
+    /* (atlas-live-stream) asked to stream when the page is watching; folded back into this same `j` below */
+    const ps = sink ? providerStream("anthropic", sink) : null;
+    if (ps) body.stream = true;
+    const r = await providerCall("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify(withPromptCache(body, { messages: true })),
+    }, undefined, meter, ps ? ps.onChunk : undefined);
+    if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
+    // deno-lint-ignore no-explicit-any
+    const jj: any = ps ? streamedBody(ps, "anthropic", meter) : await r.json();
+    meter?.add("anthropic", jj);
+    j = jj;
+    const got = Array.isArray(jj?.content) ? jj.content : [];
+    blocks.push(...got);
+    if (jj?.stop_reason !== "pause_turn" || !got.length) break;
+    (body.messages as unknown[]).push({ role: "assistant", content: got });
+  }
+  if (blocks.length) j = { ...j, content: blocks };
   const output: TurnItem[] = [];
   let text = "";
   for (const b of (Array.isArray(j?.content) ? j.content : [])) {
     if (b?.type === "text" && typeof b.text === "string") { text += b.text; output.push({ type: "message", role: "assistant", content: b.text }); }
     else if (b?.type === "tool_use" && typeof b.name === "string") output.push({ type: "function_call", call_id: String(b.id || ""), name: b.name, arguments: JSON.stringify(b.input || {}) });
+    /* (atlas-mainloop-reliability) the search itself: kept as the provider's own blocks, so the next call still has what it found (it was dropped, and every later step had to search again) */
+    else if (b?.type === "server_tool_use" || b?.type === "web_search_tool_result") output.push({ type: "provider_block", provider: "anthropic", block: b });
   }
   const finishReason = String(j?.stop_reason || "");
   if (!text && !output.some((it) => it.type === "function_call")) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
