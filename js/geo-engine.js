@@ -526,7 +526,24 @@ function _redrawLocalGlyphs(m,cover){
     /* the RENDERER'S clock, the one its own wheel and ease read — so a frozen clock (maplibregl.setNow,
        which tests/map-motion.spec.js steps frame by frame) freezes the spring with them */
     const clock=()=>{ try{ return maplibregl.now(); }catch(_){} try{ return performance.now(); }catch(_){ return Date.now(); } };
+    /* ══ THE ZOOM FOLLOWS THE CURSOR FOR AS LONG AS IT RUNS ══════════════════════════════════════════════
+       「スクロールでズームし続けている途中でカーソルを動かしたら、新しいカーソル位置を起点にズームする」. The stock handler reads
+       the cursor ONCE, in `_start` (maplibre-gl 6.19 scroll_zoom.ts: `this._aroundPoint = pos`, reached only while the
+       gesture is not already `_active`), and every later notch merely adds to `_delta`. Stock, that is a 200 ms window;
+       with the spring above the gesture is held open until the zoom has ARRIVED (about a second after a hard flick), so the
+       fixed anchor became a visible defect: the cursor moves and the map keeps zooming into where it WAS. A pointer move
+       says nothing to the handler (it is not a wheel event), so the position is tracked here, on the canvas, and handed to
+       the handler as its anchor on every frame of a running gesture. Not applied to a centre-anchored zoom
+       (`_aroundCenter`), whose anchor is not the cursor. */
+    let cur=null;
+    try{ const cv=mm.getCanvas&&mm.getCanvas(); if(cv&&cv.addEventListener){
+      const at=(e)=>{ try{ const r=cv.getBoundingClientRect(); cur={x:e.clientX-r.left-cv.clientLeft,y:e.clientY-r.top-cv.clientTop}; }catch(_){} };
+      cv.addEventListener('mousemove',at,{passive:true}); cv.addEventListener('wheel',at,{passive:true,capture:true});
+    } }catch(_){}
     sz.renderFrame=function(){
+      if(cur&&this._active&&!this._aroundCenter&&this._aroundPoint&&typeof this._aroundPoint.x==='number'){
+        const p=this._aroundPoint; if(p.x!==cur.x||p.y!==cur.y){ try{ this._aroundPoint=new p.constructor(cur.x,cur.y); }catch(_){ this._aroundPoint={x:cur.x,y:cur.y}; } }
+      }
       const res=stock.apply(this,arguments);
       if(!res||this._type!=='wheel'){ if(!this._active) z=null; return res; }
       const tr=_tr(mm,true);   /* the transform the handler itself just measured its zoomDelta against */

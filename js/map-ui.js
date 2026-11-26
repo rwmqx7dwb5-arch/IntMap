@@ -2651,17 +2651,24 @@ export function labelPopup(HOST){
        Tile labels have no feature id, so the clicked feature is excluded by its OWN name property, read from the
        features actually rendered at the point; the layer's previous filter is kept and put back on close. Only the two
        city layers: they are the ones whose filter nothing else rewrites (ofm-admin1's is written by time-admin1.js). */
+    /* ══ THE NAME UNDER THE PIN IS HIDDEN, WHATEVER KIND OF PLACE IT NAMES ══════════════════════════════════════
+       「行政区分名と国名のラベルは、クリックしても都市名のように消えない」: only the city layer was hidden, by rewriting
+       its FILTER — and a filter is not ours to rewrite on the others (js/time-admin1.js writes ofm-admin1's on every time
+       change, js/place-labels.js owns ofm-country's), so a country or a prefecture name stayed printed through its own pin.
+       The suppression now rides on a property nobody else writes on a label layer, `text-opacity`: the clicked name goes
+       to 0 in EVERY place-name layer that carries it (PLACE_LBL, the same list the click is wired from), and each layer's
+       previous value is put back on close. A new place-label layer joins PLACE_LBL and needs nothing here. */
     let _hidLbl=null;
-    const _CITY_LBL=['ofm-city'];
-    function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setFilter(id,h[id]); }catch(_){} } }
+    function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setPaint(id,'text-opacity',h[id]); }catch(_){} } }
     function _hideLabelAt(lngLat){ _restoreLabel();
       try{ const p=GE().coords.project([lngLat.lng,lngLat.lat]); if(!p||!isFinite(p.x)||!isFinite(p.y)) return;
-        const ids=_CITY_LBL.filter(id=>GE().layers.has(id)); if(!ids.length) return;
+        const ids=PLACE_LBL.filter(id=>GE().layers.has(id)); if(!ids.length) return;
         const pad=14, hit=GE().coords.queryRenderedFeatures([[p.x-pad,p.y-pad],[p.x+pad,p.y+pad]],{layers:ids})||[];
-        const names=[...new Set(hit.map(h=>h&&h.properties&&h.properties.name).filter(n=>typeof n==='string'&&n))]; if(!names.length) return;
-        const keep={}; for(const id of ids){ keep[id]=GE().layers.getFilter(id);
-          GE().layers.setFilter(id,['all',keep[id],...names.map(n=>['!=',['get','name'],n])]); }
-        _hidLbl=keep; }catch(_){ _restoreLabel(); } }
+        const byLayer={}; for(const h of hit){ const n=h&&h.properties&&h.properties.name, id=h&&h.layer&&h.layer.id;
+          if(typeof n==='string'&&n&&id&&ids.includes(id)) (byLayer[id]=byLayer[id]||new Set()).add(n); }
+        const keep={}; for(const id of Object.keys(byLayer)){ const prev=GE().layers.getPaint(id,'text-opacity'); keep[id]=(prev===undefined||prev===null)?1:prev;
+          GE().layers.setPaint(id,'text-opacity',['case',['in',['get','name'],['literal',[...byLayer[id]]]],0,keep[id]]); }
+        if(Object.keys(keep).length) _hidLbl=keep; }catch(_){ _restoreLabel(); } }
     function _dropPin(mine){ if(!placePin||(mine&&mine!==placePin)) return; const p=placePin; placePin=null; _restoreLabel(); try{ p.remove(); }catch(_){} }
     /* stand the pin on the point; hands back its box (the name chip counts: it is what a popup beside it must clear) */
     function _standPin(lngLat,name){ try{ return _standPinNow(lngLat,name); }catch(_){ return null; } }   /* a pin is decoration: a host that cannot draw one (no DOM) still opens the card */
@@ -2731,7 +2738,7 @@ export function labelPopup(HOST){
          «where this border comes from» on the era cards. Placement only: no string is created here. */
       const moreBtn=(opts&&opts.more&&opts.more.label&&typeof opts.more.run==='function')?('<button class="plc-more" style="background:var(--input-bg);'+btnBase+'">'+window.IntMapSafe.html(String(opts.more.label))+'</button>'):'';
       const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
-      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}${moreBtn}</div></div>`;
+      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button>${isoBtn}${moveBtn}${moreBtn}</div></div>`;
       /* ⚠ Cesium's overlay reads a NUMERIC `offset` only and always anchors bottom-centre (js/cesium-engine.js makeOverlay),
          so there the popup keeps its old place above the point and the pin stands under it; MapLibre honours both. */
       const _pin=_standPin(lngLat,name), _pl=_placeBeside(lngLat,html,_pin);
@@ -2788,11 +2795,6 @@ export function labelPopup(HOST){
               const _json=(u)=>readWithin(u,clockFor(u,'direct')).then(r=>r.ok?JSON.parse(r.text):null).catch(()=>null);   /* (fetch-deadline-layer) each probe ends — a hung article lookup must not hold the walk */
               W.findArticle(W.wikiTargets(props,_keys,{refused}),_json).then(hit=>{ if(hit) _showW({content_urls:{desktop:{page:hit.url}}}); }).catch(()=>{}); }
             }).catch(()=>{}); }
-          /* (#R20) AI Research Assistant entry point */
-          const ai=document.querySelector('.plc-ai');
-          /* (#R224) Atlas is on demand — js/atlas-loader.js fetches it and then runs the brief. (country-analysis-unify) There is no
-             fallback any more: the older research panel it fell back to is gone, and its brief had no web search and no sources. */
-          if(ai) ai.onclick=()=>{ try{ window.IntMapAtlas.call('brief',name,lngLat); }catch(_){} };   /* (#R62) brief runs inside Atlas */
           /* (#R122) resolve the clicked place's polygon: the caller-supplied era border, else the outline this
              popup drew (works for sub-national regions / cities too), else the modern country polygon under the point. */
           const _placeGeo=()=>{ try{ if(opts&&opts.geojson&&/Polygon/.test(opts.geojson.type||'')) return opts.geojson;

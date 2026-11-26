@@ -119,6 +119,29 @@ export function placeLabels(HOST){
      re-added — which is exactly why labels were missing on first load but appeared after toggling
      names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
+  /* ══ A COUNTRY'S NAME GOES WHEN THE VIEW HAS ENTERED THE COUNTRY ═══════════════════════════════
+     「国名・地名のラベルは、その領域を一定以上ズームしたら消える」 — decided by the SIZE of the region against the size of the view
+     (IntMapCountryExtent.viewShare), never by a country's name. Each country label in the loaded tiles is matched to the country
+     whose home extent holds its point (the smallest such extent wins, so an enclave beats its host), and the names whose share
+     is past NAME_GONE_SHARE are taken out of the layer's filter. `querySourceFeatures` and not `queryRenderedFeatures`: a name
+     already filtered out is not rendered, and would never be asked again when the reader zooms back out. Only the count of
+     matched names is kept, so nothing is rewritten while the answer is unchanged. */
+  let _cnBase=null, _cnKey='';
+  function fitCountryNames(){
+    if(!GE().layers.has('ofm-country')) return;
+    const CE=window.IntMapCountryExtent, stats=HOST.countryStats; if(!CE||!CE.viewShare||!stats) return;
+    const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
+    const z=GE().camera.getZoom();
+    const rows=[]; for(const k of Object.keys(stats)){ const b=stats[k]&&stats[k].bbox; if(b&&b.length===4&&isFinite(b[0])) rows.push(b); }
+    const feats=GE().coords.querySourceFeatures('ofm',{sourceLayer:'place',filter:['==',['get','class'],'country']})||[];
+    const gone=new Set();
+    for(const f of feats){ const p=f&&f.properties, g=f&&f.geometry; const nm=p&&p.name; if(typeof nm!=='string'||!nm||!g||g.type!=='Point') continue;
+      const x=g.coordinates[0], y=g.coordinates[1]; let best=null, area=Infinity;
+      for(const b of rows){ const x2=(x<b[0])?x+360:x; if(x2>=b[0]&&x2<=b[2]&&y>=b[1]&&y<=b[3]){ const a=(b[2]-b[0])*(b[3]-b[1]); if(a<area){ area=a; best=b; } } }
+      if(best&&CE.viewShare(best,z,vw,vh)>=CE.NAME_GONE_SHARE) gone.add(nm); }
+    const key=[...gone].sort().join('|'); if(key===_cnKey) return; _cnKey=key;
+    if(_cnBase===null) _cnBase=GE().layers.getFilter('ofm-country')||['==',['get','class'],'country'];
+    GE().layers.setFilter('ofm-country',gone.size?['all',_cnBase,['!',['in',['get','name'],['literal',[...gone]]]]]:_cnBase); }
   function ensurePlaceLabels(){
     if(!_imCanDraw()) return;
     /* (#R252) the ONE answer to «which `name:*` field is this label showing?», published before any
@@ -418,6 +441,7 @@ export function placeLabels(HOST){
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
+      if(!ensurePlaceLabels._fitHooked){ ensurePlaceLabels._fitHooked=true; GE().events.on('moveend',()=>{ try{ fitCountryNames(); }catch(_){} }); GE().events.on('idle',()=>{ try{ fitCountryNames(); }catch(_){} }); }
       if(!ensurePlaceLabels._harvestHooked){ ensurePlaceLabels._harvestHooked=true; GE().events.on('idle',()=>{ try{ harvestStableLabels(); }catch(_){}
         /* (#R72) SELF-HEAL: a basemap/style swap can wipe individual label layers; if the water/sea layers are
            gone while the toggle is on, re-add + re-apply. This was the reported "東シナ海が全体を写していても

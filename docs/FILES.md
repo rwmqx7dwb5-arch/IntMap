@@ -1387,7 +1387,7 @@ analysis-panels.js                分析パネルの EAGER SHELL ——「起動
                                   3つのファクトリ登録・#btn-correlate と #edu-mount/#btn-edu の生成・
                                   言語切替の再翻訳・地図クリックの転送、そして
                                   IntMapCorrelate / IntMapEdu の非同期ファサード（呼ばれてから実装を取りに行く）。
-                                  国の時系列は stats-compare.js の時系列表示（`timeline`）、「AI調査」は Atlas の brief
+                                  国の時系列は stats-compare.js の時系列表示（`timeline`）。調査は Atlas の能力 research.brief（チャットで訊く。専用ボタンは無い）
 analysis-correlate.js             ↳ 相関・散布図の実装          __imAnalysisCorrelate（遅延）
 analysis-world-events.js          ↳ 世界の出来事の実装 __imAnalysisEvents（遅延）——time-index.js の索引を**地図の時刻まで**新しい順に並べる（手書きの表は無い）
 analysis-edu.js                   ↳ 学習モード・地図クイズの実装 __imAnalysisEdu（遅延）

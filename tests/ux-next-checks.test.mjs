@@ -66,7 +66,7 @@ test('① every place-label popup hands the lookup the feature properties, and t
   const calls = src.match(/showPopup\(labelAnchor\([^;]*\);/g) || [];
   assert.ok(calls.length >= 3, 'the three label callers');
   for (const c of calls) assert.match(c, /props:/, 'a label caller without the feature properties: ' + c.slice(0, 90));
-  const block = src.slice(src.indexOf("const w=document.querySelector('.plc-wiki');"), src.indexOf('/* (#R20) AI Research Assistant entry point */'));
+  const block = src.slice(src.indexOf("const w=document.querySelector('.plc-wiki');"), src.indexOf('/* (#R122) resolve the clicked place'));
   assert.match(block, /W\.findArticle\(W\.wikiTargets\(/);
   assert.doesNotMatch(read('js/map-ui.js'), /^import[^\n]*wiki-lookup/m, 'fetched by the popup, not imported at boot');
   assert.doesNotMatch(block, /_probe\(wl,wtitle\)/, 'the old display-name probe is gone');

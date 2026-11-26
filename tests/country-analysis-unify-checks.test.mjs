@@ -222,12 +222,10 @@ test('③ the card\'s time-series button reaches the timeline, and the old chart
 
 /* ══ ④ ONE BRIEF ══════════════════════════════════════════════════════════════════════════════ */
 
-test('④ every 「AI調査」 is Atlas\'s brief, fetched if need be — no ladder, no second panel', () => {
-  /* 綴りのまま: 主張は配線と不在（ボタンがどの窓口を呼ぶか／旧パネルへの経路が無いこと）で、ボタンは DOM と遅延ロードの上でしか押せない */
-  const cu = codeOnly(read('js/countries-ui.js'));
-  const branch = cu.slice(cu.indexOf("if(a==='brief'){"), cu.indexOf("if(a==='brief'){") + 400);
-  assert.match(branch, /window\.IntMapAtlas\.call\('brief',_n,_l\)/);
-  assert.match(codeOnly(read('js/map-ui.js')), /if\(ai\) ai\.onclick=\(\)=>\{ try\{ window\.IntMapAtlas\.call\('brief',name,lngLat\); \}catch\(_\)\{\} \};/);
+test('④ there is no 「AI調査」 button anywhere — the research.brief capability answers in Atlas chat, and no second panel exists', () => {
+  /* 綴りのまま: 主張は不在（ボタンも旧パネルへの経路も無いこと）で、押せるものが無い */
+  assert.doesNotMatch(codeOnly(read('js/countries-ui.js')), /data-cpact="brief"|call\('brief'/);
+  assert.doesNotMatch(codeOnly(read('js/map-ui.js')), /plc-ai|call\('brief'/);
   assert.equal(existsSync(join(ROOT, 'js/analysis-research.js')), false);
   for (const rel of jsTree()) {
     const code = codeOnly(read(rel));
@@ -242,8 +240,6 @@ test('④ the brief ends with the next questions — the same offer the arrival 
   assert.match(rd, /function offer\(el, qs\)/);
   assert.match(rd, /return \{ arrive, askReading, readingStarters, offer \};/);
   assert.equal((rd.match(/offerHtml\(/g) || []).length, 3, 'one builder, used by the arrival and by the offer');
-  const brief = liftFunction(codeOnly(read('js/atlas-console.js')), 'briefEntry');
-  assert.match(brief, /READ\.offer\(ai, pointExamples\(act\.lng,act\.lat,/);
 });
 
 /* ══ ⑤ ONE PICTURE ════════════════════════════════════════════════════════════════════════════ */

@@ -569,7 +569,12 @@ export function countriesUi(HOST){
                  fallback for the boot window before `_imPhoneClass` is published. */
               try{ if(window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) slow=true; }
               catch(_){ try{ if(HOST.isMobile&&HOST.isMobile()) slow=true; }catch(__){} }
-              let ran=false; const run=()=>{ if(ran) return; ran=true; upgrade().catch(()=>{}); };
+              let ran=false, fineP=null; const run=()=>{ if(!ran){ ran=true; fineP=upgrade().catch(()=>{}); } return fineP; };
+              /* A reader whose answer is drawn against the visible border (Isolate's mask) must not be handed the 110 m stand-in:
+                 the line on screen is a finer survey, and a hole cut from a 17x coarser outline sits visibly beside it.
+                 It asks for the fine collection NOW instead of waiting out the idle / zoom schedule below (same upgrade,
+                 sooner; the promise settles once countryGeo is the fine collection). */
+              window._imRequireFineCountryGeo=()=>run();
               /* (mobile-performance) …AND ON A PHONE THE ZOOM SAYS WHEN THE OUTLINE IS WORTH ITS BYTES. The 110 m
                  outline is indistinguishable from the 10 m one on a 390-pixel globe; it is not at country scale,
                  where a tap near a border is resolved against this geometry. So the first time the camera
@@ -827,9 +832,7 @@ export function countriesUi(HOST){
     const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
     const _tsSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>';
     const _topBtnCss='flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;';
-    const _aiSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18 12h3M16.3 7.7l2.1-2.1"/><circle cx="12" cy="14" r="5"/></svg>';
     const _cmpSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10M12 20V4M18 20v-7"/></svg>';
-    const _aiName=encodeURIComponent(name).replace(/'/g,'%27');
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
       /* ══ ⚠ (#R236) THREE OF THESE FOUR HAD NO SPANISH AT ALL ═══════════════════════════════════════
          「ドイツ語、ロシア語、スペイン語について、すべての面において対応が完璧かどうか最終点検し」
@@ -843,7 +846,6 @@ export function countriesUi(HOST){
          further in). Folded back into the call so every language is one argument in one place. */
       +`<button data-cpact="isolate" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
       +`<button data-cpact="timeseries" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
-      +`<button data-cpact="brief" data-cpname="${_aiName}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
       +`<button data-cpact="compare" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
       +`</div>`
       /* (countries-companies) THE COUNTRY'S COMPANIES, ONE CLICK AWAY. The company atlas already answers «whose
@@ -872,15 +874,6 @@ export function countriesUi(HOST){
              (exploration-flows) It names THIS card's country: open(code) adds it to what is already compared (and to the
              Countries tray) — called with nothing, the card's country went in only when the comparison was empty. */
           if(a==='compare'){ const _c=(window._cpCurrent||{}).code; window.IntMapLazy.need('statsCompare').then(()=>{ try{ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(_c||undefined); }catch(_){} }); return; }
-          if(a==='brief'){
-            /* (country-analysis-unify) ONE PATH: Atlas's brief, fetched if it is not here yet (js/atlas-loader.js). There were three
-               — Atlas, else the console's own brief, else a separate research panel — so WHICH screen and WHICH format the reader
-               got depended on whether Atlas had happened to load, and the panel's brief had no web search and no sources.
-               `_aiName` was encodeURIComponent'd into the attribute; it is decoded exactly as before. */
-            const _n=decodeURIComponent(b.getAttribute('data-cpname')||'');
-            const _l=(window._cpCurrent&&window._cpCurrent._ll)||null;
-            window.IntMapAtlas.call('brief',_n,_l);
-          }
         }catch(e){}
       });
     }

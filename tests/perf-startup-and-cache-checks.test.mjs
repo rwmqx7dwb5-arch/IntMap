@@ -377,11 +377,7 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
     ['js/keyboard-shortcuts.js', /IntMapAtlas\.call\('toggle'\)/],
     ['js/news-ui.js', /IntMapAtlas\.call\('mountTab'\)/],
     ['js/workspace.js', /IntMapAtlas\.call\('open'\)/],
-    /* (country-analysis-unify) the place popup's and the country card's 「AI調査」 call the loader's call('brief') — one path,
-       the fallback to the research panel gone with that panel */
-    ['js/map-ui.js', /IntMapAtlas\.call\('brief',/],
     ['js/tool-panel.js', /IntMapAtlas\.ensure\(\)/],
-    ['js/countries-ui.js', /IntMapAtlas\.call\('brief',/],
     /* ⚠ (#R296) js/sims.js left this list: its only `IntMapAtlas.call('dispatch')` was the disaster
        panel's 「放射性物質」 choice handing off to the fallout model, and 「4つのうち…全削除」
        removed the wrapper. The fallout model has its own panel now and needs no dispatch to reach

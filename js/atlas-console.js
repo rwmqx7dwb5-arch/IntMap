@@ -3234,25 +3234,6 @@ export function atlasConsole(HOST){
       READ.arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">'+icon('pin')+' '+coordStr+'</div>',
         L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.'),
         ex); }
-    /* (#R62) external entry point: the AI-brief buttons all over IntMap now open ATLAS and run the brief inline
-       ("AI BriefはAtlasに統合して") — one conversation surface for everything. */
-    async function briefEntry(name,ll){ try{ open(); }catch(_){}
-      _lastUserMsg='';   /* (#R64) button entry has no typed message → mirror falls back to the UI language */
-      const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
-      /* (#R69) no 🤖 and no "AI brief" wording in the chat ("AI Briefに🤖をつけるな" / "AI briefってワードを
-         わざわざAtlasで出すな") — the user bubble reads as a plain research request. */
-      bubble('u',L('Research: ','調査: ','Recherche: ','Исследование: ','Investigación: ')+esc(String(name||'')));
-      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
-      const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Researching…','調査中…','Recherchiere…','Изучаю…','Investigando…')+'</span>');
-      const gen=++_runGen;   /* (#R73) a newer message cancels this brief too */
-      try{ const act={type:'brief',place:String(name||'')}; if(ll&&ll.lng!=null&&isFinite(+ll.lng)){ act.lng=+ll.lng; act.lat=+ll.lat; }
-        const r=await dispatch(act); if(gen!==_runGen){ _markCancelled(ai); return; }
-        ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
-        /* (country-analysis-unify) …and the next question. The research panel this replaced ended every brief with questions
-           about the place; here they are the starters askHere offers around the same point (pointExamples), under the brief. */
-        if(r&&r.ok&&act.lng!=null){ try{ READ.offer(ai, pointExamples(act.lng,act.lat,Math.max(GE().camera.getZoom(),5),3)); }catch(_){} }
-      }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { _markCancelled(ai); return; } }
-      msgTools(ai,null); }
     /* (#R82) wire Atlas INTO the kernel: the OS's semantic dispatcher = Atlas's action layer; its state = the
        live map/UI state; its catalog = the full control/layer/module surface. After this, IntMapOS.dispatch(action)
        runs the SAME dispatch the NL chat uses, IntMapOS.state() is the canonical state, and IntMapOS.catalog()
@@ -3297,7 +3278,6 @@ export function atlasConsole(HOST){
             try{ _wctx.highlight=w.name; }catch(_){} } }); }catch(_){}
       window.IntMapOS._bindState(()=>{ try{ return stateContext(); }catch(_){ return ''; } });
       window.IntMapOS._bindCatalog(()=>{ try{ return { commands:window.IntMapOS.list(), controls:controlCatalog(), layers:layerCatalogText(), modules:moduleCatalog() }; }catch(_){ return { commands:window.IntMapOS.list() }; } });
-      window.IntMapOS.brief=(n,ll)=>{ try{ return briefEntry(n,ll); }catch(_){} };
     } }catch(_){}
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
@@ -3310,7 +3290,7 @@ export function atlasConsole(HOST){
       const gen=++_runGen;
       try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
-    return { open, toggle, close:_atlClose, mountTab, panel:ensure, run, runDirect, brief:briefEntry, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, panel:ensure, run, runDirect, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 }
 
