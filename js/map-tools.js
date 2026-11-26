@@ -1405,7 +1405,7 @@ export function objectList(HOST){
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
         out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
-          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.op!=null?p.op:1,
+          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:1,   /* what the reader set (0.1–1); the painter holds it scaled to the fill's 20 % base in p.op */
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           setWidth:w=>{ p.w=w; try{ HP.repaint(); }catch(_){} },
