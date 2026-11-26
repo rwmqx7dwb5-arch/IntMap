@@ -160,6 +160,70 @@ export default [
     },
   },
   {
+    /* (atlas-ui-parts) A TABLE OF VALUES PER AREA -> THE REAL OUTLINES, SHADED. Everything before this either shaded WHOLE COUNTRIES from a catalogue key (map.choropleth),
+       or coloured first-level units by ONE figure IntMap itself holds (geo.regionStat: population), so a table the model had read or fetched (a statistics office's
+       CSV / Excel, rows from a page) ended as a table beside a map that highlighted "selected examples". This is the join and the paint, for any figure the caller states
+       — which is exactly what makes it subject-free: it owns no indicator, it joins the caller's. Column 5 'gis.dataset,map.object': it registers a layer on the map. */
+    row: ['geo.shadeAreas', 'shadeAreas', 'colourAreas,joinTableToAreas,areaChoropleth,shadeRegions,shadeUnits', 'map', 'paint', 'map.object', 'map,explanation', 'session', 'none', '', ''],
+    ui: { none: '2026-11-26' },
+    doc: [
+      { in: 'spatial-analysis', at: 54.5, text: 'SHADE FIRST-LEVEL AREAS BY A TABLE YOU HOLD (自分で集めた表を行政区分の輪郭に結んで色分け): {"type":"shadeAreas","title"?:str,"rows":[{"area":str (a name or an ISO 3166-2 code),"value":num | "group":str,"country"?:str,…any other fields are kept on the shape}],"country"?:str,"unit"?:str,"source":str,"classes"?:int,"method"?:"quantile"|"equal"} = the join and the paint, for ANY figure: put in the values a statistics office stated (read its CSV / Excel with fetchFile or read the page), and the REAL shipped outline of each unit (the same 4,515-unit index highlight uses) is shaded by it — "value" gives a numeric ladder with a legend (濃淡), "group" gives one colour per category (陣営・言語・類型の色分け). Units are joined by identifier or by name, never by position; "country" (or a row\'s own) settles a name two countries share, and a name that is still ambiguous or unknown is LISTED in the answer as unplaced — never guessed, never painted. "source" is required: the layer says where the numbers came from, because a shaded map reads as a fact. Use it whenever the point is a PATTERN ACROSS AREAS (where it is high, where it changed, which side each belongs to) rather than one place — the table alone does not show a pattern the map would. Below first level (counties, municipalities) and whole countries are not shaded here.\n' },
+    ],
+    phrases: () => ['表を行政区分に結んで色分け', '都道府県を値で色分け', '州ごとの濃淡'].concat(['shade areas by my table', 'colour the states by a value', 'join a table to boundaries']),
+    schema: () => ({ type: 'object', properties: { title: str(), rows: list(obj(), 1), country: str(), unit: str(), source: str(), classes: int(2, 9), method: str() }, required: ['rows', 'source'] }),
+    async run(a, dctx, K) {
+      const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const fail = (msg, code) => R(false, warn(esc(msg)), { meta: { code, category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (dctx && dctx.source === 'atlas-worker') return fail(L('A delegated worker cannot change the reader\'s map; hand the table back to the turn that delegated.', '委譲された作業者は地図を変えられません。表を委譲元のターンに返してください。'), 'draws_on_reader_map');
+      const rows = (Array.isArray(a.rows) ? a.rows : []).slice(0, 2000).filter((r) => r && typeof r === 'object');
+      if (!rows.length) return fail(L('No rows to join.', '結ぶ行がありません。'), 'NO_ROWS');
+      if (!String(a.source || '').trim()) return fail(L('Say where the numbers came from ("source").', '数値の出典（"source"）を述べてください。'), 'NO_SOURCE');
+      const areaOf = (r) => String(r.area != null ? r.area : (r.name != null ? r.name : (r.code != null ? r.code : ''))).trim();
+      const numeric = rows.every((r) => r.value != null && r.value !== '' && Number.isFinite(Number(r.value)));
+      const grouped = rows.every((r) => r.group != null && String(r.group).trim() !== '');
+      if (!numeric && !grouped) return fail(L('Every row needs a numeric "value" (a shaded ladder) or every row a "group" (one colour per category) — not a mixture, and not neither.', 'すべての行に数値の "value"（濃淡）か、すべての行に "group"（カテゴリ別の色）のどちらかを付けてください。混在や欠落は描けません。'), 'ROWS_SHAPE');
+      const GU = window.GeoJSONUpload;
+      if (!GU || typeof GU.add !== 'function' || typeof GU.style !== 'function') return R(false, warn(esc(L('The map could not take the layer.', '地図にレイヤーを載せられませんでした。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: true, produced: [], userGoalSatisfied: false } });
+      const hintOf = async (name) => {
+        if (!name) return {};
+        let c = null; try { await K.ensureData(); c = await K.resolveCountry(name); } catch (_) { c = null; }
+        const code = c && c.code ? String(c.code).toUpperCase() : '';
+        return code.length === 3 ? { iso3: code } : code.length === 2 ? { iso2: code, countryCode: code } : {};
+      };
+      const defaultHint = await hintOf(a.country);
+      const asks = [];
+      for (const r of rows) { const h = r.country ? await hintOf(r.country) : defaultHint; asks.push(Object.assign({ name: areaOf(r) }, h)); }
+      const adm = window.IntMapAtlasAdmin1 || (await import('./atlas-admin1.js')).makeAtlasAdmin1();
+      const res = await adm.resolveMany(asks.filter((x) => x.name), {});
+      if (res.error) return R(false, warn(esc(L('The boundary index could not be read.', '境界の索引を読み込めませんでした。'))), { meta: { code: 'DATA_UNREADABLE', category: 'data', retryable: true, produced: [], userGoalSatisfied: false } });
+      const byAsked = new Map(); res.hits.forEach((h) => { byAsked.set(h.asked + '\u0000' + (h.iso3 || ''), h); if (!byAsked.has(h.asked)) byAsked.set(h.asked, h); });
+      const feats = [], unplaced = [], ambiguous = [], seen = new Set();
+      rows.forEach((r, i) => {
+        const nm = areaOf(r); const hit = byAsked.get(nm + '\u0000' + (asks[i].iso3 || '')) || byAsked.get(nm);
+        if (!hit) { unplaced.push(nm || '(blank)'); return; }
+        const hasHint = !!(asks[i].iso3 || asks[i].iso2 || asks[i].countryCode);
+        if (!hasHint && hit.ambiguousCountries && hit.ambiguousCountries.length > 1) { ambiguous.push(nm + ' (' + hit.ambiguousCountries.join('/') + ')'); return; }
+        if (seen.has(hit.stableId)) return;   /* a second row for the same unit: the first stands — said below */
+        seen.add(hit.stableId);
+        const props = { name: hit.canonicalName, code: hit.stableId, asked: nm };
+        Object.keys(r).forEach((k) => { if (!(k in props) && k !== 'area' && k !== 'country' && (typeof r[k] === 'string' || typeof r[k] === 'number' || typeof r[k] === 'boolean')) props[k] = r[k]; });
+        if (numeric) props.value = Number(r.value); else props.group = String(r.group);
+        feats.push({ type: 'Feature', geometry: hit.geo, properties: props });
+      });
+      if (!feats.length) return R(false, warn(esc(L('None of the ' + rows.length + ' rows could be joined to a first-level outline: ', '行 ' + rows.length + ' 件のどれも第1級行政区分の輪郭に結べませんでした: ') + unplaced.concat(ambiguous).slice(0, 12).join(', '))), { meta: { code: 'NO_MATCH', category: 'data', retryable: false, produced: [], userGoalSatisfied: false, unplaced: unplaced.slice(0, 50) } });
+      const title = String(a.title || L('Shaded areas', '色分けした地域')).slice(0, 120) + (a.unit ? ' (' + String(a.unit).slice(0, 24) + ')' : '');
+      const put = GU.add({ type: 'FeatureCollection', features: feats }, title, null, {});
+      if (!put) return R(false, warn(esc(L('The layer was not drawn.', 'レイヤーを描けませんでした。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: true, produced: [], userGoalSatisfied: false } });
+      const st = await GU.style(put.n, numeric ? { field: 'value', mode: 'graduated', method: a.method === 'equal' ? 'equal' : 'quantile', classes: Number(a.classes) || 5 } : { field: 'group', mode: 'categorical' });
+      if (!st || !st.ok) return R(false, warn(esc(L('The layer was added but could not be coloured (' + String(st && st.why || 'unknown') + ').', 'レイヤーは追加しましたが色を付けられませんでした（' + String(st && st.why || '不明') + '）。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: false, produced: [], userGoalSatisfied: false } });
+      let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(title) + '</div>';
+      h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L(feats.length + ' of ' + rows.length + ' rows joined to real first-level outlines', rows.length + ' 行中 ' + feats.length + ' 行を第1級行政区分の輪郭に結びました') + ' · ' + L('source: ', '出典: ') + String(a.source).slice(0, 200)) + '</div>';
+      if (unplaced.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not placed (no such unit in the index): ', '特定できず塗っていません: ') + unplaced.slice(0, 20).join(', ')) + '</div>';
+      if (ambiguous.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Ambiguous between countries, not painted (give "country"): ', '複数の国で同名のため塗っていません（"country" を指定）: ') + ambiguous.slice(0, 20).join(', ')) + '</div>';
+      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['map', 'explanation'], userGoalSatisfied: true, shadeAreas: { rows: rows.length, joined: feats.length, unplaced: unplaced.length, ambiguous: ambiguous.length, mode: numeric ? 'graduated' : 'categorical', layer: put.n } } });
+    },
+  },
+  {
     /* column 5 'gis.dataset': it registers new datasets (a change raster, a class table, a prediction table). column 11 'external': OSM counts and
        facility / news text the caller passes in come from third parties. */
     row: ['geo.ml', 'geoMl', 'multiYearChange,changeTrend,classifyRegions,regionClasses,interpretChange,geoModel,spatialModel,predictWithUncertainty', 'data', 'none', 'gis.dataset', 'explanation', 'session', 'none', '', 'gisCore', 'external'],
