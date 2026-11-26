@@ -288,7 +288,7 @@ test('R551 ⑧: the turn id travels as execution context, not as an argument the
 /* ══ ⑨ A HALF-DONE CALL IS NOT A FINISHED ONE ═════════════════════════════════════════════════ */
 test('R551 ⑨: the turn does not freeze a partial call as a success it need not repeat', () => {
   const src = R('js/atlas-agent.js');
-  const line = /if \(ckey && rec\.ok !== false([^)]*)\) doneCalls\[ckey\] = rec;/.exec(src);
+  const line = /if \(ckey && rec\.ok !== false([^)]*)\) remember\(ckey, rec\);/.exec(src);
   assert.ok(line, 'the memo line is still there');
   for (const st of ['partial', 'running', 'needs_input']) {
     assert.ok(line[1].includes("'" + st + "'"), st + ' is excluded from the memo');
