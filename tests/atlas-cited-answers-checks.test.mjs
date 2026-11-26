@@ -58,7 +58,8 @@ test('② a number is marked only when it equals a value a source returned, at t
   const out = C.linkNumbers(html, items, 't1');
   const marks = out.match(/data-atl-srcn="1"/g) || [];
   assert.equal(marks.length, 2, 'Japanese-glued 3,124,000 and 35.68 (35.6789 at two places) — and nothing else:\n' + out);
-  assert.match(out, /3,124,000<sup class="atl-srcn">/, 'the mark follows the number it is about');
+  assert.match(out, /3,124,000人の都市<sup class="atl-srcn">/, 'the mark follows the phrase the number belongs to, never splits a number from its unit (atlas-result-delivery)');
+  assert.doesNotMatch(out, /\d<sup[^>]*>(?:<a[^>]*>\[\d+\]<\/a>)+<\/sup>[^\s、。，．,.;；:：!?！？()（）<]/, 'a mark never sits between a number and the unit glued to it');
   assert.doesNotMatch(out, /上位7<sup/, 'a one-digit count is not read as a measurement');
   assert.doesNotMatch(out, /M5\.2<sup/, 'a number glued to a Latin letter is part of a name');
   assert.match(out, /<a href="x">3124000<\/a>/, 'the inside of a link is left alone');

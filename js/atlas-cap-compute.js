@@ -112,8 +112,14 @@ export default [
       Object.keys(r.values || {}).forEach((n) => {
         const v = r.values[n];
         let text = ''; try { text = JSON.stringify(v.value); } catch (_) { text = String(v.value); }
-        parts.push('<div><b>' + esc(n) + '</b> = <code>' + esc(text.length > 1500 ? text.slice(0, 1500) + ' …' : text) + '</code>'
-          + (v.nonFinite ? ' · ' + esc(L(v.nonFinite + ' non-finite values became null', v.nonFinite + ' 個の非有限値を null にしました')) : '') + '</div>');
+        /* THE VALUE IS NOT THE READER'S TO READ AS JSON. The model holds it whole as `meta.compute.values` (js/atlas-toolsurface.js `details`), so the card says what
+           was made — its name, its shape, its size — and keeps the JSON one click away, closed. It used to print it open: «result = {…}» under every
+           answer that ran code, which the reader saw as a log dump beneath the answer Atlas had just written. */
+        const shape = Array.isArray(v.value) ? L(v.value.length + ' items', v.value.length + ' 件')
+          : (v.value && typeof v.value === 'object') ? L(Object.keys(v.value).length + ' fields', Object.keys(v.value).length + ' 項目') : typeof v.value;
+        parts.push('<details class="atlas-gis-detail"><summary><b>' + esc(n) + '</b> · ' + esc(shape)
+          + (v.nonFinite ? ' · ' + esc(L(v.nonFinite + ' non-finite values became null', v.nonFinite + ' 個の非有限値を null にしました')) : '') + '</summary><code>'
+          + esc(text.length > 1500 ? text.slice(0, 1500) + ' …' : text) + '</code></details>');
       });
       if (!parts.length) parts.push('<div>' + esc(L('The code ran and bound no `result`.', 'コードは実行されましたが、`result` は作られませんでした。')) + '</div>');
       const html = '<div class="atlas-gis-result"><b>' + esc(r.reused ? L('Same code on the same data — answered from the earlier run (nothing was recomputed)', '同じコードと同じデータのため、前回の結果を返しました（再計算していません）') : L('Calculation finished', '計算が完了しました')) + '</b>' + parts.join('') + streams + '</div>';
@@ -122,6 +128,9 @@ export default [
       let filed = [];
       if (!worker) try { const WS = await import('./atlas-work-store.js'); if (WS.WORK_STATE.current) { const W = await import('./atlas-cap-work.js'); const P = await import('./atlas-job-products.js'); const fr = await P.fileRunToWork(r, a, W.workStore(), WS.WORK_STATE.current); filed = fr.ok ? fr.saved : []; } } catch (_) { filed = []; }
       if (filed.length) meta.compute.filed = filed;
+      /* (atlas-result-delivery) THE RUN'S OWN RECORD IS WORKING MATERIAL, NOT THE ANSWER. The model holds it whole (`meta.compute`, and the card's text); once Atlas has written its answer
+         the card is filed under «成果物・調査結果» instead of stacking, open, beneath it — one per run, each with its values and its output. */
+      meta.working = true;
       return R(true, html, { meta: meta });
     },
   },

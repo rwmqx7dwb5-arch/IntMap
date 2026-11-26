@@ -153,6 +153,7 @@ export function makeAtlasAnswerSources(deps) {
   }
 
   /* ── marking the prose ────────────────────────────────────────────────────────────────────────── */
+  const PHRASE_END = /[\s、。，．,.;；:：!?！？()（）「」『』\[\]]/;
   const SKIP = { a: 1, code: 1, pre: 1, sup: 1, script: 1, style: 1, textarea: 1, button: 1 };
   /**
    * linkNumbers(html, items, id) → html with [n] after each number that equals a value of a `number` item.
@@ -177,13 +178,23 @@ export function makeAtlasAnswerSources(deps) {
         if (!seg || seg[0] === '&') return seg;
         const toks = numbersIn(seg).filter((t) => t.digits >= MIN_DIGITS);
         if (!toks.length) return seg;
-        let out = '', last = 0;
+        /* ⚠ (atlas-result-delivery) THE MARK GOES AFTER THE PHRASE THE NUMBER BELONGS TO, NOT AFTER THE NUMBER. A Japanese quantity is its unit
+           («40か国», «11月11日», «1,463,865,525人», «40位»), so a mark written at the digits' last character split the word: 「40[1]か国」. The
+           number says which values to cite; the mark is written where the phrase ends (the next space, punctuation or bracket, or the end of
+           the text run), once per source for all the numbers of that phrase — «2026年11月11日» cites its source once, not three times. */
+        const ends = [];
         toks.forEach((t) => {
           const hit = nums.filter((it) => it.values.some((v) => sameAt(t, v)));
-          out += seg.slice(last, t.index + t.length);
-          if (hit.length) out += mark(hit, id);
-          last = t.index + t.length;
+          if (!hit.length) return;
+          let e = t.index + t.length;
+          while (e < seg.length && !PHRASE_END.test(seg[e])) e++;
+          const at = ends.find((x) => x.e === e);
+          if (at) hit.forEach((it) => { if (at.hit.indexOf(it) < 0) at.hit.push(it); });
+          else ends.push({ e: e, hit: hit.slice() });
         });
+        if (!ends.length) return seg;
+        let out = '', last = 0;
+        ends.forEach((x) => { out += seg.slice(last, x.e) + mark(x.hit, id); last = x.e; });
         return out + seg.slice(last);
       }).join('');
     }
