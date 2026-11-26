@@ -92,7 +92,7 @@ const CSS =
      the rest instead of each rule being found one by one. The glow is a dark falloff on the GLYPHS (text-shadow), never a box or a
      filter on a block: a shadow on a rectangle reads as a rectangle. text-shadow is inherited, so it is set once here. */
   + '#atlas-float{--atl-halo:0,0,0;}'
-  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.9),0 1px 3px rgba(var(--atl-halo),.85),0 0 9px rgba(var(--atl-halo),.7),0 0 20px rgba(var(--atl-halo),.55),0 0 38px rgba(var(--atl-halo),.4);--text-main:#fff;--text-muted:#fff;color:#fff;}'
+  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 2px rgba(var(--atl-halo),.95),0 0 4px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 14px rgba(var(--atl-halo),.78),0 0 24px rgba(var(--atl-halo),.65),0 0 40px rgba(var(--atl-halo),.5);--text-main:#fff;--text-muted:#fff;color:#fff;}'
   /* the reader's own message keeps its bubble, a little more opaque than the sidebar's so the white ink reads on any map; no glow inside it */
   + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;--atlas-glass:linear-gradient(135deg,rgba(0,122,255,.66),rgba(94,92,230,.62) 56%,rgba(191,90,242,.60));}'
   /* THE CONVERSATION CAN BE REACHED. The rectangle used to be pointer-events:none all the way down, with a few inner pieces opting back in, so a

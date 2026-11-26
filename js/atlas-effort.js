@@ -73,7 +73,7 @@ export function makeAtlasEffort(H) {
       s.textContent = '.atl-eff{position:relative;flex:0 0 auto;display:inline-flex;}'
         + '.atl-eff-b{background:var(--input-bg);border:none;color:var(--text-muted);font-size:12px;line-height:1;cursor:pointer;padding:7px 11px;border-radius:999px;white-space:nowrap;transition:color .15s ease,background-color .15s ease;}'
         + '.atl-eff-b:hover,.atl-eff-b[aria-expanded="true"]{color:var(--text-main);}'
-        + '.atl-eff-m{position:fixed;z-index:calc(var(--z-map-overlay,50) + 400);min-width:240px;max-width:calc(100vw - 24px);padding:6px;border-radius:16px;'
+        + '.atl-eff-m{position:fixed;z-index:calc(var(--z-toast,5000) + 10);min-width:240px;max-width:calc(100vw - 24px);padding:6px;border-radius:16px;'
         + 'background:color-mix(in srgb,var(--popup-bg,var(--input-bg)) 62%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
         + 'border:1px solid color-mix(in srgb,var(--text-main) 14%,transparent);box-shadow:0 12px 34px rgba(0,0,0,.28);}'
         + '.atl-eff-m[hidden]{display:none;}'
