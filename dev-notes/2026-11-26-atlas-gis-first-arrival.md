@@ -19,3 +19,6 @@ newsjp: Atlas が、遅いカタログの応答を待たず、実際に読んで
 
 ## 3. 植生境界の切り分け実験
 （本番での実測結果は下に追記）
+
+## 4. 費用（perf 天井）
+理由: 先着採用の実装（`js/gis-remote.js` の `search` の再構成と `follow`）で `gis-core` が +4.4 kB（705.3→709.7 kB）、画像継続（`atlas-image-continue.js` の取り込みと画像ターンの分岐）で `atlas-console` が +7.7 kB（1445.3→1453.0 kB）。どちらも能力を足した分で、削れる重複は無い。天井は CI が測った値へ手で上げた（`perf-budget --update` は main が動き続けて「測った木が CI の木と違う」と拒むため）。
