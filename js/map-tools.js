@@ -504,7 +504,16 @@ export function isolate(HOST){
     function maskFC(feat){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry;
       if(g.type==='Polygon') holes.push(g.coordinates[0]); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(poly[0]));
       return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
-    function bbox(feat){ let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=ring=>ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; });
+    /* THE FRAME IS WHERE THE COUNTRY IS, NOT EVERYTHING IT OWNS. Min/max over every coordinate framed Norway on Bouvet Island
+       and Svalbard (lng -9..34, lat -54..81 — the whole globe at z2) and France / the Netherlands / Chile the same way. The
+       piece the country is labelled on plus what reads as the same place is js/country-extent.js homeExtent — the frame the
+       search already flies to — so Isolate frames the way a search does, for any country, by that rule and not by name. A
+       geometry with no usable ring (or a host without the module) falls back to the old union below. */
+    function bbox(feat){ try{ const CE=window.IntMapCountryExtent, p=feat.properties||{};
+        const h=CE&&CE.homeExtent&&CE.homeExtent(feat.geometry,(p.LABEL_X!=null&&p.LABEL_Y!=null)?[+p.LABEL_X,+p.LABEL_Y]:null);
+        if(h&&isFinite(h[0])&&isFinite(h[2])) return [[h[0],h[1]],[h[2],h[3]]]; }catch(_){}
+      return bboxUnion(feat); }
+    function bboxUnion(feat){ let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=ring=>ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; });
       const g=feat.geometry; if(g.type==='Polygon') g.coordinates.forEach(eat); else g.coordinates.forEach(poly=>poly.forEach(eat)); return [[mnx,mny],[mxx,mxy]]; }
     function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
       /* (#R11) Exit pill lives at the BOTTOM-center, clear of the timebar / mobile sheet / other UI. */
@@ -537,8 +546,9 @@ export function isolate(HOST){
         active=true; const b=exitBtn(); b.textContent='× '+(IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ GE().camera.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
-          const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
-          GE().camera.setMaxBounds([[bb[0][0]-padX,Math.max(-85,bb[0][1]-padY)],[bb[1][0]+padX,Math.min(85,bb[1][1]+padY)]]); } }catch(_){}
+          const ub=bboxUnion(feat);   /* panning is bounded by everything the country owns (its remote territories stay reachable); only the FRAME above is the home extent */
+          const padX=(ub[1][0]-ub[0][0])*0.18+0.6, padY=(ub[1][1]-ub[0][1])*0.18+0.6;
+          GE().camera.setMaxBounds([[ub[0][0]-padX,Math.max(-85,ub[0][1]-padY)],[ub[1][0]+padX,Math.min(85,ub[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
       }; apply(); }
     /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
