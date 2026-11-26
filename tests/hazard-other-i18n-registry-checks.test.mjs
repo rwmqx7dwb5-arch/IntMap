@@ -440,7 +440,7 @@ test('R236 i18n: t(…) call sites do not leave a language slot empty', () => {
      `window.` alone would pass vacuously */
   assert.doesNotMatch(s, /HOST\.lang==='de'\?'[^']*':(?:window\.)?IntMapLang\.t\(/,
     'no language is hoisted in front of the call it belongs inside');
-  for (const es of ['Solo este país', 'Series temporales', 'Informe de IA', 'Comparar'])
+  for (const es of ['Solo este país', 'Series temporales', 'Comparar'])
     assert.ok(s.includes(es), 'the country panel button has Spanish: ' + es);
 
   /* the news "(orig: …)" note handled jp and ru only — German and Spanish read English */

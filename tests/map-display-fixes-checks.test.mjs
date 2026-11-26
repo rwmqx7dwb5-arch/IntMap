@@ -3,10 +3,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { importModule } from './helpers/import-module.mjs';
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
-const win = {}; vm.runInNewContext(read('js/country-extent.js'), { window: win, Math, isFinite, Infinity });
+const win = {}; await importModule('js/country-extent.js', { globals: { window: win } });
 const CE = win.IntMapCountryExtent;
 
 test('① a country name goes when the view has entered the country — by size, for any country, at any scale', () => {
