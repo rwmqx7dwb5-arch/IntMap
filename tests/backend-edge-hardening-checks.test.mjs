@@ -132,7 +132,7 @@ test('R801 ③ ai-proxy settles the turn before answering, and every attempt clo
   /* (security-review-nov) a keyed attempt closes its turn whether it charged or not — the ledger refunds only when the LAST
      attempt closes without an answer, and never after one (refund_ai_turn → 'answered'); a turn-less call asks only when it charged */
   assert.match(refund, /if \(turnId \? !turnOpen : !charged\) return;/, 'only an open attempt, or a turn-less call that charged, closes through refund');
-  assert.match(refund, /refundTurn\(db, account, turnId, turnGen\)/, 'the turn is still released with the charge (#R318), naming its generation');
+  assert.match(refund, /refundTurn\(db, account, turnId, turnGen(?:, turnDay)?\)/, 'the turn is still released with the charge (#R318), naming its generation');
   assert.match(ledger, /db\.rpc\("refund_ai_turn"/, 'refundTurn does not release the turn');
 });
 
