@@ -99,7 +99,7 @@ test('④ the map carries no Atlas pill and no technical toast while a turn runs
   assert.equal(N.show('Could not load the layer'), true, 'the reader\'s own actions lost their toast');
   N.quiet(true);
   assert.equal(N.show('Route lost', { urgent: true }), true, 'an urgent navigation message was silenced');
-  assert.match(read('js/atlas-console.js'), /function _setGoBusy\(busy\)\{ try\{ _notify\.quiet\(/, 'the console does not set the quiet window');
+  assert.match(read('js/atlas-console.js'), /function _setGoBusy\(busy\)\{ try\{ notify\.quiet\(/, 'the console does not set the quiet window');
 });
 
 test('⑤ what only a developer needs is a devNote — console always, the trace\'s expanded detail in the developer view, nothing under the reply', async () => {

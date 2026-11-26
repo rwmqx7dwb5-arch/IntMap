@@ -18,7 +18,7 @@
  * ==========================================================================*/
 /* (#R199) The six subsystems that left this file, plus (#R285) the persona. Real ES imports — not window.IntMapModules, not load
    order: the bundler resolves each binding by name, so a missing or renamed export is a BUILD error rather than a silent undefined at runtime. See DEV-NOTES #R199. */
-import { notify as _notify } from './notify.js';   /* (2026-11-26) the app's one toast: quiet while a turn runs — imported from its owner, not read off window */
+import { notify } from './notify.js';   /* (2026-11-26) the app's one toast: quiet while a turn runs — imported from its owner, not read off window */
 import { makeAtlasReply } from './atlas-reply.js';
 import { VISION_CONTINUE_RULE, wantsContinue, agentContext } from './atlas-image-continue.js';   /* an image turn that needs more than reading continues into the agent loop */
 import { makeTurnObserver } from './evidence-graph-record.js';   /* (evidence-graph) what the turn's outputs hold — the goal verifier's observed facts */
@@ -2483,7 +2483,7 @@ export function atlasConsole(HOST){
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
     const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="3.4" fill="currentColor"/></svg>';   /* (#R150) "四角はほんの少し小さく": rect 17.5→15.5 in a 24 viewBox (rendered ≈14.6px→12.9px) — a gentle trim, still clearly a Stop square */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
-    function _setGoBusy(busy){ try{ _notify.quiet(!!busy); }catch(_){} try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
+    function _setGoBusy(busy){ try{ notify.quiet(!!busy); }catch(_){} try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
       if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
       else { go.classList.remove('busy'); go.innerHTML=_GO_SEND_SVG; go.onclick=fire; try{ go.classList.toggle('idle',!(inEl&&inEl.value.trim())); }catch(_){} go.title=L('Send','送信','Senden','Отправить','Enviar'); go.setAttribute('aria-label',go.title); } }catch(_){} }
     /* (#R142) STOP: supersede the running turn (bump _runGen so its late results are discarded — the existing soft-cancel)
