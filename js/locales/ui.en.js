@@ -292,6 +292,7 @@ IntMapLang.define('en', { ui: {
       atlFloatFold:"Collapse conversation",
       atlFloatUnfold:"Show conversation",
       atlFloatHide:"Hide (press A to bring it back)",
+      atlFloatBg:"Frosted background behind the conversation",
       tkItems:"Shown items",
       tkNews:"News headlines",
       tkgFx:"Forex",

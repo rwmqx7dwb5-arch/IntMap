@@ -2209,7 +2209,7 @@ export function atlasConsole(HOST){
     /* (#R298) the per-message tool bar and the in-place editor are js/atlas-msg-tools.js — the note at the top of
        that file says why. What cannot travel with them is bound here, LAZILY: `chatEl` is null until the panel is
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
-    const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
+    const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl, follow:()=>_followChat(),
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
       rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} try{ WM.dropFrom(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus(); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
@@ -2221,11 +2221,11 @@ export function atlasConsole(HOST){
        send (a new question starts a new turn) or by pressing 「最新へ」. It is a STATE with an owner, not a distance test: the old
        near-bottom rule (150px) and the question-anchor rule both pulled a reader back who had scrolled up to read, because they
        asked "where is the scroll" and never "who moved it". */
-    let _chatFollow=true;
+    let _chatFollow=true; let _selfTop=0, _lastTouch=0;   /* where the follow rule itself last put the scroll / when the reader last did something to the conversation */
     function _followChat(){ try{ if(!_chatFollow||!chatEl) return; const bs=chatEl.querySelectorAll('.atl-b.u'), u=bs[bs.length-1];
       /* a reply taller than the panel stops following where its own question reaches the top — the reader sees what was asked and the start of the answer */
       const want=chatEl.scrollHeight-chatEl.clientHeight, lim=u?Math.max(0,u.offsetTop-6):want; const to=Math.max(0,Math.min(want,lim));
-      if(Math.abs(chatEl.scrollTop-to)>1) chatEl.scrollTop=to; }catch(_){} }
+      if(Math.abs(chatEl.scrollTop-to)>1){ chatEl.scrollTop=to; _selfTop=chatEl.scrollTop; } }catch(_){} }
     function bubble(who,html,ed){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
       if(ed&&ed.turn!=null) d.dataset.turn=String(ed.turn);
       if(who==='u'){ try{ const bar=document.createElement('div'); bar.className='atl-msgt atl-msgt-u';
@@ -2255,6 +2255,8 @@ export function atlasConsole(HOST){
         chatEl.addEventListener('wheel',_take,{passive:true}); chatEl.addEventListener('touchmove',_take,{passive:true});
         chatEl.addEventListener('pointerdown',(e)=>{ if(e.target===chatEl) _take(); });   /* the scrollbar belongs to the element itself, not to a bubble in it */
         chatEl.addEventListener('keydown',(e)=>{ if(/^(PageUp|PageDown|Home|End|ArrowUp|ArrowDown| )$/.test(e.key)&&e.target===chatEl) _take(); });
+        /* the reader takes the scroll by ANY means (a key on a focused bubble, the thumb, a selection dragged past the edge): a scroll the follow rule did not make, soon after the reader did something there */
+        for(const ev of ['pointerdown','keydown','mousedown']) chatEl.addEventListener(ev,()=>{ _lastTouch=Date.now(); },true); chatEl.addEventListener('scroll',()=>{ if(_chatFollow&&Math.abs(chatEl.scrollTop-_selfTop)>2&&Date.now()-_lastTouch<1500) _take(); },{passive:true});
         new MutationObserver(()=>{ _followChat(); }).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ try{ _atlClose(); }catch(_){ panel.style.display='none'; } try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };

@@ -292,6 +292,7 @@ IntMapLang.define('jp', { ui: {
       atlFloatFold:"会話をたたむ",
       atlFloatUnfold:"会話を表示",
       atlFloatHide:"隠す（A キーで再表示）",
+      atlFloatBg:"会話の背後のフロストガラス背景",
       tkItems:"表示する項目",
       tkNews:"ニュース見出し",
       tkgFx:"為替",
