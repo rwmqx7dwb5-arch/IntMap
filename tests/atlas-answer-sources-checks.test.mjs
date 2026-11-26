@@ -85,7 +85,7 @@ test('⑤ headings are in proportion to the sentence under them', () => {
 test('⑥ an artifact button never carries a raw capability id; the source card stands above a floating window', () => {
   const c = core();
   const arts = c.artifacts([{ ok: true, drew: [{ kind: 'map.compose', surfaces: ['s1'] }, { kind: 'map.compose', surfaces: ['s2'] }] }]);
-  assert.deepEqual(arts.map((a) => a.label), ['Shape 1', 'Shape 2']);
+  assert.deepEqual(arts.map((a) => a.label), ['Map explanation 1', 'Map explanation 2']);
   const src = readFileSync(new URL('../js/atlas-answer-sources.js', import.meta.url), 'utf8');
   assert.match(src, /\.atl-scard\{[^}]*z-index:var\(--z-toast\)/, 'above the front window (2650), as a toast is');
 });

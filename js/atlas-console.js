@@ -367,14 +367,16 @@ export function atlasConsole(HOST){
     function ensurePolyLayer(){ try{ if(!GE().layers.hasSource('nlq-poly-src')) GE().layers.addSource('nlq-poly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poly-fill')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
-      GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.32]}},before);
+      GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','fc'],['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.2]}},before);   /* a quieter fill (the colour's saturation pulled down, 20 % opacity) so the map under it still reads */
       /* (#R64) composed regions (unions of many real admin polygons) get FAINT member outlines so the internal
          admin seams don't dominate — the region reads as one shape. */
-      GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','color'],'#ff9f0a'],'line-width':['case',['==',['get','comp'],1],1,2],'line-opacity':['case',['==',['get','comp'],1],0.35,0.9]}},before);
+      GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','lc'],['get','color'],'#ff9f0a'],'line-width':['coalesce',['get','w'],['case',['==',['get','comp'],1],1,1.4]],'line-opacity':['case',['==',['get','comp'],1],0.35,0.8]}},before);
       return true; }catch(_){ return false; } }
     function paintPolys(){ if(!_hlPolys.length){ try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
-      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null),sb:p.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,fc:_soft(p.color||_hlColor,0.55,0),lc:_soft(p.color||_hlColor,0.7,0.06),w:(p.w!=null?p.w:null),name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null),sb:p.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+    /* the same desaturation the composed figures use (js/atlas-map-compose.js) — read at paint time, so the order the modules load in does not matter */
+    function _soft(c,k,l){ try{ const S=window.IntMapAtlasCompose&&window.IntMapAtlasCompose.soften; return S?S(c,k,l):c; }catch(_){ return c; } }
     function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
        enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
@@ -382,6 +384,11 @@ export function atlasConsole(HOST){
     window._imHlPolys={ list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
       remove:id=>{ const i=_hlPolys.findIndex(p=>String(p.id)===String(id)); if(i<0) return false; _hlPolys.splice(i,1); paintPolys(); return true; },
       repaint:()=>paintPolys(), clear:()=>clearPolyHl() };
+    /* the lines Atlas drew, handed over the same way (an id, a list, a remover): a line has been a map-object only since it could be recoloured from the Objects panel and by Atlas */
+    let _hlLineSeq=0;
+    window._imHlLines={ list:()=>_hlLines, tagId:l=>{ if(l&&!l.id) l.id='line_'+(++_hlLineSeq); return l&&l.id; },
+      remove:id=>{ const i=_hlLines.findIndex(l=>String(l.id)===String(id)); if(i<0) return false; _hlLines.splice(i,1); paintLines(); return true; },
+      repaint:()=>paintLines(), clear:()=>clearLineHl() };
     GE().events.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
     /* ---- (#R65) LINE highlights — rivers as their REAL course ("河川をハイライトしてといったら、その河川を線で"),
        tributaries as thinner lines. Same lifecycle as the polygon highlights. ---- */
@@ -1743,6 +1750,13 @@ export function atlasConsole(HOST){
       if(!ensurePoiLayer()) return false;
       try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:_pois.map((p,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name||'',kind:p.kind||'',color:_poiColor,wiki:p.wiki||'',wd:p.wd||'',web:p.web||'',wikiUrl:p.wikiUrl||'',sum:p.sum||'',url:p.url||'',src:p.src||''}}))}); return true; }catch(_){ return false; } }
     function clearPois(){ _pois=[]; try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
+    /* the markers as one map-object (js/map-tools.js collect): one colour and one opacity for the lot, as the painter holds them */
+    let _poiOp=0.88;
+    window._imHlPoi={ count:()=>_pois.length, color:()=>_poiColor||'#ff453a', opacity:()=>_poiOp,
+      setColor:c=>{ _poiColor=c; paintPois(); },
+      setOpacity:a=>{ _poiOp=a; try{ if(GE().layers.has('nlq-poi-c')) GE().layers.setPaint('nlq-poi-c','circle-opacity',a); }catch(_){} },
+      focus:()=>{ try{ const g=_pois.filter(p=>isFinite(+p.lng)&&isFinite(+p.lat)); if(!g.length) return; let a=180,b=90,c=-180,d=-90; g.forEach(p=>{ a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat); }); if(a===c&&b===d) GE().camera.flyTo({center:[a,b],zoom:Math.max(GE().camera.getZoom(),11),duration:800}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:800}); }catch(_){} },
+      clear:()=>clearPois() };
     GE().events.on('styledata',()=>{ if(_pois.length){ setTimeout(()=>{ try{ paintPois(); }catch(_){} },160); } });
     /* ---- (#R73) map-change snapshot for layer self-verification (visible style layers + overlay canvases) ---- */
     function _visSnapshot(){ const s={ids:new Set(),cv:0};
