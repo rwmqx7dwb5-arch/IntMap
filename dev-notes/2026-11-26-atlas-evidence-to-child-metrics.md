@@ -25,3 +25,13 @@ internal: AI の内部の受け渡しと運用計測の修正で、利用者に�
 
 ## 3. 検査
 `npm run check:static` ほか触った主題のゲートと pgTAP（`supabase/tests/55_atlas_turn_metrics_test.sql` を新定義に更新）は PR の CI。
+
+## 4. 本番検証（公開 sha 1db7b40d・#1445 を含む）
+- 橋（`runReadCapability` → 課題の `data`）: モデルを介さない `kind:"capability"` の課題で `web.evidence {ref:ev1}` を実行 → 親の次の入力の
+  `data.exec.web.evidence` に本文（156 文字）と出典 URL が載り、web 検索（task=web_search）0 回、最終回答にも本文と出典が出た。本番で `exec` が運ばれている。
+- 計測: 新しい 3 行が `metrics_version=2`・`useful_shown` が真偽・`first_useful_ms` が送信からの待ち（操作の無い「こんにちは」は答えが出た時刻と一致）・
+  `task_key`・`evidence_arrived_ms`（資料取得時に記録）が入り、質問・回答・URL を持つ列は無い。
+- **測れなかったこと**: モデルが動かす worker（`kind:"worker"`, tools=[web.evidence]）に `RESULT:` と本文が載る場面。許可一覧には web.evidence が入り、
+  案内文も正しく（残り回数の制限なし）、親の経路は本文を受け取れたが、worker のモデルが 3 回とも `calls` を返さず「呼び出せなかった」と報告した。
+  橋ではなく worker モデルの挙動（system の「findings JSON のみ返す」と prompt の「calls を返す」の食い違いが仮説・未検証）。次の課題として別に扱う。
+- `claims_cited/evidenced/backing` は本番では 0 のまま（worker が資料を読めず所見が出なかったため）。数え方は回帰テストで確認済み。
