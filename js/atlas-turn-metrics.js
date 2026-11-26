@@ -6,12 +6,20 @@
  *  (a lighter context, asynchronous delegation, a search evidence store, server-side execution) can be compared on time
  *  and money while a person keeps judging the answers.
  *
- *    total_ms / first_useful_ms     the wait for the whole answer · the wait for the first operation that produced a result
+ *    total_ms / first_useful_ms     the wait for the whole answer · the wait from SENDING to the first usable value, table or map actually SHOWN
+ *                                   (an operation that drew or produced something, or - with none - the finished answer itself). NULL when nothing was
+ *                                   shown: a turn that never produced anything usable is counted apart (useful_shown=false), never as a short wait
  *    cost_micros / cost_known       what the turn's own model calls + its workers cost; unknown when a call did not report
  *    completion / stopped           the turn's own declaration («complete» / «partial» / «none») and why the loop ended
  *    ops_*                          operations asked / executed / answered from an identical earlier call (reused) /
  *                                   refused as malformed (rejected) / refused as an unknown tool (unknown_tool)
- *    claims_total / claims_grounded findings a delegation returned · the ones that carry a source
+ *    claims_total / claims_cited / claims_evidenced / claims_backing
+ *                                   findings a delegation returned · those naming a source · those that ALSO hold what the source says (excerpt or raw
+ *                                   values; one judgement, js/atlas-job-core.js findingBasis) · those whose source the final answer names
+ *                                   (claims_grounded = claims_evidenced, kept under its old name)
+ *    task_key                       the same request asked again after an unfinished try keeps the first try's key, so the cost of every attempt at one
+ *                                   task is summed against its one success (the question itself is never stored)
+ *    evidence_arrived_ms / evidence_used_ms   when a gathered source reached the page · when the parent began using it (markTurn)
  *    verify_*                       claims a program decided · a model decided · nobody decided (js/atlas-claim-check.js)
  *    critical                       the one tool that took most of the turn's operation time, and its share of the wall clock
  *    model_ms / tool_ms             the wall clock split into waiting for the model and running operations
@@ -22,6 +30,8 @@
  *
  *  Pure: no DOM, no network, no globals.
  * ==========================================================================*/
+import { findingBasis } from './atlas-job-core.js';
+
 const n0 = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? Math.round(x) : 0; };
 
 function findingsOf(results) {
@@ -43,7 +53,17 @@ function verificationOf(results) {
   return v;
 }
 
-/* buildTurnMetrics(out, timing) → the row.  out: what runTurn returned.  timing: { totalMs?, firstUsefulMs? } measured by the caller. */
+const urlKey = (u) => String(u == null ? '' : u).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[#?].*$/, '').replace(/\/+$/, '');
+/* does the final answer name this source - by address in its text or among the sources it cited? */
+function namesSource(source, text, cites) {
+  const k = urlKey(source);
+  if (!k) return false;
+  if (urlKey(text).includes(k)) return true;
+  return (Array.isArray(cites) ? cites : []).some((c) => { const u = urlKey(c && typeof c === 'object' ? c.url : c); return !!u && (u === k || u.startsWith(k) || k.startsWith(u)); });
+}
+const optMs = (v) => (v != null && Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.round(Number(v)) : null);
+
+/* buildTurnMetrics(out, timing) -> the row.  out: what runTurn returned.  timing: { totalMs?, firstUsefulMs?, taskKey?, marks?, cites? } measured by the caller. */
 export function buildTurnMetrics(out, timing) {
   const o = out || {}, t = timing || {};
   const run = o.run || {}, tr = o.trace || {};
@@ -52,21 +72,46 @@ export function buildTurnMetrics(out, timing) {
   const toolMs = tools.reduce((m, x) => m + n0(x.ms), 0);
   const slow = tools.reduce((b, x) => (!b || n0(x.ms) > n0(b.ms) ? x : b), null);
   const fs = findingsOf(o.results);
-  const grounded = fs.filter((f) => f && (f.source || f.url || (Array.isArray(f.sources) && f.sources.length))).length;
+  const basis = fs.map(findingBasis);
+  const evidenced = basis.filter((b) => b.evidenced);
+  const backing = evidenced.filter((b) => namesSource(b.source, o.text, t.cites)).length;
   const ver = verificationOf(o.results);
+  const first = optMs(t.firstUsefulMs);
+  const marks = t.marks || {};
   return {
     total_ms: wall,
-    first_useful_ms: Number.isFinite(Number(t.firstUsefulMs)) && Number(t.firstUsefulMs) >= 0 ? Math.round(Number(t.firstUsefulMs)) : null,
+    first_useful_ms: first, useful_shown: first !== null,
     model_calls: n0(run.modelCalls), model_ms: n0(run.modelMs), tool_ms: toolMs,
     cost_micros: Math.round((Number(run.costUsd) || 0) * 1e6), cost_known: !n0(run.costUnknownCalls),
     delegated_cost_micros: Math.round((Number(run.delegatedCostUsd) || 0) * 1e6), delegated_tasks: n0(run.delegatedTasks),
     completion: ['complete', 'partial', 'none'].indexOf(o.completion) >= 0 ? o.completion : 'none',
     stopped: String(o.stopped || '').slice(0, 40),
     ops_asked: n0(tr.calls), ops_executed: n0(tr.executed), ops_reused: n0(tr.reused), ops_rejected: n0(tr.rejected), ops_unknown_tool: n0(tr.unknownTool),
-    claims_total: fs.length, claims_grounded: grounded,
+    claims_total: fs.length, claims_cited: basis.filter((b) => b.cited).length, claims_evidenced: evidenced.length, claims_backing: backing, claims_grounded: evidenced.length,
     verify_program: ver.program, verify_model: ver.model, verify_unchecked: ver.unchecked,
     critical_tool: slow ? String(slow.id).slice(0, 80) : '', critical_ms: slow ? n0(slow.ms) : 0,
+    task_key: t.taskKey ? String(t.taskKey).slice(0, 120) : null,
+    evidence_arrived_ms: optMs(marks.evidence_arrived), evidence_used_ms: optMs(marks.evidence_used),
   };
+}
+
+/* isUsefulResult(r) - did this operation put a usable value, table or map in front of the reader?  `r` is the page's per-operation record
+   ({ ok, meta:{ produced }, drew }): what the kernel observed it PRODUCE (route, map, panel...) or what was seen DRAWN. A refusal, a failure, a note
+   (re-read ev1) and a plan produce neither. */
+export function isUsefulResult(r) {
+  if (!r || r.ok === false) return false;
+  const produced = r.meta && Array.isArray(r.meta.produced) ? r.meta.produced : [];
+  return produced.length > 0 || (Array.isArray(r.drew) && r.drew.length > 0);
+}
+
+/* what one SUCCESS cost: every attempt at the same task - the failed and the repeated ones included - over the tasks that succeeded. A row without a
+   task_key is its own task. An attempt whose cost was not fully reported adds what was reported (a floor); cost_traced_rate says how many were. */
+function costPerSuccess(r) {
+  const tasks = new Map();
+  r.forEach((x, i) => { const k = x.task_key || x.turn_key || ('row' + i); const e = tasks.get(k) || { cost: 0, ok: false }; e.cost += Number(x.cost_micros) || 0; if (x.completion === 'complete') e.ok = true; tasks.set(k, e); });
+  const all = Array.from(tasks.values());
+  const won = all.filter((e) => e.ok);
+  return won.length ? all.reduce((m, e) => m + e.cost, 0) / won.length : null;
 }
 
 /* summarize(rows) → the figures a comparison needs, from rows shaped as buildTurnMetrics returns (or read back from the table).
@@ -83,12 +128,17 @@ export function summarize(rows) {
     turns: r.length,
     total_ms: { p50: pct(r.map((x) => Number(x.total_ms)), 0.5), p90: pct(r.map((x) => Number(x.total_ms)), 0.9) },
     first_useful_ms: { p50: pct(r.map((x) => (x.first_useful_ms == null ? NaN : Number(x.first_useful_ms))), 0.5), p90: pct(r.map((x) => (x.first_useful_ms == null ? NaN : Number(x.first_useful_ms))), 0.9) },
+    no_useful_rate: ratio(r.filter((x) => x.first_useful_ms == null).length, r.length),   /* the turns that showed nothing usable: counted here, never as a short wait above */
     completion_rate: ratio(complete.length, r.length),
-    cost_per_success_micros: ratio(complete.filter((x) => x.cost_known).reduce((m, x) => m + (Number(x.cost_micros) || 0), 0), complete.filter((x) => x.cost_known).length),
+    cost_per_success_micros: costPerSuccess(r),
+    cost_traced_rate: ratio(r.filter((x) => x.cost_known).length, r.length),   /* the share of turns whose whole cost was reported */
     cost_per_turn_micros: ratio(totalCost, costKnown.length),
     capability_found_rate: ratio(sum('ops_asked') - sum('ops_unknown_tool'), sum('ops_asked')),
     duplicate_op_rate: ratio(sum('ops_reused'), sum('ops_asked')),
     grounded_claim_rate: ratio(sum('claims_grounded'), sum('claims_total')),
+    cited_claim_rate: ratio(sum('claims_cited'), sum('claims_total')),
+    evidenced_claim_rate: ratio(sum('claims_evidenced'), sum('claims_total')),
+    backing_claim_rate: ratio(sum('claims_backing'), sum('claims_total')),
     program_verified_share: ratio(sum('verify_program'), sum('verify_program') + sum('verify_model')),
     model_wait_share: ratio(sum('model_ms'), sum('total_ms')),
     critical_tools: (() => { const m = new Map(); r.forEach((x) => { if (x.critical_tool) m.set(x.critical_tool, (m.get(x.critical_tool) || 0) + (Number(x.critical_ms) || 0)); }); return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([tool, ms]) => ({ tool, ms })); })(),
@@ -117,26 +167,59 @@ export function installTurnMetricsSink(listen, db) {
 }
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') installTurnMetricsSink(bus.on, () => window.sb || null);
 
-/* makeTurnRecorder({ now, notWork, emit }) — one per turn. `step(s)` is handed every step the loop reports at its START ({ step, calls:[names] });
-   a step that asked for an operation (a name not in `notWork` — the plan tool is bookkeeping, not work) has finished when the NEXT step starts, and
-   that moment is «the wait for the first useful result». `recordAnswer(out, turnKey)` builds the row and announces it (`emit`, by default the bus event the sink above hears) — it returns the row. */
+/* -- one recorder per turn; the page's other parts reach the running one through markTurn / reportShown, never by holding it ---- */
+let active = null;
+/* markTurn(name) - "the evidence arrived" / "the parent began using it": the milliseconds since the turn was sent are kept under `name` the first time only
+   (a moment, not a counter). A caller with no turn running changes nothing. The row carries evidence_arrived and evidence_used. */
+export function markTurn(name) { try { if (active) active.mark(name); } catch (_) { /* telemetry */ } }
+/* reportShown(result) - an operation's record, as the page is about to show it (js/atlas-console.js dispatch) */
+export function reportShown(result) { try { if (active) active.shown(result); } catch (_) { /* telemetry */ } }
+
+/* the same request, asked again after an unfinished try, is ONE task: its key is the first try's. Held in memory (the question is compared, never stored). */
+const lastTask = { q: '', key: '', done: true };
+
+/* makeTurnRecorder({ now, emit, question, turnKey }) - one per turn. `shown(result)` is told of every operation the page shows; the first that
+   isUsefulResult() is "the wait for the first useful result", measured from the moment this recorder was made (the send). `recordAnswer(out, turnKey, { cites })`
+   builds the row and announces it (`emit`, by default the bus event the sink above hears); `recordFailure(error, turnKey)` does the same for a turn that
+   ended without an answer, so what it cost is counted against its task. Both return the row. */
 export function makeTurnRecorder(opt) {
   const o = opt || {};
   const now = typeof o.now === 'function' ? o.now : () => Date.now();
-  const skip = new Set((Array.isArray(o.notWork) ? o.notWork : []).filter(Boolean));
   const emit = typeof o.emit === 'function' ? o.emit
     : (detail) => { try { bus.emit(TURN_METRICS_EVENT, detail); } catch (_) { /* telemetry */ } };
   const t0 = now();
-  let first = null, pendingWork = false;
-  const worked = (s) => !!(s && Array.isArray(s.calls) && s.calls.some((n) => n && !skip.has(n)));
-  return {
-    step(s) { if (pendingWork && first === null) first = now() - t0; pendingWork = worked(s); },
-    row(out) { if (pendingWork && first === null && out && out.trace && Number(out.trace.executed) > 0) first = now() - t0; return buildTurnMetrics(out, { totalMs: now() - t0, firstUsefulMs: first }); },
-    recordAnswer(out, turnKey) {
+  const marks = {};
+  let first = null, announced = false;
+  const q = String(o.question || '').trim();
+  const taskKey = q && !lastTask.done && lastTask.q === q ? lastTask.key : String(o.turnKey || '');
+  if (q) { lastTask.q = q; lastTask.key = taskKey; lastTask.done = false; }
+  const rec = {
+    step() { /* a step starting is not a result */ },
+    shown(r) { if (first === null && isUsefulResult(r)) first = Math.max(0, now() - t0); },
+    mark(name) { const k = String(name || '').slice(0, 40); if (k && marks[k] === undefined) marks[k] = Math.max(0, now() - t0); },
+    row(out, extra) {
+      const total = now() - t0;
+      const o2 = out || {};
+      /* a turn that showed no operation's result but finished with an answer showed the reader that answer */
+      const f = first !== null ? first : (o2.completion === 'complete' && String(o2.text || '').trim() ? total : null);
+      return buildTurnMetrics(out, { totalMs: total, firstUsefulMs: f, taskKey, marks, cites: extra && extra.cites });
+    },
+    recordAnswer(out, turnKey, extra) {
       const turn = String(turnKey || '').trim();
-      const row = this.row(out);
-      if (turn) emit({ turn, row });
+      const row = this.row(out, extra);
+      if (q) lastTask.done = row.completion === 'complete';
+      if (active === rec) active = null;
+      if (turn && !announced) { announced = true; emit({ turn, row }); }
+      return row;
+    },
+    recordFailure(error, turnKey) {
+      const row = this.row({ completion: 'none', stopped: String((error && error.code) || 'error') }, null);
+      if (active === rec) active = null;
+      const turn = String(turnKey || '').trim();
+      if (turn && !announced) { announced = true; emit({ turn, row }); }
       return row;
     },
   };
+  active = rec;
+  return rec;
 }

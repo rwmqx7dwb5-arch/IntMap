@@ -168,8 +168,8 @@ export function makeWebEvidence(opt) {
     const n = Math.max(200, Math.min(MAX_TEXT_CHARS, Number(chars) || 6000));
     const body = String(e.text || '');
     return Object.assign(brief(e), {
+      sourceList: e.sources.length ? e.sources : undefined,   /* BEFORE the text: a reader that cuts the front of this record keeps the addresses */
       text: body.slice(0, n), textChars: body.length, truncated: body.length > n || undefined,
-      sourceList: e.sources.length ? e.sources : undefined,
       cited: e.kind === 'cited' ? { via: e.via, queries: e.queries } : undefined,
     });
   }

@@ -91,11 +91,11 @@ test('turn metrics: counts and milliseconds from a finished turn, ratios null wh
   const out = {
     completion: 'complete', stopped: 'answered', trace: { calls: 10, executed: 8, reused: 2, rejected: 1, unknownTool: 1 },
     run: { wallMs: 20000, modelMs: 12000, modelCalls: 5, costUsd: 0.05, costUnknownCalls: 0, delegatedCostUsd: 0.02, delegatedTasks: 2, tools: [{ id: 'research.delegate', ms: 6000 }, { id: 'map.draw', ms: 900 }] },
-    results: [{ meta: { delegated: [{ findings: [{ claim: 'a', source: 'https://x' }, { claim: 'b' }] }], integrated: { verification: { basis: { program: 1, model: 1 }, counts: { unchecked: 0 } } } } }],
+    results: [{ meta: { delegated: [{ findings: [{ claim: 'a', source: 'https://x', excerpt: 'the words' }, { claim: 'b' }] }], integrated: { verification: { basis: { program: 1, model: 1 }, counts: { unchecked: 0 } } } } }],
   };
   const m = buildTurnMetrics(out, { totalMs: 21000, firstUsefulMs: 4000 });
   assert.equal(m.total_ms, 21000); assert.equal(m.first_useful_ms, 4000); assert.equal(m.cost_micros, 50000);
-  assert.equal(m.claims_total, 2); assert.equal(m.claims_grounded, 1); assert.equal(m.verify_program, 1);
+  assert.equal(m.claims_total, 2); assert.equal(m.claims_grounded, 1); assert.equal(m.claims_evidenced, 1); assert.equal(m.verify_program, 1);
   assert.equal(m.critical_tool, 'research.delegate'); assert.equal(m.ops_unknown_tool, 1);
   assert.equal(JSON.stringify(m).includes('https://x'), false, 'no url, no text travels');
   const s = summarize([m, buildTurnMetrics({}, {})]);
@@ -104,15 +104,16 @@ test('turn metrics: counts and milliseconds from a finished turn, ratios null wh
   assert.equal(summarize([buildTurnMetrics({}, {})]).first_useful_ms.p50, null);
 });
 
-test('the recorder fixes the first useful result when the step after an operation begins, ignores plan-only steps, and announces once', () => {
+test('the recorder fixes the first useful result when an operation SHOWS something, not when a step starts, and announces once', () => {
   let t = 0; const heard = [];
-  const rec = makeTurnRecorder({ now: () => t, notWork: ['plan'], emit: (d) => heard.push(d) });
+  const rec = makeTurnRecorder({ now: () => t, emit: (d) => heard.push(d) });
   t = 1000; rec.step({ step: 1, calls: ['plan'] });
-  t = 3000; rec.step({ step: 2, calls: ['map.draw'] });
-  t = 9000; rec.step({ step: 3, calls: [] });
+  t = 3000; rec.shown({ ok: false, meta: { produced: ['map'] } });   /* a failed operation shows nothing */
+  t = 4000; rec.shown({ ok: true, meta: { produced: [] }, drew: [] });   /* a note shows nothing usable */
+  t = 9000; rec.shown({ ok: true, meta: { produced: ['panel'] } });
   t = 12000;
-  const row = rec.recordAnswer({ completion: 'complete', trace: {}, run: {} }, 't1-123');
-  assert.equal(row.first_useful_ms, 9000); assert.equal(row.total_ms, 12000);
+  const row = rec.recordAnswer({ completion: 'complete', text: 'x', trace: {}, run: {} }, 't1-123');
+  assert.equal(row.first_useful_ms, 9000); assert.equal(row.useful_shown, true); assert.equal(row.total_ms, 12000);
   assert.equal(heard.length, 1); assert.equal(heard[0].turn, 't1-123');
   assert.equal(makeTurnRecorder({ emit: (d) => heard.push(d) }).recordAnswer({}, '').total_ms >= 0, true);
   assert.equal(heard.length, 1, 'no turn key, nothing announced');

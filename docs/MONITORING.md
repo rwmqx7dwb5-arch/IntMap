@@ -533,10 +533,10 @@ refuse a request.
 
 ### What is recorded
 - **One row per finished answer** — `atlas_turn_metrics` (written by the page through `log_atlas_turn_metrics`, `js/atlas-turn-metrics.js`;
-  counts and milliseconds only, 90 days): time to the whole answer, time to the first operation that produced a result, model calls and
+  counts and milliseconds only, 90 days): time to the whole answer, **time from sending to the first usable value, table or map actually shown** (`first_useful_ms`; NULL and `useful_shown=false` when nothing was — counted apart as `turns.no_useful_rate`, never as a short wait), model calls and
   how the wait splits between the model and operations, cost (and whether every call reported one), whether the turn declared itself
   complete, operations asked / executed / **reused** (an identical earlier call answered again — what `check:atlasrepeat` is about) /
-  rejected / asked for a tool that does not exist, findings returned and how many carried a source, checks decided by a program vs a
+  rejected / asked for a tool that does not exist, findings returned and how many **named a source / also held what it says / were named by the final answer** (`claims_cited` / `claims_evidenced` / `claims_backing`; one judgement, `findingBasis` in `js/atlas-job-core.js`), a `task_key` (the same request asked again after an unfinished try keeps the first try's), the moments a gathered source arrived and was first used (`evidence_arrived_ms`, `evidence_used_ms`, recorded by `markTurn` in `js/atlas-turn-metrics.js`), checks decided by a program vs a
   checking worker, and the one tool that took most of the operation time.
 - **One row per model call** — `ai_delegation_journal` (30 days): latency, tokens, `cached_tokens` (the provider cache), cost, outcome. The
   journal's `root_key` is the answer's `turn_key`, which is how a child's contribution and the slowest path of a delegating turn are read.
@@ -545,14 +545,14 @@ refuse a request.
 | Figure | From |
 |---|---|
 | time to the whole answer (p50 / p90) · time to the first useful result | `turns.total_ms_*`, `turns.first_useful_ms_*` |
-| cost per successful (complete) answer · per answer | `turns.cost_per_success_micros`, `turns.cost_per_turn_micros` (only answers whose every call reported a cost) |
+| cost per success | `turns.cost_per_success_micros` = every attempt's whole family in `ai_delegation_journal` (parent, workers and parallel searches share the root key) summed over a task, ÷ the tasks that succeeded; `cost.traced_rate` is the share actually priced. `turns.cost_per_turn_micros` is per answer (only answers whose every call reported a cost) |
 | completion rate | `turns.completion_rate` (the turn's own declaration, not a judgement of the content) |
 | the capability it needed was found | `turns.capability_found_rate` = 1 − unknown-tool asks / operations asked |
 | duplicate operation rate | `turns.duplicate_op_rate` = reused / asked |
 | cache rate | `calls.cache_rate`, `calls.root_cache_rate` |
 | each child's contribution | `children[]`: calls, ok, share of the children's cost and waiting time |
 | what slows the whole turn | `families` (slowest child as a share of the parent's wait) and `turns.critical_tools` |
-| findings that carry a source | `turns.grounded_claim_rate` |
+| findings: named a source / hold what it says / named by the final answer | `turns.cited_claim_rate`, `turns.evidenced_claim_rate`, `turns.backing_claim_rate` (rows of `metrics_version` 2; `grounded_claim_rate` is the older name of the evidenced tally) |
 | checks decided by a program vs a model | `turns.program_verified_share` |
 
 All from ONE admin-only RPC, `atlas_metrics_overview(p_from, p_to)` (window clamped to 90 days; a ratio with nothing to measure is `null`).

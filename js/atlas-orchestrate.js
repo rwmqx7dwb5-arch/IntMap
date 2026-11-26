@@ -234,7 +234,7 @@ export function makeCapabilityExecutor(o) {
       ctx.emit('effect.done', { intent: intent.id, costUsd: 0, capability: cap });
       const text = s(out && (out.text != null ? out.text : htmlToText(out.html)), 4000);
       if (!out || out.ok === false) return { state: 'failed', code: s(out && out.code, 60) || 'capability_failed', detail: { status: Number(out && out.status) || undefined }, summary: text };
-      return { state: 'done', summary: text, data: out.meta, calls: 0, costUsd: 0 };
+      return { state: 'done', summary: text, data: out.exec ? Object.assign({}, out.meta, { exec: out.exec }) : out.meta, calls: 0, costUsd: 0 };
     },
   };
 }

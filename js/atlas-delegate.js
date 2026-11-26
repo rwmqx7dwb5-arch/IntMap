@@ -785,7 +785,10 @@ export function makeWorkerExecutor(o) {
               let whole = String((out && (out.text != null ? out.text : stripTags(out.html))) || (out && out.code) || '');
               const ok = !(out && out.ok === false);
               if (out && out.meta && ok) { let j = ''; try { j = JSON.stringify(out.meta); } catch (_) { j = ''; } if (j) whole += (whole ? '\n' : '') + 'DATA: ' + j; }
-              return { ok, text: shownWithRef(whole, ref) };
+              /* (atlas-evidence-to-child) THE RESULT THE MODEL READS, NOT ONLY THE NOTICE THE READER SEES. A capability's `exec` is what the parent is given as its observation (a re-read page: its text and every source address). It is shown under its own reference so the cut of the text above never hides it, and it is kept whole for read_step like everything else. */
+              let execShown = '';
+              if (out && out.exec && ok) { let j = ''; try { j = JSON.stringify(out.exec); } catch (_) { j = ''; } if (j) execShown = '\nRESULT: ' + shownWithRef(j, ref + 'r'); }
+              return { ok, text: shownWithRef(whole, ref) + execShown };
             } catch (e) {
               if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
               ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
