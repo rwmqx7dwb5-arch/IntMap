@@ -13,7 +13,8 @@ export interface ImgPart { mime: string; b64: string; }
    carried all the way to the model because a model that cannot see the cut answers about the part
    it was given as if that were the whole file. */
 export interface FilePart { name: string; text: string; truncated: boolean; }
-export interface DocPart { name: string; mime: string; b64: string; }
+/* (atlas-mainloop-reliability) `fileId` = the document already sits at the provider (doc-refs.ts); `b64` is then empty on a later call of a turn */
+export interface DocPart { name: string; mime: string; b64: string; fileId?: string; }
 // (#R131) A single hosted-web-search citation the model emitted (Responses API url_citation
 // annotation). Kept end-to-end so the client can show the sources the model ACTUALLY read/cited
 // this turn, distinct from the articles IntMap gathered on the client. The old code threw these

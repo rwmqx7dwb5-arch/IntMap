@@ -44,6 +44,7 @@ export type TurnItem =
   | { type: "function_call_output"; call_id: string; output: string }
   | { type: "reasoning"; id: string; encrypted_content: string }
   | { type: "item_reference"; id: string }   // (atlas-search-carry) a provider item held on the provider's side (a stored web search), replayed by id
+  | { type: "provider_block"; provider: string; block: Record<string, unknown> }   // (atlas-mainloop-reliability) a provider's own content block carried verbatim (Anthropic server_tool_use / web_search_tool_result), replayed only to that provider
   | { type: "attachments"; channels: string[] };
 export interface FnTool { name: string; description: string; parameters: Record<string, unknown>; promoted?: boolean; }   // (atlas-turn-engine) promoted = appended this turn from find_capability (js/atlas-agent.js)
 export interface TurnReq { items: TurnItem[]; tools: FnTool[]; toolChoice: "none" | ""; trim: Record<string, unknown> | null; }
@@ -97,6 +98,12 @@ export function normalizeTurn(payload: Record<string, unknown>): TurnReq | { err
       const id = str(o.id);
       if (!CALL_ID_OK.test(id)) { bump("invalidItems"); continue; }
       items.push({ type: "item_reference", id });
+    } else if (t === "provider_block") {
+      /* opaque, the provider's own (its search results are encrypted and cannot be shortened): an oversize or malformed one is left out and said */
+      const blk = (o.block && typeof o.block === "object" && !Array.isArray(o.block)) ? o.block as Record<string, unknown> : null;
+      const prov = str(o.provider);
+      if (!blk || !prov || typeof blk.type !== "string" || JSON.stringify(blk).length > MAX_ITEM_CHARS) { bump("droppedProviderBlocks"); continue; }
+      items.push({ type: "provider_block", provider: prov, block: blk });
     } else if (t === "attachments") {
       const ch = (Array.isArray(o.channels) ? o.channels : []).map(String).filter((c) => c === "docs" || c === "files" || c === "images");
       if (ch.length) items.push({ type: "attachments", channels: ch });

@@ -224,14 +224,16 @@ test('atlas-stream-replay ② two requests with one key, at once: one runs, the 
 /* ══ ③ ═══════════════════════════════════════════════════════════════════════════════════════ */
 test('atlas-stream-replay ③ only an observed failure is run again — and the run says why and which attempt', async () => {
   reset();
-  W.provider = [{ sse: OA_FAILED }, { json: OA_SECOND }];
+  /* (atlas-mainloop-reliability) a 503 is tried twice more inside the request (provider-call.ts transientRetry), so «a failed run» is
+     three failures; the re-run is the 4th provider call and answers */
+  W.provider = [{ sse: OA_FAILED }, { sse: OA_FAILED }, { sse: OA_FAILED }, { json: OA_SECOND }];
   const first = await post({ ...TURN, stream: true, replayKey: KEY });
   assert.match(await first.text(), /"status":503/);
   assert.equal(theRow().state, 'failed');
   assert.equal(theRow().body, null, 'a failure is held as a fact, never as an answer to replay');
   assert.equal(count('refund_ai_turn'), 1, 'the failed run was not refunded');
   const j = await (await post({ ...TURN, replayKey: KEY }, { 'x-intmap-replay': KEY })).json();
-  assert.equal(providerCalls(), 2);
+  assert.equal(providerCalls(), 4);
   assert.equal(JSON.parse(j.text).final_text, '東京は1,400万人ほどです');
   assert.deepEqual(j.meta.replay, { kind: 'rerun', after: 'failed', attempt: 2 });
   assert.equal(count('consume_ai_turn'), 2, 'the re-run is a request like any other: the ledger decides its charge');

@@ -325,8 +325,8 @@ test('R413 ⑨: the caps this round removed have not come back', async () => {
   assert.ok(!/_hist\.slice\(/.test(console_.split('rewindHist')[0] || ''),
     'the prompt reads all of the conversation the store kept, rather than clipping it a second time');
   const kept = /_hist\.length>(\d+)\) _hist=_hist\.slice\(-(\d+)\)/.exec(console_);
-  assert.ok(kept && kept[1] === kept[2], 'the store bounds itself with ONE number, not two');
-  assert.ok(kept && +kept[1] >= 32, `the store keeps at least 32 conversation entries (it keeps ${kept && kept[1]})`);
+  assert.ok(kept && +kept[1] >= +kept[2], 'the store trims in ONE place, back to the number it keeps');   /* (atlas-mainloop-reliability) trigger >= kept: trimmed in steps, so the first byte of the history does not move every turn */
+  assert.ok(kept && +kept[2] >= 32, `the store keeps at least 32 conversation entries (it keeps ${kept && kept[2]})`);
   assert.ok(!/\.slice\(0, 160\)/.test(surface), 'a capability summary is not clipped');
   assert.ok(!/\.slice\(0, 400\)/.test(surface), 'and neither is the reason a call failed');
   /* (atlas-unbounded-execution) the server keeps no per-turn call count now (money bounds a turn); if one ever comes back it

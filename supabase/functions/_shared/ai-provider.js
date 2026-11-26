@@ -141,13 +141,19 @@ export function priceOf(model) {
    AGAIN for OpenAI/Gemini, so every cache hit was priced at zero uncached input as well (measured: input 4,000 uncached + 6,000
    cached read as $0.006 instead of $0.014 at sol prices) — the figure the card, the turn cap and the day cap all read.
    A caller holding a provider's WHOLE prompt count must subtract the cached part first (atlas-jobs does, at its one reader). */
+export const ANTHROPIC_CACHE_WRITE_X = 1.25;
 export function costMicros(model, usage, provider) {
   const u = usage || {};
   const p = priceOf(model);
   const cached = Math.max(0, Number(u.cached_read) || 0);
-  const uncached = Math.max(0, Number(u.input) || 0) + (String(provider || "").toLowerCase() === "anthropic" ? Math.max(0, Number(u.cache_write) || 0) : 0);
+  const uncached = Math.max(0, Number(u.input) || 0);
+  /* (atlas-mainloop-reliability) A CACHE WRITE IS NOT PRICED AS PLAIN INPUT. Anthropic bills the tokens it writes to the cache at 1.25x the input price for the
+     5-minute lifetime every marker here asks for (platform.claude.com prompt-caching, "Pricing": "Cache write tokens with a 5-minute TTL are 1.25 times the base
+     input tokens price"; read 2026-11-26). This added them at 1.0x, under-reporting every turn that wrote a cache — the figure the card, the turn cap and the day cap
+     all read. EXPIRES when a marker asks for the 1-hour lifetime (2x) or the page states another multiplier. Other providers report no write. */
+  const writes = String(provider || "").toLowerCase() === "anthropic" ? Math.max(0, Number(u.cache_write) || 0) * ANTHROPIC_CACHE_WRITE_X : 0;
   const out = Math.max(0, Number(u.output) || 0);
-  return Math.ceil(uncached * p.input + cached * p.cached + out * p.output);   /* USD per 1M tokens × tokens = micro-dollars */
+  return Math.ceil((uncached + writes) * p.input + cached * p.cached + out * p.output);   /* USD per 1M tokens × tokens = micro-dollars */
 }
 
 /* ══ ② WHAT A PROVIDER MAY TAKE AND SEND BACK ════════════════════════════════════════════════════

@@ -63,7 +63,7 @@
 
 - **`ai-proxy`** … アカウント制AI（§5）。`verify_jwt` あり。`index.ts` は経路の表（`ROUTES`。各項目の `match` は互いに排他）だけを持ち、1 回の POST は `ask.ts`（JWT → 枠の消費 → 本文 →
   提供元 → 台帳）、タスクごとの違いは `tasks/<task>.ts`（`tasks/all.ts` に 1 行）、上限と天井は `config.ts`、プロトコル 2 は `turn.ts`、呼び出し側の schema は `schema.ts`、添付は `media.ts`、
-  提供元への唯一の扉と失敗の分類は `provider-call.ts`、提供元ごとの形は `providers/{openai,anthropic,gemini}.ts`、開発者のモデル一覧は `models.ts`、再受信の答えは `replay.ts`。
+  提供元への唯一の扉と失敗の分類と一時失敗の再試行（`transientRetry`・観測された 5xx／到達不能／per-minute 429 を最大 2 回、全提供元共通）は `provider-call.ts`、Atlas のターンの PDF を 1 回だけ提供元へ上げて参照で送る `doc-refs.ts`、提供元ごとの形は `providers/{openai,anthropic,gemini}.ts`、開発者のモデル一覧は `models.ts`、再受信の答えは `replay.ts`。
 - **`atlas-embed`** … 能力検索の意味の半分（§2.1 の `searchFused`）。`verify_jwt` あり＋関数内でも呼び出し元を解決する。`op:"search"` は問い合わせを OpenAI の埋め込みにして
   `atlas_capability_similarity` で全能力との余弦類似度を返し、`op:"seed"` は説明文を埋めて `atlas_capability_seed` で保存する（鍵は受け取った本文から計算し直す）。未知のカタログへの
   検索は埋める前に `catalog_unknown`。問い合わせは保存しない。支出は `_shared/rate-limit.js` の共有バケツ（利用者ごと 1 分・利用者ごとの seed 1 時間・利用者ごとの 1 日の取り分＝全体の

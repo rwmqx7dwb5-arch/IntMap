@@ -1,6 +1,6 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "97ed1c3170148e9d330b11a20bc284be57eed60c:supabase/functions/ai-proxy/index.ts",
+ "source": "c94bd421240b89a39554b1286bb3d8e1509c19e9:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
@@ -585,8 +585,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      }
     ],
@@ -690,8 +690,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      }
     ],
@@ -4646,8 +4646,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -5026,8 +5026,8 @@
        "p_output": 30,
        "p_cost_micros": 520,
        "p_web": true,
-       "p_cached": 20,
-       "p_web_searches": 1
+       "p_web_searches": 1,
+       "p_cached": 20
       }
      },
      {
@@ -5303,6 +5303,7 @@
       "provider": "openai",
       "model": "gpt-5.6-terra",
       "task": "free_text",
+      "retries": 1,
       "providerStatus": 429,
       "quotaScope": "per-minute",
       "quotaId": "",
@@ -5416,6 +5417,50 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": [
+          {
+           "type": "input_text",
+           "text": "p"
+          }
+         ]
+        }
+       ],
+       "max_output_tokens": 3300,
+       "reasoning": {
+        "effort": "low"
+       },
+       "store": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/refund_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -5455,7 +5500,7 @@
         },
         {
          "m": "ai_rungs",
-         "d": "1",
+         "d": "2",
          "n": 1,
          "cap": 32
         }
@@ -5465,6 +5510,7 @@
     ],
     "logs": [
      "ai-proxy spend reserve_unavailable",
+     "ai-proxy transient retry {\"attempt\":1,\"why\":\"http_429\",\"waitMs\":2000}",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_rate_limit\",\"http\":503,\"meta\":{\"providerStatus\":429,\"quotaScope\":\"per-minute\",\"quotaId\":\"\",\"retryAfter\":\"\",\"bodyLen\":66}}"
     ]
@@ -5666,6 +5712,7 @@
       "provider": "openai",
       "model": "gpt-5.6-terra",
       "task": "free_text",
+      "retries": 2,
       "providerStatus": 500,
       "bodyLen": 13
      }
@@ -5776,6 +5823,94 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": [
+          {
+           "type": "input_text",
+           "text": "p"
+          }
+         ]
+        }
+       ],
+       "max_output_tokens": 3300,
+       "reasoning": {
+        "effort": "low"
+       },
+       "store": false
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": [
+          {
+           "type": "input_text",
+           "text": "p"
+          }
+         ]
+        }
+       ],
+       "max_output_tokens": 3300,
+       "reasoning": {
+        "effort": "low"
+       },
+       "store": false
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/refund_ai_turn",
       "headers": {
        "apikey": "service-key",
@@ -5815,7 +5950,7 @@
         },
         {
          "m": "ai_rungs",
-         "d": "1",
+         "d": "3",
          "n": 1,
          "cap": 32
         }
@@ -5825,6 +5960,8 @@
     ],
     "logs": [
      "ai-proxy spend reserve_unavailable",
+     "ai-proxy transient retry {\"attempt\":1,\"why\":\"http_500\",\"waitMs\":700}",
+     "ai-proxy transient retry {\"attempt\":2,\"why\":\"http_500\",\"waitMs\":1400}",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":500,\"bodyLen\":13}}"
     ]
@@ -7755,8 +7892,8 @@
        "p_output": 2,
        "p_cost_micros": 30,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -8110,12 +8247,6 @@
          "content": "show the layers"
         },
         {
-         "type": "reasoning",
-         "id": "rs_0",
-         "encrypted_content": "E0",
-         "summary": []
-        },
-        {
          "type": "function_call",
          "call_id": "call_1",
          "name": "find_capability",
@@ -8129,9 +8260,10 @@
        ],
        "max_output_tokens": 6100,
        "reasoning": {
-        "effort": "medium"
+        "effort": "medium",
+        "summary": "auto"
        },
-       "store": true,
+       "store": false,
        "instructions": "SYS",
        "text": {
         "format": {
@@ -8184,11 +8316,6 @@
          "strict": false
         }
        ],
-       "include": [
-        "reasoning.encrypted_content"
-       ],
-       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
-       "prompt_cache_retention": "24h",
        "stream": true
       }
      },
@@ -8270,8 +8397,8 @@
        "p_output": 2,
        "p_cost_micros": 30,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -8852,8 +8979,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -9357,8 +9484,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -9736,8 +9863,8 @@
        "p_output": 40,
        "p_cost_micros": 2200,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -9772,7 +9899,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: done\ndata: {\"status\":503,\"body\":{\"error\":\"provider_unavailable\",\"message\":\"The AI provider is temporarily unavailable.\",\"retryable\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"providerStatus\":503}}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: done\ndata: {\"status\":503,\"body\":{\"error\":\"provider_unavailable\",\"message\":\"The AI provider is temporarily unavailable.\",\"retryable\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"retries\":2,\"providerStatus\":503}}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -9892,7 +10019,254 @@
        ],
        "max_output_tokens": 6100,
        "reasoning": {
-        "effort": "medium"
+        "effort": "medium",
+        "summary": "auto"
+       },
+       "store": true,
+       "instructions": "SYS",
+       "text": {
+        "format": {
+         "type": "json_object"
+        }
+       },
+       "tools": [
+        {
+         "type": "function",
+         "name": "find_capability",
+         "description": "Find a capability.",
+         "parameters": {
+          "type": "object",
+          "properties": {
+           "q": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "q"
+          ]
+         },
+         "strict": false
+        },
+        {
+         "type": "function",
+         "name": "run_capability",
+         "description": "Run one. (Arguments: give id or lat.)",
+         "parameters": {
+          "type": "object",
+          "properties": {
+           "id": {
+            "type": "string"
+           },
+           "lat": {
+            "type": "number"
+           }
+          }
+         },
+         "strict": false
+        },
+        {
+         "type": "function",
+         "name": "set_layer",
+         "description": "Promoted.",
+         "parameters": {
+          "type": "object",
+          "properties": {}
+         },
+         "strict": false
+        }
+       ],
+       "include": [
+        "reasoning.encrypted_content"
+       ],
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
+       "stream": true
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": "earlier"
+        },
+        {
+         "role": "assistant",
+         "content": "ok"
+        },
+        {
+         "role": "user",
+         "content": "show the layers"
+        },
+        {
+         "type": "reasoning",
+         "id": "rs_0",
+         "encrypted_content": "E0",
+         "summary": []
+        },
+        {
+         "type": "function_call",
+         "call_id": "call_1",
+         "name": "find_capability",
+         "arguments": "{\"q\":\"x\"}"
+        },
+        {
+         "type": "function_call_output",
+         "call_id": "call_1",
+         "output": "result"
+        }
+       ],
+       "max_output_tokens": 6100,
+       "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
+       },
+       "store": true,
+       "instructions": "SYS",
+       "text": {
+        "format": {
+         "type": "json_object"
+        }
+       },
+       "tools": [
+        {
+         "type": "function",
+         "name": "find_capability",
+         "description": "Find a capability.",
+         "parameters": {
+          "type": "object",
+          "properties": {
+           "q": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "q"
+          ]
+         },
+         "strict": false
+        },
+        {
+         "type": "function",
+         "name": "run_capability",
+         "description": "Run one. (Arguments: give id or lat.)",
+         "parameters": {
+          "type": "object",
+          "properties": {
+           "id": {
+            "type": "string"
+           },
+           "lat": {
+            "type": "number"
+           }
+          }
+         },
+         "strict": false
+        },
+        {
+         "type": "function",
+         "name": "set_layer",
+         "description": "Promoted.",
+         "parameters": {
+          "type": "object",
+          "properties": {}
+         },
+         "strict": false
+        }
+       ],
+       "include": [
+        "reasoning.encrypted_content"
+       ],
+       "prompt_cache_key": "atlas_turn:2e0c01afb30fd83892e14a70490a9b4b",
+       "prompt_cache_retention": "24h",
+       "stream": true
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/relay_take",
+      "headers": {
+       "accept": "application/json",
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-type": "application/json"
+      },
+      "body": {
+       "p_scope": "ai-proxy:global:day",
+       "p_key": "*",
+       "p_capacity": 3000,
+       "p_refill_per_sec": 0.034722222222222224,
+       "p_cost": 1
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "headers": {
+       "authorization": "Bearer sk-oa",
+       "content-type": "application/json"
+      },
+      "body": {
+       "model": "gpt-5.6-terra",
+       "input": [
+        {
+         "role": "user",
+         "content": "earlier"
+        },
+        {
+         "role": "assistant",
+         "content": "ok"
+        },
+        {
+         "role": "user",
+         "content": "show the layers"
+        },
+        {
+         "type": "reasoning",
+         "id": "rs_0",
+         "encrypted_content": "E0",
+         "summary": []
+        },
+        {
+         "type": "function_call",
+         "call_id": "call_1",
+         "name": "find_capability",
+         "arguments": "{\"q\":\"x\"}"
+        },
+        {
+         "type": "function_call_output",
+         "call_id": "call_1",
+         "output": "result"
+        }
+       ],
+       "max_output_tokens": 6100,
+       "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
        },
        "store": true,
        "instructions": "SYS",
@@ -9996,7 +10370,7 @@
         },
         {
          "m": "ai_rungs",
-         "d": "1",
+         "d": "3",
          "n": 1,
          "cap": 32
         }
@@ -10027,13 +10401,15 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      }
     ],
     "logs": [
      "ai-proxy spend reserve_unavailable",
+     "ai-proxy transient retry {\"attempt\":1,\"why\":\"http_503\",\"waitMs\":700}",
+     "ai-proxy transient retry {\"attempt\":2,\"why\":\"http_503\",\"waitMs\":1400}",
      "ai-proxy ledger refund_failed",
      "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"code\":\"provider_unavailable\",\"http\":503,\"meta\":{\"providerStatus\":503}}"
     ]
@@ -10873,7 +11249,6 @@
         {
          "type": "web_search_20250305",
          "name": "web_search",
-         "max_uses": 3,
          "cache_control": {
           "type": "ephemeral"
          }
@@ -11165,7 +11540,10 @@
           {
            "type": "tool_result",
            "tool_use_id": "call_1",
-           "content": "result"
+           "content": "result",
+           "cache_control": {
+            "type": "ephemeral"
+           }
           }
          ]
         }
@@ -11224,7 +11602,6 @@
         {
          "type": "web_search_20250305",
          "name": "web_search",
-         "max_uses": 3,
          "cache_control": {
           "type": "ephemeral"
          }
@@ -11310,8 +11687,8 @@
        "p_output": 3,
        "p_cost_micros": 24,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
@@ -12477,6 +12854,7 @@
        "sources": null
       },
       "protocol": 1,
+      "retries": 1,
       "maxOutput": 1800,
       "costUsd": 0,
       "priceKnown": false,
@@ -12702,6 +13080,7 @@
     ],
     "logs": [
      "ai-proxy spend reserve_unavailable",
+     "ai-proxy transient retry {\"attempt\":1,\"why\":\"http_503\",\"waitMs\":700}",
      "ai-proxy ledger settle_error"
     ]
    },
@@ -13426,8 +13805,8 @@
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
-       "p_cached": 0,
-       "p_web_searches": 0
+       "p_web_searches": 0,
+       "p_cached": 0
       }
      },
      {
