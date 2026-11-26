@@ -59,3 +59,12 @@ scout の静的な全数で 17 件。このラウンドで開放したのは次�
 - `check:testbudget`: 専用の spec（起動 17 秒）は全体の天井を超えるので、既存の `tests/smoke.spec.js` の起動を共有する 4 テストにした。
 
 - `check:perf`（main 取り込み後の再測定）: `eager.brotli` 1196.4→1202.7 kB・`atlas-console` 1462.7→1471.8 kB・`dist.assets` 23028.9→23156.1 kB に天井を上げた。eager の増分は `js/map-tools.js`（物体基盤・面積・汎用スタイル・パネル）。同じビルドで他の行は超えていない（`--update` は超えた 3 行だけ書いた）。main に合流した他の変更（#1465・#1467・#1469・#1470）のぶんも同じ測定に含まれる。
+
+## 本番での確認（2026-11-26、#1468・#1473 の公開後、本番 Pages）
+
+`IntMapConsole.dispatch` から、線・面・点の 3 種を描き、それぞれを `object set` で変え、`IntMapObjects` と Objects パネルで読み戻した。
+- 線 `line_1`: `drawLine` が id を返し、`set color=red width=6 opacity=0.5` が通り、読み戻しは `#ff0000 / 6 / 0.5`。
+- 面 `poly_1`: `set color=#00aa55 width=3 opacity=0.8`。読み戻しの不透明度が 0.16（painter が持つ 0.2 倍の値）になる不具合を発見し、#1473 で修正。公開後に再測定して 0.8。
+- 点（compose の場所 `unknown:FRA:パリ`）: `compose` が `objectIds` を返し、`set color=purple opacity=0.6` が通り、読み戻しは `#800080 / 0.6`。幅は持たないので `unsupported: width` と返った（成功を装わない）。
+- Objects パネル: 4 行（2 場所・面・線）、`backdrop-filter: blur(26px) saturate(1.7)`、面の行に 46,684 km²、色の入力が設定値と一致。
+- 未確認: マーカーの色が描画に反映された見た目（ブラウザ枠が非表示でタイルを読めず、source の中身と一覧の読み戻しで確認）。ホバーのポップアップの見た目は実機で見ていない。
