@@ -914,6 +914,11 @@ export function makeAtlasAgent() {
         if (outOfTime()) { stopped = 'time_budget'; break; }
 
         let reply = null;
+        /* (atlas-early-results) THE MOMENT WHAT THE LAST STEP FOUND IS IN FRONT OF THE MODEL. A step's calls run together and the
+           model is asked again when the LAST of them has settled; `firstDoneAt` → `usedAt` is how long the earliest result sat
+           waiting for that. A record of the wait, never a reason to cut one short. */
+        { const pt = trace.stepTiming && trace.stepTiming[trace.stepTiming.length - 1];
+          if (pt && pt.usedAt == null) { pt.usedAt = now(); pt.firstResultHeldMs = pt.firstDoneAt != null ? Math.max(0, pt.usedAt - pt.firstDoneAt) : 0; } }
         const modelT0 = wallNow();
         try {
           /* ⚠ A SNAPSHOT, NOT THE LIVE ARRAY. The loop keeps appending to `transcript`; handing the
@@ -1371,7 +1376,9 @@ export function makeAtlasAgent() {
           }
           /* (#R760) the same call, answering the same way, is not progress — whatever status it wears */
           if (ckey && rec.status === 'partial') {
-            const verdict = String(rec.code || rec.error || '') + '|' + String(rec.status || '');
+            /* (atlas-early-results) `progressKey` is what a call that waits for the NEXT arrival states about where it stands (which pieces are
+               still running): the same arguments asked again after another piece arrived is not the same verdict. */
+            const verdict = String(rec.code || rec.error || '') + '|' + String(rec.status || '') + '|' + String(rec.progressKey || '');
             if (partialCalls[ckey] === verdict) {
               rec.repeatedPartialCallThisTurn = true;
               rec.note = 'This turn has ALREADY made this exact call and it came back with the same verdict ('
@@ -1485,7 +1492,7 @@ export function makeAtlasAgent() {
         let peak = 0;
         spans.forEach((s) => { const n = spans.filter((o) => o[0] < s[1] && o[1] > s[0]).length; if (n > peak) peak = n; });
         trace.stepTiming = trace.stepTiming || [];
-        trace.stepTiming.push({ step, ran: spans.length, wallMs: wall, serialMs: serial, concurrent: peak });
+        trace.stepTiming.push({ step, ran: spans.length, wallMs: wall, serialMs: serial, concurrent: peak, firstDoneAt: spans.length ? Math.min.apply(null, spans.map((s) => s[1])) : null, lastDoneAt: spans.length ? Math.max.apply(null, spans.map((s) => s[1])) : null });
         /* (atlas-native-tools) the calls past `maxPerStep` — answered as not run, see `allCalls` above */
         allCalls.slice(lim.maxPerStep).forEach(function (c) {
           stepResults.push({ id: c && c.id, name: c && c.name, ok: false, error: 'step_call_limit',
@@ -1576,6 +1583,8 @@ export function makeAtlasAgent() {
           && stopped !== 'awaiting_user') writeAnswer = true;
       const finalStep = trace.steps.length;
       if (writeAnswer) {
+        { const pt = trace.stepTiming && trace.stepTiming[trace.stepTiming.length - 1];
+          if (pt && pt.usedAt == null) { pt.usedAt = now(); pt.firstResultHeldMs = pt.firstDoneAt != null ? Math.max(0, pt.usedAt - pt.firstDoneAt) : 0; } }
         try {
           const last = await model({
             system: opts.system || '',

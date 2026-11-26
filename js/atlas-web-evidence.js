@@ -201,7 +201,11 @@ export function makeWebEvidence(opt) {
     return rows.map((r) => r.id + ' · ' + r.kind + ' · ' + (r.title || r.query || r.url || '') + (r.url && (r.title || r.query) ? ' · ' + r.url : '') + ' · ' + r.ageSec + ' s old').join('\n');
   }
 
-  return { acquire, find, note, lookup, read, list, turnSources, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); } };
+  /* (atlas-early-results) which answers an earlier call of THIS turn has already carried to the model — the set a "wait":"any" search consults
+     to wait for the next arrival rather than for one an earlier answer already satisfied. One turn at a time: a new turn starts empty. */
+  let shownTurn = null, shownKeys = new Set();
+  function shown(turn) { if (shownTurn !== turn) { shownTurn = turn; shownKeys = new Set(); } return shownKeys; }
+  return { shown, acquire, find, note, lookup, read, list, turnSources, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); } };
 }
 
 /** the page's ONE store (the parent turn and every delegated child run in this page) */
