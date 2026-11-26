@@ -182,7 +182,7 @@ test('⑩ the table list says a note that several tables share once', async () =
   API.bind({ countryStats: () => ({}), countryName: (s) => s.nameEn });
   const out = await API.answer({ list: true }, { pin: false });
   assert.ok(out.ok && out.html);
-  const notes = [...out.html.matchAll(/<span style="color:var(--text-muted);font-size:10.5px;">([^<]*)</span>/g)].map((m) => m[1]).flatMap((x) => x.split(' · '));
+  const notes = [...out.html.matchAll(/<span style="color:var\(--text-muted\);font-size:10\.5px;">([^<]*)<\/span>/g)].map((m) => m[1]).flatMap((x) => x.split(' · '));
   /* the attribution line (it ends in the file) is per table; the gap and completeness notes are per FILE */
   const dup = notes.filter((n, i) => n.length > 40 && !/\(data\/[^)]*\)$/.test(n) && notes.indexOf(n) !== i);
   assert.deepEqual(dup, [], 'no note appears twice in one list');
