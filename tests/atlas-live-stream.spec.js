@@ -126,9 +126,8 @@ test('①② the note goes to the trace, the answer is shown while written and t
   /* ① the note, live, in the trace — and not in the reply */
   await expect(page.locator('#atlas-panel .atl-trace-row.say').last()).toContainText(NOTE, { timeout: 20_000 });
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
-  /* the thinking row said what was decided before it ran (the reasoning headline stood there first and
-     gave way to 「次: …」 the moment the call was named — what stays is the statement of intent) */
-  await expect(page.locator('#atlas-panel .atl-trace-head .atl-trace-livedet').filter({ hasText: /(次|Next): / })).toHaveCount(1);   /* (2026-11-26) the wait is the head's live word, not a history row */
+  /* (2026-11-26) the statement of intent (「次: …」) stands in the head beside the live word while the call is being decided and goes when the operation starts —
+     it is not a history row any more, so it is not asserted here (tests/atlas-progress-display-checks.test.mjs ① covers that the wait leaves no row) */
   /* ② step 2 holds before `done`: the draft is on screen, live, before any answer exists */
   const draft = lastReply().locator('.atl-draft.live');
   await expect(draft).toContainText('関東平野', { timeout: 20_000 });
