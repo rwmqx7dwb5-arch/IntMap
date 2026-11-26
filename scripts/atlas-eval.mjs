@@ -57,6 +57,7 @@ import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
 import { deliverablesOfTurn, completionRateOf, deliverableSectionsOf } from './atlas-eval/deliverables.mjs';
+import { expressionOf, factsLine, initiativeOf } from './atlas-eval/initiative.mjs';   /* (atlas-ui-parts) the initiative axis */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = SITE_URL;   // (domain-portable) the address is site-origin.js, written nowhere else
@@ -84,12 +85,17 @@ export function loadQuestions() {
 export function loadAnswerKey() {
   return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/answer-key.json'), 'utf8'));
 }
+/** (atlas-ui-parts) the open questions: no answer, no expectation — read only for the initiative axis */
+export function loadOpenQuestions() {
+  return JSON.parse(readFileSync(join(ROOT, 'scripts/atlas-eval/open-questions.json'), 'utf8'));
+}
 /** askable(which) — the questions a run asks, each tagged with the set it came from. An answer-key row
  *  judges by its answer (judge.mjs grades `q.answer`); it has no recorded expectations of its own. */
 export function askable(which = 'all') {
   const out = [];
   if (which === 'all' || which === 'records') for (const q of loadQuestions().questions) out.push(Object.assign({ set: 'records' }, q));
   if (which === 'all' || which === 'answers') for (const q of loadAnswerKey().questions) out.push(Object.assign({ set: 'answers', sendable: true, expect: {}, unset: {} }, q));
+  if (which === 'all' || which === 'open') for (const q of loadOpenQuestions().questions) out.push(Object.assign({ set: 'open', sendable: true, expect: {}, unset: {} }, q));
   return out;
 }
 
@@ -369,17 +375,18 @@ async function evaluate() {
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
          asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
          deterministic grade already says 「absent」) */
-      if (rubric && q.answer && obs.measured) {
+      if (rubric && (q.answer || q.set === 'open') && obs.measured) {
         if (!String(obs.reply || '').trim()) obs.rubric = { measured: false, reason: 'no reply to grade' };
         else {
-          const g = await page.evaluate(PAGE.grade, rubricRequest(q, obs.reply)).catch((e) => ({ error: String((e && e.message) || e) }));
-          obs.rubric = g.error ? { measured: false, reason: 'grader: ' + g.error } : Object.assign(readRubric(g.data), { model: g.model, provider: g.provider });
+          const g = await page.evaluate(PAGE.grade, rubricRequest(q, obs.reply, factsLine(expressionOf(obs)))).catch((e) => ({ error: String((e && e.message) || e) }));
+          obs.rubric = g.error ? { measured: false, reason: 'grader: ' + g.error } : Object.assign(readRubric(g.data, { open: !q.answer }), { model: g.model, provider: g.provider });
         }
       }
       const judged = judgeTurn(q, obs, rules);
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
       if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot };
       judged.deliverables = deliverablesOfTurn(q, obs, rules);
+      if (obs.measured) judged.expression = expressionOf(obs);   /* (atlas-ui-parts) the families of output the turn realized — a fact beside the grade, never a target */
       turns.push(judged);
       if (!obs.measured && obs.unmeasured === 'gate_refused') stopAll = 'the page refused ' + q.id + ' before Atlas ran: ' + obs.detail;
       if (has('--screenshots')) { mkdirSync(outDir, { recursive: true }); await page.screenshot({ path: join(outDir, q.id + '.png') }).catch(() => { }); }
@@ -433,6 +440,7 @@ async function evaluate() {
   console.log('  probes: ' + M.misresolution.probesMeasured + ' measured · misresolved: ' + (M.misresolution.probes.join(', ') || 'none'));
   if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
   if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
+  { const I = initiativeOf(turns); if (I.graded) console.log('  initiative (0-2, beside the verdict): mean ' + I.mean.toFixed(2) + ' over ' + I.graded + ' · words only where more was invited: ' + (I.wordsOnlyWhereMoreWasInvited.join(', ') || 'none')); }
   if (M.measured) console.log('  reach ' + M.reach.reached + '/' + M.reach.of + ' · zero-op ' + M.zeroOpTurns.length + ' · cut ' + M.cutTurns.n + ' · same call again ' + M.secondOfSameOp.total + ' · over budget ' + M.overBudgetTurns.length);
   if (adv.regressions.length) console.log('  regressions: ' + adv.regressions.map((x) => x.key).join(', '));
   console.log('  report: ' + join(outDir, 'atlas-eval.md'));

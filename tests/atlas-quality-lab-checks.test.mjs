@@ -142,7 +142,7 @@ test('atlas-quality-lab ③ the rubric is asked against the verified answer, and
   assert.equal(G.readRubric({ ...full, scores: { ...full.scores, grounding: 3 } }).measured, false, 'a score outside 0/1/2 is ungraded, not failed');
   assert.equal(G.readRubric(null).measured, false);
   /* the server-owned schema names exactly the criteria the reader checks */
-  assert.deepEqual(SHARED.ATLAS_GRADE_SCHEMA.properties.scores.required, G.ATLAS_GRADE_CRITERIA.map((c) => c.id));
+  assert.deepEqual(SHARED.ATLAS_GRADE_SCHEMA.properties.scores.required, [...G.ATLAS_GRADE_CRITERIA.map((c) => c.id), G.ATLAS_GRADE_INITIATIVE.id]);
 });
 
 /* ══ ④ THE JUDGE NOW ASKS WHETHER THE ANSWER IS RIGHT ═══════════════════════════════════════════════════ */

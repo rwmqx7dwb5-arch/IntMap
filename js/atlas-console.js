@@ -44,6 +44,7 @@ import { makeEraHighlight } from './atlas-era-highlight.js';
 import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
+import { makeAtlasSwitch } from './atlas-switch.js';   /* (atlas-ui-parts) the press of a tabs/steps switch an answer drew */
 import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/atlas-turn-checks.test.mjs #R419 ⑨d) */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
@@ -1827,6 +1828,7 @@ export function atlasConsole(HOST){
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
     const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } }, resolveShape: (nm, want, where) => resolveShape(nm, want, { area: (n) => resolveHlTarget(n), countries: (codes) => _codesGeo(codes).geo, extent: (n) => _nomExtent(n), river: (n) => fetchRiverLine(n), isRiver: riverIntent, countryCode: (c) => { const x = resolveCountrySync(c); return x && x.code; }, countryAt: (lng, lat) => codeAtPoint(lng, lat) }, where) });   /* (atlas-real-shapes) `resolveShape`: an item asked as an AREA or a LINE gets its real geometry through the same ladders the highlight uses — js/atlas-shape-resolve.js */   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
+    const SWITCH = makeAtlasSwitch({ dispatch: (x) => dispatch(x), CAPS, L });   /* (atlas-ui-parts) pressing a tabs/steps option runs its calls through this same dispatch */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
        2,190-line switch here; it is now the `run` of that capability's entry in js/atlas-cap-<namespace>.js, beside its
@@ -2183,6 +2185,7 @@ export function atlasConsole(HOST){
         +_capIndex(tools)+'[TOOLS] The functions you hold ('+Object.keys(tools||{}).join(', ')+') are the whole call surface; every id in the index above is reached through find_capability and run_capability.\n'
         /* (atlas-one-declaration) LAST, because it is the only line of this prompt that depends on the reader's language: everything above it is
            the same bytes in every language, so it is one cacheable prefix instead of one per language. It used to stand above the capability index. */
+        +'final_text is the reader\'s answer ONLY: never write in it about IntMap\'s checks, what you verified or that something need not be redrawn — a reply to IntMap itself (why you are not redoing a step a note asked for) goes in note_to_intmap, which the reader never sees.\n'
         +'Write final_text in '+_langLine()+'.\n';
     }
     /* The capability index. The tools themselves travel as the provider's functions, which js/atlas-toolsurface.js
@@ -2403,6 +2406,7 @@ export function atlasConsole(HOST){
         /* (board-map-link) the card a `board` block of ui.compose draws: the spec was staged with IntMapBoard, the button holds only its key */
         const bdo=e.target.closest&&e.target.closest('.atl-ui-bdo');
         if(bdo){ const k=bdo.getAttribute('data-bd')||''; Promise.resolve(window.IntMapLazy&&window.IntMapLazy.need('board')).then(()=>{ const B=window.IntMapBoard; return B&&B.openStaged&&B.openStaged(k); }).catch(()=>{}); return; }
+        const stab=e.target.closest&&e.target.closest('.atl-ctl-tab'); if(stab){ SWITCH.press(stab); return; }   /* (atlas-ui-parts) */
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
         const ch=e.target.closest&&e.target.closest('.atl-choice');
@@ -2413,6 +2417,7 @@ export function atlasConsole(HOST){
         if(ri&&!(e.target.closest&&e.target.closest('a'))){ const p=_pois[+ri.getAttribute('data-i')]; if(p&&isFinite(p.lng)){ GE().camera.flyTo({center:[p.lng,p.lat],zoom:Math.max(GE().camera.getZoom(),7.5),duration:900}); } return; }
       }catch(_){} });
       panel.addEventListener('input',e=>{ try{
+        const sst=e.target.closest&&e.target.closest('.atl-ctl-step'); if(sst){ SWITCH.press(sst); return; }   /* (atlas-ui-parts) */
         const sl=e.target.closest&&e.target.closest('.atl-ctl-op'); if(!sl) return;
         const rl=_ctlLayer(sl); if(!rl) return;
         const real=layerOpacityControl(rl.cb); if(!real) return;

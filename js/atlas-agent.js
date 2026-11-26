@@ -325,6 +325,15 @@ export function makeAtlasAgent() {
         next_output_tokens: { type: 'integer', minimum: 1,
           description: 'Optional. How many output tokens your NEXT reply needs, when it will write something long (a report, '
             + 'a long comparison, a document). Omit for an ordinary reply.' },
+        /* (atlas-ui-parts) THE CHANNEL FOR TALKING TO INTMAP THAT IS NOT THE READER'S TEXT. IntMap's own checks (the goal reader,
+           the output gate) end by inviting Atlas to «reply again with the answer as it stands and say why» — and the only
+           place a reply had to say it was final_text, which is what the reader is shown. So the verifier's conversation
+           surfaced as 「4つの区画が面として表示されているため、描き直しは不要です」 inside an answer about the Habsburg
+           empire. The fix is structural: the reply now HAS a place for that sentence, and the notes name it. */
+        note_to_intmap: { type: 'string',
+          description: 'Optional. A message to IntMap itself, NEVER shown to the reader: why you are not redoing something a check '
+            + 'note asked for, or any remark about the process of this turn. final_text is read by the reader alone and must read '
+            + 'as the answer to their question, with no mention of checks, redrawing or what you verified.' },
         final_text: { type: 'string' },   /* LAST: the words are written after what the reply is and does is decided (#R663 ②) */
       },
     };
@@ -1012,6 +1021,7 @@ export function makeAtlasAgent() {
         if (reply && typeof reply.text === 'string' && reply.text.trim() && (calls.length || turnState === 'continuing')) {
           if (!interim.length || interim[interim.length - 1].text !== reply.text) interim.push({ step, text: reply.text });
         }
+        if (reply && reply.noteToIntMap) { (trace.machineNotes = trace.machineNotes || []).push({ step, note: reply.noteToIntMap }); }
         nextEffort = (reply && NEXT_EFFORTS.indexOf(reply.nextEffort) >= 0) ? reply.nextEffort : undefined;
         nextOutput = (reply && Number.isInteger(reply.nextOutput) && reply.nextOutput > 0) ? reply.nextOutput : undefined;
         if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
@@ -1090,7 +1100,7 @@ export function makeAtlasAgent() {
                   + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
                   + (metList.length ? '. Already covered: ' + metList.map((m) => '"' + m.need + '"').join('; ') : '')
                   + '. Do them now with function calls and then answer; or, if the request does not actually need them, '
-                  + 'reply again with the answer as it stands and say why.';
+                  + 'reply again with the answer as it stands, and put the reason in note_to_intmap (never shown) — final_text is read by the reader alone and must not mention this check.';
               }
             }
           }
@@ -1735,6 +1745,7 @@ export function makeAtlasAgent() {
         /* (atlas-unbounded-execution) what this reply declared its NEXT reply needs; a value outside the vocabulary, or null
            (the strict dialect's «absent»), is no declaration */
         nextEffort: (d && NEXT_EFFORTS.indexOf(String(d.next_effort || '').toLowerCase()) >= 0) ? String(d.next_effort).toLowerCase() : '',
+        noteToIntMap: (d && typeof d.note_to_intmap === 'string') ? d.note_to_intmap.slice(0, 600) : '',
         nextOutput: (d && Number.isInteger(d.next_output_tokens) && d.next_output_tokens > 0) ? d.next_output_tokens : 0,
         /* (job-cost-ledger) what the proxy said this ONE answer cost and which model served it — undefined when it did not say */
         usage: meta ? { model: meta.modelServed || meta.model || undefined, costUsd: (typeof meta.costUsd === 'number') ? meta.costUsd : undefined, priceKnown: meta.priceKnown } : undefined,
