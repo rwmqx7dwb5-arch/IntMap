@@ -145,9 +145,16 @@ export function makeAtlasTurnResults(deps) {
         return '{' + ks.map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
       }
       if (typeof v === 'number') return isFinite(v) ? String(v) : 'null';
-      if (typeof v === 'string') return JSON.stringify(norm(v));
+      if (typeof v === 'string') return JSON.stringify(isWords(v) ? norm(v) : v.trim());
       return JSON.stringify(v);
     }
+    /* ⚠⚠ A STRING IS FOLDED ONLY WHEN IT IS WORDS. `norm` lowercases and collapses spaces, which is right for a place a person typed (「大阪駅」 =
+       「 大阪駅 」, `Osaka` = `osaka`) and WRONG for anything that is read by a machine: Python's `A=19` and `a=7` are two programs, `/Tmp/X` and
+       `/tmp/x` two paths, `ID_1` and `id_1` two identifiers. Folded, the second call returned the first call's answer — 19 for both, the second
+       never run. The test is the SHAPE of the value (letters, digits, spaces and the punctuation of a name), not the field it sits in, so a
+       capability added tomorrow whose argument is code is kept verbatim without anyone listing it (no-ad-hoc-hardcoding §2 ④). Anything that
+       carries `= ( ) { } [ ] ; : / \ < > _ $ # @ % ^ & * + | ~` or a line break is not words. */
+    function isWords(v) { return /^[\p{L}\p{M}\p{N} 	.,'’·\-]*$/u.test(v); }
 
     /**
      * answerKey(act) — #R159's goal key, unchanged: '' unless this is an answer about a topic.

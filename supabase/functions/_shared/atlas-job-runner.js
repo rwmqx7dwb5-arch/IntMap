@@ -121,7 +121,7 @@ async function event(db, job, kind, data) {
 async function runCapabilityTask(ctx, task) {
   const { db, job, holder, leaseSeconds } = ctx;
   const c = task.contract || {};
-  const fin = async (status, code, result) => { await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: result || null, p_cost: 0, p_calls: 0 }); return { state: status }; };
+  const fin = async (status, code, result) => { await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: stamped(ctx, result), p_cost: 0, p_calls: 0 }); return { state: status }; };
   const cp = first(await rpc(db, "atlas_job_checkpoint", { p_job: job.id, p_holder: holder, p_lease_seconds: leaseSeconds }));
   if (!cp || cp.ok !== true) return { state: "lost", lost: true };
   if (cp.action !== "go") return fin("cancelled", cp.action, null);
@@ -192,7 +192,7 @@ async function runToolWorker(ctx, task, inputs) {
   const addSource = (c) => { if (c && c.url && !sources.some((x) => x.url === c.url)) sources.push({ url: s(c.url, 500), title: s(c.title, 200) }); };
   const save = (y) => rpc(db, "atlas_job_task_progress", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_progress: { v: 1, calls: st.calls, cost: st.cost, entries: st.entries, web: st.web, note: st.note, dup: st.dup, shapeFails: st.shapeFails, sources }, p_yield: y });
   const finish = async (status, code, result) => {
-    await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: result || null, p_cost: st.cost, p_calls: st.calls });
+    await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: stamped(ctx, result), p_cost: st.cost, p_calls: st.calls });
     return { state: status };
   };
   if (!catalogue.length) return finish("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ["None of this worker's tools has a server twin, so it cannot run them."], sources });
@@ -272,6 +272,17 @@ async function runToolWorker(ctx, task, inputs) {
   }
 }
 
+/* ══ THE REQUEST HAS A VERSION, AND EVERY RESULT SAYS WHICH ONE IT WAS MADE UNDER ═══════════════════════════════════════════════════════
+   The reader may change the request while a job runs («Nagoya» → «Osaka»: atlas_job_amend). The amendments reach the NEXT model request of a task
+   that has not finished, but a task already running, a capability task whose arguments were fixed when the job was planned, and a result already in
+   the ledger are what they were — and the report put all of them in one list: the Nagoya study, the Osaka study and the Nagoya GIS result side by
+   side with nothing to tell them apart (measured 2026-11-27). The version is the number of amendments when the task was started
+   (`ctx.requestVersion`, read at the checkpoint that precedes it); it is written into the task's result, and the final report marks every task
+   made under an earlier version, with the change it did not see. NOTHING IS DECIDED HERE about which earlier results still hold (a port list is the
+   same for either city; the Nagoya analysis is not): that is the planner's judgment, and it now has the facts — which pieces predate the change, and
+   what the change was — instead of a flat list. */
+const stamped = (ctx, r) => (r && typeof r === "object") ? Object.assign({}, r, { requestVersion: Number(ctx && ctx.requestVersion) || 0 }) : r;
+
 /* runTask — one task: start it, ask the model (checkpointed and reserved each time), finish it. → { state, lost? } */
 async function runTask(ctx, task, inputs) {
   const { db, job, holder, money, leaseSeconds } = ctx;
@@ -285,7 +296,7 @@ async function runTask(ctx, task, inputs) {
   let calls = 0, cost = 0, web = true, why = "", note = "";
   const sources = [];
   const finish = async (status, code, result) => {
-    await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: result || null, p_cost: cost, p_calls: calls });
+    await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: stamped(ctx, result), p_cost: cost, p_calls: calls });
     return { state: status };
   };
   const rl = { waited: 0 };
@@ -356,7 +367,7 @@ export async function runJob(ctx0) {
     for (const b of blocked) await rpc(db, "atlas_job_task_block", { p_job: job.id, p_holder: holder, p_task: b.task_id, p_code: "input_unavailable" });
     if (blocked.length) continue;   /* re-read: a task that depended on a blocked one is now blocked too */
     const open = tasks.filter((t) => t.status === "queued" || t.status === "running");
-    if (!open.length && !running.size) return conclude(ctx, tasks);
+    if (!open.length && !running.size) return conclude(ctx, tasks, cp.amends);
     /* a task started here whose first RPC has not landed still reads `queued`: it is not started a second time */
     const startable = ready.filter((t) => !running.has(t.task_id));
     if (!startable.length && !running.size) {   /* queued tasks that wait on a task that is still running — only a lapsed lease leaves that, and the claim requeued it */
@@ -370,7 +381,7 @@ export async function runJob(ctx0) {
       for (const t of startable) {
         if (running.size >= TASK_CONCURRENCY) break;
         const inputs = (t.deps || []).map((d) => { const r = (byId.get(d) || {}).result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data }; });
-        running.set(t.task_id, runTask(ctx, t, inputs).catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));
+        running.set(t.task_id, runTask(Object.assign({}, ctx, { requestVersion: Array.isArray(cp.amends) ? cp.amends.length : 0 }), t, inputs).catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));
       }
     }
     if (!running.size) continue;
@@ -387,13 +398,22 @@ export async function runJob(ctx0) {
   return { outcome: "finished" };
 }
 
-async function conclude(ctx, tasks) {
+async function conclude(ctx, tasks, amendList) {
   const { db, job, holder } = ctx;
+  const amends = Array.isArray(amendList) ? amendList.map((x) => String(x == null ? "" : x)) : [];
+  const latest = amends.length;
   const ok = tasks.filter((t) => t.status === "done" || t.status === "partial");
   const capped = tasks.some((t) => t.status === "refused" && (t.code === "cost_cap" || (t.result && t.result.gaps && String(t.result.gaps[0] || "").indexOf("cost cap") >= 0)));
   const result = {
-    summary: ok.map((t) => (t.result && t.result.summary) || "").filter(Boolean).join("\n\n"),
-    tasks: tasks.map((t) => ({ id: t.task_id, state: t.status, summary: (t.result && t.result.summary) || "", findings: (t.result && t.result.findings) || [], gaps: (t.result && t.result.gaps) || [], sources: (t.result && t.result.sources) || [] })),
+    requestVersion: latest,
+    amends,
+    summary: ok.map((t) => {
+      const sm = (t.result && t.result.summary) || "";
+      if (!sm) return "";
+      const v = (t.result && t.result.requestVersion) || 0;
+      return v < latest ? "[made before the reader changed the request (version " + v + " of " + latest + "; the change was: " + s(amends[v], 200) + ")] " + sm : sm;
+    }).filter(Boolean).join("\n\n"),
+    tasks: tasks.map((t) => ({ id: t.task_id, state: t.status, requestVersion: (t.result && t.result.requestVersion) || 0, summary: (t.result && t.result.summary) || "", findings: (t.result && t.result.findings) || [], gaps: (t.result && t.result.gaps) || [], sources: (t.result && t.result.sources) || [] })),
   };
   const everyCancelled = tasks.length > 0 && tasks.every((t) => t.status === "cancelled");
   const status = ok.length ? "done" : (everyCancelled ? "cancelled" : "failed");

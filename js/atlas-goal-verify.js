@@ -26,7 +26,16 @@ export function recordOf(results) {
     if (!r || typeof r !== 'object') continue;
     const id = r.capability || r.name || '';
     if (!id) continue;
-    rows.push(id + ' → ' + (r.ok === false ? 'FAILED' + (r.error ? ' (' + clip(r.error, 60) + ')' : '') : (r.status && r.status !== 'completed' ? String(r.status) : 'ok'))
+    /* ⚠ THE STATUS IS READ BEFORE `ok`. `ok` is false for every status but 'completed' (js/atlas-results.js toLegacy), so a call that RAN and
+       could not be seen ('unobserved') or that placed some of what was asked ('partial') used to be written to the reader as FAILED — an
+       observer's lie (one-pass-or-a-reason §2 ①): the independent reader then listed the request as unmet, Atlas redrew what was already on the
+       map, was read again, and the turn ended on 「完了していないもの」 over a finished drawing. Each state is now said as what it is. */
+    let state;
+    if (r.status === 'unobserved') state = 'ran; whether it took effect could not be seen (NOT a failure, nothing says it did not work)' + (Array.isArray(r.unobservedModes) && r.unobservedModes.length ? ' [would have produced: ' + r.unobservedModes.join(', ') + ']' : '');
+    else if (r.status === 'partial') state = 'partial' + (r.error ? ' (' + clip(r.error, 60) + ')' : '') + (Array.isArray(r.producedModes) && r.producedModes.length ? '' : ' [nothing observed]');
+    else if (r.ok === false) state = 'FAILED' + (r.error ? ' (' + clip(r.error, 60) + ')' : '');
+    else state = (r.status && r.status !== 'completed' ? String(r.status) : 'ok');
+    rows.push(id + ' → ' + state
       + (Array.isArray(r.producedModes) && r.producedModes.length ? ' [produced: ' + r.producedModes.join(', ') + ']' : ''));
   }
   return rows;

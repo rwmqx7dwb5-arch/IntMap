@@ -3762,7 +3762,11 @@ export function geojsonUpload(HOST){
         if(r.grid){ const gid=await registerRaster(r, label); out.push({ok:!!gid,grid:true,label,datasetId:gid||null}); continue; }
         const put=addFC(r.fc, label, r);
         const did=await registerDataset(r, label, f, put&&put.n);
-        const o={ok:true,label,file:f,format:r.format||null,stats:r.stats||null,fc:r.fc,n:put?put.n:null,datasetId:did||null};
+        /* ⚠ `n` IS THE MAP LAYER'S SERIAL (addFC's `put.n`), NOT A COUNT — a reader that took it for «rows» told Atlas a 47-feature file had 1 row, and a
+           registration that failed (`did` null) came back ok with nothing to say so. The count is what was read (`features`), and whether the analysis
+           registry accepted the file is stated (`registered`) rather than left to a toast the caller never sees. */
+        const feats=(r.fc&&Array.isArray(r.fc.features))?r.fc.features.length:null;
+        const o={ok:true,label,file:f,format:r.format||null,stats:r.stats||null,fc:r.fc,n:put?put.n:null,layer:put?put.n:null,features:feats,registered:!!did,datasetId:did||null};
         out.push(o);
         if(r.format==='table'&&!(opts&&opts.quiet)) offerStudio(o);
       }

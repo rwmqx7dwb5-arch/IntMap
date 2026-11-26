@@ -83,6 +83,7 @@ export function jobFacts(job, tasks) {
     return {
       id: t.task_id, kind: c.kind || 'worker', title: s(c.capability ? (c.capability + (c.args && Object.keys(c.args).length ? ' ' + stable(c.args) : '')) : c.goal, 160),
       state: t.status, code: t.code || '', ended: TASK_ENDED.has(t.status),
+      deps: Array.isArray(t.deps) ? t.deps.map((d) => String(d)) : [], endedAt: t.ended_at || null,
       summary: s(r.summary, 1500), findings: Array.isArray(r.findings) ? r.findings.length : 0, gaps: Array.isArray(r.gaps) ? r.gaps.map((g) => s(g, 300)) : [],
       sources: Array.isArray(r.sources) ? r.sources.slice(0, 8).map((x) => ({ url: s(x && x.url, 400), title: s(x && x.title, 160) })) : [],
       costUsd: micros(t.cost_micros),
@@ -110,14 +111,38 @@ export function jobFacts(job, tasks) {
 export async function applyParked(f, apply, memory) {
   const out = [];
   if (!f || typeof apply !== 'function') return out;
-  for (const t of f.tasks || []) {
+  /* ⚠ THE ORDER IS THE PLAN'S, NOT THE ALPHABET'S. The tasks arrive sorted by their NAME (the query orders by task_id), so «draw» ran before
+     «move to 1850» and drew the present (reproduced 2026-11-27). A parked operation runs after every task it starts from: a topological order over
+     `deps`, ties broken by when the server ended each (the order it ran them in), then by name. */
+  const all = f.tasks || [];
+  const byId = new Map(all.map((t) => [t.id, t]));
+  const ordered = [], seen = new Set(), visiting = new Set();
+  const stamp = (t) => (t.endedAt ? Date.parse(t.endedAt) || 0 : 0);
+  const sorted = all.slice().sort((x, y) => (stamp(x) - stamp(y)) || String(x.id).localeCompare(String(y.id)));
+  const visit = (t) => {
+    if (seen.has(t.id) || visiting.has(t.id)) return;
+    visiting.add(t.id);
+    (t.deps || []).forEach((d) => { const u = byId.get(d); if (u) visit(u); });
+    visiting.delete(t.id); seen.add(t.id); ordered.push(t);
+  };
+  sorted.forEach(visit);
+  const tried = memory ? (memory.tried || (memory.tried = new Set())) : null;
+  const notApplied = new Set();   // a task whose operation did not take effect holds back the ones that start from it
+  for (const t of ordered) {
     if (!t.parked || t.state !== 'done') continue;
     const key = String(f.id) + '/' + t.id;
     if (memory && memory.has(key)) continue;
-    if (memory) memory.add(key);   /* before running: a run that throws is not run a second time on the next poll */
+    const blocker = (t.deps || []).find((d) => notApplied.has(d));
+    if (blocker) { notApplied.add(t.id); out.push({ task: t.id, capability: t.parked.capability, ok: false, applied: false, why: 'its predecessor "' + blocker + '" did not take effect' }); continue; }
+    if (tried && tried.has(key)) continue;   /* a run that threw or was refused is not run again on the next poll of THIS page */
+    if (tried) tried.add(key);
     let r;
     try { r = await apply(t.parked); } catch (e) { r = { ok: false, why: s(e && e.message, 120) || 'threw' }; }
-    out.push({ task: t.id, capability: t.parked.capability, ok: !!(r && r.ok), why: r && r.ok ? '' : s(r && r.why, 160) });
+    const ok = !!(r && r.ok);
+    /* ⚠ «APPLIED» IS WRITTEN AFTER THE EFFECT WAS OBSERVED, NOT BEFORE THE ATTEMPT. The mark went in first, so an operation that failed was already
+       «done» and a fetch of the same job never drew it. `ok` here is the page's own read-back (js/atlas-cap-jobs.js parkedApplier: observed !== false). */
+    if (ok) { if (memory) memory.add(key); } else notApplied.add(t.id);
+    out.push({ task: t.id, capability: t.parked.capability, ok, applied: ok, why: ok ? '' : s(r && r.why, 160) });
   }
   return out;
 }
@@ -128,7 +153,7 @@ export function deviceParkedMemory(w) {
   const KEY = 'intmap.atlas.jobs.applied';
   const seen = new Set();
   try { JSON.parse((win.localStorage && win.localStorage.getItem(KEY)) || '[]').forEach((k) => seen.add(String(k))); } catch (_) { /* start empty */ }
-  return { has: (k) => seen.has(k), add: (k) => { seen.add(k); try { if (win.localStorage) win.localStorage.setItem(KEY, JSON.stringify(Array.from(seen).slice(-500))); } catch (_) { /* the device refused */ } } };
+  return { tried: new Set(), has: (k) => seen.has(k), add: (k) => { seen.add(k); try { if (win.localStorage) win.localStorage.setItem(KEY, JSON.stringify(Array.from(seen).slice(-500))); } catch (_) { /* the device refused */ } } };
 }
 
 /* jobText(facts) — plain text, the facts first (Atlas reads the top of a card's text) */
