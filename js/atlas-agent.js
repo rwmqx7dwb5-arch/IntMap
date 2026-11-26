@@ -193,10 +193,17 @@ export function makeAtlasAgent() {
           and is still honoured: it is what a caller driving runTurn with its own `execute` sets, and
           demoting it to "the old way" would break the contract those callers were given. ────────── */
     function producedBy(r) {
-      if (!r || r.ok === false) return [];
+      /* (atlas-result-delivery) A PARTIAL IS `ok:false` ON THE REAL PATH (js/atlas-results.js toLegacy: ok = status==='completed') AND CAN
+         STILL HAVE PUT THINGS ON THE MAP — js/atlas-toolsurface.js stamps `producedModes` on a partial the verifier saw something of, and
+         never on a failure. `ok === false` alone therefore erased five markers that were really there and bounced the answer as map_not_drawn. */
+      if (!r || (r.ok === false && r.status !== 'partial')) return [];
       const out = Array.isArray(r.producedModes) ? r.producedModes : [];
       return (r.changedMap === true && out.indexOf('map') < 0) ? out.concat(['map']) : out;
     }
+    /* (atlas-result-delivery) the outputs a call that RAN BUT COULD NOT BE SEEN would have produced (js/atlas-toolsurface.js stamps them from the
+       registry's `produces`). Not a claim that they appeared — `producedBy` never counts them — only the fact that the call was made, so the
+       output gate does not send the model back to make the same call again, which the unobserved note tells it not to do. */
+    function ranBy(r) { return (r && r.status === 'unobserved' && Array.isArray(r.unobservedModes)) ? r.unobservedModes : []; }
     /* ── (atlas-completion) WHAT A FAILURE SAID ABOUT ITSELF, KEPT. The transport (js/ai-core.js) puts
           the server's `code`, the HTTP `status` and whether the server called it `retryable` on the
           Error it throws; the message alone flattened all three into one sentence, so a turn that
@@ -706,6 +713,25 @@ export function makeAtlasAgent() {
          the case where trying again is right. */
       const TR = makeAtlasTurnResults({});
       const doneCalls = Object.create(null);
+      /* ══ (atlas-result-delivery) A REUSED ANSWER IS TRUE ONLY WHILE NOTHING IT DEPENDS ON HAS BEEN WRITTEN ═════
+         `doneCalls` used to hold a call for the rest of the turn, so `flyTo A → flyTo B → flyTo A` (and a layer toggled on, off, on; a
+         time travelled 1500, 1900, 1500) never ran its third call and was told, falsely, that the app had not changed. The registry already
+         says what a call writes and reads (the footprint the loop orders a reply by): `writeLog` is every call of this turn that ran and
+         wrote something, in order; `doneAt[key]` is how long the log was when that answer was kept. An answer is reused only if no LATER
+         write overlaps what the call reads (undeclared reads = the whole app). A call that touches no app state is never invalidated. */
+      const writeLog = [];
+      const doneAt = Object.create(null);
+      const noteWrite = (fp) => { if (fp && !fp.pure && (fp.barrier || (fp.writes && fp.writes.length))) writeLog.push(fp); };
+      const remember = (key, rec) => { doneCalls[key] = rec; doneAt[key] = writeLog.length; };
+      const stale = (key, fp) => {
+        if (!fp || fp.pure) return false;
+        for (let i = doneAt[key] || 0; i < writeLog.length; i++) {
+          const w = writeLog[i];
+          if (w.barrier || fp.barrier || fp.reads == null || keysOverlap(fp.reads, w.writes) || keysOverlap(fp.writes, w.writes)) return true;
+        }
+        return false;
+      };
+      const isDone = (key, fp) => !!(key && doneCalls[key] && !stale(key, fp));
       /* ⚠⚠⚠ (#R741) …AND THE IDENTICAL CALL THAT FAILED IS NOT PROGRESS EITHER. The paragraph above
          says 「a failure is exactly the case where trying again is right」, and for a DIFFERENT call
          it is. For the same call with the same arguments it is not: nothing in the app changed
@@ -755,6 +781,7 @@ export function makeAtlasAgent() {
       const MEM = (opts.memory && typeof opts.memory.noteResult === 'function') ? opts.memory : null;
       const MEM_TURN = opts.memoryTurn != null ? opts.memoryTurn : 0;
       const footprint = (typeof opts.footprint === 'function') ? opts.footprint : null;
+      const identify = (typeof opts.identify === 'function') ? opts.identify : null;
       const promoted = [];
       /* ══ (atlas-plan-on-map) ATLAS'S OWN PLAN, WHEN THE CALLER KEEPS ONE ════════════════════════════════
          `opts.plan` is the conversation's plan ledger (js/atlas-plan.js). Given one, the loop offers the
@@ -983,7 +1010,7 @@ export function makeAtlasAgent() {
              tool's name, so it still knows nothing about what any tool means. The bounce is a typed
              note in the transcript, never shown to the reader; it costs a step and is bounded. */
           const need = MODE_NEEDS[answerMode] || null;
-          const made = !need || need.some((m) => results.some((r) => producedBy(r).indexOf(m) >= 0));
+          const made = !need || need.some((m) => results.some((r) => producedBy(r).indexOf(m) >= 0 || ranBy(r).indexOf(m) >= 0));
           /* ══ ⚠⚠ (#R663) …OR SAID THIS REPLY IS NOT THE ANSWER AND THEN ENDED THE TURN WITH IT ═══
              The second declaration a final can contradict is its own. `turnState` is Atlas saying
              this reply is mid-turn; an empty `tool_calls` is the machine's record that nothing is
@@ -1171,7 +1198,12 @@ export function makeAtlasAgent() {
             return p;
           }
           p.planStep = PLAN ? PLAN.attribute() : -1;
-          p.ckey = TR.callKey(routed.name, routed.arguments);
+          /* (atlas-result-delivery) THE IDENTITY OF A CALL IS THE CAPABILITY IT REACHES AND ITS ARGUMENTS, NOT THE DOOR IT CAME IN BY. compose_map and
+             run_capability{id:'map.compose'}, or an alias and its canonical id, are one call. `opts.identify` is the tool surface's
+             (js/atlas-toolsurface.js identityOf); a caller without one keeps the tool name and the arguments as written. */
+          let idn = null;
+          if (identify) { try { idn = identify(routed); } catch (_) { idn = null; } }
+          p.ckey = (idn && idn.id) ? TR.callKey('capability:' + idn.id, idn.args) : TR.callKey(routed.name, routed.arguments);
           let fp = null;
           if (call.name === 'read_result') fp = { pure: true };
           else if (footprint) { try { fp = footprint(routed); } catch (_) { fp = null; } }
@@ -1183,7 +1215,7 @@ export function makeAtlasAgent() {
         /* (atlas-orchestration-efficiency) A CALL'S READING NEEDS NO TURN. A capability that can name what it will read from its arguments alone
            (js/atlas-prefetch.js) has that reading started NOW for every live call of the reply, so the calls that must take turns to WRITE
            (the conflict order below is unchanged) find their data already fetched or on its way. Nothing is dropped or reordered. */
-        if (typeof opts.prefetch === 'function') plans.forEach((p) => { if (p.live && p.routed && !p.planRec && !(p.ckey && doneCalls[p.ckey])) { try { opts.prefetch(p.routed); } catch (_) { /* a reading that cannot start is read when its turn comes */ } } });
+        if (typeof opts.prefetch === 'function') plans.forEach((p) => { if (p.live && p.routed && !p.planRec && !isDone(p.ckey, p.fp)) { try { opts.prefetch(p.routed); } catch (_) { /* a reading that cannot start is read when its turn comes */ } } });
         const deps = plans.map((b, j) => plans.slice(0, j).filter((a) => conflicts(a, b)).map((a) => a.i));
         const toResults = [];                 /* by call position: the records that join `results` */
         const spans = [];                     /* [start, end] per call that ran — the step's own measurement */
@@ -1235,7 +1267,7 @@ export function makeAtlasAgent() {
           /* (#R489) …and the identity check, after `reject` has confirmed the call is well formed
              so a malformed repeat still gets its own schema note. See `doneCalls` above. */
           const ckey = p.ckey;
-          if (ckey && doneCalls[ckey]) {
+          if (isDone(ckey, p.fp)) {
             trace.reused++;
             const prior = doneCalls[ckey];
             /* (atlas-turn-engine) an UNOBSERVED call is answered the same way, and says why it is not run
@@ -1243,8 +1275,9 @@ export function makeAtlasAgent() {
             const rec0 = Object.assign({}, prior, { id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
               note: prior.status === 'unobserved'
                 ? 'This turn has ALREADY made this exact call, and it RAN — IntMap could not observe whether it took effect ('
-                  + String(prior.code || 'unobserved') + '). It was not run a second time: the same call cannot be observed any '
-                  + 'better than the first. Treat it as done and carry on, or tell the reader the effect could not be confirmed.'
+                  + String(prior.code || 'unobserved') + '), and nothing has been written since. It was not run a second time. '
+                  + 'Observation can come back (a hidden page that returns to the front can be seen), so this is not a statement that it '
+                  + 'can never be confirmed: carry on, or tell the reader the effect could not be confirmed yet.'
                 : 'This turn has ALREADY made this exact call. Above is what it returned — the app has not '
                   + 'changed since, so a second run would search the same sources over the same window and could only '
                   + 'disagree with itself. Use this result, or ask something different.' });
@@ -1288,7 +1321,7 @@ export function makeAtlasAgent() {
                 next: (off + piece.length < full.length) ? off + piece.length : null };
             }
             const rrec = Object.assign({ id: call.id, name: call.name }, rr);
-            if (ckey && rrec.ok) doneCalls[ckey] = rrec;
+            if (ckey && rrec.ok) remember(ckey, rrec);
             callById[call.id] = rrec;
             executedHere++; trace.executed++;
             return rrec;
@@ -1309,6 +1342,7 @@ export function makeAtlasAgent() {
           executedHere++;
           trace.executed++;
           const rec = Object.assign({ id: call.id, name: call.name }, out);
+          noteWrite(p.fp);   /* (atlas-result-delivery) it ran: whatever it writes is now a reason to run an earlier identical call again */
           /* ⚠ ONLY A SUCCESS IS REMEMBERED. Freezing a failure would turn a transient network error
              into a permanent one for the rest of the turn, which is the opposite of the point.
              ⚠⚠⚠ (#R551) AND A PARTIAL IS NOT A SUCCESS. `ok` is derived from `status` (#R318), so a
@@ -1318,7 +1352,7 @@ export function makeAtlasAgent() {
              identical question returns the identical half-done answer and the only move left is to
              change the arguments, which is precisely how one request became two maps in the reply.
              A call that still owes something must be allowed to be made again. */
-          if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') doneCalls[ckey] = rec;
+          if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') remember(ckey, rec);
           /* ══ ⚠⚠⚠ (atlas-turn-engine) …AND A CALL THAT RAN BUT COULD NOT BE SEEN IS DONE, NOT OWED ═══════════
              `unobserved` (js/atlas-results.js) used to arrive as `partial` + `not_rendering`, and a partial
              is exactly what the line above lets be made again — so a draw that had done its whole job on a
@@ -1329,10 +1363,11 @@ export function makeAtlasAgent() {
           if (rec.status === 'unobserved') {
             if (!rec.note) {
               rec.note = 'This call RAN. IntMap could not observe whether it took effect (' + String(rec.code || 'unobserved')
-                + ') — that is not a failure of the request, and making the same call again cannot make it observable. '
-                + 'Treat it as done: carry on, or tell the reader the effect could not be confirmed.';
+                + ') — that is not a failure of the request. Making the same call again changes nothing until the page can be observed '
+                + '(a hidden tab observes again once it is in front), and it is answered from this record if nothing is written in between. '
+                + 'Carry on, or tell the reader the effect could not be confirmed yet.';
             }
-            if (ckey) doneCalls[ckey] = rec;
+            if (ckey) remember(ckey, rec);
           }
           /* (#R760) the same call, answering the same way, is not progress — whatever status it wears */
           if (ckey && rec.status === 'partial') {

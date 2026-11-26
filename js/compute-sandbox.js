@@ -99,9 +99,9 @@ const RUNTIME = Object.freeze({
    EXPIRES IF: either of those two ceilings is re-measured.
 
    STREAM_MAX_CHARS — stdout/stderr are kept for the reader's card; Atlas reads the card's text
-   through RESULT_TEXT_MAX (2,000 chars, js/atlas-toolsurface.js), so more than a few screens of
-   output is never read by anyone. 16,000 keeps eight times what Atlas reads and the TAIL is kept
-   (a traceback and a final summary are at the end).  EXPIRES IF: RESULT_TEXT_MAX is raised past it.
+   whole (js/atlas-toolsurface.js no longer clips it; the composer cuts an item past INPUT_BUDGET.item and read_result follows
+   the offset), so more than a few screens of output is never read by anyone. 16,000 keeps the output well inside one item and the TAIL
+   is kept (a traceback and a final summary are at the end).  EXPIRES IF: INPUT_BUDGET.item falls below it.
 
    LOAD_MAX_MS, EXEC_DEFAULT_MS, EXEC_MAX_MS — OBSERVATION (2026-11-19, Chromium 1255 headless on the
    development machine, cold HTTP cache; dev-notes/2026-11-19-compute-sandbox.md has the table):

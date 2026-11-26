@@ -403,21 +403,52 @@ export function makeAtlasToolSurface(deps) {
     /* (#R663) the text of a rendered result, for the reason above. `<template>` content is inert —
        it is parsed, never connected, so nothing in it loads, runs or paints. Without a DOM (the node
        checks) the tags come off directly; either way this reads what is there and invents nothing. */
+    /* ⚠ (atlas-result-delivery) A CARD'S TEXT IS NOT ALL OF WHAT IT SAYS. A source is an `<a href>`, a figure an `<img alt>`, a tooltip a `title`, a
+       control's state a `value` or `data-*` — `textContent` keeps none of them, so the model read «Source: Eurostat» and never held the URL the
+       reader could click. Each attribute that CARRIES CONTENT is written after the element's own text, labelled, once (a value already written
+       is not repeated). `data-*` is read only when it is a plain value: a JSON object or array is a payload for the page's own script, not
+       something the card says. One tokenizer for the browser and the node checks, so the two cannot read a card differently. */
+    var _ATTR_SAYS = ['href', 'src', 'alt', 'title', 'value', 'aria-label', 'placeholder'];
+    function _unent(x) {
+      return String(x || '').replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, function (m, e) {
+        if (e.charAt(0) === '#') { var n = e.charAt(1).toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); try { return String.fromCodePoint(n); } catch (_) { return ' '; } }
+        var k = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[e.toLowerCase()]; return k == null ? ' ' : k;
+      });
+    }
     function textOf(html) {
       var h = String(html || ''); if (!h) return '';
-      try {
-        if (typeof document !== 'undefined' && document.createElement) {
-          var t = document.createElement('template'); t.innerHTML = h;
-          return String((t.content && t.content.textContent) || '').replace(/\s+/g, ' ').trim();
+      h = h.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+      var out = '', last = 0, re = /<\/?([a-z][a-z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/gi, m;
+      var seen = Object.create(null);
+      while ((m = re.exec(h))) {
+        out += _unent(h.slice(last, m.index)) + ' '; last = re.lastIndex;
+        if (m[0].charAt(1) === '/') continue;
+        var attrs = m[2] || '', am, ar = /([a-z_:][-a-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
+        while ((am = ar.exec(attrs))) {
+          var k = am[1].toLowerCase(), v = _unent(am[2] != null ? am[2] : (am[3] != null ? am[3] : am[4])).replace(/\s+/g, ' ').trim();
+          if (!v) continue;
+          if (_ATTR_SAYS.indexOf(k) < 0 && !(k.slice(0, 5) === 'data-' && !/^[\[{]/.test(v))) continue;
+          if ((k === 'href' || k === 'src') && /^(javascript|data|blob):/i.test(v)) continue;
+          if (k === 'src' && m[1].toLowerCase() !== 'img') continue;   /* an image's address is not content; its alt is */
+          if (k === 'src' && attrs.search(/\balt\s*=/i) >= 0) continue;
+          if (seen[k + '=' + v]) continue;
+          seen[k + '=' + v] = 1;
+          out += '[' + k + ': ' + v + '] ';
         }
-      } catch (_) { /* fall through to the DOM-less reading */ }
-      return h.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;|&#\d+;/gi, ' ').replace(/\s+/g, ' ').trim();
+      }
+      out += _unent(h.slice(last));
+      return out.replace(/\s+/g, ' ').trim();
     }
 
     /* The tool RESULT Atlas reads. Mechanical only: what IntMap observed, never an interpretation.
        ⚠ `rendered` IS LOAD-BEARING. A research answer draws itself, with its sources, into the
        reader's bubble; Atlas needs to know that so its closing words frame that answer instead of
        writing a second one underneath it. Stating the fact is not the same as ruling on it. */
+    /* the `meta` names `mechanical` already states as fields of its own (or that are bookkeeping for the page, not facts about the result):
+       carried above, so `details` does not say them twice. */
+    var META_CARRIED = { status: 1, code: 1, permanent: 1, auditFindings: 1, auditNote: 1, produced: 1, unverified: 1, resultKey: 1, artifact: 1,
+      research: 1, web: 1, external: 1, finish: 1, retrieved: 1, webNote: 1, delegated: 1, delegatedCostUsd: 1, integrated: 1, maxChildren: 1, given: 1,
+      record: 1, unresolved: 1, painted: 1, operationId: 1, capabilityId: 1, brief: 1, category: 1, retryable: 1, message: 1, userGoalSatisfied: 1 };
     function mechanical(res, built) {
       var meta = (res && res.meta) || {};
       var ok = !!(res && res.ok);
@@ -488,7 +519,29 @@ export function makeAtlasToolSurface(deps) {
         /* (delegation-limits) a refusal before any worker ran says the number it was refused by */
         maxChildren: meta.code === 'too_many_tasks' ? meta.maxChildren : undefined,
         given: meta.code === 'too_many_tasks' ? meta.given : undefined,
+        /* (atlas-result-delivery) THE OBJECTS THE CALL MADE AND THE NAMES IT COULD NOT PLACE. Both travelled as far as the legacy result
+           (js/atlas-results.js toLegacy) and stopped here, so the model could not hand an id to the next call or retry only what failed. */
+        objectIds: (Array.isArray(res && res.objectIds) && res.objectIds.length) ? res.objectIds : undefined,
+        unresolved: (function () { var u = (res && res.unresolved) || meta.unresolved || (res && res.exec && res.exec.unresolved); return (Array.isArray(u) && u.length) ? u : undefined; })(),
       };
+      /* (atlas-result-delivery) a call that RAN and could not be seen: the outputs it would have produced, by the registry's own column. Not a claim
+         they appeared (`producedModes` below is what counts) — it is what the loop reads so that it does not send the model to repeat the call. */
+      if (out.status === 'unobserved' && built.cap && Array.isArray(built.cap.produces) && built.cap.produces.length) out.unobservedModes = built.cap.produces.slice();
+      /* ══ (atlas-result-delivery) THE STRUCTURED RESULT TRAVELS WHOLE, NOT THROUGH A NAME LIST ═══════════════════
+         A capability states what it found as data on `meta` (`gis`, `dataTable`, `election`, `freshness`, `knowledge`, `job`, `briefing`, …) and this
+         function carried only the names somebody had listed, so every capability added after the list reached the reader's card and
+         left the model with a bare «completed». The rule is now about the VALUE: every `meta` entry that is plain data and that nothing above
+         already carries is handed over, under `details`. What a capability adds tomorrow arrives without anyone editing this file
+         (.agents/rules/no-ad-hoc-hardcoding.md §2 ④). Functions, DOM nodes and cycles are not data and are skipped, not guessed at. */
+      var details = null;
+      Object.keys(meta).forEach(function (k) {
+        if (META_CARRIED[k]) return;
+        var v = meta[k]; if (v === undefined || v === null || typeof v === 'function') return;
+        var j; try { j = JSON.stringify(v); } catch (_) { return; }
+        if (j === undefined || j === '{}' || j === '[]' || j === '""') return;
+        (details || (details = {}))[k] = JSON.parse(j);
+      });
+      if (details) out.details = details;
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked
          completed (a `partial` — nothing painted — is not a change). js/atlas-agent.js holds a
@@ -563,11 +616,17 @@ export function makeAtlasToolSurface(deps) {
         var rec = (res.meta && typeof res.meta.record === 'string') ? res.meta.record.replace(/\s+/g, ' ').trim() : '';
         var shown = textOf(res.html);
         var both = rec && shown ? (rec + ' ' + shown) : (rec || shown);
-        if (both) out.text = both.length > RESULT_TEXT_MAX ? (both.slice(0, RESULT_TEXT_MAX) + ' …') : both;
+        /* (atlas-result-delivery) NOT CUT HERE. The text used to be clipped at 2,000 characters and `read_result` read the record AFTER the clip, so a long
+           card's end (a table's last rows, the sources under it) was gone for good. The composer (js/atlas-agent.js composeInput) already cuts an
+           over-long item and leaves an offset that `read_result` follows into the ORIGINAL — that is the one place a result is shortened, and
+           it is recoverable. */
+        if (both) out.text = both;
       }
       return out;
     }
-    var RESULT_TEXT_MAX = 2000;
+    /* the length the model is handed of one result's text before the composer cuts it (js/atlas-agent.js INPUT_BUDGET.item, less the record's own
+       fields); `forReader` compares a card against it to know whether the model saw the whole card. EXPIRES WHEN: INPUT_BUDGET.item changes. */
+    var RESULT_TEXT_MAX = 40000;
 
     /* ══ ⚠⚠⚠ (atlas-turn-engine) PROMOTION — WHAT find_capability FOUND, AS A TOOL ══════════════════════════
        js/atlas-agent.js asks this after a result succeeds, and declares what it returns to the model
@@ -645,6 +704,16 @@ export function makeAtlasToolSurface(deps) {
       return { writes: w, reads: r };
     }
 
+    /* (atlas-result-delivery) identityOf(call, tools) -> { id, args } | null — WHICH CAPABILITY A CALL REACHES, and the arguments it reaches it with, however
+       it was named: a CORE or promoted tool, `run_capability` with an id or an alias. js/atlas-agent.js builds its «have I already made this call» key
+       from it, so two spellings of one call are one call. Null for what is not a capability (find_capability, read_result, the plan). */
+    function identityOf(call, tools) {
+      var name = String((call && call.name) || ''), args = (call && call.arguments) || {};
+      if (name === 'run_capability') { var c = capOf(String(args.id || '')); return c ? { id: c.id, args: args.args || {} } : null; }
+      var t = tools && tools[name]; var c2 = (t && t.capabilityId) ? capOf(t.capabilityId) : null;
+      return c2 ? { id: c2.id, args: args } : null;
+    }
+
     /* (atlas-orchestration-efficiency) prefetchOf(call, tools, K) — start the READING of a call whose capability registered one (js/atlas-prefetch.js). Decides nothing: it only asks the capability to begin what it would begin first anyway. */
     function prefetchOf(call, tools, K) {
       var name = String((call && call.name) || ''), args = (call && call.arguments) || {}, id = '', a = args;
@@ -686,7 +755,7 @@ export function makeAtlasToolSurface(deps) {
       return { port: ch.port2, source: clientSource(), bridge: bridge, close: function () { ch.port1.close(); ch.port2.close(); } };
     }
 
-    var API = { CORE, baseTools, find, openProgramBridge, describe, actionFor, makeExecute, schemaOf, footprintOf, prefetchOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
+    var API = { CORE, baseTools, find, openProgramBridge, describe, actionFor, makeExecute, schemaOf, footprintOf, identityOf, prefetchOf, promotionsOf, toolNameOf, liveEnum, RESULT_TEXT_MAX };   /* the length Atlas is handed of a result's text — the console reads it to know what Atlas did NOT see (js/atlas-turn-results.js `forReader`) */
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
