@@ -47,6 +47,7 @@
 | 製品別の設定 | `docs/AGENT-SETUP.md`（Claude Code と Codex の同じ・違う・手作業） |
 | 仕様・製品・判断 | `Architecture.md`（案内図 → `docs/architecture/`・`docs/FILES.md`・`docs/MAP-LAYERS.md`）／`PRODUCT.md`／`DECISIONS.md`／統治原則 `CONSTITUTION.md` |
 | 開発記録 | `dev-notes/`（1 エントリ 1 ファイル）。`DEV-NOTES.md` は固定の案内、`DEV-NOTES-ARCHIVE.md` は過去分（追記しない） |
+| 開発方針（商用化・公開・収益化へ向かう先） | ** §2.5**（恒久方針・未着手。現状仕様は書き換えない） |
 | 運用 | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE}.md` |
 | Stripe 寄付 | EN https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en ・ JA https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja |
 
