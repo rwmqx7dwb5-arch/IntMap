@@ -1396,7 +1396,7 @@ export function objectList(HOST){
           remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
       /* the lines Atlas drew (drawLine, river highlights, journey courses) — until now neither listed nor editable, though they were drawn */
       try{ const HL=window._imHlLines; ((HL&&HL.list())||[]).forEach((l,i)=>{ const lid=HL.tagId(l); if(!lid) return;
-        out.push({ id:lid, kind:'line', dot:l.color||'#2f9bff', color:l.color||'#2f9bff', name:labels[lid]||l.name||(OL('Line','ライン','Linie','Линия','Línea')+' '+(i+1)), src:['nlq-line-src'],
+        out.push({ id:lid, kind:'line', dot:l.color||'#2f9bff', color:l.color||'#2f9bff', name:labels[lid]||l.name||(OL('Line drawn by Atlas','ライン')+' '+(i+1)), src:['nlq-line-src'],
           geom:'line', width:l.w!=null?l.w:3, alpha:l.op!=null?l.op:0.92,
           focus:()=>{ if(l.geo) fitFeats([{geometry:l.geo}]); }, rename:v=>{ labels[lid]=v; l.name=v; },
           setColor:col=>{ l.color=col; try{ HL.repaint(); }catch(_){} },
@@ -1404,7 +1404,7 @@ export function objectList(HOST){
           setOpacity:a=>{ l.op=a; try{ HL.repaint(); }catch(_){} },
           remove:()=>{ try{ HL.remove(lid); }catch(_){} } }); }); }catch(_){}
       /* the markers Atlas put down for an answer (places, POI): one object, one colour for the lot, as the painter holds it */
-      try{ const PO=window._imHlPoi; if(PO&&PO.count()){ out.push({ id:'poi', kind:'poi', dot:PO.color(), color:PO.color(), name:labels.poi||(OL('Markers','マーカー','Marker','Маркеры','Marcadores')+' ('+PO.count()+')'), src:['nlq-poi-src'], geom:'point', alpha:PO.opacity(),
+      try{ const PO=window._imHlPoi; if(PO&&PO.count()){ out.push({ id:'poi', kind:'poi', dot:PO.color(), color:PO.color(), name:labels.poi||(OL('Markers','マーカー')+' ('+PO.count()+')'), src:['nlq-poi-src'], geom:'point', alpha:PO.opacity(),
           focus:()=>{ try{ PO.focus(); }catch(_){} }, rename:v=>{ labels.poi=v; },
           setColor:col=>{ PO.setColor(col); }, setOpacity:a=>{ PO.setOpacity(a); },
           remove:()=>{ try{ PO.clear(); }catch(_){} } }); } }catch(_){}
@@ -1447,7 +1447,7 @@ export function objectList(HOST){
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
     const ICON={ line:icon('pencil'), poi:icon('pin'), place:icon('pin'), shape:icon('polygon'), link:icon('compass'), pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target'), mymap:icon('map'), drawn:icon('map') };   /* (icon-system) one glyph per object kind, from js/icons.js */
-    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable'), mymap:OL('My map','マイマップ'), drawn:OL('Other drawings on the map','地図上のその他の描画'), line:OL('Lines','ライン','Linien','Линии','Líneas'), poi:OL('Markers','マーカー','Marker','Маркеры','Marcadores'), place:OL('Places','地点','Orte','Места','Lugares'), shape:OL('Shapes','形状','Formen','Формы','Formas'), link:OL('Links','つながり','Verbindungen','Связи','Enlaces') })[k]||k; }
+    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable'), mymap:OL('My map','マイマップ'), drawn:OL('Other drawings on the map','地図上のその他の描画'), line:OL('Lines drawn by Atlas','ライン'), poi:OL('Markers','マーカー'), place:OL('Numbered places','地点'), shape:OL('Shapes','形状'), link:OL('Links','つながり') })[k]||k; }
     let _objs=[], _filter='';
     function fmtArea(km2){ const n=+km2; if(!isFinite(n)) return ''; if(n>=100) return Math.round(n).toLocaleString()+' km²'; if(n>=1) return n.toFixed(1)+' km²'; return Math.round(n*1e6).toLocaleString()+' m²'; }
     /* ⚠⚠ (#R293) 「オブジェクト一覧ポップアップは、オブジェクトの数がゼロになったら自動的に消えるように」
@@ -1466,15 +1466,15 @@ export function objectList(HOST){
       _objs.forEach(o=>{ o._ar=null; if(typeof o.area==='function'){ try{ o._ar=o.area(); }catch(_){} } });
       Object.keys(groups).forEach(k=>{ if(groups[k].some(o=>o._ar!=null)) groups[k].sort((a,b)=>(b._ar||0)-(a._ar||0)); });   /* the biggest first, where there is an area to rank by */
       const q=_filter.trim().toLowerCase(); if(q) Object.keys(groups).forEach(k=>{ groups[k]=groups[k].filter(o=>String(o.name).toLowerCase().indexOf(q)>=0); });
-      let h=''; if(_objs.length>5) h+='<input class="iol-q" type="search" value="'+esc(_filter)+'" placeholder="'+esc(OL('Filter objects','絞り込み','Filtern','Поиск','Filtrar'))+'" aria-label="'+esc(OL('Filter objects','絞り込み','Filtern','Поиск','Filtrar'))+'">';
-      const _tot=_objs.reduce((a,o)=>a+(o._ar||0),0); if(_tot>0) h+='<div class="iol-sum">'+esc(OL('Total area','合計面積','Gesamtfläche','Общая площадь','Área total'))+' · '+esc(fmtArea(_tot))+'</div>';
+      let h=''; if(_objs.length>5) h+='<input class="iol-q" type="search" value="'+esc(_filter)+'" placeholder="'+esc(OL('Filter objects','絞り込み'))+'" aria-label="'+esc(OL('Filter objects','絞り込み'))+'">';
+      const _tot=_objs.reduce((a,o)=>a+(o._ar||0),0); if(_tot>0) h+='<div class="iol-sum">'+esc(OL('Total area','合計面積'))+' · '+esc(fmtArea(_tot))+'</div>';
       order.forEach(k=>{ const g=groups[k]; if(!g||!g.length) return;
         h+='<div class="iol-grp"><span>'+(ICON[k]||'')+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
         g.forEach(o=>{ const i=_objs.indexOf(o);
           h+='<div class="iol-row" data-i="'+i+'">'
             +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
             +'<span class="iol-name" role="button" tabindex="0" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
-            +(o._ar!=null?('<span class="iol-ar" title="'+esc(OL('Area','面積','Fläche','Площадь','Área'))+'">'+esc(fmtArea(o._ar))+'</span>'):'')
+            +(o._ar!=null?('<span class="iol-ar" title="'+esc(OL('Area','面積'))+'">'+esc(fmtArea(o._ar))+'</span>'):'')
             +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Color','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
             +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?icon('eye-off'):icon('eye'))+'</button>'):'')
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'

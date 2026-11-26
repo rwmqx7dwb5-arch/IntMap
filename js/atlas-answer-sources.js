@@ -320,8 +320,20 @@ export function makeAtlasAnswerSources(deps) {
   /* What a chip says when the call named nothing: WHAT was drawn (the capability's own word), not 「図形」 — which told the reader nothing about what it was or why it was there. */
   function drewWord(kind) {
     const k = String(kind || '').split('.').pop();
-    const w = { line: ['Line', 'ライン'], polygon: ['Polygon', 'ポリゴン'], poi: ['Markers', 'マーカー'], compose: ['Map explanation', '説明の図'], highlight: ['Highlight', 'ハイライト'], choropleth: ['Colour map', '色分け地図'], outline: ['Outline', '境界線'], pin: ['Pin', 'ピン'], radius: ['Circle', '円'], isochrone: ['Reachable area', '到達圏'], route: ['Route', '経路'] }[k];
-    return w ? T(w[0], w[1]) : T('Drawing', '描画');
+    switch (k) {   /* calls, not a table of pairs: a pair held as data is an English-only fallback the i18n gate counts (PAIR_CEILING) */
+      case 'line': return T('Line drawn by Atlas', 'ライン');
+      case 'polygon': return T('Polygon', 'ポリゴン');
+      case 'poi': return T('Markers', 'マーカー');
+      case 'compose': return T('Map explanation', '説明の図');
+      case 'highlight': return T('Highlight', 'ハイライト');
+      case 'choropleth': return T('Colour map', '色分け地図');
+      case 'outline': return T('Border line', '境界線');
+      case 'pin': return T('Pin dropped', 'ピン');
+      case 'radius': return T('Circle', '円');
+      case 'isochrone': return T('Reachable area', '到達圏');
+      case 'route': return T('Route', '経路');
+      default: return T('Drawing', '描画');
+    }
   }
   function artifacts(results) {
     const out = [], seen = Object.create(null);
