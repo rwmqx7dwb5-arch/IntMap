@@ -20,6 +20,7 @@ const CONSOLE = readFileSync(new URL('../js/atlas-console.js', import.meta.url),
 const i0 = CONSOLE.indexOf('const runReadCapability = ');
 const i1 = CONSOLE.indexOf('\n    /*', i0);
 assert.ok(i0 > 0 && i1 > i0, 'runReadCapability is in the console');
+const inText = (u) => new RegExp(u.replace(/[.*+?^${}()|[\]\/]/g, '\$&'));   /* a source address as a pattern: asserted by match, not by substring */
 const MARK = 'ZXQ-MARK-7731', URL1 = 'https://evidence.example.test/report/2026', URL2 = 'https://evidence.example.test/other';
 
 /* the kernel's Result for a capability that answers through `exec`, as js/atlas-executor.js composes it */
@@ -45,7 +46,7 @@ test('a page fetched once is read by a worker as its text and its source address
   assert.equal(r.state, 'done');
   assert.equal(fetched, 1, 'the page was fetched once, by the first reader');
   assert.match(seen[1], new RegExp(MARK), 'the body is in what the worker\'s next model request holds');
-  assert.ok(seen[1].includes(URL1) && seen[1].includes(URL2), 'and every source address');
+  assert.match(seen[1], inText(URL1), 'and every source address'); assert.match(seen[1], inText(URL2));
 });
 
 test('a long record keeps its addresses in the part the worker is shown', async () => {
@@ -56,7 +57,7 @@ test('a long record keeps its addresses in the part the worker is shown', async 
   let step = 0;
   const ask = async (p) => { seen.push(p); return { data: step++ === 0 ? { call: { capability: 'web.evidence', args: { ref: got.entry.id, chars: 20000 } } } : FINAL, meta: { costUsd: 0 }, citations: [] }; };
   await makeWorkerExecutor({ ask, parentTurn: 'p', maxCalls: 4, capability: { run: runReadCapability, classify: () => 'read', describe: () => '{}', find: async () => [] } }).run({ id: 't', goal: 'g', tools: ['web.evidence'] }, ctx());
-  assert.ok(seen[1].includes(URL2), 'the address survives the cut of the text');
+  assert.match(seen[1], inText(URL2), 'the address survives the cut of the text');
   assert.match(seen[1], /read_step/, 'and the cut text is re-readable by reference');
 });
 

@@ -98,7 +98,7 @@ export function buildTurnMetrics(out, timing) {
 /* isUsefulResult(r) - did this operation put a usable value, table or map in front of the reader?  `r` is the page's per-operation record
    ({ ok, meta:{ produced }, drew }): what the kernel observed it PRODUCE (route, map, panel...) or what was seen DRAWN. A refusal, a failure, a note
    (re-read ev1) and a plan produce neither. */
-export function isUsefulResult(r) {
+function isUsefulResult(r) {
   if (!r || r.ok === false) return false;
   const produced = r.meta && Array.isArray(r.meta.produced) ? r.meta.produced : [];
   return produced.length > 0 || (Array.isArray(r.drew) && r.drew.length > 0);
