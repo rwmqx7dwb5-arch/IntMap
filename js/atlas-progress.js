@@ -168,6 +168,7 @@ export function makeAtlasProgress(HOST, deps) {
   function setLive(el, text) {
     try {
       const tr = traces.get(el); if (!tr || tr.done) return;
+      if (tr.liveWord !== String(text || '')) tr.liveDetail = '';
       tr.liveWord = String(text || '');
       paintHead(tr);
     } catch (_) { }
@@ -226,8 +227,8 @@ export function makeAtlasProgress(HOST, deps) {
     let el = null;
     try {
       el = document.createElement('div');
-      el.className = 'atl-trace open';
-      el.innerHTML = '<button class="atl-trace-head" type="button" aria-expanded="true">'
+      el.className = 'atl-trace';
+      el.innerHTML = '<button class="atl-trace-head" type="button" aria-expanded="false">'
         + '<span class="atl-trace-chev">' + SVG_CHEV + '</span>'
         + '<span class="atl-trace-sum"></span>'
         + '<span class="atl-trace-ms"></span></button>'
@@ -241,11 +242,12 @@ export function makeAtlasProgress(HOST, deps) {
       if (head) head.addEventListener('click', () => {
         try {
           const on = el.classList.toggle('open');
+          const t0 = traces.get(bubble); if (t0) t0.userToggled = true;
           head.setAttribute('aria-expanded', on ? 'true' : 'false');
         } catch (_) { }
       });
     } catch (_) { return null; }
-    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, liveWord: '', how: '' };
+    tr = { el: el, rows: [], lastGroup: null, devNotes: 0, liveDetail: '', byOp: Object.create(null), t0: now(), pendingAct: null, done: false, liveWord: '', how: '' };
     traces.set(bubble, tr);
     paintHead(tr);
     try {
@@ -277,7 +279,7 @@ export function makeAtlasProgress(HOST, deps) {
       const ms = tr.el.querySelector('.atl-trace-ms');
       if (ms) ms.textContent = fmtMs((tr.doneAt || now()) - tr.t0);
       if (!sum) return;
-      const n = tr.rows.filter((r) => !r.say).length;   /* (atlas-live-stream) a note Atlas wrote is not a step it took */
+      const n = tr.rows.filter((r) => !r.say && (!r.group || r.first)).length;   /* (atlas-live-stream) a note Atlas wrote is not a step it took. A step is a PURPOSE: consecutive operations of one kind are one */
       if (!tr.done) {
         let s = sum.querySelector('.atl-stage');
         if (!s) {
@@ -289,6 +291,10 @@ export function makeAtlasProgress(HOST, deps) {
         }
         const w = String(tr.liveWord || PHASE_WORD.think());
         if (s.textContent !== w) s.textContent = w;
+        /* what the model call is saying while it runs (js/atlas-live.js) stands beside the live word — it is not a history row of its own */
+        let ld = sum.querySelector('.atl-trace-livedet');
+        if (!ld) { ld = document.createElement('span'); ld.className = 'atl-trace-livedet'; sum.appendChild(ld); }
+        if (ld.textContent !== String(tr.liveDetail || '')) ld.textContent = String(tr.liveDetail || '');
         return;
       }
       {
@@ -336,8 +342,64 @@ export function makeAtlasProgress(HOST, deps) {
       host.appendChild(row);
     } catch (_) { return null; }
     const rec = { row: row, t0: now(), state: spec.state || 'run', word: String(spec.word || '') };
+    tr.lastGroup = null;   /* a note, a phase or any row of its own ends the run of operations before it */
     tr.rows.push(rec);
     paintHead(tr);
+    return rec;
+  }
+  /* ── ONE ROW PER PURPOSE, THE CALLS BEHIND IT ON DEMAND ────────────────────────────────────────
+     The trace listed one row per tool call: 9 steps for one question, 4 of them 「考え中」 and 3 of them 「視点を移動」
+     in a row, so what was being DONE (the river drawn, the view fitted to it, a length looked up) was buried under how
+     it was done. An operation row is opened by the executor's event and belongs to a GROUP: consecutive operations whose
+     word (the registry's category) is the same are one line saying that purpose once, with their subjects; the calls
+     are still there, under it, and open only when the reader opens that line. The key is the category's word — what the
+     registry already says about the capability — never a list of capability ids. */
+  const GROUP_RANK = { run: 0, fail: 1, warn: 2, skip: 3, ok: 4 };
+  function groupOf(tr, key) {
+    if (tr.lastGroup && tr.lastGroup.key === key) return tr.lastGroup;
+    const host = tr.el.querySelector('.atl-trace-rows'); if (!host) return null;
+    const el = document.createElement('div');
+    el.className = 'atl-trace-group';
+    const head = document.createElement('div'), ops = document.createElement('div');
+    head.className = 'atl-trace-row group run'; head.setAttribute('role', 'listitem');
+    head.innerHTML = '<span class="atl-trace-mark"></span><span class="atl-trace-word"></span><span class="atl-trace-det"></span><span class="atl-trace-t"></span>';
+    ops.className = 'atl-trace-ops'; ops.setAttribute('role', 'list');
+    el.appendChild(head); el.appendChild(ops);
+    host.appendChild(el);
+    const g = { key: key, el: el, head: head, ops: ops, recs: [] };
+    g.head.addEventListener('click', () => { try { if (g.recs.length > 1 || g.el.classList.contains('has-subs')) g.el.classList.toggle('open'); } catch (_) { } });
+    tr.lastGroup = g;
+    return g;
+  }
+  function paintGroup(g) {
+    try {
+      let st = 'ok';
+      g.recs.forEach((r) => { const k = r.state === 'miss' ? 'fail' : r.state; if ((GROUP_RANK[k] != null ? GROUP_RANK[k] : 9) < GROUP_RANK[st]) st = k; });
+      const calm = st === 'fail';
+      g.head.className = 'atl-trace-row group ' + (calm ? 'miss' : st);
+      g.el.classList[g.recs.length > 1 ? 'add' : 'remove']('multi');
+      const m = g.head.querySelector('.atl-trace-mark'); if (m) m.innerHTML = calm ? SVG_MISS : (MARK[st] || '');
+      g.head.querySelector('.atl-trace-word').textContent = g.recs[0] ? g.recs[0].word : '';
+      const subs = []; g.recs.forEach((r) => { if (r.subject && subs.indexOf(r.subject) < 0) subs.push(r.subject); });
+      const shown = subs.slice(0, 2).join(L(', ', '、'));
+      g.head.querySelector('.atl-trace-det').textContent = shown + (subs.length > 2 ? L(' +' + (subs.length - 2), ' ほか' + (subs.length - 2) + '件') : '');
+      let ms = 0; g.recs.forEach((r) => { ms += (r.ms != null ? r.ms : (now() - r.t0)); });
+      const t = g.head.querySelector('.atl-trace-t'); if (t) t.textContent = fmtMs(ms);
+    } catch (_) { }
+  }
+  /* addOp(tr, {word, detail}) — an operation row, filed under the group of its word. */
+  function addOp(tr, spec) {
+    if (!tr || !tr.el) return null;
+    const g = groupOf(tr, String(spec.word || ''));
+    if (!g) return null;
+    const row = document.createElement('div');
+    row.className = 'atl-trace-row run'; row.setAttribute('role', 'listitem');
+    row.innerHTML = '<span class="atl-trace-mark"></span><span class="atl-trace-word"></span><span class="atl-trace-det"></span><span class="atl-trace-t"></span>';
+    row.querySelector('.atl-trace-det').textContent = String(spec.detail || '');
+    g.ops.appendChild(row);
+    const rec = { row: row, t0: now(), state: 'run', word: String(spec.word || ''), subject: String(spec.detail || ''), group: g, first: g.recs.length === 0 };
+    g.recs.push(rec); tr.rows.push(rec);
+    paintGroup(g); paintHead(tr);
     return rec;
   }
   function closeRow(rec, state, ms) {
@@ -346,12 +408,13 @@ export function makeAtlasProgress(HOST, deps) {
       /* ⚠ A READER IS NOT SHOWN A RED CROSS FOR A STEP THAT BROUGHT NOTHING BACK. The failure is a fact for the model that
          chose the step (it gets the raw result) and for the developer view; the reader is told in the answer, and only when
          it changed what the answer could say. The mark stays truthful — a dash, 「nothing came back」 — and the row keeps its word. */
-      const calm = state === 'fail' && !isDev();
-      rec.state = state;
+      const calm = state === 'fail';   /* ⚠ ALWAYS CALM: whose account is open does not decide what a reader is shown — the raw failure is devNote()'s */
+      rec.state = state; rec.ms = ms != null ? ms : (now() - rec.t0);
       rec.row.className = 'atl-trace-row ' + (calm ? 'miss' : state);
       const m = rec.row.querySelector('.atl-trace-mark'); if (m) m.innerHTML = calm ? SVG_MISS : (MARK[state] || '');
       const t = rec.row.querySelector('.atl-trace-t');
-      if (t) t.textContent = fmtMs(ms != null ? ms : (now() - rec.t0));
+      if (t) t.textContent = fmtMs(rec.ms);
+      if (rec.group) paintGroup(rec.group);
     } catch (_) { }
   }
 
@@ -375,11 +438,12 @@ export function makeAtlasProgress(HOST, deps) {
       if (!box) {
         box = document.createElement('div'); box.className = 'atl-trace-subs'; box.setAttribute('role', 'list');
         rec.row.insertAdjacentElement('afterend', box); rec.subs = box;
+        if (rec.group) rec.group.el.classList.add('has-subs', 'open');   /* parallel workers are the point of the row: shown, not folded */
       }
       box.textContent = '';
       tasks.forEach((t) => {
         const st = TASK_STATE[t && t.state] || 'run';
-        const calm = st === 'fail' && !isDev();
+        const calm = st === 'fail';
         const line = document.createElement('div');
         line.className = 'atl-trace-row atl-trace-sub ' + (calm ? 'miss' : st); line.setAttribute('role', 'listitem');
         const m = document.createElement('span'); m.className = 'atl-trace-mark'; m.innerHTML = calm ? SVG_MISS : (MARK[st] || '');
@@ -455,10 +519,14 @@ export function makeAtlasProgress(HOST, deps) {
        first model call announces itself. Two rows for one wait would be a 0.0s row above the real
        one — the reader would be counting the trace's own bookkeeping as work Atlas did. */
     if (tr.live && tr.live.state === 'run' && tr.live.kind === kind) return;
+    if (!tr.live && tr.thinkKind === kind && tr.liveWord === (PHASE_WORD[kind] || PHASE_WORD.think)()) return;
     const w = (PHASE_WORD[kind] || PHASE_WORD.think)();
     if (tr.live && tr.live.state === 'run') closeRow(tr.live, 'ok');
-    tr.live = addRow(tr, { word: w, state: 'run' });
-    if (tr.live) tr.live.kind = kind;
+    /* ⚠ 「考え中」 IS NOT A THING THAT WAS DONE. Waiting for the planner and writing the answer are the state of the head, said by the live word;
+       they leave no row (4 of 9 rows in the measured turn were 「考え中」 and the work was the other 5). Reading an image and re-checking a claim
+       are work with an object, so they stay. */
+    if (kind === 'think' || kind === 'write' || TRACE_PHASES.indexOf(kind) < 0) { tr.live = null; tr.thinkKind = kind; }
+    else { tr.live = addRow(tr, { word: w, state: 'run' }); if (tr.live) tr.live.kind = kind; }
     /* ⚠ NOT THROUGH setStage. That one guards on the bubble's marker, which `_atlCompose` erases
        between tools; the head is the trace's own, and a phase must reach it whether or not the
        marker happens to be re-armed at this instant. TRACE_PHASES is what keeps a kind this file
@@ -496,7 +564,7 @@ export function makeAtlasProgress(HOST, deps) {
           if (ev.phase === 'cancelled' || ev.phase === 'superseded') return;   /* never opened here; do not invent a row for something that did not start */
           if (tr.live && tr.live.state === 'run') { closeRow(tr.live, 'ok'); tr.live = null; }
           const word = wordFor(ev.capabilityId);
-          rec = addRow(tr, { word: word, detail: detailFor(ev.capabilityId, tr.pendingAct), state: 'run' });
+          rec = addOp(tr, { word: word, detail: detailFor(ev.capabilityId, tr.pendingAct) });
           tr.pendingAct = null;
           if (rec) { rec.word = word; tr.byOp[ev.operationId] = rec; setLive(bubble, word); }
         }
@@ -549,12 +617,10 @@ export function makeAtlasProgress(HOST, deps) {
        from here too — paintHead puts the step count where the word was, on this same call.) */
     try { const s = bubble.querySelector && bubble.querySelector('.atl-stage'); if (s && s.parentNode) s.parentNode.removeChild(s); } catch (_) { }
     try {
-      tr.el.classList.remove('open');
-      const head = tr.el.querySelector('.atl-trace-head');
-      if (head) head.setAttribute('aria-expanded', 'false');
+      if (!tr.userToggled) { tr.el.classList.remove('open'); const head = tr.el.querySelector('.atl-trace-head'); if (head) head.setAttribute('aria-expanded', 'false'); }
       /* a turn with no steps has nothing to show — unless the plan stands in it (atlas-progress-one) */
       const pl = tr.el.querySelector('.atl-trace-plan');
-      if (!tr.rows.length && !(pl && pl.children && pl.children.length)) tr.el.remove();
+      if (!tr.rows.length && !tr.devNotes && !(pl && pl.children && pl.children.length)) tr.el.remove();
     } catch (_) { }
   }
 
@@ -569,7 +635,7 @@ export function makeAtlasProgress(HOST, deps) {
   function detail(bubble, text, label) {
     const tr = traces.get(bubble); if (!tr || tr.done) return;
     const rec = (tr.live && tr.live.state === 'run') ? tr.live : null;
-    if (!rec || !rec.row) return;
+    if (!rec || !rec.row) { tr.liveDetail = (label ? String(label) + ' ' : '') + String(text || '').slice(0, 120); paintHead(tr); return; }
     try {
       const d = rec.row.querySelector('.atl-trace-det'); if (!d) return;
       d.textContent = '';
@@ -591,6 +657,20 @@ export function makeAtlasProgress(HOST, deps) {
   }
   function sayText(rec, text) {
     try { const d = rec && rec.row && rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || ''); } catch (_) { }
+  }
+
+  /* devNote(bubble, text) — what only a developer needs about this turn (what it cost, which model, a step's raw failure). It goes to the console
+     always and, in the developer view, into the trace's own expanded area: the reader's default screen carries none of it, whoever is signed in. */
+  function devNote(bubble, text) {
+    try {
+      const line = String(text == null ? '' : text).replace(/\s+/g, ' ').trim(); if (!line) return;
+      try { console.info('[atlas]', line); } catch (_) { }
+      const tr = traces.get(bubble); if (!tr || !tr.el || !isDev()) return;
+      let box = tr.el.querySelector('.atl-trace-dev');
+      if (!box) { box = document.createElement('div'); box.className = 'atl-trace-dev'; tr.el.appendChild(box); }
+      const d = document.createElement('div'); d.className = 'atl-trace-devline'; d.textContent = line.slice(0, 600); box.appendChild(d);
+      tr.devNotes++;
+    } catch (_) { }
   }
 
   /* ── (atlas-progress-one) WHAT THE OTHER TWO VIEWS READ FROM THIS ONE ───────────────────────────
@@ -628,7 +708,7 @@ export function makeAtlasProgress(HOST, deps) {
     return m;
   }
 
-  return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, knownWordFor, detailFor, detail, say, sayText,
+  return { open, step, phase, plan, watch, done, live, devNote, stageHtml, setStage, setLive, wordFor, knownWordFor, detailFor, detail, say, sayText,
     outcome, traceEl, liveWord, markEl, endWord: (how) => (ENDWORD[how] ? ENDWORD[how]() : ''),
     /* ⚠ (#R744) phaseWord() EXISTS BECAUSE A CHECK NEEDS THE WORD, NOT THE MARKUP. #R723 ② asked
        「does any capability announce itself as thinking?」 by testing stageHtml('think') for the
@@ -657,6 +737,14 @@ export const ATLAS_PROGRESS_CSS =
      word is arbitrarily long, so it is the word that ellipsises when the panel is narrow. */
   + '#atlas-panel .atl-trace-sum{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
   + '#atlas-panel .atl-trace-head .atl-stage{font-size:inherit;font-weight:inherit;padding:0;}'
+  + '#atlas-panel .atl-trace-livedet{margin-left:8px;opacity:.75;}'
+  + '#atlas-panel .atl-trace-group .atl-trace-ops{display:none;margin:0 0 2px 18px;}'
+  + '#atlas-panel .atl-trace-group.multi>.group,#atlas-panel .atl-trace-group.has-subs>.group{cursor:pointer;}'
+  + '#atlas-panel .atl-trace-group.multi.open .atl-trace-ops,#atlas-panel .atl-trace-group.has-subs .atl-trace-ops{display:block;}'
+  + '#atlas-panel .atl-trace-group .atl-trace-ops .atl-trace-row{font-size:11.5px;}'
+  + '#atlas-panel .atl-trace-dev{display:none;margin:2px 4px 4px 4px;padding-top:4px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.2));font-size:11px;line-height:1.5;color:var(--text-muted);}'
+  + '#atlas-panel .atl-trace.open .atl-trace-dev{display:block;}'
+  + '#atlas-panel .atl-trace:not(.open) .atl-trace-plan{display:none;}'
   + '#atlas-panel .atl-trace-rows{display:none;padding:2px 4px 4px 4px;}'
   + '#atlas-panel .atl-trace.open .atl-trace-rows{display:block;}'
   + '#atlas-panel .atl-trace-row{display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:12px;line-height:1.5;color:var(--text-muted);}'

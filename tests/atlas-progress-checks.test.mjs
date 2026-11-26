@@ -131,7 +131,7 @@ function renderer(PROG, root) {
     try {
       Date.now = () => t;
       PROG.open(b);
-      PROG.phase(b, 'think');   /* ⚠ a trace with no rows removes itself on done() — this turn did something */
+      PROG.phase(b, 'verify');   /* ⚠ a trace with no rows removes itself on done() — this turn did something (a wait for the planner is not a row any more) */
       t += ms;
       PROG.done(b);
     } finally { Date.now = real; }
@@ -170,9 +170,11 @@ test('R723 ① every step of a turn is still on screen when the next one starts'
     assert.ok(words.includes('Researching'), 'so is the brief');
     assert.ok(words.includes('Looking up data'), 'and the one that is running now');
     /* and they are DISTINCT states, which is the half the one word could not express */
-    const running = rows.filter((r) => r.className.includes('run'));
-    assert.equal(running.length, 1, 'exactly one row is in flight');
-    assert.ok(rows.filter((r) => r.className.includes('ok')).length >= 3, 'the finished ones say so');
+    /* one line per PURPOSE (2026-11-26): the three operations are three categories, so three lines — each with its call under it */
+    const heads = rows.filter((r) => r.className.includes('group'));
+    assert.equal(heads.length, 3, 'one line per purpose');
+    assert.equal(heads.filter((r) => r.className.includes('run')).length, 1, 'exactly one line is in flight');
+    assert.ok(heads.filter((r) => r.className.includes('ok')).length >= 2, 'the finished ones say so');
     PROG.done(b);   /* the elapsed clock is a real interval outside a browser — stop it, as a turn does */
   });
 });
@@ -261,7 +263,7 @@ test('R723 ④ a new reply ends the previous trace, so none is ever left spinnin
     const a = bubbleIn(root);
     PROG.open(a); PROG.watch(EXEC); PROG.phase(a, 'think');
     EXEC.fire(ev('op1', 'view.flyTo', 'planned'));
-    assert.equal(rowsOf(root).filter((r) => r.className.includes('run')).length, 1, 'the first reply is working');
+    assert.equal(rowsOf(root).filter((r) => r.className.includes('group') && r.className.includes('run')).length, 1, 'the first reply is working');
 
     const b = bubbleIn(root);              /* the reader sent another message; nobody called done() */
     PROG.open(b);
