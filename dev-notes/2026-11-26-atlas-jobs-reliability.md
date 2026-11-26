@@ -58,3 +58,7 @@ newsjp: バックグラウンドの調査は、上限を超えても断られず
 - 7（サーバ側 `web.fetchFile`・ラスタの twin）。
 - `geo_verify` の費用キー（ターンの中の処理）。
 - 25 行の負の行を 0 に揃える migration は、依然として過去の本番データを書き換える判断なので入れていない（`2026-10-01-ai-usage-ledger-sign.md`）。
+
+## 4. 起動費用
+
+非同期チャンク `atlas-console` の天井を 1445.3 → 1453.9 kB に上げた（`perf-budget --update`）。増えた分は `jobs.start` が画像を運ぶ処理（添付名・`@view` の解決と送信）と、`imageSourceOf`・`modelCallKey` の共有化で能力側に残った部品。起動時の読み込み（初回の要求）は増えていない。
