@@ -49,23 +49,33 @@ select _run('o_big',    'update public.ai_usage set count = -100000000 where use
 select _run('o_studio', 'update public.ai_usage set (count) = (select count from json_populate_record(null::public.ai_usage, ''{"count":-99999938}''::json)) where user_id = ''11111111-1111-1111-1111-111111111111'' and usage_date = current_date');
 select _run('o_ins',    'insert into public.ai_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 3, -10)');
 select _run('o_gloss',  'insert into public.ai_gloss_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 3, -10)');
-select _run('o_zero',   'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
+select _run('o_zero',   'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');   -- by hand: refused (atlas-jobs-reliability)
+select _run('o_give',   'update public.ai_usage set count = 4 where user_id = ''11111111-1111-1111-1111-111111111111'' and usage_date = current_date');
+select _run('o_new',    'insert into public.ai_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 5, 1)');
+select set_config('intmap.ai_ledger', 'admin', true);
+select _run('o_admin',  'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');   -- the deliberate path
+select set_config('intmap.ai_ledger', '', true);
 
 select is((select v from _cap where k='o_upd'),    'ERR:23514', 'the owner cannot set a count of -1');
 select is((select v from _cap where k='o_big'),    'ERR:23514', 'nor the -100,000,000 that lifted a day''s limit');
 select is((select v from _cap where k='o_studio'), 'ERR:23514', 'nor through the statement Studio''s table editor issues');
 select is((select v from _cap where k='o_ins'),    'ERR:23514', 'nor insert a negative row');
 select is((select v from _cap where k='o_gloss'),  'ERR:23514', 'the gloss lane''s counter is held to the same rule');
-select is((select v from _cap where k='o_zero'),   'OK',        'zero is a count');
+select is((select v from _cap where k='o_zero'),   'DENIED',    'a count is not written by hand, not even a zero that hands a day''s uses back');
+select is((select v from _cap where k='o_give'),   'DENIED',    'nor lowered to give uses back');
+select is((select v from _cap where k='o_new'),    'DENIED',    'nor inserted with a count');
+select is((select v from _cap where k='o_admin'),  'OK',        'an administrator who says so in the transaction can still correct one');
 select is((select count from public.ai_usage where user_id = '11111111-1111-1111-1111-111111111111' and usage_date = current_date), 5, 'the refused writes changed nothing');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  3 + 4. THE RPCs — as service_role, the only role that may call them
 -- ─────────────────────────────────────────────────────────────────────────────
 -- yesterday's turn of B, charged yesterday (the turn row carries the day it was charged on)
+select set_config('intmap.ai_ledger', 'admin', true);
 insert into public.ai_usage (user_id, usage_date, count)
 values ('22222222-2222-2222-2222-222222222222', current_date - 1, 3)
 on conflict (user_id, usage_date) do update set count = 3;
+select set_config('intmap.ai_ledger', '', true);
 insert into public.ai_turns (user_id, turn_key, usage_date, calls, charged, started_at)
 values ('22222222-2222-2222-2222-222222222222', 'turn-Y', current_date - 1, 1, true, now() - interval '1 minute');
 
@@ -94,6 +104,19 @@ select is((select count from public.ai_usage where user_id = '22222222-2222-2222
 select is((select count from public.ai_usage where user_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date - 1), 2,
   'a turn charged yesterday is refunded to yesterday''s row, not to today''s');
 select is((select count(*)::int from public.ai_usage where count < 0), 0, 'no row of the ledger is negative');
+
+-- ── 5. THE DAY A REFUND GOES TO, AND THE GUARD OUTSIDE THE LEDGER (atlas-jobs-reliability) ──
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+select _run('rd_y', 'select public.refund_ai_usage_on(''22222222-2222-2222-2222-222222222222'', current_date - 1)');   -- the day it was charged: yesterday 2 → 1
+select _run('rd_t', 'select public.refund_ai_usage_on(''22222222-2222-2222-2222-222222222222'', null)');                 -- no day: today 1 → 0
+select _run('rd_i', 'select (public.increment_ai_usage(''22222222-2222-2222-2222-222222222222'', 10)).used');            -- 0 → 1
+reset role;
+select is((select count from public.ai_usage where user_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date - 1), 1, 'a refund that names its day goes to that day, not to today');
+select is((select count from public.ai_usage where user_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date), 1, 'a refund with no day is today''s (0), and the next charge is 1');
+select _run('o_after', 'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
+select is((select v from _cap where k='o_after'), 'DENIED', 'after the ledger functions ran, the owner still cannot write a count: their setting lasted only as long as the call');
+select is((select count(*)::int from information_schema.columns where table_schema = 'public' and table_name = 'ai_usage' and column_name = 'updated_at'), 1, 'ai_usage has the updated_at the live table has');
 
 select * from finish();
 rollback;

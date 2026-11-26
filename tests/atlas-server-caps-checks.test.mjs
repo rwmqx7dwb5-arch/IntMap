@@ -44,5 +44,5 @@ test('④ a worker task\'s maxOutput is carried by a runner that says so, and st
   const { readFileSync } = await import('node:fs');
   const run = readFileSync(new URL('../supabase/functions/_shared/atlas-job-runner.js', import.meta.url), 'utf8');
   assert.equal((run.match(/maxOutput: contract\.maxOutput/g) || []).length, 2, 'both model requests of the runner carry the task\'s budget');
-  assert.equal((run.match(/estimate\([^)]*contract\.maxOutput\)/g) || []).length, 2, 'and both reservations are sized by it');
+  assert.equal((run.match(/estimate\([^)]*contract\.maxOutput[,)]/g) || []).length, 2, 'and both reservations are sized by it');
 });

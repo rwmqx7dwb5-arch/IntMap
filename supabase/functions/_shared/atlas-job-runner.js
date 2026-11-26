@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------------------
 //  The loop of supabase/functions/atlas-jobs, with every outside thing PASSED IN so a node test runs it against a fake:
 //    db         { rpc(name, args) → { data, error }, from(table).select().eq() }   (a service-role supabase-js client)
-//    callModel  (system, prompt, { web, signal, maxOutput? }) → { text, usage, citations, model }   throws { code, status, timeout }
-//    money      { estimate(promptChars, web, maxOutput?) → micros, actual(usage, model) → micros }   (_shared/ai-provider.js prices)
+//    callModel  (system, prompt, { web, signal, maxOutput?, startedAt?, images? }) → { text, usage, citations, model }   throws { code, status, timeout, retryAfterSeconds? }
+//    money      { estimate(promptChars, web, maxOutput?, imageCount?) → micros, actual(usage, model) → micros }   (_shared/ai-provider.js prices)
 //    now        () → ms
 //
 //  WHAT IT GUARANTEES (the tests hold each one):
@@ -37,6 +37,8 @@ export function parseJson(text) {
   try { return JSON.parse(t.slice(a, b + 1)); } catch (_) { return null; }
 }
 
+/* a refusal is the provider (or the project's ceiling) saying no — not a task that went wrong; a rate limit that outlasted the waiting is one too */
+const isRefusal = (e) => !!e && (e.code === "provider_quota" || e.code === "provider_rate_limit" || e.code === "spend_ceiling" || e.code === "share_ceiling");
 const transient = (e) => !!e && (e.code === "provider_unavailable" || e.code === "timeout" || e.timeout === true || (Number(e.status) >= 500 && Number(e.status) < 600));
 
 async function rpc(db, name, args) {
@@ -45,6 +47,68 @@ async function rpc(db, name, args) {
   return r ? r.data : null;
 }
 const first = (d) => (Array.isArray(d) ? d[0] : d);
+
+/* ── THE LEASE DURING A REQUEST, AND A RATE LIMIT WAITED OUT  (atlas-jobs-reliability) ─────────────────────────────────
+   A worker request may now run for what the platform leaves it (the host's callModel is given the invocation's start and takes its
+   window from there — atlas-jobs/index.ts), which is longer than a lease. The lease is only renewed at a checkpoint, so a
+   request longer than `leaseSeconds` would let the next tick take the job over and run its task a second time. While a request
+   (or a wait) is in flight the runner therefore renews the lease itself, every `ctx.heartbeatMs` (the host passes a third of the
+   lease; absent → no heartbeat, which is what the node tests run). The renewal is the same checkpoint RPC: it only ever EXTENDS
+   a lease this holder still has — a lost lease is noticed at the next checkpoint exactly as before. */
+async function keepLease(ctx, fn) {
+  const every = Number(ctx.heartbeatMs) || 0;
+  if (!(every > 0)) return fn();
+  const timer = setInterval(() => {
+    try { Promise.resolve(ctx.db.rpc("atlas_job_checkpoint", { p_job: ctx.job.id, p_holder: ctx.holder, p_lease_seconds: ctx.leaseSeconds })).catch(() => {}); } catch (_) { /* the next checkpoint says */ }
+  }, every);
+  try { return await fn(); } finally { clearInterval(timer); }
+}
+
+/* A provider 429 that is a per-MINUTE rate limit (_shared/ai-quota-class.js — the same taxonomy ai-proxy uses; a hard quota arrives as
+   provider_quota and is refused at once) is waited out, then the SAME request is asked again: an observed failure, and a different
+   moment. What bounds the waiting is time, not a count of tries: RATE_WAIT_BUDGET_MS in all for one task. The provider's own
+   Retry-After (seconds, from the body or the header) says how long one wait is; absent, RATE_WAIT_DEFAULT_MS.
+   Observation: ai-proxy's classifier documents a per-minute limit as clearing in about a minute (provider-call.ts #R113e); two minutes
+   of waiting is two such windows, the most a task is worth holding a lease for. Expires with the provider's limits. Canonical: here. */
+export const RATE_WAIT_BUDGET_MS = 120000;
+export const RATE_WAIT_DEFAULT_MS = 20000;
+const RATE_WAIT_MAX_ONE_MS = 60000;
+/* → ms to wait before asking again, or 0 when this failure is not a rate limit / the task has waited its share / the invocation has no time left */
+function rateWaitMs(ctx, e, rl) {
+  if (!e || e.code !== "provider_rate_limit") return 0;
+  const asked = Number(e.retryAfterSeconds) > 0 ? Number(e.retryAfterSeconds) * 1000 : RATE_WAIT_DEFAULT_MS;
+  const ms = Math.max(1000, Math.min(RATE_WAIT_MAX_ONE_MS, asked));
+  if (rl.waited + ms > RATE_WAIT_BUDGET_MS) return 0;
+  if (Number(ctx.hardMs) > 0 && ctx.now() - ctx.t0 + ms > ctx.hardMs) return 0;
+  rl.waited += ms;
+  return ms;
+}
+const sleepMs = (ctx, ms) => (typeof ctx.sleep === "function" ? ctx.sleep(ms) : new Promise((r) => setTimeout(r, ms)));
+/* (atlas-jobs-reliability) THE IMAGES A WORKER TASK IS SHOWN. The page resolved the names in contract.images and sent the data with the job
+   (atlas_job_tasks.images); they are read here, once per task, only when the contract names some — the task list the loop re-reads does not carry them.
+   The worker's prompt SAYS which image is which, and says so when a named image is not there (a worker that was not shown what it was told to look at
+   must not answer as if it had been — js/atlas-delegate.js resolveTaskImages does the same on the page). → { urls, note } */
+async function loadImages(ctx, task) {
+  const names = ((task.contract || {}).images || []).filter(Boolean);
+  if (!names.length) return { urls: [], note: "" };
+  let rows = [];
+  try {
+    const r = await ctx.db.from("atlas_job_tasks").select("images").eq("job_id", ctx.job.id).eq("task_id", task.task_id).maybeSingle();
+    rows = r && r.data && Array.isArray(r.data.images) ? r.data.images : [];
+  } catch (_) { rows = []; }
+  const urls = [], told = [], missing = [];
+  for (const n of names) {
+    const hit = rows.find((x) => x && x.name === n && Array.isArray(x.urls) && x.urls.length);
+    if (!hit) { missing.push(n); continue; }
+    for (const u of hit.urls) if (typeof u === "string" && u.indexOf("data:image/") === 0) { urls.push(u); told.push("image " + urls.length + " = " + s(n, 80)); }
+  }
+  let note = "";
+  if (urls.length) note += "\n\nIMAGES SHOWN TO YOU WITH THIS REQUEST (in order): " + told.join("; ") + ".";
+  if (missing.length) note += "\n\nIMAGES YOU WERE TO BE SHOWN BUT WERE NOT (" + missing.map((n) => s(n, 80)).join(", ") + "): they were not available on the server. Do not describe them; say plainly in your gaps that you did not see them.";
+  return { urls, note };
+}
+/* the ONE way a request goes out: with the invocation's start (its time window), the signal, and the lease kept */
+const ask = (ctx, system, prompt, o) => keepLease(ctx, () => ctx.callModel(system, prompt, Object.assign({ signal: ctx.signal, startedAt: ctx.t0 }, o)));
 
 async function event(db, job, kind, data) {
   try { await db.from("atlas_job_events").insert({ job_id: job.id, user_id: job.user_id, kind, data: data || {} }); } catch (_) { /* a record that fails never fails the work */ }
@@ -117,7 +181,7 @@ function transcriptText(entries) {
 }
 
 async function runToolWorker(ctx, task, inputs) {
-  const { db, job, holder, callModel, money, leaseSeconds, now } = ctx;
+  const { db, job, holder, money, leaseSeconds, now } = ctx;
   const contract = task.contract || {};
   const granted = new Set(contract.tools || []);
   const lane = ctx.capabilities;
@@ -133,32 +197,35 @@ async function runToolWorker(ctx, task, inputs) {
   };
   if (!catalogue.length) return finish("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ["None of this worker's tools has a server twin, so it cannot run them."], sources });
   const taskView = { id: task.task_id, goal: contract.goal, returns: contract.returns, inputs };
+  const shown = await loadImages(ctx, task);
   let retried = false;
+  const rl = { waited: 0 };
   for (;;) {
     const cp = first(await rpc(db, "atlas_job_checkpoint", { p_job: job.id, p_holder: holder, p_lease_seconds: leaseSeconds }));
     if (!cp || cp.ok !== true) return { state: "lost", lost: true };
     if (cp.action !== "go") return finish("cancelled", cp.action, null);
     const mustAnswer = st.dup >= 2;
-    const prompt = workerPrompt(taskView, Array.isArray(cp.amends) ? cp.amends : []) + toolsSection(catalogue, mustAnswer) + transcriptText(st.entries) + st.note;
-    const est = money.estimate(ctx.system.length + prompt.length, st.web, contract.maxOutput);
+    const prompt = workerPrompt(taskView, Array.isArray(cp.amends) ? cp.amends : []) + toolsSection(catalogue, mustAnswer) + transcriptText(st.entries) + st.note + shown.note;
+    const est = money.estimate(ctx.system.length + prompt.length, st.web, contract.maxOutput, shown.urls.length);
     if ((await rpc(db, "atlas_job_reserve", { p_job: job.id, p_holder: holder, p_micros: est })) !== true) {
       return finish("refused", "cost_cap", { summary: "", findings: [], gaps: ["The job's cost cap was reached before this piece could finish."], sources, toolCalls: st.entries.length });
     }
     st.calls += 1;
     let env;
     try {
-      env = await callModel(ctx.system, prompt, { web: st.web, signal: ctx.signal, maxOutput: contract.maxOutput });
+      env = await ask(ctx, ctx.system, prompt, { web: st.web, maxOutput: contract.maxOutput, images: shown.urls });
     } catch (e) {
       await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), round: st.calls });
+      const wait = rateWaitMs(ctx, e, rl);
+      if (wait) { await event(db, job, "task.rate_wait", { task: task.task_id, ms: wait }); await keepLease(ctx, () => sleepMs(ctx, wait)); continue; }
       if (!retried && transient(e)) {
         retried = true;
         if (e.timeout === true) { st.web = false; st.note = "\n\nA PREVIOUS ATTEMPT TIMED OUT. Web search is NOT available this time: use the tools and what you reliably know, and say plainly what you could not check."; }
         else st.note = "\n\nA PREVIOUS ATTEMPT FAILED. Be concise.";
         continue;
       }
-      const refusal = e && (e.code === "provider_quota" || e.code === "spend_ceiling" || e.code === "share_ceiling");
-      return finish(refusal ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources, toolCalls: st.entries.length });
+      return finish(isRefusal(e) ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources, toolCalls: st.entries.length });
     }
     retried = false;
     const actual = money.actual(env.usage, env.model);
@@ -207,43 +274,46 @@ async function runToolWorker(ctx, task, inputs) {
 
 /* runTask — one task: start it, ask the model (checkpointed and reserved each time), finish it. → { state, lost? } */
 async function runTask(ctx, task, inputs) {
-  const { db, job, holder, callModel, money, leaseSeconds } = ctx;
+  const { db, job, holder, money, leaseSeconds } = ctx;
   const started = await rpc(db, "atlas_job_task_start", { p_job: job.id, p_holder: holder, p_task: task.task_id });
   if (started !== true) return { state: "skipped" };
   const contract = task.contract || {};
   if (contract.kind === "capability") return runCapabilityTask(ctx, task);
   if (Array.isArray(contract.tools) && contract.tools.length) return runToolWorker(ctx, task, inputs);
   const taskView = { id: task.task_id, goal: contract.goal, returns: contract.returns, inputs };
+  const shown = await loadImages(ctx, task);
   let calls = 0, cost = 0, web = true, why = "", note = "";
   const sources = [];
   const finish = async (status, code, result) => {
     await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: result || null, p_cost: cost, p_calls: calls });
     return { state: status };
   };
+  const rl = { waited: 0 };
   for (let attempt = 0; attempt < 2; attempt++) {
     const cp = first(await rpc(db, "atlas_job_checkpoint", { p_job: job.id, p_holder: holder, p_lease_seconds: leaseSeconds }));
     if (!cp || cp.ok !== true) return { state: "lost", lost: true };
     if (cp.action !== "go") return finish("cancelled", cp.action, null);
     const amends = Array.isArray(cp.amends) ? cp.amends : [];
-    const prompt = workerPrompt(taskView, amends) + note;
+    const prompt = workerPrompt(taskView, amends) + note + shown.note;
     const system = ctx.system;
-    const est = money.estimate(system.length + prompt.length, web, contract.maxOutput);
+    const est = money.estimate(system.length + prompt.length, web, contract.maxOutput, shown.urls.length);
     const reserved = await rpc(db, "atlas_job_reserve", { p_job: job.id, p_holder: holder, p_micros: est });
     if (reserved !== true) return finish("refused", "cost_cap", { summary: "", findings: [], gaps: ["The job's cost cap was reached before this piece could run."], sources });
     calls += 1;
     let env;
     try {
-      env = await callModel(system, prompt, { web, signal: ctx.signal, maxOutput: contract.maxOutput });
+      env = await ask(ctx, system, prompt, { web, maxOutput: contract.maxOutput, images: shown.urls });
     } catch (e) {
       await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), attempt });
+      const wait = rateWaitMs(ctx, e, rl);
+      if (wait) { await event(db, job, "task.rate_wait", { task: task.task_id, ms: wait }); await keepLease(ctx, () => sleepMs(ctx, wait)); attempt -= 1; continue; }   /* a rate limit is not one of the two attempts */
       if (attempt === 0 && transient(e)) {
         if (e.timeout === true) { web = false; note = "\n\nA PREVIOUS ATTEMPT TIMED OUT. Web search is NOT available this time: answer only from what you reliably know, say plainly what you could not check, and give no source URL you cannot vouch for."; }
         else note = "\n\nA PREVIOUS ATTEMPT FAILED. Be concise: at most 5 findings, each one sentence, and say what you could not establish.";
         continue;
       }
-      const refusal = e && (e.code === "provider_quota" || e.code === "spend_ceiling" || e.code === "share_ceiling");
-      return finish(refusal ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources });
+      return finish(isRefusal(e) ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources });
     }
     const actual = money.actual(env.usage, env.model);
     cost += actual;
@@ -257,16 +327,25 @@ async function runTask(ctx, task, inputs) {
   return finish("failed", "shape", { summary: "", findings: [], gaps: ["The worker did not return the requested shape (" + why + ")."], sources });
 }
 
-/* runJob(ctx) — ctx: { db, job, holder, callModel, money, now, budgetMs, leaseSeconds, system, signal? }
-   → { outcome: 'finished' | 'more' | 'lost' } — `more`: time ran out with work left; the lease is released for the next tick. */
+/* runJob(ctx) — ctx: { db, job, holder, callModel, money, now, budgetMs, leaseSeconds, system, signal?, heartbeatMs?, hardMs?, sleep? }
+   → { outcome: 'finished' | 'more' | 'lost' } — `more`: time ran out with work left; the lease is released for the next tick.
+   (atlas-jobs-reliability) THE SLOTS ARE REFILLED AS THEY FREE, NOT IN WAVES. A wave of three waited for its slowest member before the
+   next task — which was ready the moment its own inputs were done — could start; a worker that searches takes 110 s, a piece that does
+   not takes 3, so the cheap tasks idled behind the long one. Now a task starts the moment a slot is free and its inputs are done, and the
+   ledger is re-read after every task that ends (its result is what the next one's inputs are made of). `budgetMs` still only stops
+   STARTING: what is running is allowed to end (a tool-using worker hands itself back at a round boundary), then the lease is let go. */
 export async function runJob(ctx0) {
   const t0 = ctx0.now();
   const ctx = Object.assign({}, ctx0, { t0 });   /* the slice's start: a tool-using worker reads it to know when to hand its task back */
   const { db, job, holder, now, budgetMs, leaseSeconds } = ctx;
-  for (let guard = 0; guard < 64; guard++) {
+  const running = new Map();   /* task_id → the promise of its end, as { id, r } */
+  const nextEnd = async () => { const d = await Promise.race(running.values()); running.delete(d.id); return d.r; };
+  const drain = () => Promise.allSettled(Array.from(running.values()));
+  for (let guard = 0; guard < 256; guard++) {
     const cp = first(await rpc(db, "atlas_job_checkpoint", { p_job: job.id, p_holder: holder, p_lease_seconds: leaseSeconds }));
     if (!cp || cp.ok !== true) return { outcome: "lost" };
     if (cp.action !== "go") {
+      if (running.size) { await drain(); running.clear(); continue; }   /* what is in flight meets the same checkpoint and ends cancelled; then the job ends */
       await rpc(db, "atlas_job_finish", { p_job: job.id, p_holder: holder, p_status: "cancelled", p_stop_reason: cp.action === "kill_switch" ? "kill_switch" : "user", p_result: null, p_error: "" });
       return { outcome: "finished" };
     }
@@ -277,24 +356,33 @@ export async function runJob(ctx0) {
     for (const b of blocked) await rpc(db, "atlas_job_task_block", { p_job: job.id, p_holder: holder, p_task: b.task_id, p_code: "input_unavailable" });
     if (blocked.length) continue;   /* re-read: a task that depended on a blocked one is now blocked too */
     const open = tasks.filter((t) => t.status === "queued" || t.status === "running");
-    if (!open.length) return conclude(ctx, tasks);
-    if (!ready.length) {   /* queued tasks that wait on a task that is still running — only a lapsed lease leaves that, and the claim requeued it */
+    if (!open.length && !running.size) return conclude(ctx, tasks);
+    /* a task started here whose first RPC has not landed still reads `queued`: it is not started a second time */
+    const startable = ready.filter((t) => !running.has(t.task_id));
+    if (!startable.length && !running.size) {   /* queued tasks that wait on a task that is still running — only a lapsed lease leaves that, and the claim requeued it */
       await rpc(db, "atlas_job_finish", { p_job: job.id, p_holder: holder, p_status: "failed", p_stop_reason: "stuck", p_result: null, p_error: "no task could start" });
       return { outcome: "finished" };
     }
-    if (now() - t0 > budgetMs) { await rpc(db, "atlas_job_release", { p_job: job.id, p_holder: holder }); return { outcome: "more" }; }
-    const byId = new Map(tasks.map((t) => [t.task_id, t]));
-    const wave = ready.slice(0, TASK_CONCURRENCY);
-    const results = await Promise.all(wave.map((t) => {
-      const inputs = (t.deps || []).map((d) => { const r = (byId.get(d) || {}).result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data }; });
-      return runTask(ctx, t, inputs).catch(() => ({ state: "error" }));
-    }));
-    if (results.some((r) => r.lost)) return { outcome: "lost" };
-    if (results.some((r) => r.state === "error")) {   /* an RPC failed under us: let go, the next claim requeues what was running */
+    const over = now() - t0 > budgetMs;
+    if (over && !running.size) { await rpc(db, "atlas_job_release", { p_job: job.id, p_holder: holder }); return { outcome: "more" }; }
+    if (!over) {
+      const byId = new Map(tasks.map((t) => [t.task_id, t]));
+      for (const t of startable) {
+        if (running.size >= TASK_CONCURRENCY) break;
+        const inputs = (t.deps || []).map((d) => { const r = (byId.get(d) || {}).result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data }; });
+        running.set(t.task_id, runTask(ctx, t, inputs).catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));
+      }
+    }
+    if (!running.size) continue;
+    const r = await nextEnd();
+    if (r.lost) return { outcome: "lost" };
+    if (r.state === "error") {   /* an RPC failed under us: let the others end, then let go — the next claim requeues what was running */
+      await drain(); running.clear();
       await rpc(db, "atlas_job_release", { p_job: job.id, p_holder: holder }).catch(() => {});
       return { outcome: "more" };
     }
   }
+  await drain();
   await rpc(db, "atlas_job_finish", { p_job: job.id, p_holder: holder, p_status: "failed", p_stop_reason: "guard", p_result: null, p_error: "too many rounds" });
   return { outcome: "finished" };
 }

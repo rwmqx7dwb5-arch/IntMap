@@ -162,7 +162,9 @@ test('ai-one-ledger ③ the ledger doors: the account, the charge, the refusal, 
 
   const acct = { id: uid, plan: 'free', isDev: false, limit: 10 };
   db = fakeDb({ consume_ai_turn: { data: [{ used: 3, allowed: true, charged: true, calls: 1, reason: '' }], error: null } });
-  assert.deepEqual(await L.openTurn(db, acct, { turn: 'job:r1', maxCalls: 1, ttlSeconds: 900 }), { allowed: true, charged: true, used: 3, calls: 1, reason: '', gen: null });
+  { const { chargedOn, ...opened } = await L.openTurn(db, acct, { turn: 'job:r1', maxCalls: 1, ttlSeconds: 900 });
+    assert.match(chargedOn, /^\d{4}-\d{2}-\d{2}$/, 'the UTC day the charge belongs to (a turn-less refund goes back to it)');
+    assert.deepEqual(opened, { allowed: true, charged: true, used: 3, calls: 1, reason: '', gen: null }); }
   assert.deepEqual(db.calls[0].args, { p_user: uid, p_limit: 10, p_turn: 'job:r1', p_max_calls: 1, p_ttl_seconds: 900 });
   db = fakeDb({ consume_ai_turn: { data: [{ used: 10, allowed: false, charged: false, calls: 1, reason: 'limit' }], error: null } });
   assert.equal((await L.openTurn(db, acct, { turn: 'x' })).reason, 'limit');

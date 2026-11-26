@@ -10,6 +10,7 @@
    they arrive, and folded back into the body the parsers below already read. */
 import { providerStream, previewSink } from "../_shared/ai-stream.js";
 import { providerFetch, ProviderFail, providerBudgetMs } from "../_shared/ai-provider.js";
+import { quotaClass } from "../_shared/ai-quota-class.js";
 import { CEILING } from "./config.ts";
 
 /* (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit
@@ -118,33 +119,23 @@ export class ProviderError extends Error {
 
 // Classify a Google generativelanguage error body / finishReason into a typed error.
 export function classifyGemini(status: number, bodyText: string, finishReason: string, blockReason: string): ProviderError {
-  const lc = (bodyText || "").toLowerCase();
   if (finishReason === "MALFORMED_FUNCTION_CALL") {
     return new ProviderError("provider_malformed", "Model emitted a malformed function/tool call.", 502, true, { finishReason });
   }
   if (finishReason === "SAFETY" || blockReason) {
     return new ProviderError("provider_blocked", "Blocked by the provider's safety filter." + (blockReason ? " (" + blockReason + ")" : ""), 502, false, { finishReason, blockReason });
   }
-  // (#R114) OpenAI billing/quota exhaustion (out of prepaid balance, or the project hit its hard
-  // spend limit) is a HARD stop — NOT a transient per-minute rate limit — so it must not be retried
-  // or read as "try again shortly". (Checked before the generic 429 branch below.)
-  if (lc.includes("insufficient_quota") || lc.includes("billing_hard_limit_reached") || lc.includes("billing hard limit")) {
-    return new ProviderError("provider_quota", "The AI provider account balance / spend limit was reached.", 502, false, { providerStatus: status });
+  /* (atlas-jobs-reliability) THE QUOTA / RATE-LIMIT TAXONOMY IS _shared/ai-quota-class.js — one classifier for ai-proxy and the durable-job
+     runner. Billing / spend-limit / per-day is a HARD stop (provider_quota, not retried); a per-minute or generic 429 is transient
+     (provider_rate_limit: the caller waits ~a minute, nothing here auto-retries). The text of the verdicts is unchanged. */
+  const qc = quotaClass(status, bodyText);
+  if (qc && qc.kind === "quota") {
+    return qc.scope === "per-day"
+      ? new ProviderError("provider_quota", "The AI provider DAILY quota was reached.", 502, false, { providerStatus: status, quotaScope: "per-day", quotaId: qc.quotaId || "", retryAfter: qc.retryAfterSeconds ? qc.retryAfterSeconds + "s" : "" })
+      : new ProviderError("provider_quota", "The AI provider account balance / spend limit was reached.", 502, false, { providerStatus: status });
   }
-  if (status === 429 || lc.includes("resource_exhausted") || lc.includes("exceeded your current quota") || lc.includes("rate limit")) {
-    // (#R113e) Gemini's 429 body is IDENTICAL for a transient per-MINUTE rate limit (clears in ~1 min) and a hard
-    // per-DAY / billing quota — both say "check your plan and billing". Distinguish by the quotaId so per-minute reads
-    // as transient and only per-day/billing reads as a hard quota. quotaId + retryAfter go into meta for diagnosis.
-    let quotaId = ""; try { const m = /quotaid["']?\s*[:=]\s*["']?([a-z0-9_.\-]+)/i.exec(bodyText || ""); if (m) quotaId = m[1].slice(0, 90); } catch (_) { /* */ }
-    let retryAfter = ""; try { const m = /retry(?:delay|after)["']?\s*[:=]\s*["']?(\d+)\s*s/i.exec(bodyText || ""); if (m) retryAfter = m[1] + "s"; } catch (_) { /* */ }
-    const qlc = (quotaId + " " + lc);
-    const perDay = qlc.includes("perday") || qlc.includes("per day") || qlc.includes("requests per day");
-    const perMinute = qlc.includes("perminute") || qlc.includes("per minute");
-    if (perDay && !perMinute) {
-      return new ProviderError("provider_quota", "The AI provider DAILY quota was reached.", 502, false, { providerStatus: status, quotaScope: "per-day", quotaId, retryAfter });
-    }
-    // per-minute or generic 429 → transient rate-limit (the caller just needs to wait ~a minute; do NOT auto-retry).
-    return new ProviderError("provider_rate_limit", "The AI provider is rate-limiting requests" + (perMinute ? " (per-minute)" : "") + ". Try again shortly.", 503, true, { providerStatus: status, quotaScope: perMinute ? "per-minute" : "rate", quotaId, retryAfter });
+  if (qc && qc.kind === "rate") {
+    return new ProviderError("provider_rate_limit", "The AI provider is rate-limiting requests" + (qc.scope === "per-minute" ? " (per-minute)" : "") + ". Try again shortly.", 503, true, { providerStatus: status, quotaScope: qc.scope, quotaId: qc.quotaId || "", retryAfter: qc.retryAfterSeconds ? qc.retryAfterSeconds + "s" : "" });
   }
   if (status >= 500) {
     return new ProviderError("provider_unavailable", "The AI provider is temporarily unavailable.", 503, true, { providerStatus: status });

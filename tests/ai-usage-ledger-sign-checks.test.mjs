@@ -110,7 +110,10 @@ test('ai-usage-ledger-sign ① ai-proxy, evaluated: refunds never outnumber char
         const [r] = runEdge([ask(turn, ending.task)], { env: ENV, routes: routesFor(opening, ending) });
         assert.notEqual(r.status, -1, at + ': the function threw ' + JSON.stringify(r.json));
         const consumed = rpc(r.calls, 'consume_ai_turn');
-        const refunds = rpc(r.calls, 'refund_ai_turn');
+        /* a turn-less charge is given back to the day it was made on (refund_ai_usage_on, atlas-jobs-reliability), a keyed one through refund_ai_turn */
+        const dayRefunds = rpc(r.calls, 'refund_ai_usage_on');
+        for (const d of dayRefunds) assert.match(String(d.p_date), /^\d{4}-\d{2}-\d{2}$/, 'the refund names a day');
+        const refunds = rpc(r.calls, 'refund_ai_turn').concat(dayRefunds);
         const charges = consumed.length && opening.charged ? consumed.length : 0;
         assert.equal(consumed.length, 1, at + ': charged through the ledger once');
         assert.equal(consumed[0].p_turn, turn, at + ': with the turn key the reader sent');
@@ -120,7 +123,7 @@ test('ai-usage-ledger-sign ① ai-proxy, evaluated: refunds never outnumber char
         assert.ok(refunds.length <= (turn ? 1 : charges), `${at}: ${refunds.length} refund(s) for ${charges} charge(s)`);
         for (const b of refunds) {
           assert.equal(b.p_user, USER.id, at + ': the refund goes to the account that was charged');
-          assert.equal(b.p_turn, consumed[0].p_turn, at + ': and names the charged turn, so the ledger returns it to the day it was charged on');
+          assert.equal(b.p_turn === undefined ? '' : b.p_turn, consumed[0].p_turn, at + ': and names the charged turn (or, with no key, the charged day), so the ledger returns it to the day it was charged on');
         }
         assert.deepEqual(rpc(r.calls, 'refund_ai_usage'), [], at + ': never the date-blind refund directly');
         if (eName === 'answered') {

@@ -16,7 +16,7 @@
 //  THE FENCES (a job is paid by the server's key, with nobody at the keyboard):
 //    · ONE JOB's cost: reserved before each provider request, settled after (public.atlas_job_reserve/settle) against
 //      atlas_jobs_control.job_cost_cap_micros ($1).
-//    · the reader's concurrency (2) and the project's (20): checked in atlas_job_create.
+//    · the reader's concurrency (2) and the project's (20): how many jobs RUN at once — checked in atlas_job_claim; a job past them WAITS (queued), it is not refused.
 //    · the project-wide DAILY request ceiling: spendCeiling below, taken inside providerFetch for every request.
 //    · THE STOP SWITCH: atlas_jobs_control.enabled = false (or the secret ATLAS_JOBS=off) — no creation, no claim, and a
 //      running job ends cancelled (kill_switch) at its next checkpoint, before its next provider request.
@@ -41,8 +41,10 @@ import { fetchGeoJson } from "../_shared/gis-input-fetch.js";
 import { capClass } from "../_shared/atlas-cap-classes.js";
 import { accountFor, openTurn, LedgerUnavailable } from "../_shared/ai-ledger.js";
 import {
-  OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, outputCeilingOf, costMicros, providerFetch, bodyLength, spendCeiling,
+  OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, priceOf, outputCeilingOf, costMicros, providerFetch, spendCeiling,
+  providerBudgetMs, EDGE_WALL_CLOCK_MS, EDGE_SETTLE_MARGIN_MS,
 } from "../_shared/ai-provider.js";
+import { quotaClass, retryAfterHeader } from "../_shared/ai-quota-class.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -61,10 +63,13 @@ const GLOBAL_PER_DAY = 600;
 const CEILING = spendCeiling({ fn: "atlas-jobs", perDay: GLOBAL_PER_DAY, env });
 
 /* How long one invocation starts new work for, and how long a lease lasts.
-   Observation: a worker request is 30-90 s and may be retried once (dev-notes/2026-11-19-delegation-limits-stream.md);
-   the platform ends an invocation at ~150 s. 30 s of starting new waves keeps a wave that begins at the edge inside the
-   platform limit in the usual case; a wave cut off anyway lapses its lease (150 s) and the next tick takes over, with
-   the reservation counted as spent. Expires with the platform's wall-clock limit. */
+   (atlas-jobs-reliability) A worker request is not bound by a number of ours: this invocation answered its caller (202) before it began
+   the work, so the clock it answers to is the platform's whole wall clock (EDGE_WALL_CLOCK_MS, _shared/ai-provider.js — the one place
+   it lives), the same window ai-proxy gives a streamed worker. Measured on production 2026-11-25 (dev-notes/2026-11-25-atlas-delegation-efficiency.md):
+   a worker that searches runs ~110 s, and 5 of 6 workers were cut at the 100 s this file used to impose and fell back to «answered from memory».
+   30 s of starting new tasks leaves the rest of the window for the longest of them. A lease is renewed by the runner every LEASE_S/3 while
+   a request is in flight (atlas-job-runner.js keepLease), so it stays short — a runner that dies is taken over after 150 s, not after the
+   whole window. Expires with the platform's wall-clock limit. */
 const SLICE_MS = 30_000;
 const LEASE_S = 150;
 
@@ -85,6 +90,15 @@ function outputTokens(maxOutput: unknown, model: string): number {
 /* what a hosted web search reads into the prompt, for the ESTIMATE only (the settle uses what the provider billed).
    Observation: ai_turns p99 input of a web turn is 345,819 tokens (config.ts TURN_COST_CAP_USD); a worker's search is a share of that. Expires with that table's numbers. */
 const WEB_READ_TOKENS = 50_000;
+/* What one image adds to a request's INPUT, for the ESTIMATE only (the settle uses what the provider billed). Observation: OpenAI's vision guide prices a
+   high-detail 1024x1024 image at 765 tokens and larger ones tile up from there; 1,500 is the estimate for an image of the sizes a reader attaches or a map frame is.
+   Expires with the provider's image pricing. */
+const IMAGE_READ_TOKENS = 1_500;
+/* The images a job may carry, stated as ai-proxy states them for a turn (ai-proxy/config.ts MAX_IMAGES / MAX_IMAGES_BYTES) — held EQUAL by
+   tests/atlas-jobs-reliability-checks.test.mjs, so a change there is noticed here. A job past them is refused by name (images_too_large), never trimmed. */
+const MAX_IMAGES_PER_TASK = 4;
+const MAX_IMAGES_BYTES = 12 * 1024 * 1024;
+const IMAGE_URL_OK = /^data:image\/(?:png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
 
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
@@ -101,23 +115,31 @@ function modelFor(): string {
 }
 
 const money = {
-  estimate(chars: number, web: boolean, maxOutput?: number) {
+  estimate(chars: number, web: boolean, maxOutput?: number, images = 0) {
     const p = priceOf(modelFor());
-    const inTok = Math.ceil(chars / 3) + (web ? WEB_READ_TOKENS : 0);
+    const inTok = Math.ceil(chars / 3) + (web ? WEB_READ_TOKENS : 0) + Math.max(0, Math.floor(images)) * IMAGE_READ_TOKENS;
     return Math.ceil(inTok * p.input + outputTokens(maxOutput, modelFor()) * p.output);
   },
   actual(usage: unknown, model: string) { return costMicros(model || modelFor(), usage, "openai"); },
 };
 
 class ModelError extends Error {
-  code: string; status: number; timeout: boolean;
-  constructor(code: string, message: string, status = 0, timeout = false) { super(message); this.code = code; this.status = status; this.timeout = timeout; }
+  code: string; status: number; timeout: boolean; retryAfterSeconds?: number;
+  constructor(code: string, message: string, status = 0, timeout = false, retryAfterSeconds?: number) { super(message); this.code = code; this.status = status; this.timeout = timeout; this.retryAfterSeconds = retryAfterSeconds; }
+}
+
+/* A non-2xx answer's body is read ONLY to classify it (_shared/ai-quota-class.js — the taxonomy ai-proxy uses) and then dropped: the
+   verdict is kept, never the body. Bounded: a 4 KB prefix is what the classifier needs. */
+async function classifyFailure(res: Response): Promise<{ len: number; verdict: ReturnType<typeof quotaClass> }> {
+  let text = "";
+  try { text = await res.text(); } catch (_) { text = ""; }
+  return { len: text.length, verdict: quotaClass(res.status, text.slice(0, 4096)) };
 }
 
 /* One worker request to the provider. OpenAI Responses only — the provider this project runs (AI_PROVIDER=openai); another
    provider fails the task `provider_unsupported` by name rather than running unmetered. A 403/404 model_not_found walks
    FALLBACK_CHAIN one step each, as ai-proxy does. */
-async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal; maxOutput?: number }) {
+async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal; maxOutput?: number; startedAt?: number; images?: string[] }) {
   if ((env("AI_PROVIDER") || "openai").toLowerCase() !== "openai") throw new ModelError("provider_unsupported", "Durable jobs run on the OpenAI provider only.");
   const key = env("OPENAI_API_KEY");
   if (!key) throw new ModelError("provider_unavailable", "The AI provider is not configured.", 503);
@@ -130,11 +152,11 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
         headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: chain[i], instructions: system,
-          input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
+          input: [{ role: "user", content: [{ type: "input_text", text: prompt }, ...(o.images || []).map((u) => ({ type: "input_image", image_url: u }))] }],
           max_output_tokens: outputTokens(o.maxOutput, chain[i]), reasoning: { effort: "medium" }, store: false,
           ...(o.web ? { tools: [{ type: "web_search" }] } : { text: { format: { type: "json_object" } } }),
         }),
-      }, { ceiling: CEILING, timeoutMs: 100_000 });
+      }, { ceiling: CEILING, timeoutMs: providerBudgetMs(true, o.startedAt, Date.now()) });   /* what is left of THIS invocation's window; a retry or a fallback step takes from the same budget */
     } catch (e) {
       const c = String((e as { code?: string })?.code || "");
       if (c === "spend_ceiling" || c === "share_ceiling") throw new ModelError("spend_ceiling", "The project-wide daily AI ceiling was reached.", 503);
@@ -142,9 +164,11 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
       throw new ModelError("provider_unavailable", "Could not reach the AI provider.", 503);
     }
     if (!res.ok) {
-      const len = await bodyLength(res);   // the provider's body is never kept: a status and a length
+      const { len, verdict } = await classifyFailure(res);   // the provider's body is never kept: a verdict and a length
       if ((res.status === 403 || res.status === 404) && i + 1 < chain.length) continue;
-      if (res.status === 429 || res.status === 402) throw new ModelError("provider_quota", `The AI provider refused (${res.status}, ${len} bytes).`, res.status);
+      /* (atlas-jobs-reliability) a per-MINUTE rate limit is not a quota: the runner waits it out and asks again; billing / spend limit / per-day, and 402, end the task refused */
+      if (verdict && verdict.kind === "rate") throw new ModelError("provider_rate_limit", `The AI provider is rate-limiting requests (${res.status}, ${len} bytes).`, res.status, false, verdict.retryAfterSeconds ?? retryAfterHeader(res.headers));
+      if (res.status === 429 || res.status === 402 || (verdict && verdict.kind === "quota")) throw new ModelError("provider_quota", `The AI provider refused (${res.status}, ${len} bytes).`, res.status);
       throw new ModelError("provider_unavailable", `The AI provider answered ${res.status} (${len} bytes).`, res.status);
     }
     const j = await res.json();
@@ -181,6 +205,7 @@ async function runSlice(jobId: string | null): Promise<string> {
   try {
     const r = await runJob({
       db, job, holder, callModel, money, capabilities: makeServerCaps({ db, gis: makeHeadlessGis({ loadGis, now: () => Date.now() }), fetchGeoJson }), now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
+      heartbeatMs: Math.floor(LEASE_S * 1000 / 3), hardMs: EDGE_WALL_CLOCK_MS - EDGE_SETTLE_MARGIN_MS,
       system: workerSystem(personaPrompt("working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers", { mode: "internal" })),
     });
     outcome = r.outcome;
@@ -189,6 +214,10 @@ async function runSlice(jobId: string | null): Promise<string> {
     try { await db.rpc("atlas_job_release", { p_job: job.id, p_holder: holder }); } catch (_) { /* the lease lapses */ }
   }
   if (outcome === "more") await chain();
+  /* (atlas-jobs-reliability) a job that ended leaves a place: a job that waited for one (the fences are checked at the claim, not at the door) starts now rather than at the next minute's tick */
+  else if (outcome === "finished") {
+    try { const { data } = await db.rpc("atlas_jobs_waiting"); if (Number(data) > 0) await chain(); } catch (_) { /* the tick finds it */ }
+  }
   return outcome;
 }
 
@@ -219,20 +248,45 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
+  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
+
+  /* (atlas-jobs-reliability) THE IMAGES A WORKER TASK NAMES arrive with the job, resolved by the page ({ name: [data URL] }); a name with no image, a thing that is
+     not an image, or more than a job may carry is refused by name BEFORE the job exists — never dropped, never trimmed. */
+  const sent = (body.images && typeof body.images === "object" && !Array.isArray(body.images)) ? body.images as Record<string, unknown> : {};
+  let bytes = 0;
+  const seenUrls = new Set<string>();
+  const taskImages = new Map<string, Array<{ name: string; urls: string[] }>>();
+  for (const t of plan.tasks as Array<{ id: string; contract: { kind?: string; images?: string[] } }>) {
+    const names = t.contract.kind === "worker" ? (t.contract.images || []) : [];
+    if (!names.length) continue;
+    const got: Array<{ name: string; urls: string[] }> = [];
+    let n = 0;
+    for (const name of names) {
+      const urls = Array.isArray(sent[name]) ? (sent[name] as unknown[]) : [];
+      if (!urls.length) return json({ error: "bad_plan", code: "images_missing", at: t.id, name }, 400);
+      for (const u of urls) {
+        if (typeof u !== "string" || !IMAGE_URL_OK.test(u)) return json({ error: "bad_plan", code: "images_invalid", at: t.id, name }, 400);
+        if (!seenUrls.has(u)) { seenUrls.add(u); bytes += u.length; }
+        n += 1;
+      }
+      got.push({ name, urls: urls as string[] });
+    }
+    if (n > MAX_IMAGES_PER_TASK || bytes > MAX_IMAGES_BYTES) return json({ error: "bad_plan", code: "images_too_large", at: t.id }, 400);
+    taskImages.set(t.id, got);
+  }
 
   const db = adminClient();
   const { data, error } = await db.rpc("atlas_job_create", {
     p_user: user.id, p_idem: idem, p_title: String(body.title || "").slice(0, 200),
-    p_tasks: plan.tasks.map((t: { id: string; key: string; contract: unknown; deps: string[] }) => ({ id: t.id, key: t.key, contract: t.contract, deps: t.deps })),
+    p_tasks: plan.tasks.map((t: { id: string; key: string; contract: unknown; deps: string[] }) => ({ id: t.id, key: t.key, contract: t.contract, deps: t.deps, images: taskImages.get(t.id) || null })),
   });
   if (error) return json({ error: "unavailable" }, 503);
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || !row.job_id) {
     const reason = String(row?.reason || "unavailable");
-    return json({ error: reason }, reason === "user_active_limit" || reason === "busy" ? 429 : reason === "disabled" ? 503 : 400);
+    return json({ error: reason }, reason === "disabled" ? 503 : 400);
   }
   if (!row.created) return json({ jobId: row.job_id, created: false, status: row.status });   // the same key again: the same job, nothing charged, nothing started twice
 

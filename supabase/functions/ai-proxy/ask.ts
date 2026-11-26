@@ -174,6 +174,7 @@ export async function ask(req: Request): Promise<Response> {
   /* (security-review-nov) the attempt holds its turn (consume_ai_turn inflight + 1) until it closes, and
      `turnGen` is the generation of the row it opened — every close names it. */
   let turnGen: string | null = null;
+  let turnDay: string | null = null;   /* (atlas-jobs-reliability) the UTC day a turn-less charge was made on — its refund goes to that day */
   let turnOpen = false;
   let glossUsed = 0;
   if (isGloss) {
@@ -205,6 +206,7 @@ export async function ask(req: Request): Promise<Response> {
     used = row.used;
     charged = row.charged;
     turnGen = row.gen;
+    turnDay = (row as { chargedOn?: string }).chargedOn || null;
     turnOpen = row.allowed && !!turnId;
     if (!row.allowed) {
       /* Two different 429s, and the client must be able to tell them apart: one means "come back
@@ -243,7 +245,7 @@ export async function ask(req: Request): Promise<Response> {
     }
     if (turnId ? !turnOpen : !charged) return;
     turnOpen = false;
-    const status = await refundTurn(db, account, turnId, turnGen);
+    const status = await refundTurn(db, account, turnId, turnGen, turnDay);
     if (status === "error") try { console.error("ai-proxy ledger refund_failed"); } catch (_) { /* ignore */ }
     if (status === "refunded") charged = false;
   };

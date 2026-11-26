@@ -2,12 +2,13 @@
 --  pgTAP · 52 — Atlas durable jobs: a job that outlives the tab, run one lease at a time.
 --  supabase/migrations/20261123130000_atlas_durable_jobs.sql
 --    ① the tables: columns, RLS on, owner-only read, no client write;
---    ② create: idempotent on (reader, idem), bounded per reader, refused when the stop switch is off;
+--    ② create: idempotent on (reader, idem), never refused for the concurrency fences (a job past them waits), refused when the stop switch is off;
 --    ③ claim / lease: one runner at a time, a lapsed lease is taken over, a stale reservation counts as spent;
 --    ④ the cost fence: a reservation past the cap is refused, settle moves it to spent;
 --    ⑤ a task finishes once; the second finish changes nothing;
 --    ⑥ the reader's controls: cancel (idempotent, owner only), amend (read back by the checkpoint, may drop tasks);
---    ⑦ the stop switch ends a job at its next checkpoint and stops every claim.
+--    ⑦ the stop switch ends a job at its next checkpoint and stops every claim;
+--    ⑧ the queue (20261201100000): a job waits for a place; a reader at their limit is skipped, not waited behind; a job that already runs is never held back.
 --  The page-side model of the runner is tests/atlas-durable-jobs-checks.test.mjs — this file runs the SQL itself.
 -- ============================================================================
 begin;
@@ -45,7 +46,7 @@ select is((select count(*)::int from public.atlas_jobs where user_id = '00000000
 select is((select cost_cap_micros from public.atlas_jobs where id = (select job_id from _j)), 1000000::bigint, 'a job is capped at $1 (the control row)');
 select is((select reason from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'bad', 't', '[]'::jsonb)), 'bad_request', 'an empty task list is refused');
 select is((select count(*)::int from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-2', 'second', pg_temp._tasks(1)) where created), 1, 'a reader may run a second job');
-select is((select reason from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-3', 'third', pg_temp._tasks(1))), 'user_active_limit', 'a third at once is refused (two per reader)');
+select is((select created from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'idem-3', 'third', pg_temp._tasks(1))), true, 'a third at once is NOT refused: it is queued and waits for a place');
 select is((select created from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'idem-1', 'other reader', pg_temp._tasks(1))), true, 'another reader is not counted against the first, and may reuse the key');
 
 -- ── ① access ─────────────────────────────────────────────────────────────────
@@ -71,8 +72,8 @@ select is(pg_temp._as('authenticated', '00000000-0000-0000-0000-0000000a0001', $
 select is(pg_temp._as('authenticated', '00000000-0000-0000-0000-0000000a0001', $$ select count(*) from public.atlas_jobs_control $$), 'DENIED', 'nor read the control row');
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0001","role":"authenticated"}', true);
-select is((select count(*)::int from public.atlas_jobs), 2, 'a reader sees their own two jobs');
-select is((select count(*)::int from public.atlas_job_tasks), 3, '… and their tasks');
+select is((select count(*)::int from public.atlas_jobs), 3, 'a reader sees their own three jobs');
+select is((select count(*)::int from public.atlas_job_tasks), 4, '… and their tasks');
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000a0002","role":"authenticated"}', true);
@@ -173,6 +174,34 @@ select is((select action from public.atlas_job_checkpoint((select job_id from _k
 select is((select reason from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'idem-off', 'x', pg_temp._tasks(1))), 'disabled', 'nothing new is created');
 select is((select count(*)::int from public.atlas_job_claim('runner-4', 60)), 0, 'nothing is claimed');
 update public.atlas_jobs_control set enabled = true;
+
+-- ── ⑧ the queue ──────────────────────────────────────────────────────────────
+-- start from nothing active
+update public.atlas_jobs set status = 'cancelled', lease_holder = null, lease_until = null, ended_at = now() where status in ('queued', 'running');
+create temp table _qa1 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'qa1', 'qa1', pg_temp._tasks(1));
+create temp table _qa2 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'qa2', 'qa2', pg_temp._tasks(1));
+create temp table _qa3 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0001', 'qa3', 'qa3', pg_temp._tasks(1));
+create temp table _qb1 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'qb1', 'qb1', pg_temp._tasks(1));
+-- one transaction gives every row the same now(): order them explicitly
+update public.atlas_jobs set created_at = now() - interval '4 minutes' where id = (select job_id from _qa1);
+update public.atlas_jobs set created_at = now() - interval '3 minutes' where id = (select job_id from _qa2);
+update public.atlas_jobs set created_at = now() - interval '2 minutes' where id = (select job_id from _qa3);
+update public.atlas_jobs set created_at = now() - interval '1 minutes' where id = (select job_id from _qb1);
+select is((select count(*)::int from public.atlas_jobs where status = 'queued'), 4, 'four jobs were accepted, none refused');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa1), 'the oldest is claimed first');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), '… then the next of the same reader (two may run)');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qb1), 'a reader at their limit is skipped, so another reader is not made to wait behind them');
+select is((select count(*)::int from public.atlas_job_claim('runner-q', 60)), 0, 'the third of the first reader waits: nothing else is claimable');
+select is((select status from public.atlas_jobs where id = (select job_id from _qa3)), 'queued', '… and it is still queued, not refused');
+select is(public.atlas_job_finish((select job_id from _qa1), 'runner-q', 'done', '', null, ''), true, 'a job ends…');
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa3), '… and the one that waited takes its place');
+update public.atlas_jobs_control set max_active_total = 1;
+create temp table _qa4 as select * from public.atlas_job_create('00000000-0000-0000-0000-0000000a0002', 'qa4', 'qa4', pg_temp._tasks(1));
+select is((select count(*)::int from public.atlas_job_claim('runner-q', 60)), 0, 'past the project-wide limit a new job waits as well');
+update public.atlas_jobs set lease_until = now() - interval '1 second' where id = (select job_id from _qa2);
+select is((select id from public.atlas_job_claim('runner-q', 60)), (select job_id from _qa2), 'but a job that already runs (its lease lapsed) is taken over whatever waits');
+update public.atlas_jobs_control set max_active_total = 20;
+select is(public.atlas_jobs_waiting(), 1, 'the function can ask whether anything waits');
 
 select * from finish();
 rollback;
