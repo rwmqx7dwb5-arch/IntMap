@@ -42,3 +42,4 @@ MapLibre 6.19 の `ScrollZoomHandler` はカーソルを `_start` で 1 度だ�
 
 ## 本番検証で見つかった追加の不具合（Norway の Isolate）
 本番で Norway を Isolate するとカメラがほぼ全球（z2）に寄った。`bbox()` が国の全座標の min/max で、ブーベ島とスバールバルまで含んでいたため（lng -9〜34、lat -54〜81）。フランス・オランダ・チリも同じ形。search が使う `IntMapCountryExtent.homeExtent`（本土＋同じ場所に見えるものの範囲）で寄せるようにした。パンの範囲（setMaxBounds）は従来どおり全領土の和（遠い領土へ行けなくならないように）。国名の列挙は無く、規則（距離と面積の比）で決まる。
+- 新しい window 経由の読み: map-tools の Isolate から `window.IntMapCountryExtent`（search の枠取りと同じ homeExtent）。global-surface の台帳を更新。
