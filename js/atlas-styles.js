@@ -181,8 +181,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          here now, and this is the line the gates in tests/companies-ui-checks.test.mjs (#R153)/r154-checks read:
          HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. Every level is weight 600 in
          --text-main; nothing below may introduce a hue, and #R159's 600 is never raised to 750/800. */
-      +'.atl-md{font-size:15px;line-height:1.62;}'   /* hierarchy: answer 15px > action row 12px > sources 12px muted (js/atlas-answer-sources.js) */
-      +'.atl-p{margin:0 0 1.5em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
+      +'.atl-md{font-size:15px;line-height:1.7;}'   /* hierarchy: answer 15px > action row 12px > sources 12px muted (js/atlas-answer-sources.js) */
+      +'.atl-p{margin:0 0 1.35em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
       +'.atl-ps{margin-bottom:.82em;}'                                              /* (#R150) sentence-end + single newline = a softer gap */
       +'.atl-p:last-child{margin-bottom:0;}'
       +'.atl-h{font-weight:560;color:var(--text-main);text-wrap:balance;}'          /* (#R494) balance: a two-line heading no longer leaves one orphan word */
@@ -200,7 +200,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'.atl-h:first-child{margin-top:0;}'
       /* (#R494) real lists: the marker is the browser's, so the hanging indent, the nesting and the
          numbering are all free — none of which the `•&nbsp;` + text-indent div could do */
-      +'.atl-ul,.atl-ol{margin:.45em 0 .9em;padding-left:1.5em;}'
+      +'.atl-ul,.atl-ol{margin:.6em 0 1.15em;padding-left:1.5em;}'
       /* ⚠ THE MARKER FOLLOWS THE DEPTH, NOT THE PARENT'S TYPE. `.atl-ul .atl-ul` would only change a
          bullet list nested under another BULLET list — a bullet list inside a NUMBERED one (which is
          the commoner shape in an answer: three numbered steps, one of which has sub-points) would
@@ -208,10 +208,10 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          list ancestors of either kind. */
       +'.atl-ul{list-style:disc;}.atl-li .atl-ul{list-style:circle;}.atl-li .atl-li .atl-ul{list-style:square;}'
       +'.atl-ol{list-style:decimal;}.atl-li .atl-ol{list-style:lower-alpha;}.atl-li .atl-li .atl-ol{list-style:lower-roman;}'
-      +'.atl-li{margin:.3em 0;line-height:1.6;text-wrap:pretty;}'
+      +'.atl-li{margin:.42em 0;line-height:1.66;text-wrap:pretty;}'   /* (atlas-float-typography) a list item reads as its own thought: more air between items than inside one */
       +'.atl-li::marker{color:var(--text-muted);}'
-      +'.atl-li>.atl-ul,.atl-li>.atl-ol{margin:.25em 0 .3em;}'
-      +'.atl-loose>.atl-li{margin:.55em 0;}'
+      +'.atl-li>.atl-ul,.atl-li>.atl-ol{margin:.35em 0 .4em;}'
+      +'.atl-loose>.atl-li{margin:.7em 0;}'
       +'.atl-li>.atl-p{margin-bottom:.5em;}.atl-li>.atl-p:last-child{margin-bottom:0;}'
       +'.atl-ul:last-child,.atl-ol:last-child{margin-bottom:0;}'
       /* (#R494) ONE blockquote for a multi-line quotation. Each `>` line used to become its own

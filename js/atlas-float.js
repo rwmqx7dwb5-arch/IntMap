@@ -93,8 +93,13 @@ const CSS =
      filter on a block: a shadow on a rectangle reads as a rectangle. text-shadow is inherited, so it is set once here. */
   + '#atlas-float{--atl-halo:0,0,0;}'
   + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 2px rgba(var(--atl-halo),.95),0 0 4px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 14px rgba(var(--atl-halo),.78),0 0 24px rgba(var(--atl-halo),.65),0 0 40px rgba(var(--atl-halo),.5);--text-main:#fff;--text-muted:#fff;color:#fff;}'
-  /* the reader's own message keeps its bubble, a little more opaque than the sidebar's so the white ink reads on any map; no glow inside it */
-  + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;--atlas-glass:linear-gradient(135deg,rgba(0,122,255,.66),rgba(94,92,230,.62) 56%,rgba(191,90,242,.60));}'
+  /* (atlas-float-typography) THE READER'S OWN MESSAGE IS TEXT TOO. Off the pane it has no bubble: a gradient rectangle with a shadow was a
+     box standing in for a glow (the reader: no rectangle may stand in for the glow). It lies on the map like the answer — same white ink,
+     same halo on the glyphs — and only its alignment says whose it is. On the frosted pane (.bg, below) it is a plain tinted bar inside it. */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-chat .atl-b.u:not(.atl-imgrow){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:2px 4px;}'
+  /* the input row and the bar are surfaces, so their words carry the glow in the surface's own colour (opposite the ink), not the map's black */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-inbar :is(.atl-in,button,.m-clock){text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent),0 0 16px color-mix(in srgb,var(--popup-bg) 60%,transparent);}'
+  + '#atlas-float:not(.bg) #atlas-panel .atl-in::placeholder{text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent);}'
   /* THE CONVERSATION CAN BE REACHED. The rectangle used to be pointer-events:none all the way down, with a few inner pieces opting back in, so a
      wheel over a bubble, its copy/edit buttons or the gaps between lines went to the map (it zoomed, the answer did not scroll). The structure
      is now: the empty column stays transparent to the pointer (the fades and padding), and everything the conversation is made of takes it. */
@@ -103,12 +108,12 @@ const CSS =
   /* THE BACKGROUND SWITCH (the bar's third button). On: the conversation sits on one rounded frosted pane in the app's own glass tokens, the
      ink goes back to the theme's and the glow is off (the pane is what keeps it legible). Off: text on the map. */
   + '#atlas-float.bg #atlas-panel .atl-chat{--text-main:var(--atl-ink-main);--text-muted:var(--atl-ink-muted);color:var(--atl-ink-main);text-shadow:none;pointer-events:auto;'
-  + 'background:color-mix(in srgb,var(--popup-bg) 58%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
-  + 'border:1px solid color-mix(in srgb,var(--text-main) 12%,transparent);border-radius:22px;padding:14px 12px 14px;margin-bottom:8px;-webkit-mask-image:none;mask-image:none;}'
+  + 'background:color-mix(in srgb,var(--popup-bg) 34%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'border:1px solid color-mix(in srgb,var(--text-main) 12%,transparent);border-radius:14px;padding:14px 12px 14px;margin-bottom:8px;-webkit-mask-image:none;mask-image:none;}'
   + '#atlas-float.bg #atlas-panel .atl-chat .atl-b.u{--atlas-glass:linear-gradient(135deg,rgba(0,122,255,.34),rgba(94,92,230,.30) 56%,rgba(191,90,242,.28));}'
   + '#atlas-float .atl-float-bg[aria-pressed="true"]{background:var(--input-bg);color:var(--text-main);}'
   + '#atlas-float .atl-b.a :is(.atl-md,.atl-md>*,.atl-cmp,.atl-actrow,.atl-srcs,.atl-fold,.atl-interim){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'
-  + '#atlas-float .atl-b.a .atl-md{display:block;pointer-events:auto;padding:0;color:var(--text-main);font-size:15px;line-height:1.72;}'
+  + '#atlas-float .atl-b.a .atl-md{display:block;pointer-events:auto;padding:0;color:var(--text-main);font-size:15px;line-height:1.75;}'
   + '#atlas-float .atl-b.a .atl-md>p+p{margin-top:.75em;}'
   + '#atlas-float .atl-b.a .atl-cmp{pointer-events:auto;padding:0;margin:12px 0 4px;border-radius:0;font-size:.92em;}'
   + '#atlas-float .atl-b.a .atl-actrow,#atlas-float .atl-b.a .atl-srcs,#atlas-float .atl-b.a .atl-fold,#atlas-float .atl-b.a .atl-interim{pointer-events:auto;display:block;width:fit-content;max-width:100%;box-sizing:border-box;padding:4px 0;}'

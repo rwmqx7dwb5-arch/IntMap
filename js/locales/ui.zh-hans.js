@@ -6222,8 +6222,8 @@ IntMapLang.define('zh-hans', {
   "bar chart, {n} values from {y0} to {y1}": "条形图，{n} 个数值，从 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
   "timeline, {n} events from {y0} to {y1}": "年表，{y0} 年至 {y1} 年共 {n} 个事件",   /* atlas-chart.js (#R543) */
   "The chart renderer could not be loaded.": "无法加载图表绘制模块。",   /* atlas-console.js (#R543) */
-  "Map as it was": "当时的地图",   /* atlas-msg-tools.js (#R543) */
-  "Put the map back the way it was when this answer was written": "将地图还原成撰写这则回答时的状态",   /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
   "Restored": "已还原",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "已还原（之后开启的 {n} 个图层维持不变）",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "无法还原",   /* atlas-msg-tools.js (#R543) */
