@@ -1,0 +1,15 @@
+{
+  "$comment": [
+    "(atlas-ui-parts) OPEN QUESTIONS for the initiative axis (scripts/atlas-eval/initiative.mjs). Each is a short, ordinary question of the kind a reader types with no instruction about HOW to show the answer. None has a verified answer, an expected capability or an expected map: the axis asks whether the reply brought a representation or analysis the reader did not request but would want, and a set that named one would be a set to memorise.",
+    "The subjects are deliberately unrelated to each other (climate, cities, migration, industry, transport, water). Add a question only if it names no output form (map, chart, shading, switch) and no dataset; replace one when it starts to be answered from memory of the set."
+  ],
+  "version": 1,
+  "questions": [
+    { "id": "open-climate-shift", "lang": "en", "text": "How has the climate of the Mediterranean region been changing, and who will feel it most?" },
+    { "id": "open-city-growth", "lang": "jp", "text": "東京と他のアジアの大都市は、この50年でどう違う広がり方をしてきたの？" },
+    { "id": "open-migration", "lang": "en", "text": "Where do people move to and from in Africa, and why does it matter?" },
+    { "id": "open-industry-siting", "lang": "jp", "text": "半導体産業はなぜ今の場所に集まっているの？" },
+    { "id": "open-transport-corridor", "lang": "en", "text": "Explain how trade between Europe and East Asia physically moves, and where it is fragile." },
+    { "id": "open-water-supply", "lang": "en", "text": "Where does the drinking water for the big cities of South Asia come from, and how secure is it?" }
+  ]
+}

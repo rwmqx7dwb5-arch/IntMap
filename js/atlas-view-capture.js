@@ -127,9 +127,11 @@ export function makeViewCapture(deps) {
     const cont = document.getElementById('map-container');
     if (!cont) return { canvas: null, live: false };
     /* controls out, legends in — but only for the picture that HAS overlays in it */
-    const mark = (include === 'screen') && (o.markCapture !== false) && !document.body.classList.contains(CAPTURE_CLASS);
-    if (mark) document.body.classList.add(CAPTURE_CLASS);
-    try {
+    /* (atlas-ui-parts) THE CLASS GOES ON html2canvas's CLONE, NOT ON THE READER'S BODY. Adding it to the live document hid
+       every control the reader was looking at for the whole capture (idle wait + frame + overlay pass = seconds) — the
+       buttons «blinked out» each time Atlas looked at the map. html2canvas renders a clone of the document, so the same
+       rule hides the same controls in the PICTURE only. */
+    {
       /* let in-flight tiles finish so the picture is of a finished frame rather than a half-loaded one */
       if (typeof o.waitIdle === 'function') { try { await o.waitIdle(o.waitIdleMs || 2500); } catch (_) { /* idle is a courtesy, not a precondition */ } }
       const grabbed = await grabRendererFrame(GE);
@@ -156,16 +158,13 @@ export function makeViewCapture(deps) {
         if (typeof html2canvas !== 'undefined') {
           try {
             const ov = await html2canvas(cont, { backgroundColor: null, useCORS: true, logging: false, scale,
+              onclone: (doc) => { try { if (o.markCapture !== false) doc.body.classList.add(CAPTURE_CLASS); } catch (_) { /* the clone is ours; a failure leaves the controls in the picture, not out of the reader's screen */ } },
               ignoreElements: (el) => el.tagName === 'CANVAS' || (el.classList && el.classList.contains('maplibregl-canvas')) });
             ctx.drawImage(ov, 0, 0, out.width, out.height);
           } catch (_) { /* the map alone is still a picture */ }
         }
       }
       return { canvas: out, live: grabbed.live };
-    } finally {
-      /* ⚠ IN `finally`, NOT ON THE HAPPY PATH (#R231): a capture abandoned mid-way must never leave
-         every control on the map hidden. */
-      if (mark) { try { document.body.classList.remove(CAPTURE_CLASS); } catch (_) { /* torn-down document */ } }
     }
   }
 

@@ -46,6 +46,32 @@ export const LIMITS = Object.freeze({
   metrics: 12, columns: 12, rows: 200, cell: 200, places: 12, place: 120, command: 160, controls: 8,
 });
 
+/* ══ A SWITCH'S CALLS (atlas-ui-parts) ══════════════════════════════════════════════════════════════════
+   A `tabs` / `steps` control in a reply binds each option to capability calls that run WITHOUT a model call when the
+   reader presses it (js/atlas-console.js reads this same check again at press time, because the markup that carries the
+   calls is the reply's, not a trusted store). The registry — not this file — says what a call may be: it must name a
+   capability that exists, be reversible within the session (`read-only` / `reversible-session`), need no confirmation, and
+   carry only plain values. A press can therefore move the map, change a layer, set the time, draw a dataset; it cannot
+   change an account setting, send anything or reach outside the session.
+   Observed limits: a reply column is <= 400 px wide (js/atlas-styles.js), so 2-6 options fit one row of segments; four
+   calls per option is the largest bundle a scene needs (camera + time + layer + paint) in the 2026-11-26 trials of the
+   Habsburg and Suwalki replies. They expire when the panel width changes. */
+export const SWITCH = Object.freeze({ options: 6, calls: 4, label: 40, callChars: 1500 });
+
+/** '' when `call` may be bound to a switch option; otherwise the reason, in the reader's language. CAPS is the registry (`ofSpelling`). */
+export function switchCallProblem(call, CAPS, L) {
+  if (!call || typeof call !== 'object' || Array.isArray(call)) return L('must be an object with a "type"', '"type" を持つオブジェクトにしてください');
+  const type = String(call.type || '');
+  const row = type && CAPS && CAPS.ofSpelling ? CAPS.ofSpelling(type) : null;
+  if (!row) return L('"' + type + '" is not a capability this build has', '"' + type + '" はこのビルドにある能力ではありません');
+  if (row.risk !== 'read-only' && row.risk !== 'reversible-session') return L('"' + type + '" changes something that outlasts the session, so a press cannot run it', '"' + type + '" はセッションより長く残るものを変えるため、ボタンからは実行できません');
+  if (row.confirmation && row.confirmation !== 'none') return L('"' + type + '" needs the reader\'s confirmation', '"' + type + '" は読者の確認が要ります');
+  if (/^ui\./.test(row.id || '')) return L('a control cannot draw another control', 'コントロールから別のコントロールは描けません');
+  let n = 0; try { n = JSON.stringify(call).length; } catch (_) { return L('is not plain data', '単純なデータではありません'); }
+  if (n > SWITCH.callChars) return L('is longer than ' + SWITCH.callChars + ' characters', SWITCH.callChars + ' 文字を超えています');
+  return '';
+}
+
 /* ── a field's shape ── t: text (n chars) · v: text or a finite number · num · rows · list (of an item) · obj (passed whole to `via`) */
 const T = (n, req) => ({ t: 'text', n, req: !!req });
 const V = (n, req) => ({ t: 'value', n, req: !!req });

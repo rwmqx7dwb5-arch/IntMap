@@ -269,7 +269,7 @@ test('atlas-native-tools ⑥: the reply is the provider\'s items; the written sh
   assert.deepEqual(r.toolCalls[0].arguments, { place: 'Rome' });
   assert.ok(r.items && r.items.length === 2, 'the items are kept for the next step to replay');
   assert.equal(r.turnState, 'continuing');
-  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);
+  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'note_to_intmap', 'final_text']);
   assert.deepEqual(AGENT.FINAL_SCHEMA.required, ['final_text']);
   /* (atlas-legacy-protocol-removal) an envelope reply is no longer a way to call: its calls are REPORTED, not run —
      tests/atlas-legacy-protocol-removal-checks.test.mjs drives what the loop then does with them */

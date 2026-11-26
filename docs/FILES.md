@@ -1309,6 +1309,8 @@ atlas-video-frames.js            動画を Atlas が読める1枚にする。ク
                                   サンプルし、時刻を焼き込んだコンタクトシート**1枚**にする。画像は1リクエスト4枚までで写真と比較する
                                   枠を残すため。全プロバイダが読める形（Gemini だけが生の動画を受ける）。音声は送らず、その旨を
                                   `caption()` が述べる。`extract` は document を引数で受け、デコード不能な動画は黒いシートでなく null。
+atlas-switch.js                   **回答内の切り替え（tabs / steps）を押した側**（atlas-ui-parts）— `ui.inlineControls`/`ui.compose` の controls が描く、選択肢ごとに能力呼び出しを束ねたスイッチを押したとき、その呼び出しをモデル往復なしで Atlas の dispatch に流す。
+                                  押下時にも `switchCallProblem` で再検査する（マークアップは信頼しない）。入口は `makeAtlasSwitch(deps)` の1つだけ。
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。

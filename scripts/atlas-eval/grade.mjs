@@ -30,8 +30,8 @@
 /* The rubric's machine shape is shared with ai-proxy, which OWNS it (the server forces the grader to
    this schema — a client cannot widen it). One file, two readers: Deno imports it in the function,
    node imports it here. */
-import { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA } from '../../supabase/functions/_shared/atlas-grade-schema.js';
-export { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA };
+import { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA, ATLAS_GRADE_INITIATIVE } from '../../supabase/functions/_shared/atlas-grade-schema.js';
+export { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA, ATLAS_GRADE_INITIATIVE };
 /* (atlas-eval-map-state) the map axis — a row's `mapState` is checked against the vocabulary the product
    actually has (layer declarations, registered snapshot sections, the historical enumeration) */
 import { mapVocabulary, validateMapState } from './map-state.mjs';
@@ -251,6 +251,8 @@ export function languageOf(text) {
   return latin ? 'en' : '';
 }
 
+export const OPEN_QUESTIONS_FILE = 'scripts/atlas-eval/open-questions.json';
+
 /* ── the rubric: what the independent grader is asked ─────────────────────────────────────────── */
 
 /**
@@ -258,20 +260,23 @@ export function languageOf(text) {
  * The grader is given the VERIFIED answer and its source, so it grades against the key rather than
  * against its own memory (a grader that knows less than the key would mark a right answer wrong).
  */
-export function rubricRequest(q, reply) {
+export function rubricRequest(q, reply, facts) {
+  const open = !q.answer;   /* (atlas-ui-parts) an open question has no verified answer: it is read for the initiative axis, and the verdict is not used */
   const a = q.answer || {};
-  const expected = a.kind === 'name' ? (a.accept || []).join(' / ') : a.kind === 'date' ? a.value : describe(a);
+  const expected = open ? '(none - an open question; judge soundness and usability, the verdict is not used)' : a.kind === 'name' ? (a.accept || []).join(' / ') : a.kind === 'date' ? a.value : describe(a);
   const system = [
     'You grade one answer written by a map assistant ("Atlas") to a reader\'s question.',
     'You are given the question, the VERIFIED correct answer with the source it was verified at, and the assistant\'s reply.',
     'Grade the reply against the verified answer, not against your own memory. Score each criterion 0, 1 or 2:',
     ...ATLAS_GRADE_CRITERIA.map((c) => '- ' + c.id + ': ' + c.asks + ' (0 = ' + c.zero + '; 2 = ' + c.two + ')'),
-    'Then give an overall verdict: "pass" only if correctness is 2 and no criterion is 0. Quote at most one short phrase of the reply as evidence.',
+    '- ' + ATLAS_GRADE_INITIATIVE.id + ' (a separate axis, NOT part of the verdict): ' + ATLAS_GRADE_INITIATIVE.asks + ' (0 = ' + ATLAS_GRADE_INITIATIVE.zero + '; 1 = ' + ATLAS_GRADE_INITIATIVE.one + '; 2 = ' + ATLAS_GRADE_INITIATIVE.two + ')',
+    'Then give an overall verdict: "pass" only if correctness is 2 and no other criterion than initiative is 0. Quote at most one short phrase of the reply as evidence.',
   ].join('\n');
   const prompt = [
     'QUESTION (' + (q.lang === 'jp' ? 'Japanese' : 'English') + '): ' + str(q.text),
     'VERIFIED ANSWER: ' + expected + (q.note ? ' — ' + q.note : ''),
-    'SOURCE: ' + str(q.source && q.source.title) + ' — ' + str(q.source && q.source.url) + ' — ' + str(q.source && q.source.states),
+    'SOURCE: ' + (q.source ? str(q.source.title) + ' — ' + str(q.source.url) + ' — ' + str(q.source.states) : '(none)'),
+    ...(facts ? ['WHAT THE TURN DID (from IntMap\'s own record, not the reply\'s words): ' + str(facts)] : []),
     'REPLY:',
     str(reply).slice(0, 6000),
   ].join('\n');
@@ -283,7 +288,7 @@ export function rubricRequest(q, reply) {
  * The grader's answer, checked against the schema it was forced to — a malformed grade is NOT a
  * failing grade, it is an ungraded turn (the same 「could not measure」 the judge keeps apart).
  */
-export function readRubric(data) {
+export function readRubric(data, opts) {
   const d = data && typeof data === 'object' ? data : null;
   if (!d) return { measured: false, reason: 'the grader returned no JSON' };
   const scores = {};
@@ -297,7 +302,10 @@ export function readRubric(data) {
   /* the verdict the grader was told to derive, re-derived: a grader that says pass with correctness 1
      contradicts its own instructions, and the stricter reading is kept and said */
   const derived = scores.correctness === 2 && !Object.values(scores).some((v) => v === 0) ? 'pass' : 'fail';
-  return { measured: true, scores, verdict: derived, graderSaid: verdict, evidence: str(d.evidence).slice(0, 300) };
+  /* (atlas-ui-parts) the initiative axis rides beside the scores, never inside them: the verdict above is derived without it, and a grader that gave none (an older server) leaves it null */
+  const ini = d.scores && d.scores[ATLAS_GRADE_INITIATIVE.id];
+  const initiative = (ini === 0 || ini === 1 || ini === 2) ? ini : null;
+  return { measured: true, scores, initiative, open: !!(opts && opts.open), verdict: (opts && opts.open) ? 'n/a' : derived, graderSaid: verdict, evidence: str(d.evidence).slice(0, 300) };
 }
 
 /**
