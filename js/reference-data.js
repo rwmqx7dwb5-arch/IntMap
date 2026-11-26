@@ -214,17 +214,20 @@ export const IntMapRefData = (function(){
     {n:'NASA Blue Marble (via NASA EOSDIS GIBS)',u:'https://www.earthdata.nasa.gov/'},
     {n:'NOAA sea-surface currents, wind stress and temperature (CoastWatch / PolarWatch ERDDAP)',u:'https://polarwatch.noaa.gov/erddap/griddap/noaacwBLENDEDNRTcurrentsDaily.html'},
     {n:'JPL Solar System Dynamics — planetary satellites',u:'https://ssd.jpl.nasa.gov/sats/elem/'},
-    {n:'Hipparcos Catalog (ESA 1997) — CDS I/239',u:'https://cdsarc.cds.unistra.fr/viz-bin/cat/I/239'},
+    {n:'Hipparcos Catalog (ESA 1997) — CDS I/239',u:'https://www.cosmos.esa.int/web/hipparcos/catalogues'},
     {n:'NASA/JPL Horizons — interplanetary spacecraft trajectories',u:'https://ssd.jpl.nasa.gov/horizons/'},
     {n:'NASA/JPL Small-Body Database (SBDB)',u:'https://ssd.jpl.nasa.gov/tools/sbdb_query.html'},
     {n:'NASA/JPL CNEOS Fireball Data (US Government sensor detections)',u:'https://cneos.jpl.nasa.gov/fireballs/',lic:'Public domain',credit:false},
     {n:'NASA/JPL SBDB Close-Approach Data',u:'https://ssd-api.jpl.nasa.gov/doc/cad.html',lic:'Public domain',credit:false},
     {n:'Launch Library 2 (The Space Devs)',u:'https://thespacedevs.com/llapi',credit:true},
     {n:'IMO Meteor Shower Calendar (International Meteor Organization)',u:'https://www.imo.net/resources/calendar/',credit:true},
-    /* ⚠ (2026-11-16) the CANONICAL CDS host, the same one scripts/build-deepsky.mjs asks first (the old
-       alias simbad.u-strasbg.fr left DNS that day). Its root is CDS's own front for the service — during
-       CDS's November 2026 incident that page names the mirrors the builder falls back to. */
-    {n:'SIMBAD — CDS, Strasbourg (deep-sky objects and their published distances)',u:'https://simbad.cds.unistra.fr/'},
+    /* ⚠ A CREDIT LINK NAMES THE PUBLISHER'S FRONT, NOT A SERVICE HOST. CDS's service hosts (simbad./
+       cdsarc./vizier.cds.unistra.fr) were taken out of DNS in its November 2026 incident, and a credit
+       that named one was a dead link for every reader (the production smoke #R533 caught it). The
+       publisher's own site cds.unistra.fr stayed up and names the mirrors while a service is down, and
+       it is the parent domain of the host scripts/build-deepsky.mjs asks first. The Hipparcos credit
+       goes to ESA, who published the catalogue. */
+    {n:'SIMBAD — CDS, Strasbourg (deep-sky objects and their published distances)',u:'https://cds.unistra.fr/'},
     /* ⚠ (#R453) REST COUNTRIES IS GONE, AND WITH IT THE ONLY RUN-TIME SOURCE FOR THE COUNTRY CARD'S
        capital / currency / languages / neighbours / timezones / UN-membership rows. Measured on
        production 2026-08-25: every /v3.1 AND /v5 path 301s to a 261-byte deprecation notice, and
