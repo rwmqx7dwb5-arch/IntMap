@@ -136,7 +136,7 @@ export function workerSystem(persona) {
        the way to read any range of the rest. A reader that cannot (the server runner) is told how many characters it did not see, so it says so in
        `gaps` instead of treating a prefix as the whole.
    `inputView(i, {read})` → { text, ref, whole } — `whole` is the full text when it was cut (the caller keeps it under `ref`), else null. */
-export const INPUT_SHOW_CHARS = 12000;
+const INPUT_SHOW_CHARS = 12000;
 function tableOf(data) {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object') {
