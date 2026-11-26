@@ -1119,7 +1119,7 @@ test('R663 ②: the reply is generated decision-first — what it IS, what it DO
   /* (atlas-legacy-protocol-removal) the calls are not a field any more: they are the provider's function_call items,
      emitted beside the message rather than after the prose inside it */
   assert.equal(keys.indexOf('tool_calls'), -1, 'no call rides in the written JSON');
-  assert.deepEqual(keys, ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);   /* (atlas-unbounded-execution) what the NEXT reply needs is decided before the words too */
+  assert.deepEqual(keys, ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'note_to_intmap', 'final_text']);   /* (atlas-unbounded-execution) what the NEXT reply needs is decided before the words too */
   assert.equal(keys[keys.length - 1], 'final_text');
 });
 

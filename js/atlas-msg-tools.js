@@ -125,12 +125,13 @@ export function makeMsgTools(CTX){
     /* (#R122) when a reply is finalized, position the conversation so the USER's message that triggered it sits at
        the TOP of the chat viewport (read the answer from its start) — unless the whole exchange already fits, in
        which case bottom-align so nothing is cut off. Deferred over two frames to survive late/async reply layout. */
-    function _scrollUserTop(ub){ if(!ub||!CTX.chat()) return;
-      const doit=()=>{ try{ const ubR=ub.getBoundingClientRect(), cR=CTX.chat().getBoundingClientRect();
-        const rel=ubR.top-cR.top+CTX.chat().scrollTop;
-        if(CTX.chat().scrollHeight-rel<=CTX.chat().clientHeight+4) CTX.chat().scrollTop=CTX.chat().scrollHeight;
-        else CTX.chat().scrollTop=Math.max(0,rel-8); }catch(_){} };
-      try{ requestAnimationFrame(()=>{ doit(); setTimeout(doit,70); }); }catch(_){ doit(); } }
+    /* ⚠ (atlas-answer-panel) THIS DOES NOT MOVE THE SCROLL ITSELF ANY MORE. It used to write `scrollTop` the moment a reply was finalized —
+       the one writer that never asked who owned the scroll (js/atlas-console.js, atlas-chat-scroll-ownership), so a reader who had
+       scrolled down into a long answer was thrown back to the top of it when the answer landed. The placement (the question at the
+       top of the view, or bottom-aligned when the exchange fits) is exactly what the kernel's follow rule computes, so it asks that
+       rule — which does nothing once the reader has taken the scroll. Deferred over two frames to survive late/async reply layout. */
+    function _scrollUserTop(ub){ if(!ub||!CTX.chat()||typeof CTX.follow!=='function') return;
+      try{ requestAnimationFrame(()=>{ try{ CTX.follow(); }catch(_){} setTimeout(()=>{ try{ CTX.follow(); }catch(_){} },70); }); }catch(_){ try{ CTX.follow(); }catch(__){} } }
     function msgTools(aiEl,q){ try{ if(!aiEl||!aiEl.parentElement) return;
       /* (#R122) auto-scroll: user message to top. ⚠ (#R296) the previous sibling is now that message's own copy bar, so the walk skips `.atl-msgt`. */
       try{ let ub=aiEl.previousElementSibling;

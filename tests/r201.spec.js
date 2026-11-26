@@ -284,7 +284,8 @@ test('R201 ② a prefecture / state label opens the same popup a city label does
       iso: !!el.querySelector('.plc-iso'), move: !!el.querySelector('.plc-move') };
   });
   expect(popup.text, `the popup names the region: ${JSON.stringify(found)}`).toContain(found.name);
-  expect(popup.copy && popup.ai, 'the same Copy / AI brief row every place label gets').toBe(true);
+  expect(popup.copy, 'the same Copy row every place label gets').toBe(true);
+  expect(popup.ai, 'the AI brief button is gone from the place popup (Atlas research.brief answers in chat)').toBe(false);
   expect(popup.iso && popup.move, 'and the area tools, because a prefecture has an area').toBe(true);
   await page.evaluate(() => { const b = document.querySelector('.plc-popup .maplibregl-popup-close-button'); if (b) b.click(); });
 });

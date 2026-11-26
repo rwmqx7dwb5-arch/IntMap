@@ -396,7 +396,7 @@ IntMapLang.define('ko', { ui: {
     "live web search":"실시간 웹 검색", "Stopped":"중지됨", "Voice input":"음성 입력",
     "Attach a file":"파일 첨부", 
     "Ask Atlas anything…":"Atlas에게 무엇이든 물어보세요…", 
-    "Research: ":"조사: ", "Researching…":"조사 중…", "Regenerate":"다시 생성",
+    "Research: ":"조사: ", "Regenerate":"다시 생성",
     "Seismic waves":"지진파", "P wave":"P파", "S wave":"S파",
     "Rayleigh wave":"레일리파 (표면파)", "Love wave":"러브파 (표면파)",
     "Method & sources":"계산 방법과 출처", "Observed at the time":"당시 실측값",

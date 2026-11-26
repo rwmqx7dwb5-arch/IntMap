@@ -435,6 +435,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["web.evidence","webEvidence","rereadEvidence,whatDidWeFind,readSavedPage,evidenceById","research","none","","explanation","read","none","",""],
       ["map.elevationProfile","elevationProfile","crossSection,terrainProfile,elevationCrossSection,heightProfile,climbProfile","map","none","panel.profile","panel,explanation","session","none","points",""],
       ["routing.export","routeExport","exportRoute,downloadRoute,routeGpx,routeGeoJson,saveRoute,routeFile","routing","none","","explanation","persist","none","",""],
+      ["geo.shadeAreas","shadeAreas","colourAreas,joinTableToAreas,areaChoropleth,shadeRegions,shadeUnits","map","paint","map.object","map,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

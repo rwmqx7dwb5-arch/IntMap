@@ -95,6 +95,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "geo.imageChange",
   "geo.ml",
   "geo.regionStat",
+  "geo.shadeAreas",
   "layers.aircraftTrack",
   "layers.allOff",
   "layers.countryInfo",

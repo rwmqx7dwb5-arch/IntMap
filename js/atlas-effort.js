@@ -60,26 +60,42 @@ export function makeAtlasEffort(H) {
     } catch (_) { return d.fallback; } finally { if (timer) clearTimeout(timer); }
   }
 
+  /* WHERE THE CHOICE LIVES. It first stood in the panel's header (.atl-btns) — which the sidebar tab and the floating card both hide
+     (js/atlas-styles.js, js/atlas-float.js), so the reader never had a way to reach it. It sits in the input row now, the one strip every
+     arrangement of the panel shows, beside the mic and send. The menu is drawn on <body>, positioned from the button: the input row is
+     glass (backdrop-filter makes it the containing block of a fixed child) and the floating panel clips its overflow, so a menu left
+     inside either would be cut off or misplaced. */
   function mount(panel) {
-    const btns = panel.querySelector('.atl-btns');
-    if (!btns || btns.querySelector('.atl-eff')) return;
+    const row = panel.querySelector('.atl-inbar');
+    if (!row || row.querySelector('.atl-eff')) return;
     if (!document.getElementById('atl-eff-css')) {
       const s = document.createElement('style'); s.id = 'atl-eff-css';
-      s.textContent = '#atlas-panel .atl-eff{position:relative;display:inline-block;}'
-        + '#atlas-panel .atl-eff-b{background:var(--input-bg);border:none;color:var(--text-muted);font-size:12px;line-height:1;cursor:pointer;padding:5px 10px;border-radius:999px;margin-right:4px;}'
-        + '#atlas-panel .atl-eff-b:hover{color:var(--text-main);}'
-        + '#atlas-panel .atl-eff-m{position:absolute;right:0;top:calc(100% + 6px);min-width:230px;padding:6px;border-radius:14px;background:var(--panel-bg,var(--input-bg));border:1px solid var(--border,rgba(128,128,128,.25));box-shadow:0 8px 28px rgba(0,0,0,.25);}'
-        + '#atlas-panel .atl-eff-i{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-main);cursor:pointer;padding:8px 10px;border-radius:10px;font-size:13px;}'
-        + '#atlas-panel .atl-eff-i:hover,#atlas-panel .atl-eff-i[aria-checked="true"]{background:var(--input-bg);}'
-        + '#atlas-panel .atl-eff-i small{display:block;color:var(--text-muted);font-size:11px;margin-top:2px;}';
+      s.textContent = '.atl-eff{position:relative;flex:0 0 auto;display:inline-flex;}'
+        + '.atl-eff-b{background:var(--input-bg);border:none;color:var(--text-muted);font-size:12px;line-height:1;cursor:pointer;padding:7px 11px;border-radius:999px;white-space:nowrap;transition:color .15s ease,background-color .15s ease;}'
+        + '.atl-eff-b:hover,.atl-eff-b[aria-expanded="true"]{color:var(--text-main);}'
+        + '.atl-eff-m{position:fixed;z-index:calc(var(--z-toast,5000) + 10);min-width:240px;max-width:calc(100vw - 24px);padding:6px;border-radius:16px;'
+        + 'background:color-mix(in srgb,var(--popup-bg,var(--input-bg)) 62%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+        + 'border:1px solid color-mix(in srgb,var(--text-main) 14%,transparent);box-shadow:0 12px 34px rgba(0,0,0,.28);}'
+        + '.atl-eff-m[hidden]{display:none;}'
+        + '.atl-eff-i{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-main);cursor:pointer;padding:8px 10px;border-radius:11px;font-size:13px;text-shadow:none;}'
+        + '.atl-eff-i:hover,.atl-eff-i[aria-checked="true"]{background:color-mix(in srgb,var(--text-main) 10%,transparent);}'
+        + '.atl-eff-i small{display:block;color:var(--text-muted);font-size:11px;margin-top:2px;}';
       document.head.appendChild(s);
     }
     const wrap = document.createElement('span'); wrap.className = 'atl-eff';
     const b = document.createElement('button'); b.type = 'button'; b.className = 'atl-eff-b';
     b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false');
     const menu = document.createElement('div'); menu.className = 'atl-eff-m'; menu.setAttribute('role', 'menu'); menu.hidden = true;
-    const label = () => { b.textContent = nm(cur); b.title = H.L('How hard Atlas thinks', 'Atlasの考える強さ'); };
+    const label = () => { b.textContent = nm(cur); b.title = H.L('How hard Atlas thinks', 'Atlasの考える強さ'); b.setAttribute('aria-label', b.title + ': ' + nm(cur)); };
     const close = () => { menu.hidden = true; b.setAttribute('aria-expanded', 'false'); };
+    function place() {
+      const r = b.getBoundingClientRect(), vw = window.innerWidth, w = Math.min(menu.offsetWidth || 240, vw - 24);
+      menu.style.left = Math.max(12, Math.min(vw - w - 12, r.right - w)) + 'px';
+      /* above the button when there is room (the row is at the bottom of the screen), below it otherwise */
+      const h = menu.offsetHeight || 260;
+      if (r.top > h + 16) { menu.style.top = ''; menu.style.bottom = (window.innerHeight - r.top + 8) + 'px'; }
+      else { menu.style.bottom = ''; menu.style.top = (r.bottom + 8) + 'px'; }
+    }
     function render() {
       menu.textContent = '';
       MODES.forEach((m) => {
@@ -91,11 +107,13 @@ export function makeAtlasEffort(H) {
         menu.appendChild(i);
       });
     }
-    b.addEventListener('click', (e) => { e.stopPropagation(); if (menu.hidden) { render(); menu.hidden = false; b.setAttribute('aria-expanded', 'true'); } else close(); });
-    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (menu.hidden) { render(); menu.hidden = false; b.setAttribute('aria-expanded', 'true'); place(); } else close(); });
+    document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) close(); });
+    window.addEventListener('resize', close);
     panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
-    label(); wrap.appendChild(b); wrap.appendChild(menu);
-    btns.insertBefore(wrap, btns.firstChild);
+    label(); wrap.appendChild(b); document.body.appendChild(menu);
+    const mic = row.querySelector('.atl-mic');
+    row.insertBefore(wrap, mic || row.querySelector('.atl-go') || null);
   }
 
   return { pick, decide, mount, get: () => cur };

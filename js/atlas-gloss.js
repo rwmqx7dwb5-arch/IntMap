@@ -36,13 +36,15 @@
  * ==========================================================================*/
 
 import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
+import { IntMapLang } from './lang-registry.js';   /* only to NAME the interface language, the fallback of the card's own language */
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. A call site adds its task role and its task rules, never a trait */
 
-/* The desktop rules. Solid --card-bg rather than a translucent pane: #R483 measured that the body of
-   "glassing" a surface is the TEXT colour, and a definition is something you read. */
+/* The desktop rules. Frosted glass in the app's own popup tokens (2026-11-26, the reader asked for it): #R483 measured that
+   what makes a glassed surface readable is the TEXT colour, so the pane is mixed at 66% and blurred behind, and the ink stays the theme's. */
 export const GLOSS_CSS = ''
   + '.atl-gloss{position:fixed;z-index:calc(var(--z-overlay) + 70);width:min(344px,92vw);max-height:min(62vh,520px);display:flex;flex-direction:column;'
-  + 'background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:16px;'
+  + 'background:color-mix(in srgb,var(--popup-bg,var(--card-bg)) 66%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'color:var(--text-main);border:1px solid color-mix(in srgb,var(--text-main) 14%,transparent);border-radius:16px;'
   + 'box-shadow:0 12px 38px rgba(0,0,0,0.30),0 2px 8px rgba(0,0,0,0.16);overflow:hidden;'
   + 'font-size:12.5px;line-height:1.6;opacity:0;transform:translateY(-4px) scale(0.985);transition:opacity .13s ease,transform .13s ease;}'
   + '.atl-gloss.in{opacity:1;transform:none;}'
@@ -151,8 +153,8 @@ export function makeAtlasGloss(HOST, CTX) {
     return id;
   }
   function cacheKey(bub, term) {
-    let lang = 'en'; try { lang = String(HOST.lang || 'en'); } catch (_) { /* boot */ }
-    return lang + ' ' + bubbleId(bub) + ' ' + term.toLowerCase();
+    /* no language in the key: the card follows the passage, and the passage is what the bubble id names */
+    return bubbleId(bub) + ' ' + term.toLowerCase();
   }
   function cacheGet(k) { return CACHE.has(k) ? CACHE.get(k) : null; }
   function cachePut(k, v) {
@@ -186,9 +188,19 @@ export function makeAtlasGloss(HOST, CTX) {
   }
 
   /* ── the prompt ───────────────────────────────────────────────────────────────────────────── */
+  /* ⚠ (atlas-answer-panel) THE CARD'S LANGUAGE IS NOT THE SETTING'S LANGUAGE. It was forced to the interface language
+     (_aiLangLine), so an answer the reader was reading in one language was glossed in another whenever the two differed —
+     a Japanese answer under an English interface got an English card, and the reader could not choose otherwise. The
+     decision is now the one the reader is already making: they read the answer, and they wrote the question; the card
+     follows the language of THAT PASSAGE and of the question. It is the model that reads the passage and says which
+     language that is — no detector and no table of languages here to fall behind the next one. The interface language
+     is only the fallback for a passage that does not say (a bare name, a number, a mixed line). */
   function systemPrompt() {
-    let langLine = '';
-    try { langLine = window._aiLangLine ? window._aiLangLine() : ''; } catch (_) { langLine = ''; }
+    let uiName = '';
+    try { uiName = String(IntMapLang.englishName(HOST.lang) || ''); } catch (_) { uiName = ''; }
+    const langLine = ' LANGUAGE OF THE CARD: write every field in the language the reader is reading — the language of the PASSAGE and of THE READER ORIGINALLY ASKED, in the same script and register. '
+      + 'Keep the "term" itself exactly as written in the passage. '
+      + (uiName ? 'Only when the passage gives no language to follow (a bare name, a number, a mixed line) use ' + uiName + '.' : 'Only when the passage gives no language to follow, use the language of the question.');
     return personaPrompt('the term glossary of the IntMap world map')
       + 'The reader has selected a phrase inside an answer you gave and wants to know what it means. Write about THAT PHRASE ONLY.\n'
       + '· "term": the phrase as it should be shown — the reader\'s selection, tidied (fix a truncated word boundary, nothing else).\n'

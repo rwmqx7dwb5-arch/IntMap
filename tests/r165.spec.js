@@ -41,7 +41,7 @@ test('R165 #1 the kernel file loaded, its factory ran, and the REAL console came
   // The factory's first line returns a {open,run,toggle} STUB when map is missing — the presence of
   // the full command surface proves the real kernel was constructed.
   const api = await page.evaluate(() => Object.keys(window.IntMapConsole || {}).sort());
-  expect(api).toEqual(expect.arrayContaining(['dispatch', 'run', 'runDirect', 'open', 'toggle', 'mountTab', 'brief', 'wctx']));
+  expect(api).toEqual(expect.arrayContaining(['dispatch', 'run', 'runDirect', 'open', 'toggle', 'mountTab', 'wctx']));
 });
 
 test('R165 #2 WRITE-THROUGH: the theme action sets HOST.userTheme and index.html applyTheme() sees it', async () => {

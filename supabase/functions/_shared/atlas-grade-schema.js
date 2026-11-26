@@ -22,13 +22,28 @@ export const ATLAS_GRADE_CRITERIA = Object.freeze([
   { id: 'language', asks: 'Is the reply written in the language of the question?', zero: 'another language', two: 'the question\'s language' },
 ]);
 
+/* (atlas-ui-parts) THE INITIATIVE AXIS — «did the reply bring something the reader did not ask for but would want?». It is scored with
+   the criteria above and read beside them, but it is NOT one of them: the verdict is derived from ATLAS_GRADE_CRITERIA alone
+   (scripts/atlas-eval/grade.mjs readRubric), because a plain lookup is rightly answered plainly and must not fail for it.
+   The wording names no subject and no output kind — it asks about the reader's understanding, so the same scale reads a climate
+   question, a migration question and a border question. Score it on what was PRESENTED in the reply and in the record of what the
+   turn did (the facts line the grader is given), never on how long the reply is. */
+export const ATLAS_GRADE_INITIATIVE = Object.freeze({
+  id: 'initiative',
+  asks: 'Beyond what the reader literally asked, did the reply (with what the turn drew or built) bring a representation or analysis they had not requested but that makes the answer understood faster or more deeply - e.g. data fetched and shown as a shaded or switchable map instead of described, a comparison across time or places, a control that lets the reader flip between states, a derived measure - rather than only restating what was asked? A plain lookup that is answered plainly and completely scores 1, not 0.',
+  zero: 'only the literal ask, where the question clearly invited more (a text answer to a question about patterns in space or time with nothing shown)',
+  one: 'proportionate: nothing added, and nothing needed',
+  two: 'an unrequested representation or analysis that clearly deepens understanding and is grounded in data, not decoration',
+});
+export const ATLAS_GRADE_AXES = Object.freeze([...ATLAS_GRADE_CRITERIA, ATLAS_GRADE_INITIATIVE]);
+
 export const ATLAS_GRADE_SCHEMA = Object.freeze({
   type: 'OBJECT',
   properties: {
     scores: {
       type: 'OBJECT',
-      properties: Object.fromEntries(ATLAS_GRADE_CRITERIA.map((c) => [c.id, { type: 'INTEGER', description: '0, 1 or 2 — ' + c.asks }])),
-      required: ATLAS_GRADE_CRITERIA.map((c) => c.id),
+      properties: Object.fromEntries(ATLAS_GRADE_AXES.map((c) => [c.id, { type: 'INTEGER', description: '0, 1 or 2 — ' + c.asks }])),
+      required: ATLAS_GRADE_AXES.map((c) => c.id),
     },
     verdict: { type: 'STRING', enum: ['pass', 'fail'] },
     evidence: { type: 'STRING', description: 'at most one short phrase quoted from the reply' },

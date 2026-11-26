@@ -978,6 +978,10 @@ export function makeAtlasMapCompose(deps) {
      * inside a tag, an attribute, a link, code or a heading id. The spellings are the ones the model
      * itself wrote in `items` (plus the canonical name), so the prose it writes next matches.
      */
+    const CIRCLED_CH = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';   /* ① … ⑳ — numerals, the way a writer numbers a list */
+    const CIRCLED = { indexOf: (n) => (Number.isInteger(n) && n >= 1 && n <= 20) ? n - 1 : -1 };
+    const RE_CLAUSE_EDGE = /[、。，．,.;；:：!?！？()（）\n]/;
+    const RE_RUN_END = /[\p{Script=Han}\p{Script=Katakana}ー]/u, RE_RUN = /^[\p{Script=Han}\p{Script=Katakana}ー]+/u;
     function linkProse(html, recs) {
       const src = String(html || '');
       if (!src || !Array.isArray(recs) || !recs.length) return src;
@@ -1002,18 +1006,37 @@ export function makeAtlasMapCompose(deps) {
         const free = (s, e) => taken.every((t) => e <= t[0] || s >= t[1]);
         for (const c of cands) {
           if (done[c.id]) continue;
-          let from = 0, at = -1;
+          /* (atlas-answer-panel) TWO THINGS THE PROSE ALREADY SAYS ABOUT A NAME, READ BEFORE A BADGE IS ADDED.
+             ① THE MODEL NUMBERS ITS OWN MENTIONS («①ウィーン»). Drawing the badge after it as well says the number twice, so a mention the
+                model already numbered with THIS record's number is taken together with its numeral and drawn as one badge; and such a
+                mention is preferred over an earlier plain one, because it is the one the paragraph is built around.
+             ② A NAME IS NOT ALWAYS A WHOLE WORD. Japanese and Chinese have no spaces: «スヴァウキ» inside «スヴァウキ回廊» is half a
+                phrase, and a badge after it splits the phrase. The mention is widened over the run of ideographs / katakana it
+                continues into — the script says where the word goes on, no list of words does. */
+          const mark = c.n != null ? CIRCLED.indexOf(c.n) : -1;
+          let from = 0, at = -1, best = null;
           while ((at = lower.indexOf(c.k, from)) >= 0) {
             from = at + 1;
             /* a Latin spelling must not be matched inside another word */
             const before = at > 0 ? p.charAt(at - 1) : ' ', after = p.charAt(at + c.s.length) || ' ';
             if (/[A-Za-z0-9]/.test(c.s.charAt(0)) && /[A-Za-z0-9]/.test(before)) continue;
             if (/[A-Za-z0-9]/.test(c.s.charAt(c.s.length - 1)) && /[A-Za-z0-9]/.test(after)) continue;
-            if (!free(at, at + c.s.length)) continue;
-            taken.push([at, at + c.s.length, '<span class="atl-geo-ref" data-geo="' + esc(c.id) + '" role="button" tabindex="0">' + p.slice(at, at + c.s.length)
+            let s0 = at, e0 = at + c.s.length;
+            /* the numeral heads the CLAUSE the name is in («⑥ロシア領カリーニングラード州»): looked for back to the clause's edge, not only in the one character before */
+            let q = -1;
+            if (mark >= 0) { for (let k = at - 1; k >= 0 && at - k <= 16; k--) { const ch = p.charAt(k); if (ch === CIRCLED_CH.charAt(mark)) { q = k; break; } if (RE_CLAUSE_EDGE.test(ch)) break; } }
+            const numbered = q >= 0;
+            if (numbered) s0 = q;
+            if (RE_RUN_END.test(p.slice(e0 - 1, e0))) { const m = RE_RUN.exec(p.slice(e0)); if (m) e0 += m[0].length; }
+            if (!free(s0, e0)) continue;
+            if (!best || (numbered && !best.numbered)) best = { s0, e0, numbered };
+            if (numbered) break;
+            if (mark < 0) break;
+          }
+          if (best) {
+            taken.push([best.s0, best.e0, '<span class="atl-geo-ref" data-geo="' + esc(c.id) + '" role="button" tabindex="0">' + (best.numbered ? p.slice(best.s0, best.e0).replace(CIRCLED_CH.charAt(mark), '') : p.slice(best.s0, best.e0))
               + (c.n != null ? ('<span class="atl-geo-n" style="background:' + esc(c.color) + '">' + c.n + '</span>') : '') + '</span>']);
             done[c.id] = 1;
-            break;
           }
         }
         if (!taken.length) continue;

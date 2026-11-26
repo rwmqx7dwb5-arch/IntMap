@@ -44,6 +44,7 @@ import { makeEraHighlight } from './atlas-era-highlight.js';
 import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
+import { makeAtlasSwitch } from './atlas-switch.js';   /* (atlas-ui-parts) the press of a tabs/steps switch an answer drew */
 import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/atlas-turn-checks.test.mjs #R419 ⑨d) */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
@@ -1841,6 +1842,7 @@ export function atlasConsole(HOST){
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
     const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } }, resolveShape: (nm, want, where) => resolveShape(nm, want, { area: (n) => resolveHlTarget(n), countries: (codes) => _codesGeo(codes).geo, extent: (n) => _nomExtent(n), river: (n) => fetchRiverLine(n), isRiver: riverIntent, countryCode: (c) => { const x = resolveCountrySync(c); return x && x.code; }, countryAt: (lng, lat) => codeAtPoint(lng, lat) }, where) });   /* (atlas-real-shapes) `resolveShape`: an item asked as an AREA or a LINE gets its real geometry through the same ladders the highlight uses — js/atlas-shape-resolve.js */   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
+    const SWITCH = makeAtlasSwitch({ dispatch: (x) => dispatch(x), CAPS, L });   /* (atlas-ui-parts) pressing a tabs/steps option runs its calls through this same dispatch */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
        2,190-line switch here; it is now the `run` of that capability's entry in js/atlas-cap-<namespace>.js, beside its
@@ -2197,6 +2199,7 @@ export function atlasConsole(HOST){
         +_capIndex(tools)+'[TOOLS] The functions you hold ('+Object.keys(tools||{}).join(', ')+') are the whole call surface; every id in the index above is reached through find_capability and run_capability.\n'
         /* (atlas-one-declaration) LAST, because it is the only line of this prompt that depends on the reader's language: everything above it is
            the same bytes in every language, so it is one cacheable prefix instead of one per language. It used to stand above the capability index. */
+        +'final_text is the reader\'s answer ONLY: never write in it about IntMap\'s checks, what you verified or that something need not be redrawn — a reply to IntMap itself (why you are not redoing a step a note asked for) goes in note_to_intmap, which the reader never sees.\n'
         +'Write final_text in '+_langLine()+'.\n';
     }
     /* The capability index. The tools themselves travel as the provider's functions, which js/atlas-toolsurface.js
@@ -2224,7 +2227,7 @@ export function atlasConsole(HOST){
     /* (#R298) the per-message tool bar and the in-place editor are js/atlas-msg-tools.js — the note at the top of
        that file says why. What cannot travel with them is bound here, LAZILY: `chatEl` is null until the panel is
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
-    const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
+    const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl, follow:()=>_followChat(),
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
       rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} try{ WM.dropFrom(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus(); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
@@ -2236,11 +2239,11 @@ export function atlasConsole(HOST){
        send (a new question starts a new turn) or by pressing 「最新へ」. It is a STATE with an owner, not a distance test: the old
        near-bottom rule (150px) and the question-anchor rule both pulled a reader back who had scrolled up to read, because they
        asked "where is the scroll" and never "who moved it". */
-    let _chatFollow=true;
+    let _chatFollow=true; let _selfTop=0, _lastTouch=0;   /* where the follow rule itself last put the scroll / when the reader last did something to the conversation */
     function _followChat(){ try{ if(!_chatFollow||!chatEl) return; const bs=chatEl.querySelectorAll('.atl-b.u'), u=bs[bs.length-1];
       /* a reply taller than the panel stops following where its own question reaches the top — the reader sees what was asked and the start of the answer */
       const want=chatEl.scrollHeight-chatEl.clientHeight, lim=u?Math.max(0,u.offsetTop-6):want; const to=Math.max(0,Math.min(want,lim));
-      if(Math.abs(chatEl.scrollTop-to)>1) chatEl.scrollTop=to; }catch(_){} }
+      if(Math.abs(chatEl.scrollTop-to)>1){ chatEl.scrollTop=to; _selfTop=chatEl.scrollTop; } }catch(_){} }
     function bubble(who,html,ed){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
       if(ed&&ed.turn!=null) d.dataset.turn=String(ed.turn);
       if(who==='u'){ try{ const bar=document.createElement('div'); bar.className='atl-msgt atl-msgt-u';
@@ -2270,6 +2273,8 @@ export function atlasConsole(HOST){
         chatEl.addEventListener('wheel',_take,{passive:true}); chatEl.addEventListener('touchmove',_take,{passive:true});
         chatEl.addEventListener('pointerdown',(e)=>{ if(e.target===chatEl) _take(); });   /* the scrollbar belongs to the element itself, not to a bubble in it */
         chatEl.addEventListener('keydown',(e)=>{ if(/^(PageUp|PageDown|Home|End|ArrowUp|ArrowDown| )$/.test(e.key)&&e.target===chatEl) _take(); });
+        /* the reader takes the scroll by ANY means (a key on a focused bubble, the thumb, a selection dragged past the edge): a scroll the follow rule did not make, soon after the reader did something there */
+        for(const ev of ['pointerdown','keydown','mousedown']) chatEl.addEventListener(ev,()=>{ _lastTouch=Date.now(); },true); chatEl.addEventListener('scroll',()=>{ if(_chatFollow&&Math.abs(chatEl.scrollTop-_selfTop)>2&&Date.now()-_lastTouch<1500) _take(); },{passive:true});
         new MutationObserver(()=>{ _followChat(); }).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ try{ _atlClose(); }catch(_){ panel.style.display='none'; } try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
@@ -2417,6 +2422,7 @@ export function atlasConsole(HOST){
         /* (board-map-link) the card a `board` block of ui.compose draws: the spec was staged with IntMapBoard, the button holds only its key */
         const bdo=e.target.closest&&e.target.closest('.atl-ui-bdo');
         if(bdo){ const k=bdo.getAttribute('data-bd')||''; Promise.resolve(window.IntMapLazy&&window.IntMapLazy.need('board')).then(()=>{ const B=window.IntMapBoard; return B&&B.openStaged&&B.openStaged(k); }).catch(()=>{}); return; }
+        const stab=e.target.closest&&e.target.closest('.atl-ctl-tab'); if(stab){ SWITCH.press(stab); return; }   /* (atlas-ui-parts) */
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
         const ch=e.target.closest&&e.target.closest('.atl-choice');
@@ -2427,6 +2433,7 @@ export function atlasConsole(HOST){
         if(ri&&!(e.target.closest&&e.target.closest('a'))){ const p=_pois[+ri.getAttribute('data-i')]; if(p&&isFinite(p.lng)){ GE().camera.flyTo({center:[p.lng,p.lat],zoom:Math.max(GE().camera.getZoom(),7.5),duration:900}); } return; }
       }catch(_){} });
       panel.addEventListener('input',e=>{ try{
+        const sst=e.target.closest&&e.target.closest('.atl-ctl-step'); if(sst){ SWITCH.press(sst); return; }   /* (atlas-ui-parts) */
         const sl=e.target.closest&&e.target.closest('.atl-ctl-op'); if(!sl) return;
         const rl=_ctlLayer(sl); if(!rl) return;
         const real=layerOpacityControl(rl.cb); if(!real) return;
@@ -3241,25 +3248,6 @@ export function atlasConsole(HOST){
       READ.arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">'+icon('pin')+' '+coordStr+'</div>',
         L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.'),
         ex); }
-    /* (#R62) external entry point: the AI-brief buttons all over IntMap now open ATLAS and run the brief inline
-       ("AI BriefはAtlasに統合して") — one conversation surface for everything. */
-    async function briefEntry(name,ll){ try{ open(); }catch(_){}
-      _lastUserMsg='';   /* (#R64) button entry has no typed message → mirror falls back to the UI language */
-      const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
-      /* (#R69) no 🤖 and no "AI brief" wording in the chat ("AI Briefに🤖をつけるな" / "AI briefってワードを
-         わざわざAtlasで出すな") — the user bubble reads as a plain research request. */
-      bubble('u',L('Research: ','調査: ','Recherche: ','Исследование: ','Investigación: ')+esc(String(name||'')));
-      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
-      const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Researching…','調査中…','Recherchiere…','Изучаю…','Investigando…')+'</span>');
-      const gen=++_runGen;   /* (#R73) a newer message cancels this brief too */
-      try{ const act={type:'brief',place:String(name||'')}; if(ll&&ll.lng!=null&&isFinite(+ll.lng)){ act.lng=+ll.lng; act.lat=+ll.lat; }
-        const r=await dispatch(act); if(gen!==_runGen){ _markCancelled(ai); return; }
-        ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
-        /* (country-analysis-unify) …and the next question. The research panel this replaced ended every brief with questions
-           about the place; here they are the starters askHere offers around the same point (pointExamples), under the brief. */
-        if(r&&r.ok&&act.lng!=null){ try{ READ.offer(ai, pointExamples(act.lng,act.lat,Math.max(GE().camera.getZoom(),5),3)); }catch(_){} }
-      }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { _markCancelled(ai); return; } }
-      msgTools(ai,null); }
     /* (#R82) wire Atlas INTO the kernel: the OS's semantic dispatcher = Atlas's action layer; its state = the
        live map/UI state; its catalog = the full control/layer/module surface. After this, IntMapOS.dispatch(action)
        runs the SAME dispatch the NL chat uses, IntMapOS.state() is the canonical state, and IntMapOS.catalog()
@@ -3304,7 +3292,6 @@ export function atlasConsole(HOST){
             try{ _wctx.highlight=w.name; }catch(_){} } }); }catch(_){}
       window.IntMapOS._bindState(()=>{ try{ return stateContext(); }catch(_){ return ''; } });
       window.IntMapOS._bindCatalog(()=>{ try{ return { commands:window.IntMapOS.list(), controls:controlCatalog(), layers:layerCatalogText(), modules:moduleCatalog() }; }catch(_){ return { commands:window.IntMapOS.list() }; } });
-      window.IntMapOS.brief=(n,ll)=>{ try{ return briefEntry(n,ll); }catch(_){} };
     } }catch(_){}
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
@@ -3317,7 +3304,7 @@ export function atlasConsole(HOST){
       const gen=++_runGen;
       try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
-    return { open, toggle, close:_atlClose, mountTab, panel:ensure, run, runDirect, brief:briefEntry, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, panel:ensure, run, runDirect, openBriefing:(p)=>{ try{ open(); }catch(_){} return BRIEFING.openPacked(p); }, closeBriefing:()=>BRIEFING.close(), askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 }
 

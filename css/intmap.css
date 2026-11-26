@@ -984,6 +984,21 @@
     .map-column{ --credit-h:22px; flex:1; min-width:0; display:flex; flex-direction:column; height:100%; }
     .map-column > .map-container{ flex:1 1 auto; height:auto; min-height:0; }
     .map-credit{ flex:0 0 auto; margin-top:auto; height:var(--credit-h); padding:0 12px; background:var(--card-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); font-size:10.5px; line-height:var(--credit-h); color:var(--text-muted); white-space:nowrap; overflow:hidden; }
+    /* ══ THE BOTTOM BAR IS FROSTED GLASS — THE SHARED MATERIAL, WITH THE MAP BEHIND IT ═══════════════════════════
+       「最下部のバー（権利表記・標高・緯度経度）をフロストグラスにする」. The strip joined the one glass list (`--glass-fill`,
+       `--glass-blur`, `--glass-sat`; see «Every floating glass surface reads the one shared material»), but a frosted strip
+       over the page background frosts nothing. So on a desktop the map's own canvas runs on beneath it: `#map` is taller than
+       its container by exactly the strip's height (the container, which every overlay is positioned against, keeps its size, so
+       nothing that sits above the strip moves), and the strip, a later sibling, is lifted above it. The coordinates readout is
+       inside the strip (see the media block below) and is transparent, so it is on the same glass. */
+    @media(min-width:769px){
+      .map-column > .map-container{ overflow:visible; }
+      .map-column > .map-container > #map{ height:auto; bottom:calc(-1 * var(--credit-h)); }
+      .map-column > .map-credit{ position:relative; }   /* a later positioned sibling paints over the container, so no z-index is needed */
+    }
+    /* Solid mode's `--glass-fill` is the opaque card colour, which would hide the blur this bar is asked to show: the bar takes the
+       shared token and lets 30 % of it go, so the map under it is seen through the same blur and saturation every glass surface has. */
+    body .map-credit{ background-color:color-mix(in srgb, var(--glass-fill) 70%, transparent) !important; }
     .map-credit a{ color:var(--text-muted); text-decoration:none; }
     .map-credit a:hover{ color:var(--text-main); text-decoration:underline; }
     /* ⚠ GLASS MODE takes the map out of the flow (position:absolute; inset:0), which would put it
@@ -3301,7 +3316,7 @@
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
     .ctx-menu,.news-timeline,.country-popup,.pin-popup,.map-tooltip,.search-result-card,
-    .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.compass-btn,.map-search,
+    .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.compass-btn,.map-search,.map-credit,
     /* ⚠ (#R244) …AND THAT INCLUDES THE RIGHT SIDEBAR'S HANDLE. 「左右のサイドバーの開閉持ち手部分の
        色味が統一されていないのが気になる。」 MEASURED, same theme, same moment: the left handle
        computed to `rgb(28,28,30)` with `saturate(1.5) blur(16px)`, the right one to
@@ -3321,10 +3336,10 @@
        rare light patch). Solid mode is untouched. */
     body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,
       .koppen-legend,.data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,
-      .news-timeline,.src-card,.map-search-results,.search-result-card),
+      .news-timeline,.src-card,.map-search-results,.search-result-card,.map-credit),
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,
       .koppen-legend,.data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,
-      .news-timeline,.src-card,.map-search-results,.search-result-card){
+      .news-timeline,.src-card,.map-search-results,.search-result-card,.map-credit){
       --text-muted:rgba(255,255,255,0.9);
     }
     /* (#R27) The user does NOT want shadows added to text ("テキストに勝手に影を付けるのをやめろ"). The
