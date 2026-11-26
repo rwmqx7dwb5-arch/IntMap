@@ -312,6 +312,6 @@ test('atlas-legacy-protocol-removal ⑥: SYS() has one form, and it tells the mo
      the removal and the same bytes after it (the retired form was 25,262) — recorded, not asserted as a
      number: the persona and the index move for their own reasons, and what this check holds is the shape */
   /* the written schema carries no calls, and its words name function calls, not a field that is gone */
-  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'final_text']);
+  assert.deepEqual(Object.keys(AGENT.FINAL_SCHEMA.properties), ['turn', 'answer_mode', 'next_effort', 'next_output_tokens', 'note_to_intmap', 'final_text']);
   assert.doesNotMatch(JSON.stringify(AGENT.FINAL_SCHEMA), /tool_calls/);
 });

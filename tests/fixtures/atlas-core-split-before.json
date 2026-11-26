@@ -1,6 +1,6 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "c94bd421240b89a39554b1286bb3d8e1509c19e9:supabase/functions/ai-proxy/index.ts",
+ "source": "56cf0fc5d258443a72ea873f4c90d90c19d3b2d0:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
@@ -10974,13 +10974,18 @@
             "language": {
              "type": "INTEGER",
              "description": "0, 1 or 2 — Is the reply written in the language of the question?"
+            },
+            "initiative": {
+             "type": "INTEGER",
+             "description": "0, 1 or 2 — Beyond what the reader literally asked, did the reply (with what the turn drew or built) bring a representation or analysis they had not requested but that makes the answer understood faster or more deeply - e.g. data fetched and shown as a shaded or switchable map instead of described, a comparison across time or places, a control that lets the reader flip between states, a derived measure - rather than only restating what was asked? A plain lookup that is answered plainly and completely scores 1, not 0."
             }
            },
            "required": [
             "correctness",
             "commitment",
             "grounding",
-            "language"
+            "language",
+            "initiative"
            ]
           },
           "verdict": {

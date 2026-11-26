@@ -17,7 +17,7 @@
  *  entry names them.
  * ==========================================================================*/
 import { list, obj } from './atlas-caps.js';
-import { checkView, viewSchema, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, boardHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
+import { checkView, viewSchema, SWITCH, switchCallProblem, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, boardHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
 import { plainText, proseMark } from './atlas-turn-results.js';
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
@@ -33,6 +33,7 @@ function controlRows(items, K) {
   (items || []).forEach((it, i) => {
     const kind = String((it && it.kind) || '').toLowerCase();
     const no = (code, why) => { problems.push({ at: '[' + i + ']', code, why }); };
+    const noAt = (path, why) => { problems.push({ at: '[' + i + '].' + path, code: 'invalid_option', why }); };
     if (kind === 'layertoggle' || kind === 'layer') {
       const rl = resolveLayer(String(it.layer || it.name || '')); if (!rl) return no('unknown_layer', L('names no layer this map has', 'この地図にあるレイヤーを指していません'));
       h += '<div class="atl-ctl-row"><span class="atl-ctl-lbl">' + esc(rl.label) + '</span><button class="atl-ctl-toggle' + (rl.cb.checked ? ' on' : '') + '" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" role="switch" aria-checked="' + (rl.cb.checked ? 'true' : 'false') + '"><span class="atl-ctl-knob"></span></button></div>';
@@ -44,6 +45,33 @@ function controlRows(items, K) {
       const lbl = String(it.label || '').slice(0, 40); const cmd = String(it.run || it.command || '').slice(0, 160);
       if (!lbl || !cmd) return no('missing', L('a button needs "label" and "run"', 'ボタンには "label" と "run" が必要です'));
       h += '<button class="atl-ctl-btn" data-run="' + esc(encodeURIComponent(cmd)) + '">' + esc(lbl) + '</button>';
+    } else if (kind === 'tabs' || kind === 'steps') {
+      /* (atlas-ui-parts) A SWITCH THE ANSWER INVENTS: a row of segments (tabs) or a slider over named stops (steps), each option bound to
+         capability calls that run on the press with no model call. What an option does is the CAPABILITIES' vocabulary
+         (switchCallProblem names what is allowed), not a list of subjects. */
+      const opts = Array.isArray(it.options) ? it.options : [];
+      if (opts.length < 2 || opts.length > SWITCH.options) return noAt('options', L('needs 2 to ' + SWITCH.options + ' "options"', '"options" は 2〜' + SWITCH.options + ' 個必要です'));
+      const seg = []; let bad = false;
+      opts.forEach((o, j) => {
+        const lbl = String((o && o.label) || '').slice(0, SWITCH.label), calls = o && Array.isArray(o.calls) ? o.calls : [];
+        if (!lbl) { bad = true; return noAt('options[' + j + '].label', L('an option needs a "label"', 'オプションには "label" が必要です')); }
+        if (!calls.length || calls.length > SWITCH.calls) { bad = true; return noAt('options[' + j + '].calls', L('needs 1 to ' + SWITCH.calls + ' calls', 'calls は 1〜' + SWITCH.calls + ' 個必要です')); }
+        for (let c = 0; c < calls.length; c++) { const why = switchCallProblem(calls[c], K.CAPS, L); if (why) { bad = true; return noAt('options[' + j + '].calls[' + c + ']', why); } }
+        seg.push({ lbl, calls });
+      });
+      if (bad) return;
+      const sel = Number.isInteger(it.selected) && it.selected >= 0 && it.selected < seg.length ? it.selected : 0;
+      const title = String(it.label || '').slice(0, SWITCH.label);
+      const enc = (j) => esc(encodeURIComponent(JSON.stringify(seg[j].calls)));
+      if (kind === 'tabs') {
+        h += '<div class="atl-ctl-row atl-ctl-tabrow">' + (title ? '<span class="atl-ctl-lbl">' + esc(title) + '</span>' : '') + '<div class="atl-ctl-tabs" role="tablist">'
+          + seg.map((o, j) => '<button type="button" class="atl-ctl-tab' + (j === sel ? ' on' : '') + '" role="tab" aria-selected="' + (j === sel ? 'true' : 'false') + '" data-i="' + j + '" data-calls="' + enc(j) + '">' + esc(o.lbl) + '</button>').join('') + '</div></div>';
+      } else {
+        h += '<div class="atl-ctl-row atl-ctl-steprow">' + (title ? '<span class="atl-ctl-lbl">' + esc(title) + '</span>' : '')
+          + '<div class="atl-ctl-steps"><input type="range" class="atl-ctl-step" min="0" max="' + (seg.length - 1) + '" step="1" value="' + sel + '" aria-label="' + esc(title || seg[sel].lbl) + '"'
+          + seg.map((o, j) => ' data-c' + j + '="' + enc(j) + '"').join('') + '>'
+          + '<div class="atl-ctl-stops">' + seg.map((o, j) => '<span' + (j === sel ? ' class="on"' : '') + '>' + esc(o.lbl) + '</span>').join('') + '</div></div></div>';
+      }
     } else no('unknown_control', L('is not a control kind (layerToggle, opacity, button)', 'はコントロールの種類ではありません（layerToggle, opacity, button）'));
   });
   return { html: h ? '<div style="display:flex;flex-direction:column;gap:7px;margin:4px 0 2px;">' + h + '</div>' : '', problems };
@@ -61,7 +89,7 @@ export default [
     row: ['ui.inlineControls',          'controls',       '',                                                            'ui',      'none',    '',                       'panel',               'session', 'none',   '',         ''],
     ui: { none: '2026-11-16' },
     doc: [
-      { in: 'ui.inlineControls', text: 'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n' },
+      { in: 'ui.inlineControls', text: 'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}|{"kind":"tabs"|"steps","label"?:str,"selected"?:int,"options":[{"label":str,"calls":[{"type":CAPABILITY_SPELLING,...its arguments}]}]}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). "tabs" (segments) and "steps" (a slider over named stops) are SWITCHES YOU INVENT: each option is the capability calls (2-6 options, up to 4 calls each: a camera move, a time change, a layer toggle, a dataset drawn ... the same ones you would make yourself, session-reversible only) that run the moment the reader presses it, with no further model call. Use them whenever the answer is the SAME question seen in several states the reader will want to flip between (then and now, one theme and another, before and after) instead of describing each state in words or drawing all of them at once; first leave the map in the state of option "selected" (default 0). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n' },
     ],
     /* (§14) a FALLBACK: reachable, but not a user-facing feature — kept out of the search's front rank so it cannot crowd out a real capability */
     policy: { fallback: true },
@@ -72,7 +100,8 @@ export default [
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
           if(!items.length) return R(false, warn(''));
           const c=controlRows(items, K);
-          return R(!!c.html, c.html||warn('')); }
+          if (!c.html && c.problems.length) return R(false, refusal(c.problems, K), { meta: { code: 'invalid_controls', problems: c.problems.map((p) => ({ at: p.at, code: p.code })) } });
+          return R(!!c.html, c.html||warn(''), c.problems.length ? { meta: { problems: c.problems.map((p) => ({ at: p.at, code: p.code })) } } : undefined); }
     },
   },
   /* ⚠⚠ (declarative-workspace) A VIEW — the third thing an answer may BE, after the map (map.compose) and the chart
