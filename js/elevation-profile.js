@@ -36,8 +36,10 @@ export function elevationProfile(HOST){
     /* the panel is reused: a profile overtaken by a newer one draws nothing, and a failure says so instead of
        leaving «Sampling elevation…» forever */
     const my=p._imElevSeq=(p._imElevSeq||0)+1;
-    demSampleAll(samples,_z).then(els=>{ if(my!==p._imElevSeq) return; _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); },
-      ()=>{ if(my!==p._imElevSeq) return; const b=p.querySelector('#elev-profile-body'); if(b) b.textContent=j?'標高データを取得できませんでした':'No elevation data available'; });
+    /* (atlas-capability-inputs) THE PROMISE IS RETURNED: it settles with the numbers the panel drew ({samples, dist, els}) or null when a newer profile
+       overtook it / no elevation could be read. Atlas reads the same numbers the panel shows (map.elevationProfile); the panel's own callers ignore it. */
+    return demSampleAll(samples,_z).then(els=>{ if(my!==p._imElevSeq) return null; _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); return { samples, dist, els }; },
+      ()=>{ if(my!==p._imElevSeq) return null; const b=p.querySelector('#elev-profile-body'); if(b) b.textContent=j?'標高データを取得できませんでした':'No elevation data available'; return null; });
   }
   function _drawProfile(box, samples, dist, els){
     if(!box) return; const j=HOST.lang==='jp';

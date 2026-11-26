@@ -50,10 +50,37 @@ export function totals(rows) {
   return t;
 }
 
+/** (atlas-capability-inputs) THE OTHER DIRECTION. The inventory above starts from a capability and asks where its screen entry is; it cannot see a product
+ *  feature that has an entry on the screen and NO capability — the elevation profile and the route's GPX / GeoJSON export were exactly that, found by reading.
+ *  A product module that publishes itself on `window` (`window.IntMapX = …`, `window._xyz = function`) is reachable from Atlas only if some js/atlas-*.js
+ *  file names that global (or imports the module). DATA in: `modules` [{ file, src }] — every js/*.js — so a fixture can hand it either.
+ *  → [{ file, globals[] }]: modules that publish a global and are named by no Atlas file. ⚠ A LOWER-BOUND-AT-BEST, NOT A VERDICT: a module reached through
+ *  a layer, a command or the dispatch by another route is listed too, and a global named only in a comment is counted as named. It is a list to read
+ *  (npm run … feature-inventory.mjs --unreached), never a gate: what it measures is where to look, which no instrument did. */
+export function unreachedFromAtlas(modules) {
+  const atlas = modules.filter((m) => /(^|[\\/])atlas-[^\\/]*\.js$/.test(m.file));
+  const atlasSrc = atlas.map((m) => m.src).join('\n');
+  const out = [];
+  modules.filter((m) => !atlas.includes(m)).forEach((m) => {
+    const globals = [...new Set([...m.src.matchAll(/\bwindow\.(IntMap[A-Za-z0-9]*|_[A-Za-z][A-Za-z0-9]*)\s*=/g)].map((x) => x[1]))];
+    if (!globals.length) return;
+    const base = path.basename(m.file);
+    const named = atlasSrc.includes('/' + base) || globals.some((g) => new RegExp('\\b' + g + '\\b').test(atlasSrc));
+    if (!named) out.push({ file: m.file, globals });
+  });
+  return out;
+}
+
 const SCREEN = { yes: '画面にあり', login: 'ログイン時のみ', none: 'Atlas のみ', unknown: '不明（未測定）' };
 
 const IS_MAIN = (() => { try { return path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url); } catch { return false; } })();
-if (IS_MAIN) {
+if (IS_MAIN && process.argv.includes('--unreached')) {
+  const dir = path.join(ROOT, 'js');
+  const mods = fs.readdirSync(dir).filter((n) => n.endsWith('.js')).map((n) => ({ file: 'js/' + n, src: fs.readFileSync(path.join(dir, n), 'utf8') }));
+  const u = unreachedFromAtlas(mods);
+  u.forEach((x) => console.log(x.file + '\t' + x.globals.join(' ')));
+  console.log('\n' + u.length + ' / ' + mods.length + ' modules publish a window global that no js/atlas-*.js file names');
+} else if (IS_MAIN) {
   const tests = testFiles().map((f) => ({ file: f, src: fs.readFileSync(f, 'utf8') }));
   const rows = inventory(await loadEntries(ROOT), tests);
   const t = totals(rows);

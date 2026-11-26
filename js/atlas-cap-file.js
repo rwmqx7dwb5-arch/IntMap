@@ -16,6 +16,21 @@ import { FORMATS } from './file-doc.js';
 const fileMaker = async () => (await import('./atlas-file-make.js')).atlasFileOnce();
 const kb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
 
+/** (atlas-capability-inputs) the card a file is handed over on — name, facts, the read-back status, what the file states about itself, Save / Open.
+ *  ONE card for every capability that produces a file (file.create, routing.export), so the buttons and their wording cannot drift. */
+export function fileCardHtml(esc, ja, o) {
+  const btn = 'display:inline-block;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
+  return '<div class="atl-file" style="border:1px solid var(--border,#d1d1d6);border-radius:14px;padding:11px 13px;margin:6px 0;">'
+    + '<div style="font-weight:600;overflow-wrap:anywhere;">' + esc(o.name) + '</div>'
+    + '<div style="font-size:12px;color:var(--text-muted,#6e6e73);margin:2px 0 4px;">' + esc(o.facts) + '</div>'
+    + (o.status ? '<div style="font-size:12px;margin-bottom:8px;">' + o.status + '</div>' : '')
+    + (o.stated && o.stated.length ? '<ul style="margin:0 0 8px 18px;padding:0;font-size:11.5px;color:var(--text-muted,#6e6e73);">' + o.stated.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '')
+    + '<button type="button" data-atl-file="' + esc(o.id) + '" data-atl-how="save" style="' + btn + 'background:var(--accent,#0a64d6);color:#fff;">' + esc(ja ? '保存' : 'Save') + '</button>'
+    + (o.canOpen ? ' <button type="button" data-atl-file="' + esc(o.id) + '" data-atl-how="open" style="' + btn + 'background:var(--surface-2,#f2f2f7);color:var(--text,#1c1c1e);">' + esc(ja ? '開く' : 'Open') + '</button>' : '') + '</div>';
+}
+/** put bytes another capability built on the card registry (nothing is downloaded until a button is pressed) → { id, name, size } */
+export const offerFile = async (name, mime, bytes) => (await fileMaker()).offer(name, mime, bytes);
+
 export default [
   {
     row: ['file.create',                'makeFile',       'createFile,makePdf,createPdf,exportPdf,saveAsPdf,makeDocument,createDocument,makeDocx,makeSlides,makeSpreadsheet,saveAsFile', 'research', 'none',    '',                       'explanation',         'persist', 'none',   '',         ''],
@@ -41,15 +56,8 @@ export default [
       const facts = [r.label, r.pages != null ? r.pages + ' ' + unitTxt : '', kb(r.size)].filter(Boolean).join(' · ');
       const status = r.ok ? '<span style="color:var(--ok,#248a3d)">✓ ' + esc(ja ? '書き出し後に開き直して確認しました（構造・ページ数・本文の全文字）' : 'read back after writing: structure, page count and every character of the text') + '</span>'
         : '<span style="color:var(--danger,#d70015)">' + esc(ja ? '確認に失敗しました: ' : 'Read-back failed: ') + esc(r.problems.join(' / ')) + '</span>';
-      const btn = 'display:inline-block;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
       const canOpen = r.fmt === 'pdf' || r.fmt === 'html' || r.fmt === 'txt' || r.fmt === 'md' || r.fmt === 'json';
-      const html = '<div class="atl-file" style="border:1px solid var(--border,#d1d1d6);border-radius:14px;padding:11px 13px;margin:6px 0;">'
-        + '<div style="font-weight:600;overflow-wrap:anywhere;">' + esc(r.name) + '</div>'
-        + '<div style="font-size:12px;color:var(--text-muted,#6e6e73);margin:2px 0 4px;">' + esc(facts) + '</div>'
-        + '<div style="font-size:12px;margin-bottom:8px;">' + status + '</div>'
-        + (r.stated.length ? '<ul style="margin:0 0 8px 18px;padding:0;font-size:11.5px;color:var(--text-muted,#6e6e73);">' + r.stated.map((s) => '<li>' + esc(s) + '</li>').join('') + '</ul>' : '')
-        + '<button type="button" data-atl-file="' + esc(r.id) + '" data-atl-how="save" style="' + btn + 'background:var(--accent,#0a64d6);color:#fff;">' + esc(ja ? '保存' : 'Save') + '</button>'
-        + (canOpen ? ' <button type="button" data-atl-file="' + esc(r.id) + '" data-atl-how="open" style="' + btn + 'background:var(--surface-2,#f2f2f7);color:var(--text,#1c1c1e);">' + esc(ja ? '開く' : 'Open') + '</button>' : '') + '</div>';
+      const html = fileCardHtml(esc, ja, { id: r.id, name: r.name, facts, status, stated: r.stated, canOpen });
       return R(r.ok, html, { meta: { file: { id: r.id, name: r.name, format: r.fmt, bytes: r.size, pages: r.pages, verified: r.ok, problems: r.problems, stated: r.stated.length } } });
     },
   },

@@ -16,7 +16,7 @@
  *    · the capability's `run` in js/atlas-cap-<namespace>.js — the code that READS the argument.
  *      If the run reads `a.name`, the property is `name`. The schema sits in the same entry.
  *    · js/atlas-catalog-text.js — the shapes the planner is shown (`{"type":"highlight","targets":…}`).
- *    · js/atlas-capabilities.js `targetPolicyOf` / `hasTarget` — which spellings satisfy a target,
+ *    · js/atlas-capabilities.js `targetPolicyOf` / `schemaDemandMet` — a target is satisfied by what THIS schema demands (`required` + one `anyOf` set),
  *      and which 45 capabilities may not run without one.
  *
  *  THREE RULES THE TABLE FOLLOWS, because breaking any of them fails a call that works today:

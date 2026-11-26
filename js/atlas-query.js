@@ -52,6 +52,7 @@
  * ==========================================================================*/
 
 import { makeCoastline } from './coastline.js';
+import { figure } from './country-figures.js';   /* (atlas-capability-inputs) the ONE store of a value's year and source — a country metric's source is read from it */
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
@@ -656,15 +657,22 @@ export function atlasQuery(HOST) {
     if (!spec) return { unavailable: 'unknown-metric:' + key };
     if (D.fillMetric) { try { await D.fillMetric(spec.key); } catch (_) { } }
     const cs = (D.countryStats ? D.countryStats() : null) || {};
-    let got = 0;
+    let got = 0; const sources = [];
     for (const r of rows) {
       const code = r.iso3 || iso2to3(r.iso2);
       const s = code ? cs[code] : null;
       const v = s ? spec.m.get(s) : null;
       r.v['country.' + spec.key] = (v == null || isNaN(v)) ? null : +v;
-      if (v != null) got++;
+      if (v != null) {
+        got++;
+        /* (atlas-capability-inputs) THE SOURCE IS WHAT STAMPED THE VALUES, NOT A HOOK NOBODY BOUND. `D.metricSource` was never
+           bound by any host, so every ranking answered with the generic sentence below — and an answer that cites «the
+           Countries statistics record» cites nothing. The figure store (js/country-figures.js) records, per country and
+           field, which supplier published the number; the sources of the rows that actually contributed are the answer. */
+        try { const fg = figure(s, spec.key); if (fg && fg.src && sources.indexOf(fg.src) < 0) sources.push(fg.src); } catch (_) { /* a row with no stamp states no source */ }
+      }
     }
-    return got ? { source: D.metricSource ? D.metricSource(spec.key) : 'the Countries statistics record' }
+    return got ? { source: sources.length ? sources.join('; ') : 'the Countries statistics record' }
       : { unavailable: 'metric-empty:' + spec.key };
   }
 

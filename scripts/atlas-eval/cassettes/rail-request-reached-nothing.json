@@ -148,6 +148,10 @@
               "tool": "routing_drone"
             },
             {
+              "id": "routing.export",
+              "tool": "routing_export"
+            },
+            {
               "id": "map.compose",
               "tool": "compose_map"
             },
@@ -386,6 +390,10 @@
             {
               "id": "routing.drone",
               "tool": "routing_drone"
+            },
+            {
+              "id": "routing.export",
+              "tool": "routing_export"
             },
             {
               "id": "map.compose",

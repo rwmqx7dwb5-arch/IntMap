@@ -767,10 +767,11 @@ export function los(HOST){
         else losF=0;
         if(panel&&panel.style.display!=='none') render(); return losMode; },
       mode:()=>losMode,
-      setParams:(h,r,tg,k,f)=>{ if(h!=null) losH=Math.max(0,+h||0); if(r!=null) losR=Math.min(400,Math.max(1,+r||60));
+      setParams:(h,r,tg,k,f,tx)=>{ if(tx!=null&&isFinite(+tx)) losTx=Math.max(0,Math.min(60,+tx));   /* (atlas-capability-inputs) the transmit power in dBm, the same 0..60 the panel's own field takes — the capability documents `power` and nothing carried it */
+        if(h!=null) losH=Math.max(0,+h||0); if(r!=null) losR=Math.min(400,Math.max(1,+r||60));
         if(tg!=null) losT=Math.max(0,+tg||0); if(k!=null) losK=Math.max(0.5,Math.min(5,+k||1.3333)); if(f!=null) losF=Math.max(0,+f||0);
         if(panel&&panel.style.display!=='none') render(); return true; },
-      state:()=>({ site:site?site.slice():null, obsH:losH, tgtH:losT, rangeKm:losR, k:losK, mhz:losF,
+      state:()=>({ site:site?site.slice():null, obsH:losH, tgtH:losT, rangeKm:losR, k:losK, mhz:losF, txDbm:losTx,
         open:!!(panel&&panel.style.display!=='none'), last:last?Object.assign({},last):null }),
       /* (#R214) 「再読み込みした際に…その状態に戻ってくるように」 — the site AND the five parameters,
          because a viewshed from the same point with a different antenna height is a different

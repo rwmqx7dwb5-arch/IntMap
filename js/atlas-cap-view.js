@@ -274,7 +274,7 @@ export default [
        readLocationText / openShared), handed to Atlas: a Google / Apple / OpenStreetMap link, a geo: URI or bare
        coordinates become the point (a pin and «Here, now» for it); a link that carries only a name, or plain text,
        goes to the place search; a short link whose target the browser cannot read is SAID to be one. */
-    row: ['view.openShared',            'openShared',     'openLink,openMapLink,openLocationLink,geoLink,openSharedLink',  'view',    'none',    'camera,map.object',       'explanation',         'session', 'none',    'text',     ''],
+    row: ['view.openShared',            'openShared',     'openLink,openMapLink,openLocationLink,geoLink,openSharedLink',  'view',    'shown',    'camera,map.object',       'explanation',         'session', 'none',    'text',     ''],
     ui: { none: '2026-11-19' },
     doc: [
       { in: 'navigation-view', at: 121, text: '{"type":"openShared","text":str} opens a MAP LINK or shared text on the map / 共有されたリンクを地図で開く — a Google Maps, Apple Maps or OpenStreetMap URL, a geo: URI, or coordinates like "35.68, 139.76" become that exact point (a pin is dropped and «Here, now» opens for it); an IntMap share link opens as itself; a link that carries only a place name, or plain text, is searched; a short link (maps.app.goo.gl) cannot be expanded by a web page and is reported as such. Use it when the reader pastes a link: 「このリンクの場所を開いて」「このGoogleマップのURLを地図に」, "open this maps link". ' },

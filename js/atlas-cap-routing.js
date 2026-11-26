@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, bool, num, one, list, lat, lng, loose } from './atlas-caps.js';
 import { routeFacts } from './atlas-result-facts.js';
+import { fileCardHtml, offerFile } from './atlas-cap-file.js';   /* (atlas-capability-inputs) the one card a file is handed over on */
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -299,6 +300,38 @@ export default [
          from the same compute() the panel shows; Atlas never re-derives one, and it never claims a
          route is flyable when the planner said otherwise. */
     run: droneRun,
+  },
+  /* (atlas-capability-inputs) THE ROUTE PANEL'S «GPX» / «GEOJSON» BUTTONS, FOR ATLAS. js/routing-ui.js has carried them since the route panel was
+     built (`.rtp-exp`), reading the selected alternative through js/routing.js `_routeExport`; nothing in the capability table reached them, so
+     «save this route for my GPS» ended in a sentence about how to press a button. The file is the one the buttons write — built by the same
+     function from the same payload — and is read back (the points the file holds against the points of the route) before the card says so. As with
+     file.create nothing is downloaded until the reader presses Save. */
+  {
+    row: ['routing.export',             'routeExport',    'exportRoute,downloadRoute,routeGpx,routeGeoJson,saveRoute,routeFile', 'routing', 'none', '', 'explanation', 'persist', 'none', '', ''],
+    ui: { at: ['.rtp-exp[data-f]'] },
+    doc: [
+      { in: 'tools-panels', at: 135, text: '{"type":"routeExport","format"?:"gpx"|"geojson" (default gpx)} = SAVE THE ROUTE ON SCREEN AS A FILE / 経路を GPX・GeoJSON で書き出す — the alternative the reader has selected (road, transit or rail; the start, stops and destination as named waypoints, the mode, provider and avoid options) becomes a GPX 1.1 or GeoJSON file for a GPS, a bike computer or another map. The reply is a card with Save; nothing is downloaded until it is pressed. Needs a route: call routing.route first when there is none. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { format: one('gpx', 'geojson') } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const RT = window.IntMapRouting;
+      if (!RT || !RT.hasRoute || !RT.hasRoute()) return R(false, warn(esc(L('There is no route on the map to export — ask for a route first.', '書き出せる経路が地図にありません。先に経路を求めてください。'))), { meta: { code: 'NEEDS_INPUT' } });
+      const fmt = /geo/i.test(String(a.format || '')) ? 'geojson' : 'gpx';
+      let text = null; try { text = RT._routeExport(fmt); } catch (_) { text = null; }
+      if (text == null) return R(false, warn(esc(L('The route could not be written out.', '経路を書き出せませんでした。'))));
+      /* read back: the points the file holds, counted from the file itself */
+      let pts = 0, problem = '';
+      try { if (fmt === 'gpx') pts = (text.match(/<trkpt /g) || []).length; else { const j = JSON.parse(text); const g = (j.features ? j.features : [j]).map((x) => x.geometry || x).filter((x) => x && x.type === 'LineString'); pts = g.reduce((n, x) => n + x.coordinates.length, 0); } } catch (e) { problem = String((e && e.message) || e); }
+      if (!problem && !pts) problem = 'no track points in the file';
+      const bytes = new TextEncoder().encode(text), mime = fmt === 'gpx' ? 'application/gpx+xml' : 'application/geo+json';
+      const card = await offerFile('intmap-route.' + fmt, mime, bytes);
+      const ja = !!(K.HOST && K.HOST.lang === 'jp');
+      const kb = Math.max(1, Math.round(bytes.length / 1024)) + ' KB';
+      const status = problem ? '<span style="color:var(--danger,#d70015)">' + esc(ja ? '確認に失敗しました: ' : 'Read-back failed: ') + esc(problem) + '</span>'
+        : '<span style="color:var(--ok,#248a3d)">✓ ' + esc(ja ? '書き出したファイルを読み直して確認しました（' + pts + ' 点）' : 'read back from the file: ' + pts + ' track points') + '</span>';
+      const html = fileCardHtml(esc, ja, { id: card.id, name: card.name, facts: (fmt === 'gpx' ? 'GPX 1.1' : 'GeoJSON') + ' · ' + kb, status, canOpen: false });
+      return R(!problem, html, { meta: { file: { id: card.id, name: card.name, format: fmt, bytes: bytes.length, points: pts, verified: !problem } } });
+    },
   },
 ];
 

@@ -119,6 +119,7 @@ export const PARKABLE_CAPS = Object.freeze(new Set([
   "map.drawLine",
   "map.drawPolygon",
   "map.elevationHighlight",
+  "map.elevationProfile",
   "map.heritageFilter",
   "map.highlight",
   "map.isolateCountry",

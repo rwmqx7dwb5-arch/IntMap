@@ -3883,16 +3883,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R154) reusable core — profile ANY [lng,lat][] path (≥2 pts). Extracted from _elevationProfile so the freehand
      Draw tool can reach it too ("DrawでもElevation profileを使えるように"). Same densify → sample → DEM → chart pipeline. */
   window._profileFromCoords=function(pts){
-    if(!hasTurf() || !pts || pts.length<2) return;
-    let line; try{ line=turf.lineString(_gcDensify(pts)); }catch(_){ return; }
+    if(!hasTurf() || !pts || pts.length<2) return null;
+    let line; try{ line=turf.lineString(_gcDensify(pts)); }catch(_){ return null; }
     let len; try{ len=turf.length(line,{units:'kilometers'}); }catch(_){ len=0; }
-    if(!(len>0)) return;
+    if(!(len>0)) return null;
     /* High resolution: ~1 sample / 1.5 km, 60–240 samples (DEM tiles are cached so many samples share fetches). */
     const N=Math.min(240, Math.max(60, Math.round(len/1.5)));
     const samples=[], dist=[];
     for(let i=0;i<N;i++){ const d=len*i/(N-1); let pt=null; try{ pt=turf.along(line,d,{units:'kilometers'}).geometry.coordinates; }catch(_){} if(pt){ samples.push(pt); dist.push(d); } }
-    if(samples.length<2) return;
-    _openProfilePanel(samples,dist);
+    if(samples.length<2) return null;
+    return _openProfilePanel(samples,dist);   /* (atlas-capability-inputs) → Promise<{samples,dist,els}|null> */
   };
   window._elevationProfile=function(){
     if(toolMode!=='measure' && toolMode!=='area') return;

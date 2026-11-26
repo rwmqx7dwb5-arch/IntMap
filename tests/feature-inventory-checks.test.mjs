@@ -36,3 +36,15 @@ test('㉔ catches a declared control the page never builds, and passes one it do
   assert.equal(uiEntriesUnbuilt([{ id: 'x', at: ['[data-act="print"]'] }], src).bad.length, 1);
   assert.equal(uiEntriesUnbuilt([{ id: 'x', at: ['.lst'] }], src).bad.length, 1, 'a class is a whole word, not a prefix');
 });
+
+/* (atlas-capability-inputs) the other direction: a product module that publishes a window global no Atlas file names */
+test('unreachedFromAtlas lists a module whose window global no js/atlas-*.js names, and leaves the named one out', async () => {
+  const { unreachedFromAtlas } = await import('../scripts/feature-inventory.mjs');
+  const got = unreachedFromAtlas([
+    { file: 'js/elevation-thing.js', src: 'window.IntMapElevThing = {};' },
+    { file: 'js/named-thing.js', src: 'window.IntMapNamed = {};' },
+    { file: 'js/plain.js', src: 'export const x = 1;' },
+    { file: 'js/atlas-cap-x.js', src: 'const n = window.IntMapNamed;' },
+  ]);
+  assert.deepEqual(got.map((x) => x.file), ['js/elevation-thing.js']);
+});

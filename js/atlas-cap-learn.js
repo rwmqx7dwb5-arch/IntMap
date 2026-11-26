@@ -18,7 +18,7 @@ import { str, int, one } from './atlas-caps.js';
 
 export default [
   {
-    row: ['learn.quest',                'quest',          'learnQuest,geoQuest,questLink,challengeLink,quizSet',         'panel',   'none',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
+    row: ['learn.quest',                'quest',          'learnQuest,geoQuest,questLink,challengeLink,quizSet',         'panel',   'shown',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
     ui: { at: ['.lst-toolrow[data-act="tool.learnQuest"]', '.qst-kind[data-kind]'] },
     doc: [
       { in: 'learn.quest', text: 'LEARN QUESTS (学ぶクエスト — questions made from the map\'s own data, answered on the map): {"type":"quest","action"?:"start"|"link"|"state"|"close","kind"?:"where"|"when","n"?:int,"seed"?:str}. kind "where" (場所当て) names a city and the reader taps it on the map, scored by the distance; kind "when" (年代当て) puts the map on a day in history with the year hidden and the reader answers the year. start opens a set of n questions (default 5) — give "seed" to reproduce a set exactly; without one a new set is made. link returns the CHALLENGE LINK (挑戦リンク) of the set (or of kind+seed+n): everyone who opens it gets the same questions — for 「クラス全員に同じ問題を」「場所当てクイズを出して」「年代当てを10問」「挑戦リンクをちょうだい」, "quiz me on where cities are", "give my class the same questions". Do not answer the questions for the reader. ' },
@@ -70,7 +70,7 @@ export default [
      the panel's own state afterwards, like learn.quest. Atlas does not answer the questions, and does not record a result —
      only the reader finishing the set does. */
   {
-    row: ['learn.daily',                'dailyQuest',     'todayQuest,dailyChallenge,questStreak,dailyStreak',         'panel',   'none',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
+    row: ['learn.daily',                'dailyQuest',     'todayQuest,dailyChallenge,questStreak,dailyStreak',         'panel',   'shown',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
     ui: { at: ['.qst-daily[data-daily]'] },
     doc: [
       { in: 'learn.quest', at: 1, text: '{"type":"dailyQuest","action"?:"state"|"start"|"link","kind"?:"when"|"where"} = TODAY\'S QUEST (今日のクエスト — one set of each learn quest per calendar day, the same for everyone that day; the year quest opens on events the map\'s record dates on this day of the year, where it has any). state (default) returns whether today\'s sets are done and their scores, the reader\'s STREAK (連続日数: current and best) and the last 7 days — for 「今日のクエストは？」「連続何日？」「今週何日やった？」, "what\'s my streak?", "did I do today\'s quest?". start opens today\'s set of kind (default "when"); link returns today\'s set\'s challenge link so a friend gets the same questions today. The first finish of a day is the result (kept in the browser, and in the account when signed in); playing again is practice. Use this, not quest, whenever the reader says today / daily / streak. Do not answer the questions for the reader. ' },

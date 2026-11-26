@@ -80,6 +80,10 @@
               "tool": "compose_map"
             },
             {
+              "id": "map.elevationProfile",
+              "tool": "map_elevationProfile"
+            },
+            {
               "id": "data.gis",
               "tool": "data_gis"
             },
