@@ -1677,7 +1677,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        _applyNavSens so this is the sole double-tap zoom path. */
     GE().events.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
       if(typeof toolMode!=='undefined' && toolMode) return;
-      try{ const s=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      try{ const s=(window.IM_NAV_BASE?window.IM_NAV_BASE.zoom:1)*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
         GE().camera.easeTo({zoom:GE().camera.getZoom()+s, around:(e&&e.lngLat)||GE().camera.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
     });
     GE().events.on('mousemove',(e)=>{
@@ -3529,9 +3529,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
     if(Array.isArray(s.newsSources)) window.imNewsSources=s.newsSources;   /* (#R207) */
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
-    if(s.navZoom) window.imNavZoomSens=+s.navZoom||1;   /* (#R20) nav sensitivity */
-    if(s.navPan)  window.imNavPanSens=+s.navPan||1;
-    if(s.navInertia!=null) window.imNavInertia=+s.navInertia;   /* (#R23) inertia (0..1.5); 0 allowed */
+    /* Sliders are a percent of the default, and the default was re-based (navVer 2: the owner's tuned 170/170/110
+       became 100). A value saved before that was a percent of the OLD raw scale. 1 was the old default, which
+       is what an untouched slider saved, so it follows the new default; any other value was a deliberate choice
+       and keeps its raw feel (value / base, to the slider's 5% step). */
+    const _nb=window.IM_NAV_BASE||{zoom:1,pan:1,inertia:1}, _nv=(v,b)=>(s.navVer>=2||v===1)?v:Math.round(v/b*20)/20;
+    if(s.navZoom) window.imNavZoomSens=_nv(+s.navZoom||1,_nb.zoom);   /* (#R20) nav sensitivity */
+    if(s.navPan)  window.imNavPanSens=_nv(+s.navPan||1,_nb.pan);
+    if(s.navInertia!=null) window.imNavInertia=_nv(+s.navInertia,_nb.inertia);   /* (#R23) inertia (0..1.5); 0 allowed */
     try{ window._applyNavSens&&window._applyNavSens(); }catch(_){}
     applySidebarStyle();   try{ applyDockMode(); }catch(_){}   /* (#R238) a saved dock comes back with its tab and its panels; LAST because it re-parents live DOM */
   }
@@ -3540,7 +3545,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank, atlasDisplay:(window.imAtlasDisplay||'tab'),
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
-      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia), aiModel:(window.imAiModel||null)   /* (#R722) developer model pick — see loadSettings */
+      navVer:2, navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia), aiModel:(window.imAiModel||null)   /* (#R722) developer model pick — see loadSettings */
     })); }catch(_){}
     try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
   }

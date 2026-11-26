@@ -232,11 +232,12 @@
     const hPx = Math.abs(mercY(extent[3]) - mercY(extent[1])) / (2 * Math.PI) * world;
     return Math.max(wPx / viewW, hPx / viewH);
   }
-  /* The share at which the name goes: the view holds at most half of the country's longer side. Not a measurement — the one
-     value of this rule, chosen so a country is named while most of it can be seen at once; at 1400 px wide it is Russia
-     (164° across) from z≈3.6 and France (≈ 12° across) from z≈6.9. Expires with the label's font size changing so much that
-     «most of it» means something else. */
-  const NAME_GONE_SHARE = 2;
+  /* The share at which the name goes: the view is no wider than the country's longer side, i.e. the reader has entered the country
+     (at 1400 px wide: Russia, 164° across, from z≈2.7; France, ≈12° across, from z≈5.9). It was 2 (the view holds at most half the
+     country) and the owner asked again for the name to go once the zoom is past the region (2026-11-27), so the threshold is now the
+     moment the region first fills the view. A design value, not a measurement; expires with the label's font size changing so much
+     that «the region fills the view» means something else. */
+  const NAME_GONE_SHARE = 1;
 
   window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE };
 })();
