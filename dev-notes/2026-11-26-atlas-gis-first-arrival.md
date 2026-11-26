@@ -21,5 +21,5 @@ newsjp: Atlas が、遅いカタログの応答を待たず、実際に読んで
 （本番での実測結果は下に追記）
 
 ## 4. 費用（perf 天井）
-`gis-core` チャンクが +4.4 kB（705.3→709.7 kB）。先着採用の実装（`js/gis-remote.js` の `search` の再構成と `follow`）の分で、削れる重複は無い。天井は CI が測った値へ上げた。
+`gis-core` チャンクが +4.4 kB（705.3→709.7 kB）、その中の `gis-remote` が +2.1 kB（35.3→37.4 kB）。先着採用の実装（`js/gis-remote.js` の `search` の再構成と `follow`）の分で、削れる重複は無い。天井は CI が測った値へ上げた。
 `atlas-console` チャンクは、main 側で #1445・#1446 の能力追加が合算して天井を超えており（main の測定 1452.9 kB）、天井は main 側で先に改められた。この変更の画像継続（`atlas-image-continue.js` の取り込みと分岐）の増分はごく小さく、main の天井に収まる。
