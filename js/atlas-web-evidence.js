@@ -29,6 +29,7 @@
  *  (case, width, spacing, edge punctuation).
  * ==========================================================================*/
 import { makeAtlasEvidence } from './atlas-evidence.js';
+import { markTurn } from './atlas-turn-metrics.js';   /* the moment a fetched source reaches the page: the turn's `evidence_arrived` (the parent's use of it is marked by whoever reads it first) */
 
 /* Time to live, per kind — an OBSERVATION-FREE CHOICE, not a measured number: a portal page and a rendered page do not change inside
    ten minutes of one conversation, while a search's answer can (news) and so lives shorter. Expires: when the journal's per-call
@@ -107,6 +108,7 @@ export function makeWebEvidence(opt) {
       const result = await fetcher();
       if (!result || !result.ok) return { entry: null, result };
       const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', turn: result.turn || '', text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
+      markTurn('evidence_arrived');
       return { entry, result };
     })();
     inflight.set(k, run);
@@ -168,8 +170,8 @@ export function makeWebEvidence(opt) {
     const n = Math.max(200, Math.min(MAX_TEXT_CHARS, Number(chars) || 6000));
     const body = String(e.text || '');
     return Object.assign(brief(e), {
+      sourceList: e.sources.length ? e.sources : undefined,   /* BEFORE the text: a reader that cuts the front of this record keeps the addresses */
       text: body.slice(0, n), textChars: body.length, truncated: body.length > n || undefined,
-      sourceList: e.sources.length ? e.sources : undefined,
       cited: e.kind === 'cited' ? { via: e.via, queries: e.queries } : undefined,
     });
   }

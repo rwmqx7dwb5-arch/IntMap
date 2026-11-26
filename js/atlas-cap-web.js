@@ -266,7 +266,7 @@ export default [
       if (a.ref) {
         const r = webEvidence.read(a.ref, a.chars);
         if (!r) return R(false, warn(esc(L('Nothing is held under that reference (it may have expired). List what is held with no ref, or fetch it again.', 'その参照の記録はありません(期限切れの可能性があります)。ref なしで一覧を見るか、取り直してください。'))), { meta: { code: 'no_such_evidence' }, exec: { web: Object.assign(web, { held: webEvidence.list({ limit: 20 }) }) } });
-        return R(true, note(esc(L('Re-read ', '読み直しました: ')) + '<b>' + esc(r.id) + '</b> · ' + esc(r.title || r.query || r.url || '')), { exec: { web: Object.assign(web, { evidence: r }) } });
+        return R(true, note(esc(L('Re-read ', '読み直しました: ')) + '<b>' + esc(r.id) + '</b> · ' + esc(r.title || r.query || r.url || '')), { exec: { web: { untrusted: true, evidence: r, notice: WEB_BROWSE_NOTICE } } });
       }
       const held = webEvidence.list({ kind: a.kind, limit: 60 });
       return R(true, note(L(held.length + ' record(s) held', '保持している記録 ' + held.length + ' 件')), { exec: { web: Object.assign(web, { held }) } });

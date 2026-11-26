@@ -154,7 +154,7 @@ export function shapeOf(data, normalizeFacts) {
   const notFound = (Array.isArray(data.notFound) ? data.notFound : [])
     .map((x) => (typeof x === 'string' ? { looked: s(x, 400) } : (x && typeof x === 'object' ? { looked: s(x.looked, 400), where: x.where ? s(x.where, 400) : undefined } : null)))
     .filter((x) => x && x.looked);
-  const sourced = findings.filter((f) => f.source && f.excerpt).length;
+  const sourced = findings.filter((f) => findingBasis(f).evidenced).length;
   const evidence = { findings: findings.length, sourced, unsourced: findings.length - sourced, notFound: notFound.length, none: sourced === 0 };
   const gaps = Array.isArray(data.gaps) ? data.gaps.map((g) => s(g, 400)).filter(Boolean) : [];
   if (evidence.none) gaps.push(findings.length
@@ -162,6 +162,19 @@ export function shapeOf(data, normalizeFacts) {
     : 'This worker returned no finding with a source and an excerpt: its summary is its own statement, not evidence.');
   else if (evidence.unsourced) gaps.push(evidence.unsourced + ' of this worker\'s findings carry no source with an excerpt: those are its own statements, not evidence.');
   return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { notFound, evidence, gaps }) };
+}
+
+/* findingBasis(f) — THE ONE JUDGEMENT of whether a finding carries evidence, for the worker's own tally (shapeOf below) and for the turn's measurements
+   (js/atlas-turn-metrics.js): both used to decide it separately and disagreed on a finding that names an outlet and holds no words of the source
+   (the worker counted 0 sourced, the answer's tally 1 grounded). `cited` — it names where it came from. `evidenced` — and it holds what the source says
+   (the excerpt, or the raw values a capability returned). A name with nothing behind it is cited, not evidenced. */
+export function findingBasis(f) {
+  const x = f && typeof f === 'object' ? f : {};
+  const first = Array.isArray(x.sources) && x.sources.length ? x.sources[0] : '';
+  const source = s(x.source || x.url || (first && typeof first === 'object' ? first.url : first), 500);
+  const ex = x.excerpt != null && x.excerpt !== '' ? x.excerpt : x.values;
+  const held = ex == null || ex === '' ? false : (typeof ex === 'string' ? !!ex.trim() : (typeof ex === 'object' ? Object.keys(ex).length > 0 : true));
+  return { cited: !!source, evidenced: !!source && held, source };
 }
 
 /* an excerpt is the source's words, or the raw values a capability returned: a string is kept as it is, anything else is written as JSON */

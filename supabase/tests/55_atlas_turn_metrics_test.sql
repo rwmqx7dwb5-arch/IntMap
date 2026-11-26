@@ -42,9 +42,13 @@ select throws_ok($$ select public.log_atlas_turn_metrics('anon-1', '{}'::jsonb) 
 reset role;
 
 -- ── ③ who reads what ─────────────────────────────────────────────────────────
-insert into public.atlas_turn_metrics (user_id, turn_key, total_ms, first_useful_ms, completion, cost_micros, cost_known, ops_asked, ops_reused, ops_unknown_tool, claims_total, claims_grounded, verify_program, verify_model, critical_tool, critical_ms) values
-  ('33333333-3333-3333-3333-333333333333', 'a-1', 10000, 2000, 'complete', 40000, true, 10, 1, 0, 4, 4, 1, 3, 'research.delegate', 5000),
-  ('33333333-3333-3333-3333-333333333333', 'a-2', 30000, null, 'partial',  90000, true, 10, 3, 2, 0, 0, 0, 0, 'map.draw', 1000);
+insert into public.atlas_turn_metrics (user_id, turn_key, total_ms, first_useful_ms, completion, cost_micros, cost_known, ops_asked, ops_reused, ops_unknown_tool, claims_total, claims_grounded, verify_program, verify_model, critical_tool, critical_ms, metrics_version, useful_shown, claims_cited, claims_evidenced, claims_backing, task_key) values
+  ('33333333-3333-3333-3333-333333333333', 'a-1', 10000, 2000, 'complete', 40000, true, 10, 1, 0, 4, 4, 1, 3, 'research.delegate', 5000, 2, true, 4, 4, 2, null),
+  ('33333333-3333-3333-3333-333333333333', 'a-2', 30000, null, 'partial',  90000, true, 10, 3, 2, 0, 0, 0, 0, 'map.draw', 1000, 2, false, 0, 0, 0, 'a-1');
+-- the first try's whole family in the journal: the parent's call and the parallel search's call share its root key (the page's own figure said 40000)
+insert into public.ai_delegation_journal (user_id, root_key, task, outcome, cost_micros) values
+  ('33333333-3333-3333-3333-333333333333', 'a-1', 'atlas_turn', 'ok', 30000),
+  ('33333333-3333-3333-3333-333333333333', 'a-1', 'web_search', 'ok', 25000);
 
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","aal":"aal1"}', true);
 set local role authenticated;
@@ -61,14 +65,19 @@ reset role;
 
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
-select is((select array_agg(k order by k) from jsonb_object_keys(public.atlas_metrics_overview()) k), array['calls', 'children', 'families', 'from', 'to', 'turns'], 'its parts');
+select is((select array_agg(k order by k) from jsonb_object_keys(public.atlas_metrics_overview()) k), array['calls', 'children', 'cost', 'families', 'from', 'to', 'turns'], 'its parts');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'turns')::int, 2, 'two answers in the window');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'completion_rate')::numeric, 0.5, 'one of two declared itself complete');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'duplicate_op_rate')::numeric, 0.2, '4 repeats in 20 operations');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'capability_found_rate')::numeric, 0.9, '2 unknown tools in 20 operations');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'grounded_claim_rate')::numeric, 1::numeric, 'every finding carried a source');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'program_verified_share')::numeric, 0.25, '1 of 4 checks decided by a program');
-select is((public.atlas_metrics_overview() -> 'turns' ->> 'cost_per_success_micros')::numeric, 40000::numeric, 'cost per complete answer');
+select is((public.atlas_metrics_overview() -> 'turns' ->> 'cost_per_success_micros')::numeric, 145000::numeric,
+  'cost per success: the first try''s whole family (parent + search = 55000) plus the repeated try (90000), over the one task that succeeded');
+select is((public.atlas_metrics_overview() -> 'cost' ->> 'tasks')::int || '/' || (public.atlas_metrics_overview() -> 'cost' ->> 'attempts')::int || '/' || (public.atlas_metrics_overview() -> 'cost' ->> 'successes')::int,
+  '1/2/1', 'two attempts, one task, one success');
+select is((public.atlas_metrics_overview() -> 'turns' ->> 'no_useful_rate')::numeric, 0.5, 'a turn that showed nothing usable is counted apart, not as a short wait');
+select is((public.atlas_metrics_overview() -> 'turns' ->> 'backing_claim_rate')::numeric, 0.5, '2 of the 4 findings are named by the final answer');
 select is((public.atlas_metrics_overview() -> 'turns' ->> 'first_useful_ms_p50')::int, 2000, 'a turn with no useful result is not counted as 0 ms');
 select is(public.atlas_metrics_overview() -> 'turns' -> 'critical_tools' -> 0 ->> 'tool', 'research.delegate', 'the slowest path first');
 select is(public.atlas_metrics_overview(now() - interval '60 days', now() - interval '50 days') -> 'turns' -> 'completion_rate', 'null'::jsonb,
