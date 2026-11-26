@@ -288,7 +288,7 @@ test('R726 ⑧ a successful result carries the text of what the reader was shown
   const ok = await exec({ name: 'map_view', arguments: { place: 'Osaka' } });
   assert.equal(ok.ok, true);
   assert.ok(typeof ok.text === 'string' && ok.text.startsWith('Osaka is shown'), 'the shown text is on the result, as text: ' + String(ok.text).slice(0, 40));
-  assert.ok(ok.text.length < 2100 && ok.text.length > 1900, 'bounded (RESULT_TEXT_MAX): ' + ok.text.length);
+  assert.ok(ok.text.length > 3000, 'whole, not clipped (atlas-result-delivery): the composer is the one place a result is shortened, and read_result follows it into the original: ' + ok.text.length);
   /* on success only: a failure's html is not something the reader was shown as an answer */
   reply = { ok: false, html: '<div>could not</div>', meta: { status: 'failed' } };
   const bad = await exec({ name: 'map_view', arguments: { place: 'Nowhere' } });

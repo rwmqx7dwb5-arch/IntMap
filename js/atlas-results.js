@@ -293,6 +293,7 @@ export function makeAtlasResults(HOST) {
          planner's optimistic sentence, which is exactly what `unverified` does today. */
       if (r.status !== 'completed') out.meta.unverified = true;
       if (r.objectIds.length) out.objectIds = r.objectIds.slice();
+      if (r.unresolved && r.unresolved.length) out.unresolved = r.unresolved.slice();   /* (atlas-result-delivery) the names it could not place reach the model */
       if (r.observed && r.observed.exec) out.exec = r.observed.exec;
       return out;
     };
