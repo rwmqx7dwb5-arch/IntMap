@@ -54,6 +54,6 @@ scout の静的な全数で 17 件。このラウンドで開放したのは次�
 ## CI で見つかった構造の変更点（同じ PR で直した）
 
 - `check:surface`: `window._imHlLines`・`window._imHlPoi`（`_imHlPolys` と同じ「描画を物体として手渡す」形）と、`IntMapAtlasCompose.objects` の読みが増えた。物体の一覧は描画を持つモジュールが持つ手持ちの状態を読むほかなく、import すると遅延チャンクが本体側へ割れる（起動時リクエスト増・`check:perf`）。ので window の手渡しにして、`tests/global-surface-baseline.json` を更新した。
-- `check:perf`: `atlas-console` と `atlas-cap-runs` のチャンクが物体基盤（属性・面積・汎用スタイル・観測器の署名）ぶん増えた。起動時リクエストは増えていない。
+- `check:perf`: `atlas-cap-runs` 1134.4→1140.2 kB、`atlas-console` 1454.1→1463.1 kB に天井を上げた。買ったもの: 物体の属性・面積・汎用スタイル・観測器の署名・描画の見た目の導出（彩度・ホバー・マーカーの散らし）。起動時リクエストと modules は増えていない（他の行は書かれていない）。
 - `tests/atlas-completion-routes-checks.test.mjs` B2b: 「合成した地図は 1 つの匿名の面として一覧にある」という旧設計の主張を、「場所・形状・つながりがそれぞれ compose の結果が報告する id で一覧にあり、編集できる」に更新した（能力は減っていない。1 つの面だったものが、個別に編集できる物体になった）。
 - `check:testbudget`: 専用の spec（起動 17 秒）は全体の天井を超えるので、既存の `tests/smoke.spec.js` の起動を共有する 4 テストにした。
