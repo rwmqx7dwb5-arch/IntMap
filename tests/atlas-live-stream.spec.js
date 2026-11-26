@@ -128,14 +128,14 @@ test('①② the note goes to the trace, the answer is shown while written and t
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
   /* the thinking row said what was decided before it ran (the reasoning headline stood there first and
      gave way to 「次: …」 the moment the call was named — what stays is the statement of intent) */
-  await expect(page.locator('#atlas-panel .atl-trace-row').filter({ hasText: /(次|Next): / })).toHaveCount(1);
+  await expect(page.locator('#atlas-panel .atl-trace-head .atl-trace-livedet').filter({ hasText: /(次|Next): / })).toHaveCount(1);   /* (2026-11-26) the wait is the head's live word, not a history row */
   /* ② step 2 holds before `done`: the draft is on screen, live, before any answer exists */
   const draft = lastReply().locator('.atl-draft.live');
   await expect(draft).toContainText('関東平野', { timeout: 20_000 });
   await expect(draft.locator('.atl-caret')).toHaveCount(1);
   /* the trace ticked the operation — and, the trace being on screen, nothing on the map said it again
      (atlas-progress-one: four indicators for one turn was the defect) */
-  await expect(page.locator('#atlas-panel .atl-trace').last().locator('.atl-trace-rows > .atl-trace-row.ok')).not.toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator('#atlas-panel .atl-trace').last().locator('.atl-trace-rows .atl-trace-row.ok')).not.toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('.atl-hud.on')).toHaveCount(0);
   await page.evaluate(() => { window.__live.released = true; });
   /* the answer replaces the draft: one copy of the sentence, no draft, no caret */
@@ -192,9 +192,10 @@ test('⑤ the plan Atlas declared in ④ stands in the work trace with its obser
   /* the model was shown the plan on the step after it was declared (④: the broken stream, its plain retry, step 2) */
   expect(await page.evaluate(() => window.__live.bodies.map((b) => b.plan))).toEqual([false, false, true]);
   /* the turn ended: the trace folded, the plan's head (goal and N/M) still stands, the steps open with the trace */
-  await expect(trace.locator('.atl-plan-count')).toBeVisible();
+  await expect(trace.locator('.atl-plan-count')).toBeHidden();          /* (2026-11-26) the checklist is not on the page until the reader opens the trace */
   await expect(steps.nth(0)).toBeHidden();
   await trace.locator('.atl-trace-head').click();
+  await expect(trace.locator('.atl-plan-count')).toBeVisible();
   await expect(steps.nth(0)).toBeVisible();
   /* the way back to what step 1 drew: the camera is sent elsewhere and the step is pressed */
   await expect(steps.nth(0)).toHaveClass(/(^|\s)can(\s|$)/);

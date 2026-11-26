@@ -142,51 +142,13 @@ test('atlas-progress-one ① while the trace can be seen, the map carries no pro
   LIVE.end(bubble, 'answered');
 });
 
-test('atlas-progress-one ② when the trace cannot be seen, ONE pill says the trace\'s word — and it goes when the trace comes back', async () => {
-  const { E, PROG, LIVE, bubble, trace, hud, opened } = await mount();
+test('atlas-progress-one ② (2026-11-26) the map carries no pill at all — not even when the trace cannot be seen', async () => {
+  const { E, LIVE, bubble, trace } = await mount();
   LIVE.begin(bubble);
-  /* the sidebar closed: the trace is outside the viewport */
-  trace.rect = { left: -400, top: 100, right: -60, bottom: 220 };
-  E.tick();
-  assert.equal(isOn(hud()), true, 'nothing on the map said Atlas was working while its trace was out of sight');
-  assert.equal(E.mapWrap.querySelectorAll('.atl-hud').length, 1, 'more than one pill');
-  assert.equal(hud().querySelector('.atl-hud-word').textContent, PROG.liveWord(bubble), 'the pill kept a word of its own');
-  /* in the viewport, but another surface lies on it */
-  trace.rect = { left: 20, top: 100, right: 360, bottom: 220 };
-  const sheet = makeNode('div'); E.panel.parentNode.appendChild(sheet);
-  HITS = () => [sheet, trace];
-  E.tick();
-  assert.equal(isOn(hud()), true, 'a trace under another surface was counted as seen');
-  /* in the viewport but transparent (a minimised workspace window fading out) */
-  HITS = () => [trace.querySelector('.atl-trace-head'), trace];
-  E.panel.css = { opacity: '0' };
-  E.tick();
-  assert.equal(isOn(hud()), true, 'a transparent trace was counted as seen');
-  E.panel.css = null;
-  /* the pill itself standing over the trace does not hide the trace (it is looked through) */
-  HITS = () => [hud(), trace.querySelector('.atl-trace-head'), trace];
-  E.tick();
-  assert.equal(isOn(hud()), false, 'the pill kept itself alive by covering the trace');
-  /* pressing it opens Atlas through the console's own door */
-  trace.rect = { left: -400, top: 100, right: -60, bottom: 220 }; E.tick();
-  (hud()._on.click || []).forEach((f) => f());
-  assert.equal(opened.length, 1, 'the pill did not open Atlas');
-  /* the turn ends out of sight: the ending word, then nothing */
-  const real = Date.now;
-  try {
-    /* the console ends the stream a moment before the trace (js/atlas-console.js): the ending word is
-       already the pill's in that moment, not a stale 「Thinking」 */
-    LIVE.end(bubble, 'answered');
-    assert.equal(hud().querySelector('.atl-hud-word').textContent, PROG.endWord('answered'), 'the pill said the turn was still thinking after it ended');
-    PROG.done(bubble);
-    E.tick();
-    assert.equal(isOn(hud()), true);
-    assert.equal(hud().querySelector('.atl-hud-word').textContent, PROG.endWord('answered'));
-    const t = real(); Date.now = () => t + 60_000;
-    E.tick();
-    assert.equal(isOn(hud()), false, 'the pill outlived its turn');
-    assert.equal(E.ticking(), false, 'the visibility question kept being asked after the pill went');
-  } finally { Date.now = real; }
+  trace.rect = { left: -400, top: 100, right: -60, bottom: 220 };   /* the sidebar closed: the trace is outside the viewport */
+  if (typeof E.tick === 'function') E.tick();
+  assert.equal(E.mapWrap.querySelectorAll('.atl-hud').length, 0, 'a pill stood on the map saying Atlas was thinking');
+  LIVE.end(bubble, 'answered');
 });
 
 test('atlas-progress-one ③ the plan is inside the trace, its states are the ledger\'s, its marks are the trace\'s', async () => {
@@ -246,9 +208,7 @@ test('atlas-progress-one ⑤ no module puts operation chips or a plan card on th
   const live = read('js/atlas-live.js');
   assert.doesNotMatch(live, /atl-hud-ops|atl-hud-op\b|atl-hud-plan/, 'the map HUD still builds chips or a plan slot');
   assert.doesNotMatch(read('js/atlas-plan.js'), /ATLAS_PLAN_CSS|atl-plan-x/, 'the plan still carries a map card');
-  /* the pill keeps no words of its own for what Atlas is doing — it reads the trace's */
-  assert.match(live, /PROG\.liveWord\(/);
-  assert.doesNotMatch(live, /L\('Thinking'|L\('Researching'|L\('Answered'/, 'the pill wrote its own copy of the trace\'s words');
+  assert.doesNotMatch(live, /atl-hud/, 'the map pill is back');
 });
 
 /* ⑥ (atlas-interim-kept) 「途中の文章が、ターンが終わると消える」 (the user, 2026-11-24): the notes Atlas wrote on the

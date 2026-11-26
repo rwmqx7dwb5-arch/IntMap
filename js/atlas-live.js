@@ -22,8 +22,7 @@
  *    · DECIDING — a function call is announced the moment its NAME exists, before its arguments are
  *      complete, as 「next: …」 on the live row — a statement about intent, never a row that says the
  *      operation is running (that row is still opened by the executor's own event).
- *    · WHEN THE TRACE CANNOT BE SEEN — one small pill on the map (the HUD below) says what the trace's
- *      head says. Only then: while the trace is on screen the map carries nothing (atlas-progress-one).
+ *    · THE MAP CARRIES NOTHING — the pill that used to stand on it when the trace was out of sight is gone (2026-11-26).
  *
  *  ⚠⚠⚠ NOTHING HERE DECIDES ANYTHING, AND NOTHING HERE IS AN ANSWER. The draft is replaced by the
  *  answer js/atlas-agent.js returns; a stream that resets (a provider retry) withdraws what it showed;
@@ -37,7 +36,6 @@
  * ==========================================================================*/
 
 import { makePlanView } from './atlas-plan.js';   /* (atlas-plan-on-map) Atlas's plan, its observed states and the way back to what each step drew — in the work trace since atlas-progress-one */
-import { everyTick } from './runtime.js';   /* (atlas-progress-one) the one timer wheel — whether the trace can be seen is looked at, not assumed */
 
 /* ══ makeDraftReader — the top-level string fields of a JSON object that is still arriving ═════
    feed(delta) → { mode: 'json'|'prose'|'', turn, answerMode, text }
@@ -169,7 +167,6 @@ export function makeAtlasLive(HOST, deps) {
     if (history.length > 20) history.shift();
     lastAi = ai;
     try { if (PLANV) PLANV.render(); } catch (_) { }   /* a plan from an earlier turn moves into this turn's trace */
-    hudBegin(st);
     return st;
   }
   function mark(st, k) { if (st && st.lat[k] == null) st.lat[k] = Math.round(now() - st.t0); }
@@ -307,7 +304,6 @@ export function makeAtlasLive(HOST, deps) {
       try { const el = ai.querySelector('.atl-draft'); if (el) el.remove(); } catch (_) { }
     }
     try { if (PROG && PROG.outcome) PROG.outcome(ai, how); } catch (_) { }   /* the trace's head says how the turn ended */
-    hudEnd(st, how);
   }
   /* said(ai) — the notes this turn wrote on the way, in order (what was narrated; the fallback for js/atlas-agent.js `interim`) */
   function said(ai) { const st = stateOf(ai); return st ? st.said.slice() : []; }
@@ -324,119 +320,10 @@ export function makeAtlasLive(HOST, deps) {
   /* the answer is on screen — a moment, not an end (the bubble may still be composing) */
   function answered(ai) { const st = stateOf(ai); if (st) mark(st, 'answer'); }
 
-  /* ══ THE MAP PILL — ONLY WHEN THE TRACE CANNOT BE SEEN (atlas-progress-one) ═══════════════════════
-     ⚠⚠⚠ THERE WERE FOUR. For one turn the reader was shown the trace in the sidebar (its head saying
-     「Researching」), a pill on the map saying 「Atlas · Researching」, a row of operation chips above it
-     saying 「Researching」 again, and the plan as a card of its own — 「この表示、煩雑過ぎない？」. Each
-     was added on its own (atlas-live-stream put the HUD on the map so a reader watching the map saw
-     the drawing; atlas-plan-on-map put the plan in its column) and nobody decided how they related.
-     So: the trace is the one place, the plan is inside it, and the map carries nothing WHILE THE TRACE
-     CAN BE SEEN. When it cannot (the sidebar closed, the phone's sheet lowered, the workspace window
-     minimised, the trace scrolled away), one pill says what the trace's head says, and pressing it
-     opens Atlas.
-     ⚠ 「CAN BE SEEN」 IS LOOKED AT, NOT INFERRED FROM A MODE OR A WIDTH. display, visibility and
-     opacity pass for an element a panel is lying on ([[intmap-visible-is-not-unoccluded]]), and the
-     sidebar, the sheet and the workspace each hide it in a different way. So the trace is seen when part
-     of it is inside the viewport, nothing above it is transparent, and the point the reader would look
-     at answers to the trace itself (elementsFromPoint, with the pill — which may stand over it —
-     looked through). Asked on the runtime's wheel while a turn runs and for the moment after it ends.
-     ⚠ THE WORD IS THE TRACE'S. js/atlas-progress.js liveWord() is what its head shows; this pill keeps
-     no word of its own, so the two cannot disagree and 「Researching」 is written in one place. */
-  let hud = null, stopSeen = null;
-  const pill = { ai: null, live: false, endedAt: 0, how: '' };
-  const SEEN_TICK_MS = 400;     /* how often 「can the trace be seen」 is asked while it matters — under half a second between closing the sidebar and the pill */
-  const END_SHOW_MS = 2600;     /* the ending word stays this long, then the pill goes (the HUD's fade, kept) */
-  function hudEl() {
-    if (hud && hud.isConnected) return hud;
-    try {
-      const host = document.getElementById('map');
-      const parent = host && host.parentElement;
-      if (!parent) return null;
-      hud = document.createElement('button');
-      hud.type = 'button';
-      hud.className = 'atl-hud';
-      hud.setAttribute('aria-live', 'polite');
-      hud.innerHTML = '<span class="atl-hud-dot"></span><span class="atl-hud-name">Atlas</span><span class="atl-hud-word"></span><span class="atl-hud-step"></span>';
-      hud.addEventListener('click', openTrace);
-      parent.appendChild(hud);
-      return hud;
-    } catch (_) { return null; }
-  }
-  /* pressing the pill opens Atlas through the doors that already exist: the sheet's own detent on a phone
-     (js/mobile-ui.js __setDetent), then the console's open() — which uncollapses the sidebar and restores
-     a minimised workspace window — and finally the trace is brought into its scroller's view */
-  function openTrace() {
-    try { const b = document.body.classList, setDetent = window.__setDetent; if (typeof setDetent === 'function' && (b.contains('sheet-min') || b.contains('sheet-hidden'))) setDetent('half'); } catch (_) { }
-    try { if (typeof deps.openPanel === 'function') deps.openPanel(); } catch (_) { }
-    setTimeout(() => { try { const el = PROG && PROG.traceEl ? PROG.traceEl(pill.ai) : null; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' }); } catch (_) { } tick(); }, 120);
-  }
-  /* traceSeen(el) — can the reader see this trace right now? */
-  function traceSeen(el) {
-    try {
-      if (!el || !el.isConnected) return false;
-      const vw = window.innerWidth || 0, vh = window.innerHeight || 0;
-      const r = el.getBoundingClientRect();
-      const x0 = Math.max(0, r.left), x1 = Math.min(vw, r.right), y0 = Math.max(0, r.top), y1 = Math.min(vh, r.bottom);
-      if (!(x1 - x0 >= 2 && y1 - y0 >= 2)) return false;
-      for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
-        const cs = getComputedStyle(n);
-        if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) return false;
-      }
-      const pts = [[(x0 + x1) / 2, (y0 + y1) / 2]];
-      const head = el.querySelector('.atl-trace-head');
-      if (head) { const h = head.getBoundingClientRect(); pts.unshift([(h.left + h.right) / 2, (h.top + h.bottom) / 2]); }
-      return pts.some((p) => {
-        if (!(p[0] >= 0 && p[1] >= 0 && p[0] < vw && p[1] < vh)) return false;
-        const hits = document.elementsFromPoint(p[0], p[1]) || [];
-        const top = hits.find((h) => !(hud && (h === hud || hud.contains(h))));
-        return !!top && el.contains(top);
-      });
-    } catch (_) {
-      /* could not look: nothing is put on the map — the trace is still where it always is */
-      return true;
-    }
-  }
-  function paintPill(h) {
-    try {
-      const word = (PROG && PROG.liveWord) ? PROG.liveWord(pill.ai) : '';
-      h.querySelector('.atl-hud-word').textContent = String(word || '').slice(0, 90);
-      let step = '';
-      const snap = (pill.live && deps.plan && typeof deps.plan.snapshot === 'function') ? deps.plan.snapshot() : null;
-      if (snap && snap.live && snap.thisTurn && snap.steps.length) {
-        step = L('Step {i}/{n}', '手順 {i}/{n}').split('{i}').join(String(snap.current)).split('{n}').join(String(snap.steps.length));
-      }
-      h.querySelector('.atl-hud-step').textContent = step;
-      h.setAttribute('aria-label', 'Atlas · ' + word + (step ? ' · ' + step : '') + ' — ' + L('Open Atlas', 'Atlas を開く'));
-    } catch (_) { }
-  }
-  function tick() {
-    const h = hudEl(); if (!h) return;
-    const ending = !pill.live;
-    if (ending && Date.now() - pill.endedAt >= END_SHOW_MS) { setPill(h, false); stopTicking(); return; }
-    const seen = traceSeen(PROG && PROG.traceEl ? PROG.traceEl(pill.ai) : null);
-    if (seen) { setPill(h, false); return; }
-    paintPill(h);
-    h.classList.toggle('done', ending);
-    setPill(h, true);
-  }
-  function setPill(h, on) {
-    try {
-      if (on) { h.classList.remove('off'); h.classList.add('on'); h.tabIndex = 0; }
-      else if (h.classList.contains('on')) { h.classList.remove('on'); h.classList.add('off'); h.tabIndex = -1; }
-    } catch (_) { }
-  }
-  function stopTicking() { try { if (stopSeen) { stopSeen(); stopSeen = null; } } catch (_) { } }
-  function hudBegin(st) {
-    pill.ai = lastAi; pill.live = true; pill.endedAt = 0; pill.how = '';
-    try { stopSeen = everyTick('atl-hud-seen', SEEN_TICK_MS, tick); } catch (_) { stopSeen = null; }
-    try { tick(); } catch (_) { }
-    st.hud = true;
-  }
-  function hudEnd(st, how) {
-    if (!st || !st.hud || pill.ai !== lastAi) return;
-    pill.live = false; pill.endedAt = Date.now(); pill.how = String(how || '');
-    try { tick(); } catch (_) { }
-  }
+  /* ══ THE MAP CARRIES NOTHING (2026-11-26) ════════════════════════════════════════════════════
+     A pill on the map used to say 「Atlas · 考え中」 whenever the trace was out of sight (sidebar closed, sheet lowered). The reader asked for it gone:
+     what Atlas is doing belongs to Atlas's own panel, and a second indicator on the map is the duplication atlas-progress-one removed once already
+     (it came back through the one case that rule left open). What it did — open Atlas on press — is the panel's own button. */
   /* watch(EXEC) — ONE subscription, routed to the live reply (the js/atlas-progress.js watch rule). It no
      longer puts anything on the map — the trace has the operation's row — and keeps only what the
      measured wait needs: when the first operation started and when the first drawing landed. */
@@ -486,30 +373,4 @@ export const ATLAS_LIVE_CSS =
      with room above and below it. Its mark is a speech glyph, not a tick, so it does not wear the green. */
   + '#atlas-panel .atl-trace-row.say{align-items:flex-start;padding:6px 0;}'
   + '#atlas-panel .atl-trace-row.say .atl-trace-mark{color:var(--text-muted);margin-top:4px;}'
-  + '#atlas-panel .atl-trace-row.say .atl-trace-det{white-space:normal;overflow:visible;opacity:.92;font-size:14px;line-height:1.55;font-weight:400;}'
-  /* ⚠ WHERE IT STANDS WAS MEASURED, NOT CHOSEN: at the top of the map it sat under the search bar, the
-     engine switches and every floating legend. The bottom centre of the map is the one band no control
-     occupies on a desktop — the readout is bottom-left, Chronos bottom-right. On a phone the sheet covers
-     the bottom, so there it stands under the top bar instead (ATLAS_LIVE_CSS_MOBILE). */
-  + '.atl-hud{position:absolute;left:50%;bottom:calc(58px + var(--safe-bottom));transform:translate(-50%,8px);z-index:var(--z-map-overlay);pointer-events:none;'
-  + 'display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;max-width:min(420px,calc(100% - 32px));opacity:0;margin:0;cursor:pointer;'
-  + 'background:var(--sidebar-bg,rgba(28,28,30,0.85));color:var(--text-main,#fff);border:1px solid rgba(127,127,127,0.22);'
-  + 'backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 6px 22px rgba(0,0,0,0.18);'
-  + 'transition:opacity .22s ease,transform .22s ease;font:500 12px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;}'
-  + '.atl-hud.on{opacity:1;transform:translate(-50%,0);pointer-events:auto;}'
-  + '.atl-hud.off{opacity:0;}'
-  + '.atl-hud:not(.on){visibility:hidden;transition:opacity .22s ease,transform .22s ease,visibility 0s linear .22s;}'
-  + '.atl-hud-name{font-weight:700;}'
-  + '.atl-hud-word{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted,rgba(255,255,255,0.75));}'
-  + '.atl-hud-step{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text-muted,rgba(255,255,255,0.75));}'
-  + '.atl-hud-step:empty{display:none;}'
-  + '.atl-hud-step::before{content:"\\00b7";margin-right:7px;}'
-  + '.atl-hud-dot{width:8px;height:8px;border-radius:50%;background:#0a84ff;flex:0 0 8px;animation:atl-hud-pulse 1.2s ease-in-out infinite;}'
-  + '.atl-hud.done .atl-hud-dot{animation:none;background:#30d158;}'
-  + '@keyframes atl-hud-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.7);}}'
-  + '@media (prefers-reduced-motion:reduce){.atl-hud,.atl-hud.on{transition:none;transform:translate(-50%,0);}'
-  + '.atl-hud-dot{animation:none;}}';
-/* On a phone the Atlas sheet covers the bottom of the map, so the pill stands under the top bar. Placed
-   inside the panel sheet's phone block by js/atlas-styles.js — the boundary is IntMapDevice.COMPACT. */
-export const ATLAS_LIVE_CSS_MOBILE =
-  '.atl-hud{bottom:auto;top:calc(64px + var(--safe-top));transform:translate(-50%,-8px);}';
+  + '#atlas-panel .atl-trace-row.say .atl-trace-det{white-space:normal;overflow:visible;opacity:.92;font-size:14px;line-height:1.55;font-weight:400;}';

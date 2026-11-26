@@ -131,6 +131,9 @@ export function makeAtlasPlan(opts) {
     return {
       geo: plan.geo ? { spec: plan.geo.spec, gaps: gapsOf(plan.geo.spec), check: plan.geo.check } : null,
       id: plan.id, goal: plan.goal, current: plan.current + 1, live, turn: plan.turn, thisTurn: plan.turn === turnNo,
+      /* WHO WROTE THE LIST: `thisTurn` says the plan was touched in this turn (a call that only moved `current` counts); `declaredThisTurn` says this turn
+         WROTE the steps. The checklist a reader sees is the second one — a question that merely continues an earlier plan did not make that list. */
+      declaredThisTurn: plan.declaredTurn === turnNo,
       steps: plan.steps.map((st, i) => ({
         n: i + 1, title: st.title, state: stepState(st, i),
         ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null })),
@@ -159,7 +162,7 @@ export function makeAtlasPlan(opts) {
       const before = plan;
       const prev = plan ? plan.steps : [];
       let keptOld = false;
-      plan = { geo: before ? before.geo : undefined, id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
+      plan = { geo: before ? before.geo : undefined, declaredTurn: turnNo, id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
         steps: steps.map((t, i) => {
           const old = prev[i] && normTitle(prev[i].title) === normTitle(t) ? prev[i] : null;
           if (old) keptOld = true;
@@ -452,7 +455,7 @@ export function makePlanView(ledger, deps) {
     lastSlot = slot;
     if (!slot) return;
     const s = ledger.snapshot();
-    if (!s || !s.thisTurn) return;   /* nothing is drawn, and nothing already drawn is erased: a slot holds the plan of the turn it belongs to */
+    if (!s || !s.declaredThisTurn) return;   /* nothing is drawn, and nothing already drawn is erased: a slot holds the plan of the turn it belongs to */
     const done = s.steps.filter((x) => x.state === 'completed').length;
     const bad = s.steps.some((x) => x.state === 'failed' || x.state === 'stopped');
     const warn = s.steps.some((x) => x.state === 'partial' || x.state === 'unobserved' || x.state === 'waiting');

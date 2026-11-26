@@ -42,6 +42,7 @@ const LOG_MAX = 60;
 export function makeNotify(doc) {
   let el = null, polite = null, assertive = null;
   let hideT = null, clearT = null, current = '', currentUrgent = false;
+  let quietOn = false;   /* an Atlas turn is running: see quiet() */
   const log = [];
   const record = (e) => { log.push(e); if (log.length > LOG_MAX) log.shift(); };
 
@@ -86,6 +87,10 @@ export function makeNotify(doc) {
     const o = opts || {};
     const urgent = !!o.urgent, visual = o.visual !== false;
     const t = Date.now();
+    /* ⚠ WHILE ATLAS IS WORKING THE MAP, ITS OPERATIONS DO NOT TOAST (2026-11-26). The red box was the app's answer to a reader's own click; Atlas drives the same layer and
+       view code, so every operation of a turn reported its technical outcome («could not load …») over the map — information the reader cannot act on and Atlas already has
+       (the result goes to the model, the failure to the trace's detail). Recorded and logged, not drawn. Urgent messages (turn-by-turn navigation) still speak. */
+    if (quietOn && !urgent && visual) { record({ t, text, urgent, folded: false, quiet: true }); try { console.info('[notify:quiet]', text); } catch (_) { } return false; }
     const r = region();
     if (text === current && urgent === currentUrgent && r && (r.classList.contains('show') || !visual)) {
       record({ t, text, urgent, folded: true });
@@ -109,6 +114,8 @@ export function makeNotify(doc) {
 
   return {
     show, hide,
+    /* quiet(on) — Atlas's console sets it for the length of a turn (js/atlas-console.js _setGoBusy) */
+    quiet: (on) => { quietOn = !!on; },
     /* what was said — { t, text, urgent, folded } — newest last */
     log: () => log.slice(),
     /* the region itself, for a reader that must find it (tests, the accessibility audit) */
