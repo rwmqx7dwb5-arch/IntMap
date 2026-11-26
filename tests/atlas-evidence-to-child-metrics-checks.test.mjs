@@ -20,7 +20,7 @@ const CONSOLE = readFileSync(new URL('../js/atlas-console.js', import.meta.url),
 const i0 = CONSOLE.indexOf('const runReadCapability = ');
 const i1 = CONSOLE.indexOf('\n    /*', i0);
 assert.ok(i0 > 0 && i1 > i0, 'runReadCapability is in the console');
-const inText = (u) => new RegExp(u.replace(/[.*+?^${}()|[\]\/]/g, '\$&'));   /* a source address as a pattern: asserted by match, not by substring */
+const inText = (u) => new RegExp(Array.from(u, (c) => (/[A-Za-z0-9]/.test(c) ? c : '\\x' + c.charCodeAt(0).toString(16).padStart(2, '0'))).join(''));   /* a source address as a pattern, every non-alphanumeric written as a code: asserted by match, not by substring */
 const MARK = 'ZXQ-MARK-7731', URL1 = 'https://evidence.example.test/report/2026', URL2 = 'https://evidence.example.test/other';
 
 /* the kernel's Result for a capability that answers through `exec`, as js/atlas-executor.js composes it */
