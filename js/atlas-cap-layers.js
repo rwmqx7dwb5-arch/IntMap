@@ -21,6 +21,7 @@ import { IntMapTime } from './chronos.js';   /* (map-layer-system) an indicator 
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { layerState } from './layer-state.js';   /* (atlas-capability-inputs) what happened to each box's request — the layer's own answer, read directly, not through a window global */
 
 /* (companies-elections-live) the National elections layer on, through its own Layers-panel row.
    (news-past-fixes) ON THE ELECTION THE CALL NAMES, chosen before the switch (js/elections.js `open`): switching on
@@ -72,7 +73,7 @@ export default [
                when there is one; the style delta is only EXTRA evidence that something drew; and a layer that keeps no record and
                changed nothing we can see is «not confirmed» — said as such, never re-fired and never called a failure
                (.agents/rules/one-pass-or-a-reason.md §1, §5). A turn-OFF is not evidence about painting (#R747), so it waits for nothing. */
-            const LS=window.IntMapLayerState, cbId=r.cb&&r.cb.id, own=()=>{ try{ return (cbId&&LS&&LS.get)?LS.get(cbId):null; }catch(_){ return null; } };
+            const LS=layerState, cbId=r.cb&&r.cb.id, own=()=>{ try{ return (cbId&&LS&&LS.get)?LS.get(cbId):null; }catch(_){ return null; } };
             let st=null, layerNodata=null;
             if(r.want){ const t0=Date.now();
               for(;;){ await new Promise(r2=>setTimeout(r2,300)); st=own();
