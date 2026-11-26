@@ -74,7 +74,7 @@ select set_config('intmap.ai_ledger', '', true);
 -- through the API a count is still not written by hand
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
-select _run('api_zero', 'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
+select _run('api_zero', 'update public.ai_usage set count = 9 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
 reset role;
 select is((select v from _cap where k='api_zero'), 'DENIED', 'an API role still cannot write a count outside the ledger functions');
 
@@ -125,8 +125,10 @@ select _run('rd_i', 'select (public.increment_ai_usage(''22222222-2222-2222-2222
 reset role;
 select is((select count from public.ai_usage where user_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date - 1), 1, 'a refund that names its day goes to that day, not to today');
 select is((select count from public.ai_usage where user_id = '22222222-2222-2222-2222-222222222222' and usage_date = current_date), 1, 'a refund with no day is today''s (0), and the next charge is 1');
-select _run('o_after', 'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
-select is((select v from _cap where k='o_after'), 'DENIED', 'after the ledger functions ran, the owner still cannot write a count: their setting lasted only as long as the call');
+set local role service_role;
+select _run('o_after', 'update public.ai_usage set count = 9 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
+reset role;
+select is((select v from _cap where k='o_after'), 'DENIED', 'after the ledger functions ran, an API role still cannot write a count: their setting lasted only as long as the call');
 select is((select count(*)::int from information_schema.columns where table_schema = 'public' and table_name = 'ai_usage' and column_name = 'updated_at'), 1, 'ai_usage has the updated_at the live table has');
 
 select * from finish();
