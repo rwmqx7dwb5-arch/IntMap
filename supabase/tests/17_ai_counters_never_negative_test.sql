@@ -49,7 +49,7 @@ select _run('o_big',    'update public.ai_usage set count = -100000000 where use
 select _run('o_studio', 'update public.ai_usage set (count) = (select count from json_populate_record(null::public.ai_usage, ''{"count":-99999938}''::json)) where user_id = ''11111111-1111-1111-1111-111111111111'' and usage_date = current_date');
 select _run('o_ins',    'insert into public.ai_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 3, -10)');
 select _run('o_gloss',  'insert into public.ai_gloss_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 3, -10)');
-select _run('o_zero',   'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');   -- by hand: refused (atlas-jobs-reliability)
+select _run('o_zero',   'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');   -- by hand as the owner (Studio's table editor): allowed again (ai-usage-table-editor)
 select _run('o_give',   'update public.ai_usage set count = 4 where user_id = ''11111111-1111-1111-1111-111111111111'' and usage_date = current_date');
 select _run('o_new',    'insert into public.ai_usage (user_id, usage_date, count) values (''11111111-1111-1111-1111-111111111111'', current_date - 5, 1)');
 select set_config('intmap.ai_ledger', 'admin', true);
@@ -61,11 +61,22 @@ select is((select v from _cap where k='o_big'),    'ERR:23514', 'nor the -100,00
 select is((select v from _cap where k='o_studio'), 'ERR:23514', 'nor through the statement Studio''s table editor issues');
 select is((select v from _cap where k='o_ins'),    'ERR:23514', 'nor insert a negative row');
 select is((select v from _cap where k='o_gloss'),  'ERR:23514', 'the gloss lane''s counter is held to the same rule');
-select is((select v from _cap where k='o_zero'),   'DENIED',    'a count is not written by hand, not even a zero that hands a day''s uses back');
-select is((select v from _cap where k='o_give'),   'DENIED',    'nor lowered to give uses back');
-select is((select v from _cap where k='o_new'),    'DENIED',    'nor inserted with a count');
+select is((select v from _cap where k='o_zero'),   'OK',        'the operator can write a count by hand from the table editor, a zero included');
+select is((select v from _cap where k='o_give'),   'OK',        'or lower it');
+select is((select v from _cap where k='o_new'),    'OK',        'or insert a row with a count');
 select is((select v from _cap where k='o_admin'),  'OK',        'an administrator who says so in the transaction can still correct one');
-select is((select count from public.ai_usage where user_id = '11111111-1111-1111-1111-111111111111' and usage_date = current_date), 5, 'the refused writes changed nothing');
+select is((select count from public.ai_usage where user_id = '11111111-1111-1111-1111-111111111111' and usage_date = current_date), 4, 'the owner''s write took (4), the refused negatives changed nothing');
+select set_config('intmap.ai_ledger', 'admin', true);
+update public.ai_usage set count = 5 where user_id = '11111111-1111-1111-1111-111111111111' and usage_date = current_date;
+delete from public.ai_usage where user_id = '11111111-1111-1111-1111-111111111111' and usage_date = current_date - 5;
+select set_config('intmap.ai_ledger', '', true);
+
+-- through the API a count is still not written by hand
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+select _run('api_zero', 'update public.ai_usage set count = 0 where user_id = ''22222222-2222-2222-2222-222222222222'' and usage_date = current_date');
+reset role;
+select is((select v from _cap where k='api_zero'), 'DENIED', 'an API role still cannot write a count outside the ledger functions');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  3 + 4. THE RPCs — as service_role, the only role that may call them
