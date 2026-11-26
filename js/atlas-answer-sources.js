@@ -244,6 +244,14 @@ export function makeAtlasAnswerSources(deps) {
       if (!HOSTISH.test(String(label).trim())) return m;
       note(href); return '<span class="atl-scs">' + chipHtml(href, label, false) + '</span>';
     });
+    /* ⚠ (atlas-answer-panel) A CITATION THAT FILLS A PARAGRAPH ON ITS OWN IS THE END OF THE PARAGRAPH BEFORE IT. The model often writes
+       «…本文。» and then the host in brackets on a line of its own; the markdown pass makes that a paragraph of its own, so the chip sat
+       below the text with a paragraph's gap above it (reported 2026-11-26) instead of continuing the sentence. A paragraph whose whole
+       content is source chips (and the separators between them) is folded into the paragraph before it — decided by what the paragraph
+       CONTAINS, not by where the model happened to break the line. The first paragraph of an answer has nothing before it and stays. */
+    /* what a chip paragraph is made of, read without a nested pattern: the host names are the chips' only text, the tags are markup, and «+N» is the fold button's */
+    const chipsOnly = (body) => /^(?:<[^<>]*>|[\s,、;；·・+0-9])*$/.test(body.replace(/<span class="atl-sc-name">[^<]*<\/span>/g, ''));   /* tags, and whitespace/separators/«+N» between them — and nothing else; tested, never stripped */
+    out = out.replace(/<\/p>\s*<p class="atl-p[^"]*">(<span class="atl-scs">[\s\S]*?)<\/p>/g, (m, body) => (chipsOnly(body) ? ' ' + body + '</p>' : m));
     return { html: out, sources };
   }
 
@@ -384,8 +392,8 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-sc-ico{width:12px;height:12px;border-radius:3px;flex:none;}'
   + '.atl-sc-name{overflow:hidden;text-overflow:ellipsis;}'
   + '.atl-sc-more{border:1px solid var(--glass-border,rgba(128,128,128,.2));background:var(--input-bg,rgba(128,128,128,.14));color:var(--text-muted);border-radius:.8em;height:1.55em;padding:0 .55em;font-size:.78em;font-weight:600;cursor:pointer;}'
-  + '.atl-scard{box-sizing:border-box;position:fixed;z-index:var(--z-toast);padding:10px 12px;border-radius:14px;background:var(--bg-glass-strong,rgba(28,28,32,.96));color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,.3));'
-  + 'box-shadow:0 12px 36px rgba(0,0,0,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12.5px;line-height:1.5;}'
+  + '.atl-scard{box-sizing:border-box;position:fixed;z-index:var(--z-toast);padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--popup-bg,var(--card-bg)) 66%,transparent);color:var(--text-main);border:1px solid color-mix(in srgb,var(--text-main) 14%,transparent);'
+  + 'box-shadow:0 12px 36px rgba(0,0,0,.35);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);font-size:12.5px;line-height:1.5;}'
   + '.atl-scard[hidden]{display:none;}'
   + '.atl-scard-h{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text-muted);margin-bottom:3px;}'
   + '.atl-scard-t{font-weight:600;font-size:13.5px;line-height:1.4;}'

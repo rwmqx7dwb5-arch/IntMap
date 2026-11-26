@@ -35,6 +35,9 @@ const IDLE_MS = 6000;
 let mode = 'tab';
 let root = null, card = null;
 let gone = false;          /* the reader hid the card with its × — brought back by open/toggle (the A key, the Atlas button) */
+const BG_KEY = 'intmap.atlas.floatBg';
+let bg = false;            /* the conversation sits on a rounded frosted pane (and loses its glow) — the reader's switch, kept across visits */
+try { bg = localStorage.getItem(BG_KEY) === '1'; } catch (_) { /* private window: off */ }
 let folded = false;        /* the conversation is folded away; the input stays */
 let idleT = 0, queued = false, wired = false, chatSeen = null, chatObs = null, warmed = false;
 
@@ -50,6 +53,7 @@ const CSS =
   /* THE CARD IS NOT A SURFACE (2026-11-18): answers lie directly on the map as text (no surface
      at all — see THE ANSWER IS TEXT ON THE MAP below), the bar is a small pill and only the input row becomes a surface. So the card has no background, border, shadow or backdrop-filter, and it does not take the pointer — the map
      under the empty parts of it stays draggable; the pieces that are content (bar, answers, input) take it themselves. */
+  + '#atlas-float{--atl-ink-main:var(--text-main);--atl-ink-muted:var(--text-muted);}'
   + '#atlas-float .atl-float-card{pointer-events:none;display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden;color:var(--text-main);'
   + 'opacity:0;transform:translateY(12px) scale(.985);'
   + 'transition:opacity .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1);}'
@@ -83,11 +87,26 @@ const CSS =
      carries: a tight edge, a soft drop and a wide falloff, in the colour opposite the ink (light ink + dark halo in the dark theme,
      dark ink + light halo in the light one). text-shadow is inherited, so it is set once on the conversation; the reader's own
      question keeps its bubble and so needs no halo. */
-  + '#atlas-float{--atl-halo:255,255,255;}'
-  + '[data-theme="dark"] #atlas-float{--atl-halo:0,0,0;}'
-  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.95),0 1px 3px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 18px rgba(var(--atl-halo),.75),0 0 34px rgba(var(--atl-halo),.6);}'
-  + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;}'
-  + '#atlas-float #atlas-panel .atl-chat>.atl-b{pointer-events:none;}'
+  /* THE INK IS WHITE, AND IT CARRIES ITS OWN GLOW (2026-11-26, the reader: no grey text on the map). The tokens the conversation reads its colours
+     from are re-pointed to white inside it, so every piece that used the muted grey (labels, step lines, the time, sources) turns white with
+     the rest instead of each rule being found one by one. The glow is a dark falloff on the GLYPHS (text-shadow), never a box or a
+     filter on a block: a shadow on a rectangle reads as a rectangle. text-shadow is inherited, so it is set once here. */
+  + '#atlas-float{--atl-halo:0,0,0;}'
+  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 1px rgba(var(--atl-halo),.9),0 1px 3px rgba(var(--atl-halo),.85),0 0 9px rgba(var(--atl-halo),.7),0 0 20px rgba(var(--atl-halo),.55),0 0 38px rgba(var(--atl-halo),.4);--text-main:#fff;--text-muted:#fff;color:#fff;}'
+  /* the reader's own message keeps its bubble, a little more opaque than the sidebar's so the white ink reads on any map; no glow inside it */
+  + '#atlas-float #atlas-panel .atl-chat .atl-b.u{text-shadow:none;--atlas-glass:linear-gradient(135deg,rgba(0,122,255,.66),rgba(94,92,230,.62) 56%,rgba(191,90,242,.60));}'
+  /* THE CONVERSATION CAN BE REACHED. The rectangle used to be pointer-events:none all the way down, with a few inner pieces opting back in, so a
+     wheel over a bubble, its copy/edit buttons or the gaps between lines went to the map (it zoomed, the answer did not scroll). The structure
+     is now: the empty column stays transparent to the pointer (the fades and padding), and everything the conversation is made of takes it. */
+  + '#atlas-float #atlas-panel .atl-chat>.atl-b,#atlas-float #atlas-panel .atl-chat>.atl-msgt,#atlas-float #atlas-panel .atl-chat>:not(.atl-b){pointer-events:auto;}'
+  + '#atlas-float #atlas-panel .atl-chat .atl-b.u{pointer-events:auto;}'
+  /* THE BACKGROUND SWITCH (the bar's third button). On: the conversation sits on one rounded frosted pane in the app's own glass tokens, the
+     ink goes back to the theme's and the glow is off (the pane is what keeps it legible). Off: text on the map. */
+  + '#atlas-float.bg #atlas-panel .atl-chat{--text-main:var(--atl-ink-main);--text-muted:var(--atl-ink-muted);color:var(--atl-ink-main);text-shadow:none;pointer-events:auto;'
+  + 'background:color-mix(in srgb,var(--popup-bg) 58%,transparent);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px);'
+  + 'border:1px solid color-mix(in srgb,var(--text-main) 12%,transparent);border-radius:22px;padding:14px 12px 14px;margin-bottom:8px;-webkit-mask-image:none;mask-image:none;}'
+  + '#atlas-float.bg #atlas-panel .atl-chat .atl-b.u{--atlas-glass:linear-gradient(135deg,rgba(0,122,255,.34),rgba(94,92,230,.30) 56%,rgba(191,90,242,.28));}'
+  + '#atlas-float .atl-float-bg[aria-pressed="true"]{background:var(--input-bg);color:var(--text-main);}'
   + '#atlas-float .atl-b.a :is(.atl-md,.atl-md>*,.atl-cmp,.atl-actrow,.atl-srcs,.atl-fold,.atl-interim){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'
   + '#atlas-float .atl-b.a .atl-md{display:block;pointer-events:auto;padding:0;color:var(--text-main);font-size:15px;line-height:1.72;}'
   + '#atlas-float .atl-b.a .atl-md>p+p{margin-top:.75em;}'
@@ -112,6 +131,7 @@ const CSS =
   + '#atlas-float .atl-float-new{animation:none;}#atlas-float .atl-float-fold svg{transition:none;}}';
 
 const SVG_FOLD = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const SVG_BG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="4.5"/><path d="M8 10h8M8 14h5"/></svg>';
 const SVG_X = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
 function ensureCss() {
@@ -139,6 +159,7 @@ function ensureRoot() {
   card = document.createElement('div'); card.className = 'atl-float-card';
   const bar = document.createElement('div'); bar.className = 'atl-float-bar';
   bar.appendChild(btn('atl-float-fold', SVG_FOLD, 'atlFloatFold', 'Collapse conversation', () => setFolded(!folded)));
+  bar.appendChild(btn('atl-float-bg', SVG_BG, 'atlFloatBg', 'Frosted background behind the conversation', () => setBg(!bg)));
   bar.appendChild(btn('atl-float-x', SVG_X, 'atlFloatHide', 'Hide (press A to bring it back)', () => { gone = true; paint(); }));
   card.appendChild(bar);
   root.appendChild(card);
@@ -149,6 +170,12 @@ function ensureRoot() {
   /* a panel that leaves the card (mountTab, the workspace) leaves the card empty — repaint */
   try { new MutationObserver(paint).observe(card, { childList: true }); } catch (_) { }
   return root;
+}
+
+function setBg(v) {
+  bg = !!v;
+  try { localStorage.setItem(BG_KEY, bg ? '1' : '0'); } catch (_) { /* a convenience, not a record */ }
+  paint(); wake();
 }
 
 function setFolded(v) {
@@ -223,6 +250,8 @@ function paint() {
   const was = root.classList.contains('on');
   root.classList.toggle('on', on);
   root.classList.toggle('folded', folded);
+  root.classList.toggle('bg', bg);
+  const bb = root.querySelector('.atl-float-bg'); if (bb) bb.setAttribute('aria-pressed', String(bg));
   if (on && !was) wake();
 }
 
