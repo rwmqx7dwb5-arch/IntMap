@@ -17,6 +17,16 @@
 
 export const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 
+/* A GeoJSON result can also hold rows with null geometry. Describe the geometry that is actually present. */
+export function jobGeometryTypes(features) {
+  const types = new Set();
+  for (const f of features) {
+    const type = f?.geometry?.type;
+    if (typeof type === 'string' && type) types.add(type);
+  }
+  return [...types].sort();
+}
+
 /* a JSON text that does not depend on key order — the identity of an arguments object */
 export function stable(v) {
   if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';

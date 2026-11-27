@@ -12,7 +12,10 @@ import { makeHeadlessGis } from '../supabase/functions/_shared/gis-headless.js';
 import { loadGis } from '../supabase/functions/_shared/gis-loader.js';
 import { jobFacts, jobText, makeJobsClient } from '../js/atlas-jobs-client.js';
 import { saveJobAsWork } from '../js/atlas-job-products.js';
-import { currentProducts } from '../js/atlas-work-store.js';
+import { currentProducts, WORK_STATE } from '../js/atlas-work-store.js';
+import jobsCaps from '../js/atlas-cap-jobs.js';
+import workCaps from '../js/atlas-cap-work.js';
+import mapCaps from '../js/atlas-cap-map.js';
 
 const FILE = 'https://data.example.org/open/points-500.geojson';
 const pt = (i, pad) => ({ type: 'Feature', properties: Object.assign({ n: i, name: 'c' + i }, pad ? { pad: 'x'.repeat(pad) } : null), geometry: { type: 'Point', coordinates: [130 + i / 1000, 33 + i / 2000] } });
@@ -71,7 +74,7 @@ const run = (db, callModel, fetchGeoJson) => runJob({ db, job: db.st.job, holder
 const jobRow = (db) => Object.assign({}, db.st.job, { tasks_total: db.st.tasks.size, spent_micros: 0, cost_cap_micros: 1000000, amend_count: db.st.job.amends.length });
 const pageClient = (db) => makeJobsClient({ sb: { from: db.from, rpc: db.rpc } });
 /* a work store that is SERIALISED — a store reopened later reads only what was written */
-function deviceStore() { const disk = new Map(); return { disk, get: async (id) => (disk.has(id) ? JSON.parse(disk.get(id)) : null), put: async (w) => { disk.set(w.id, JSON.stringify(w)); } }; }
+function deviceStore(disk = new Map()) { return { disk, get: async (id) => (disk.has(id) ? JSON.parse(disk.get(id)) : null), put: async (w) => { disk.set(w.id, JSON.stringify(w)); } }; }
 
 /* ── ① the audit's pipeline: 500 points fetched, the last one selected from what was fetched, a worker that reads to the end, filed on the page ── */
 test('① A fetches 500 points from a file; B selects the last one FROM A; C reads A to its last row; the job is done; the page files the datasets and keeps the source', async () => {
@@ -119,19 +122,59 @@ test('① A fetches 500 points from a file; B selects the last one FROM A; C rea
 
   /* the page: what Atlas is told, what is filed, and what a reopened page can read */
   const facts = jobFacts(jobRow(db), Array.from(db.st.tasks.values()));
+  const previousRows = structuredClone(Array.from(db.st.tasks.values()));
+  delete previousRows.find((t) => t.task_id === 'B').result.data.output.geometryTypes;
+  assert.deepEqual(jobFacts(jobRow(db), previousRows).tasks.find((t) => t.id === 'B').output.geometryTypes, ['Point'], 'older inline outputs also expose their geometry');
   const text = jobText(facts);
   assert.match(text, /output job:[^ ]+\/B v\w+: 1 feature/, 'Atlas is told what B made as data');
   const store = deviceStore();
   const client = pageClient(db);
   const saved = await saveJobAsWork(facts, store, { readOutput: (taskId) => client.output(facts.id, taskId) });
   assert.equal(saved.ok, true, JSON.stringify(saved));
-  const reopened = deviceStore(); reopened.disk = store.disk;   /* a new page: only what was written to disk */
+  const reopened = deviceStore(store.disk);   /* a new page: only what was written to disk */
   const work = JSON.parse(store.disk.get(saved.workId));
   const ds = currentProducts(work).filter((p) => p.kind === 'dataset');
   assert.deepEqual(ds.map((p) => p.content.count).sort((a, b) => a - b), [1, 500], 'both datasets are products (there were none)');
   const one = ds.find((p) => p.content.count === 1);
+  const reread = await saveJobAsWork(facts, reopened, { readOutput: (taskId) => client.output(facts.id, taskId) });
+  assert.deepEqual(reread.saved, [], 'reading an already filed result does not create another version');
+  const place = reread.datasets.find((d) => d.task === 'B');
+  assert.equal(place.product, one.id);
+  const record = jobText(facts, reread);
+  assert.ok(record.includes(JSON.stringify({ type: 'work', action: 'restore', id: saved.workId, product: one.id })));
+  assert.match(record, /\bPoint\b/, 'the result states the geometry it holds');
   assert.deepEqual(one.content.features[0].geometry.coordinates, pt(499).geometry.coordinates, 'the one point and its coordinates are read back');
   assert.equal(one.from.url, FILE, '… with the file it came from');
+
+  /* Follow the actual capability results on a reopened page. Only the renderer boundary is a test double. */
+  const page = globalThis.window;
+  WORK_STATE.store = reopened;
+  page.sb = db;
+  page.SUPABASE_URL = 'https://test.example.org';
+  page.IntMapLazy = { need: loadGis };
+  const layers = [];
+  page.GeoJSONUpload = { add: (geojson, title, data, options) => {
+    layers.push({ geojson, dataset: options.datasetId });
+    return { sid: 'GIS result' };
+  } };
+  const K = { R: (ok, html, extra) => ({ ok, html, ...extra }), L: (en) => en, esc: String, warn: String, note: String };
+  const call = (caps, id, args) => caps.find((c) => c.row[0] === id).run(args, {}, K);
+  try {
+    const status = await call(jobsCaps, 'jobs.status', { id: facts.id });
+    assert.ok(status.ok);
+    assert.equal(status.meta.datasets.find((d) => d.task === 'B').product, one.id);
+    const restore = JSON.parse(status.meta.record.split('\n').find((line) => line.startsWith('- B:')).split(' · session import ')[1]);
+    const restored = await call(workCaps, 'work.job', restore);
+    assert.ok(restored.ok);
+    const draw = JSON.parse(restored.meta.record.split(': ')[1]);
+    const rendered = await call(mapCaps, 'map.drawDataset', draw);
+    assert.ok(rendered.ok, rendered.html);
+    assert.deepEqual(layers, [{ geojson: { type: 'FeatureCollection', features: [pt(499)] }, dataset: draw.dataset }]);
+    assert.equal(page.IntMapData.get(draw.dataset).provenance.file, FILE);
+  } finally {
+    WORK_STATE.store = null;
+    for (const key of ['sb', 'SUPABASE_URL', 'IntMapLazy', 'GeoJSONUpload']) delete page[key];
+  }
 });
 
 /* ── ① the failure is not hidden: a piece that cannot be made leaves the job partial, and the result names it ── */
@@ -168,11 +211,25 @@ test('① an output larger than the row is kept whole in parts beside it; the ne
   assert.ok(A.result.data.output.parts >= 2);
   assert.equal(db.st.artifacts.filter((x) => x.task_id === 'A').length, A.result.data.output.parts);
   assert.equal(A.result.data.output.count, n);
+  assert.deepEqual(A.result.data.output.geometryTypes, ['Point']);
   assert.equal(db.st.tasks.get('B').result.data.result.features[0].properties.n, n - 1, 'B found the last feature, which lives in the last part');
   const got = await pageClient(db).output(db.st.job.id, 'A');
   assert.equal(got.ok, true);
   assert.equal(got.features.length, n, 'the page reads all of them back, in order');
   assert.equal(got.features.at(-1).properties.n, n - 1);
+  const facts = jobFacts(jobRow(db), Array.from(db.st.tasks.values()));
+  const store = deviceStore();
+  const filed = await saveJobAsWork(facts, store);
+  assert.deepEqual(filed.datasets.find((d) => d.task === 'A').geometryTypes, ['Point']);
+  const again = await saveJobAsWork(facts, store);
+  assert.equal(again.datasets.find((d) => d.task === 'A').product, filed.datasets.find((d) => d.task === 'A').product);
+  const raced = await saveJobAsWork(facts, deviceStore(), {
+    readOutput: async (taskId) => {
+      const result = await pageClient(db).output(db.st.job.id, taskId);
+      return { ...result, output: { ...result.output, version: 'newer' } };
+    },
+  });
+  assert.deepEqual(raced.datasets, [], 'a changed server version is not exposed under the earlier output ID');
 });
 
 /* ── ③ two versions: started under the latest, computed under the old ── */

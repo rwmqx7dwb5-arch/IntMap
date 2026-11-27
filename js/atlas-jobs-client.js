@@ -21,7 +21,7 @@
  * ==========================================================================*/
 
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every card text and href below goes through */
-import { s, stable } from './atlas-job-core.js';
+import { s, stable, jobGeometryTypes } from './atlas-job-core.js';
 
 const TERMINAL = new Set(['done', 'partial', 'failed', 'cancelled']);   /* partial: some pieces finished and some did not (gis-result-handoff) */
 const TASK_ENDED = new Set(['done', 'partial', 'failed', 'refused', 'cancelled']);
@@ -147,10 +147,13 @@ export function jobFacts(job, tasks) {
   };
 }
 function outputOf(r) {
-  const o = r && r.data && r.data.output;
+  const data = r?.data;
+  const o = data?.output;
   if (!o || typeof o !== 'object') return null;
+  const geometryTypes = Array.isArray(o.geometryTypes) ? o.geometryTypes :
+    Array.isArray(data.result?.features) ? jobGeometryTypes(data.result.features) : null;
   return { id: s(o.id, 120), version: s(o.version, 40), count: Number(o.count) || 0, columns: Array.isArray(o.columns) ? o.columns.slice(0, 60).map((c) => s(c, 80)) : [],
-    sources: Array.isArray(o.sources) ? o.sources.slice(0, 10).map((u) => s(u, 400)) : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
+    geometryTypes, sources: Array.isArray(o.sources) ? o.sources.slice(0, 10).map((u) => s(u, 400)) : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
 }
 
 /* ══ APPLYING WHAT A JOB SAVED FOR THE PAGE  (server-capability-lane) ═══════════════════════════════════
@@ -208,14 +211,20 @@ export function deviceParkedMemory(w) {
 }
 
 /* jobText(facts) — plain text, the facts first (Atlas reads the top of a card's text) */
-export function jobText(f) {
+export function jobText(f, filed) {
   const head = 'Job ' + f.id + (f.title ? ' "' + f.title + '"' : '') + ': ' + f.status + (f.stopReason ? ' (' + f.stopReason + ')' : '') + ' — ' + f.tasksEnded + ' of ' + f.tasksTotal + ' pieces ended, $' + f.spentUsd.toFixed(3) + ' of $' + f.capUsd.toFixed(2) + (f.amends ? ', ' + f.amends + ' instruction change(s)' : '') + '.';
   /* (gis-result-handoff) what each piece MADE is stated as data — the output's id, version, count, columns and sources — so the next step (a further
      filter, a join, the map) can name it: "@<piece>:data.result" in a later job, or the dataset the page filed it as (work.job restore) */
-  const out = (o) => o ? ' | output ' + o.id + ' v' + o.version + ': ' + o.count + ' feature(s)' + (o.columns.length ? ', columns ' + o.columns.slice(0, 20).join(',') : '') + (o.sources.length ? ', from ' + o.sources.join(' ') : '') + (o.stored === 'artifact' ? ' (kept whole beside the row, ' + o.parts + ' part(s))' : '') : '';
+  const geometry = (types) => types?.length ? ', geometry: ' + types.join(', ') : (types ? ', no geometry' : ', geometry types unreported');
+  const outputs = filed?.datasets?.map((d) => {
+    const restore = { type: 'work', action: 'restore', id: filed.workId, product: d.product };
+    return '- ' + d.task + (d.stale ? ' [computed under an earlier version of the request]' : '') + ': ' + d.output + ' v' + d.version + ' · GeoJSON, ' + d.count + ' feature(s)' + geometry(d.geometryTypes) + (d.title ? ' · ' + d.title : '') + ' · session import ' + JSON.stringify(restore);
+  }) || [];
+  if (outputs.length) outputs.unshift('Stored GeoJSON results (session import preserves their geometry; the returned dataset ID is accepted by map.drawDataset / gisDraw):');
+  const out = (o) => o ? ' | output ' + o.id + ' v' + o.version + ': ' + o.count + ' feature(s), GeoJSON' + geometry(o.geometryTypes) + (o.columns.length ? ', columns ' + o.columns.slice(0, 20).join(',') : '') + (o.sources.length ? ', from ' + o.sources.join(' ') : '') + (o.stored === 'artifact' ? ' (kept whole beside the row, ' + o.parts + ' part(s))' : '') : '';
   const rows = f.tasks.map((t) => '- ' + t.id + ' [' + t.state + (t.code ? ' / ' + t.code : '') + ']' + (t.stale ? ' [computed under an earlier version of the request: ' + t.conditionsVersion + ' of ' + (f.requestVersion || 0) + ' — redo it with jobs.amend revise, or keep it]' : '') + (t.summary ? ': ' + t.summary : (t.ended ? '' : ' (not finished)')) + out(t.output) + (t.findings.length ? '\n  findings: ' + t.findings.map((x, i) => '[' + (i + 1) + '] ' + x.claim + (x.source ? ' (' + x.source + ')' : '') + (x.excerpt ? ' — "' + x.excerpt + '"' : '')).join('\n  ') : '') + (t.gaps.length ? ' | not established: ' + t.gaps.join('; ').slice(0, 300) : ''));
   const inc = (f.incomplete || []).length ? ['', 'NOT FINISHED (the job is ' + f.status + ', not done): ' + f.incomplete.map((x) => x.id + ' ' + x.state + (x.code ? ' (' + x.code + ')' : '')).join('; ')] : [];
-  return [head].concat(rows, inc, f.result ? ['', 'Combined: ' + f.result.slice(0, 2000)] : []).join('\n');
+  return [head].concat(outputs, rows, inc, f.result ? ['', 'Combined: ' + f.result.slice(0, 2000)] : []).join('\n');
 }
 
 const URL_OK = /^https?:\/\//i;

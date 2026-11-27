@@ -15,6 +15,7 @@
  *  Pure ES module: the store and the memory are passed in, so tests/exec-platform-checks.test.mjs runs this file.
  * ==========================================================================*/
 import { withProduct, currentProducts, normalizeWork, PRODUCT_KINDS } from './atlas-work-store.js';
+import { jobGeometryTypes } from './atlas-job-core.js';
 
 /* the work's id for a job — `wk-` + a name no notebook turn can have (normalizeWork: /^wk-[a-z0-9-]{4,64}$/) */
 export function jobWorkId(jobId) { return 'wk-job-' + String(jobId || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 52); }
@@ -43,7 +44,7 @@ const same = (a, b) => { try { return JSON.stringify(a) === JSON.stringify(b); }
    version of its bytes. `readOutput(taskId)` is the jobs client's output() (js/atlas-jobs-client.js). Measured 2026-11-27: the job's 500-point
    dataset was not among the products at all (answer 2, document 1). */
 const DATASET_INLINE_BYTES = PRODUCT_KINDS.dataset.maxBytes - 4096;   /* the store's own ceiling, less the product's few fields around the features */
-async function datasetsOfJob(f, readOutput) {
+async function datasetsOfJob(f, readOutput, existing) {
   const out = [];
   for (const t of (f && f.tasks) || []) {
     if (!(t.state === 'done' || t.state === 'partial') || !t.output) continue;
@@ -51,8 +52,14 @@ async function datasetsOfJob(f, readOutput) {
     const from = { job: f.id, task: t.id, url: o.sources[0] || undefined, urls: o.sources, output: o.id, version: o.version };
     const note = 'background job ' + f.id + ' · piece ' + t.id + ' · output ' + o.id + ' v' + o.version + (o.sources.length ? ' · from ' + o.sources.join(' ') : '') + (t.stale ? ' · computed under an earlier version of the request' : '');
     const name = clip('dataset — ' + t.id + (t.title ? ' — ' + t.title : ''), 100);
+    const previous = existing.find((p) => p.kind === 'dataset' && p.name === name && same(p.from, from));
+    if (Array.isArray(previous?.content.features)) {
+      out.push(previous);
+      continue;
+    }
     let got = null;
     if (o.bytes && o.bytes <= DATASET_INLINE_BYTES && typeof readOutput === 'function') { try { got = await readOutput(t.id); } catch (_) { got = null; } }
+    if (got?.ok && got.output?.version !== o.version) continue;
     if (got && got.ok && Array.isArray(got.features)) out.push({ kind: 'dataset', name, content: { format: 'geojson', features: got.features }, note, from });
     else out.push({ kind: 'dataset', name, content: { format: 'geojson', ref: { job: f.id, task: t.id, version: o.version }, count: o.count, columns: o.columns }, note: note + (got && !got.ok ? ' · read back later (' + got.code + ')' : ' · kept whole on the server, read back with restore'), from });
   }
@@ -67,25 +74,33 @@ export async function saveJobAsWork(f, store, o) {
   if (!store || typeof store.get !== 'function' || typeof store.put !== 'function') return { ok: false, why: 'no-store' };
   const now = (o && +o.now) || Date.now();
   const id = jobWorkId(f.id);
-  const list = productsOfJob(f).concat(await datasetsOfJob(f, o && o.readOutput));
-  if (!list.length) return { ok: false, why: 'nothing-to-file' };
   let work = await store.get(id);
+  const list = productsOfJob(f).concat(await datasetsOfJob(f, o && o.readOutput, currentProducts(work)));
+  if (!list.length) return { ok: false, why: 'nothing-to-file' };
   if (!work) {
     work = normalizeWork({ id, at: now, updatedAt: now, goal: clip(f.title || ('Background job ' + f.id), 4000), summary: clip(f.result, 16000), status: f.status === 'done' ? 'done' : 'blocked', products: [], note: 'Made from the background job ' + f.id + ' (js/atlas-job-products.js).' });
     if (!work) return { ok: false, why: 'invalid-work' };
   }
-  const saved = [], refused = [];
+  const saved = [], refused = [], datasets = [];
   let unchanged = 0;
   for (const p of list) {
     const cur = currentProducts(work).find((x) => x.kind === p.kind && x.name === p.name);
-    if (cur && same(cur.content, p.content)) { unchanged++; continue; }
     const r = withProduct(work, p, now);
     if (r.problem) { refused.push({ name: p.name, problem: r.problem }); continue; }
-    work = r.work; saved.push(p.name);
+    const identical = cur && same(cur.content, r.product.content) && same(cur.from, r.product.from);
+    const product = identical ? cur : r.product;
+    if (identical) unchanged++;
+    else { work = r.work; saved.push(p.name); }
+    if (product.kind === 'dataset') {
+      const { task, output, version } = product.from;
+      const fact = f.tasks.find((t) => t.id === task);
+      const geometryTypes = fact.output.geometryTypes ?? (Array.isArray(product.content.features) ? jobGeometryTypes(product.content.features) : null);
+      datasets.push({ task, title: fact.title, output, version, product: product.id, count: product.content.count, geometryTypes, stale: !!fact.stale });
+    }
   }
   work = Object.assign({}, work, { status: f.status === 'done' && !(f.tasks || []).some((t) => t.state === 'failed' || t.state === 'refused' || t.state === 'cancelled') ? 'done' : 'blocked', summary: clip(f.result || work.summary, 16000), updatedAt: saved.length ? now : work.updatedAt });
   if (saved.length || unchanged === list.length) { try { await store.put(work); } catch (e) { return { ok: false, why: 'not-saved', detail: clip(e && e.message, 120) }; } }
-  return { ok: true, workId: id, saved, unchanged, refused };
+  return { ok: true, workId: id, saved, unchanged, refused, datasets };
 }
 
 /* fileRunToWork(run, args, store, workId) → { ok, saved:[names] } | { ok:false, why }

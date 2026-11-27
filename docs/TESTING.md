@@ -3994,6 +3994,10 @@ says so. And a run is a function, so where a check can EVALUATE it, it should: `
 lifted and evaluated for every declared spelling, `K` neither short nor padded, and — on a scratch copy outside the
 working tree — one new file becoming a capability in the registry, the dispatch and the schema table.
 
+### 永続ジョブの GIS 成果物
+
+`tests/gis-result-handoff-checks.test.mjs` は背景で絞った出力を再度読み、`jobs.status` の成果物 ID から `work.job restore` と `map.drawDataset` を実行する。保存済み ID が再読で変わらず、描画の入口に元の座標が届き、復元したデータセットに出典が残ることを確認する。
+
 ### What Atlas can SEE, as distinct from what it can reach (`tests/atlas-capabilities-checks.test.mjs` (#R582))
 
 Twenty questions above ask whether a capability is *reachable*. #R582 measured a different thing and
