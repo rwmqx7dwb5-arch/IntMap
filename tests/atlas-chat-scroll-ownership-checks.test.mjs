@@ -40,13 +40,13 @@ test('④ what a run drew is read off the renderer in one shape, and feeds the s
   assert.match(con, /results\.forEach\(rr=>\{ \(rr\.drew\|\|\[\]\)/);
 });
 
-test('⑤ a figure Atlas drew is listed apart from the basemap credit, and never credited to the basemap', () => {
+test('⑤ a figure is listed only when its tool stated a basis, apart from the basemap credit, and never credited to the basemap', () => {
   const c = makeAtlasAnswerSources({ esc: (s) => String(s), lang: () => 'en' });
-  const items = c.collect([{ ok: true, meta: {}, drew: [{ kind: 'map.route', what: 'route' }] }], { credits: ['Esri'] });
+  const bare = c.collect([{ ok: true, meta: {}, drew: [{ kind: 'map.route', what: 'route' }] }], { credits: ['Esri'] });
+  assert.ok(!bare.some((i) => i.kind === 'figure'), 'a shape with no stated basis is not a source-list row');
+  const items = c.collect([{ ok: true, meta: { provenance: [{ kind: 'figure', what: 'zone', source: 'USGS' }] }, drew: [{ kind: 'map.poi' }] }], { credits: ['Esri'] });
   const fig = items.find((i) => i.kind === 'figure'), map = items.find((i) => i.kind === 'map');
-  assert.equal(typeof fig.source, 'string'); assert.notEqual(fig.source, map.source); assert.match(fig.source, /Atlas/);
+  assert.equal(fig.source, 'USGS'); assert.notEqual(fig.source, map.source);
   const h = c.footerHtml(items, { id: 'a' });
   assert.match(h, /data-group="figure"/); assert.ok(!/data-group="data"/.test(h), 'the basemap credit is not a source of the answer'); assert.match(h, /atl-srcs-mapcredit/);
-  const stated = c.collect([{ ok: true, meta: { provenance: [{ kind: 'figure', what: 'zone', source: 'USGS' }] }, drew: [{ kind: 'map.poi' }] }], {});
-  assert.deepEqual(stated.map((i) => i.source), ['USGS']);
 });

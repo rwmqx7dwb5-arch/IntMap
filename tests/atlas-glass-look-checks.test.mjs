@@ -49,7 +49,7 @@ test('① legibility is the glyphs\' halo, set once on the conversation, white i
   /* 2026-11-26 (the reader: white text with a glow, no grey): the ink is white in BOTH themes, so the halo is dark in both */
   assert.match(css, /#atlas-float\{--atl-halo:0,0,0;\}/, 'a dark halo round white ink, whatever the theme');
   assert.match(css, /\.atl-chat\{[^}]*--text-muted:#fff/, 'no grey ink on the map');
-  assert.match(css, /\.atl-b\.u\{text-shadow:none;/, 'the reader\'s own question keeps its bubble and no halo');
+  assert.match(css, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:none/, 'off the pane the reader question is text with the same halo, not a bubble');
 });
 
 test('① the input row is quiet at rest, edged on hover, a surface while focused', () => {
