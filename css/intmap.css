@@ -1039,7 +1039,7 @@
     .satc-here button[aria-current=true]{ border-color:rgba(128,128,128,0.35); }
     .satc-here button small{ display:block; color:var(--text-muted); font-size:10px; }
     .satc-attr{ color:var(--text-muted); font-size:10px; line-height:1.4; margin-top:6px; border-top:1px solid rgba(128,128,128,0.12); padding-top:6px; }
-    .map-container.sat-on .tool-panel{ top:auto!important; bottom:24px; }
+    .map-container.sat-on .tool-panel{ top:auto!important; bottom:max(24px,var(--ntl-clear,0px)); }
     .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:var(--z-toast); opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
     .sat-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
     /* (layer-failure-state) THE ONE TOAST (js/notify.js) holds two live spans — role=status and role=alert — and only

@@ -398,9 +398,10 @@ export function atlasConsole(HOST){
        tributaries as thinner lines. Same lifecycle as the polygon highlights. ---- */
     let _hlLines=[];
     function ensureLineLayer(){ try{ if(!GE().layers.hasSource('nlq-line-src')) GE().layers.addSource('nlq-line-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      if(GE().layers.has('nlq-line')) return true;
+      /* ⚠ its OWN id: this layer was called 'nlq-line' too — the id ensureHlLayers gives the country outline on 'nlq-src'. Whichever was added first made the other's add a no-op (this function returned true on the existing layer), so a river or a route drawn after a country highlight went into its source and was never painted; and the one switch for each turned the other off too. */
+      if(GE().layers.has('nlq-lines')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
-      GE().layers.add({id:'nlq-line',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
+      GE().layers.add({id:'nlq-lines',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
       return true; }catch(_){ return false; } }
     function paintLines(){ if(!_hlLines.length){ try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensureLineLayer()) return false;
@@ -2533,7 +2534,7 @@ export function atlasConsole(HOST){
            deleted, because removing it is a separate, confirmed step.
          · 'map.route' — the two analyses js/routing-ops.js draws, ADDED to what js/routing.js claims under the same key.
        ⚠ ONE LIST — _ovlVisible / overlayToggle / _ovlSnapshot / _ovlRestore / the clones read _ovlIds(), never this table. */
-    const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'],
+    const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], lines:['nlq-lines'], outline:['pl-outline-fill','pl-outline-line'],
       /* ⚠ (#R299) switching a journey OFF has to take routing-ops' two analyses with it, as it takes the waypoints, leg times, the
          keep-out and the invisible pick target `imroute-hit` (js/routing.js claims those). */
       'map.route':['imroute-diff','imroute-hist'],
@@ -2858,6 +2859,9 @@ export function atlasConsole(HOST){
         if(_ar&&_ar.status==='needs_input'&&_ar.inputRequest){ if(_ar.code==='needs_confirm') _confirmWait.set(_ar.operationId,{ id:_ar.capabilityId, args:_ar.inputRequest.pendingArgs||{}, at:Date.now(), label:actLabel(a)||_ar.capabilityId }); else _pendingInput={ result:_ar, bubble:ai, at:Date.now() }; }   /* (atlas-outside-mark) a confirmation waits for the reader's press on ITS buttons (`_confirmPress`); every other needs_input waits in the resume slot as before */
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
         const _drew=(r.ok!==false)?_drewSince(_mark0):[];
+        /* ⚠ A NEW DRAWING IS NOT HIDDEN BY AN OLD SWITCH. The kind's layers are shared (nlq-*), and an earlier reply's chip turned them OFF; this run then painted into
+           layers that stayed hidden — the thing was drawn, listed, and invisible, and its own chip read OFF. What this run just drew is shown (the reader asked for it just now). */
+        _drew.forEach(d=>{ if(d.visible) return; try{ (d.layerIds||[]).forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','visible'); }); d.visible=_ovlVisible(d.kind); }catch(_){} });
         if(_drew.length){ const _sn=await _witnessDrew(_drew);
           if(_sn){ r.meta=Object.assign({},r.meta||{},{ seen:_sn });
             if(_sn.bad.length){ const _rs=[]; _sn.bad.forEach(b=>{ const t=_whyText(b.reason); if(_rs.indexOf(t)<0) _rs.push(t); });

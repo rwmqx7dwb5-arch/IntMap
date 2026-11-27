@@ -213,7 +213,9 @@ export function makeAtlasLive(HOST, deps) {
     /* a draft from an earlier step that did not become the answer is withdrawn when the next step
        starts: it was either a note (already moved to the trace by stepDone) or a final the turn
        handed back to Atlas (js/atlas-agent.js output gate) — in both cases not what will be said */
-    if (ai.__atlDraft) setDraft(ai, '');
+    /* …but it is KEPT, as a note in the trace, not erased: what the reader watched being written does not vanish (the failure wording of a bounced final
+       used to be streamed and then simply cut away, round after round) */
+    if (ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); st.narr = null; st.sayAt = -1; setDraft(ai, ''); }
     return {
       onEvent(name, data) {
         try {

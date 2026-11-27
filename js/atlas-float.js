@@ -93,10 +93,15 @@ const CSS =
      filter on a block: a shadow on a rectangle reads as a rectangle. text-shadow is inherited, so it is set once here. */
   + '#atlas-float{--atl-halo:0,0,0;}'
   + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 2px rgba(var(--atl-halo),.95),0 0 4px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 14px rgba(var(--atl-halo),.78),0 0 24px rgba(var(--atl-halo),.65),0 0 40px rgba(var(--atl-halo),.5);--text-main:#fff;--text-muted:#fff;color:#fff;}'
-  /* (atlas-float-typography) THE READER OWN MESSAGE IS TEXT TOO. Off the pane it has no bubble: a gradient rectangle with a shadow was a
-     box standing in for a glow (the reader: no rectangle may stand in for the glow). It lies on the map like the answer — same white ink,
-     same halo on the glyphs — and only its alignment says whose it is. On the frosted pane (.bg, below) it is a plain tinted bar inside it. */
-  + '#atlas-float:not(.bg) #atlas-panel .atl-chat .atl-b.u:not(.atl-imgrow){background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:2px 4px;}'
+  /* THE READER OWN MESSAGE KEEPS ITS BUBBLE (the reader, twice: the bubble must not be gone, and no rectangle may stand in for the glow). Those
+     are two different things: the glow is on the glyphs (text-shadow, inherited from the conversation); the bubble is a SHAPE that says whose
+     words these are — a plain translucent white wash with a hairline edge, in the bubble's own rounded outline, with no gradient, no
+     box-shadow and no backdrop blur, so it is never a glow and never reads as one. */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-chat .atl-b.u:not(.atl-imgrow){background:color-mix(in srgb,#fff 14%,transparent);border:1px solid color-mix(in srgb,#fff 36%,transparent);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:6px 12px;}'
+  /* every control inside the conversation carries the same glow: a button, input, select or textarea does not inherit text-shadow by itself */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-chat :is(button,input,select,textarea){text-shadow:inherit;}'
+  /* a passive block that was a rectangle of its own (inline code, a table header or a zebra row) is text here: no fill */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-chat :is(.atl-code-i,.atl-md th,.atl-md tr:nth-child(even),.atl-md tr:nth-child(even) td){background:none;box-shadow:none;}'
   /* the input row and the bar are surfaces, so their words carry the glow in the own colour of the surface (opposite the ink), not the black of the map */
   + '#atlas-float:not(.bg) #atlas-panel .atl-inbar :is(.atl-in,button,.m-clock){text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent),0 0 16px color-mix(in srgb,var(--popup-bg) 60%,transparent);}'
   + '#atlas-float:not(.bg) #atlas-panel .atl-in::placeholder{text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent);}'

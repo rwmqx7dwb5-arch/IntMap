@@ -7,7 +7,7 @@ const float = read('atlas-float.js'), styles = read('atlas-styles.js');
 
 test('the glow is a text-shadow on the glyphs; the reader\'s own message has no bubble off the pane', () => {
   assert.match(float, /#atlas-float #atlas-panel \.atl-chat\{text-shadow:/);
-  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:none/);
+  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:color-mix\(in srgb,#fff \d+%,transparent\);border:1px solid[^}]*box-shadow:none;backdrop-filter:none[^}]*\}/);
   assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-inbar :is\(\.atl-in,button,\.m-clock\)\{text-shadow:/);
 });
 

@@ -122,7 +122,7 @@ test('⑤ what only a developer needs is a devNote — console always, the trace
 
 test('⑥ a step nobody filed a call under, and a step whose only other calls failed beside a completed one, are not "not done"', () => {
   const a = read('js/atlas-agent.js');
-  assert.match(a, /st\.state === 'pending'\) return;/, 'a step with no attributed call is reported as unfinished');
+  assert.match(a, /st\.state === 'pending' \|\| st\.state === 'unobserved'\) return;/, 'a step with no attributed call, or one that ran and could not be seen, is not reported as unfinished');
   assert.match(a, /st\.state === 'partial' && ops\.some\(\(o\) => o && o\.state === 'completed'\)/, 'a completed step with a failed look-up beside it is reported as unfinished');
 });
 

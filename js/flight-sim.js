@@ -1693,7 +1693,7 @@ export function flightSim(HOST){
        highlights stayed painted through the whole flight ("フライトシミュレーター中は、ハイライト等も非表示に"). `map` IS
        global, so instead of destroying them we HIDE the known overlay layer ids via the `visibility` layout property and
        restore each to its prior value on landing — so a highlight the user set before flying reappears afterwards. */
-    const _FS_HL_LAYERS=['place-hl-fill','place-hl-line','place-hl-dot','nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line','nlq-choro','pl-outline-fill','pl-outline-line'];
+    const _FS_HL_LAYERS=['place-hl-fill','place-hl-line','place-hl-dot','nlq-fill','nlq-line','nlq-lines','nlq-poly-fill','nlq-poly-line','nlq-choro','pl-outline-fill','pl-outline-line'];
     let _fsHlVis=null;
     function _fsHideHl(){ if(_fsHlVis) return; const saved={};
       _FS_HL_LAYERS.forEach(id=>{ try{ if(GE().layers.has(id)){ let v='visible'; try{ v=GE().layers.getLayout(id,'visibility')||'visible'; }catch(_){} saved[id]=v; GE().layers.setLayout(id,'visibility','none'); } }catch(_){} });
