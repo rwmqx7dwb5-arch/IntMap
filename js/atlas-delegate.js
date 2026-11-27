@@ -45,7 +45,7 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
@@ -134,8 +134,15 @@ export function makeDelegation(o) {
      executor (a reloaded page, a server) pick the same delegation up without redoing, or re-paying for, finished work. */
   const resumeByKey = new Map();
   ((opt.resume && Array.isArray(opt.resume.results)) ? opt.resume.results : []).forEach((e) => {
-    if (e && e.key && e.result && (e.result.state === 'done' || e.result.state === 'partial')) resumeByKey.set(String(e.key), e.result);
+    if (e && e.key && e.result && (e.result.state === 'done' || e.result.state === 'partial')) resumeByKey.set(String(e.key), { result: e.result, inputs: typeof e.inputs === 'string' ? e.inputs : null });
   });
+  /* ⚠ A TASK THAT STARTS FROM OTHER TASKS' RESULTS IS THE SAME WORK ONLY FROM THE SAME RESULTS. Its contract names its inputs by ID, so «analyse p»
+     is one text whether p returned Osaka or Tokyo — and the record of the Osaka analysis answered the Tokyo one (measured 2026-11-27: the upstream
+     returned Tokyo, the downstream got the earlier Osaka analysis back; a forced re-run gave Tokyo). The record therefore carries a DIGEST of what
+     the task was actually handed, and a task with inputs is answered from the record only when the inputs it has just received digest the same.
+     A record from before this field existed (inputs unknown) does not answer a task that has inputs: it runs. */
+  const inputsDigestOf = (inputs) => (Array.isArray(inputs) && inputs.length) ? requestKey(stable(inputs.map((i) => ({ from: i.from, summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }))), 'inputs') : '';
+  const inputKeys = new Map();  // id → digest of the inputs the task was run (or resumed) with
   const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
   /* THE QUEUE. `maxConcurrent` (a whole number the server states, meta.delegationPolicy.maxConcurrent) is how many WORKERS may be in flight
@@ -266,11 +273,13 @@ export function makeDelegation(o) {
       settleForward(id, entry.promise);
       return { id, reused: false, resumed: false, promise: entry.promise, cancel() {} };
     }
-    if (resumeByKey.has(key)) {
-      const prior = resumeByKey.get(key);
+    const resumeNow = (prior) => {
       note('task.resumed', id, { from: prior.id || '', costUsd: Number(prior.costUsd) || 0, calls: Number(prior.calls) || 0 });
       /* what the first run spent was spent then; this run spent nothing, so the spend read off this log stays true */
-      entry.promise = Promise.resolve(finish(id, t0, Object.assign({}, prior, { costUsd: 0, calls: 0 })));
+      return finish(id, t0, Object.assign({}, prior, { costUsd: 0, calls: 0 }));
+    };
+    if (resumeByKey.has(key) && !c.inputs.length) {
+      entry.promise = Promise.resolve(resumeNow(resumeByKey.get(key).result));
       settleForward(id, entry.promise);
       return { id, reused: false, resumed: true, promise: entry.promise, cancel() {} };
     }
@@ -287,6 +296,12 @@ export function makeDelegation(o) {
         inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data });
       }
       if (controller.signal.aborted) return finish(id, t0, { state: 'cancelled' });
+      const digest = inputsDigestOf(inputs);
+      inputKeys.set(id, digest);
+      if (resumeByKey.has(key) && c.inputs.length) {
+        const rec = resumeByKey.get(key);
+        if (rec.inputs === digest) { entry.resumed = true; return resumeNow(rec.result); }
+      }
       /* A capability task's arguments may name what an input produced (`@task:data.gis.dataset`) — the way one analysis step
          is handed the dataset the step before it made. Resolved here, from the inputs this task has just been given, and
          refused BY NAME when the reference leads nowhere: a step run with a guessed argument is not the step asked for. */
@@ -321,7 +336,7 @@ export function makeDelegation(o) {
       }
     })();
     settleForward(id, entry.promise);
-    return { id, reused: false, resumed: false, promise: entry.promise, cancel: () => controller.abort() };
+    return { id, reused: false, get resumed() { return entry.resumed === true; }, promise: entry.promise, cancel: () => controller.abort() };
   }
 
   /* begin(contracts, opts) → { handles, all, firstUsable, settled() } — start every task of a list WITHOUT waiting for them. The list is read
@@ -381,7 +396,7 @@ export function makeDelegation(o) {
     snapshot() {
       return JSON.parse(JSON.stringify({
         v: 1, parent, at: clock(),
-        results: Array.from(workspace.entries()).map(([id, result]) => ({ id, key: keys.get(id) || '', result })),
+        results: Array.from(workspace.entries()).map(([id, result]) => ({ id, key: keys.get(id) || '', inputs: inputKeys.has(id) ? inputKeys.get(id) : '', result })),
         events: log.all(),
       }));
     },
@@ -668,6 +683,9 @@ export function makeWorkerExecutor(o) {
     const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
     let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
     const full = new Map();       /* (delegate-reread) step ref → the whole answer of a call whose answer was cut for the prompt */
+    /* an input too long for the prompt is kept whole under `input:<task>` and read by range, exactly as a cut answer is (js/atlas-job-core.js inputView) */
+    (task.inputs || []).forEach((inp) => { const v = inputView(inp, { read: true }); if (v.whole) full.set(v.ref, v.whole); });
+    const rangesRead = new Set();   /* ref:offset:length already handed out in this worker — a range read for the FIRST time is progress, whatever it is called */
     const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
     let repeatRun = 0;            /* consecutive steps made only of such repeats */
     /* one search of the registry, as a step: read-only matches join the grant; the others are named with why they may not be
@@ -767,6 +785,9 @@ export function makeWorkerExecutor(o) {
             const off = Math.max(0, Math.floor(Number(a.offset) || 0));
             const len = Math.max(1, Math.min(READ_CHARS, Math.floor(Number(a.length) || READ_CHARS)));
             const end = Math.min(whole.length, off + len);
+            /* ⚠ A NEW RANGE OF A LONG MATERIAL IS A STEP FORWARD. Reading 0-N, the middle and the end are three different requests; counted as none, they were «answers it already had», two in a row ended the worker, and the end never reached the model (measured 2026-11-27, 23,013 characters read in three). Only the SAME range again is a repeat. */
+            const rk = String(a.ref) + ':' + off + ':' + end;
+            if (!rangesRead.has(rk)) { rangesRead.add(rk); fresh += 1; }
             return { ok: true, text: 'characters ' + off + '-' + end + ' of ' + whole.length + ':\n' + whole.slice(off, end) + (end < whole.length ? '\n[more:{"capability":"' + READ_STEP + '","args":{"ref":"' + String(a.ref) + '","offset":' + end + '}}]' : '') };
           }
           if (!w.capability) return { ok: false, text: 'this entry of "calls" is not a call: give {"capability":"<id>","args":{...}}' };

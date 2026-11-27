@@ -120,7 +120,36 @@ function makeWebBrowse(HOST) {
     try { j = await r.json(); } catch (_) { j = null; }
     if (!j) return { ok: false, code: 'http_' + r.status };
     if (j.error) return { ok: false, code: j.error };
-    return j;
+    return tag(j);
+  }
+
+  /* ⚠⚠ A REF BELONGS TO THE PAGE IT WAS READ ON, AND SAYS SO. `l1` is «the first link of whatever page is open», so a reader who opened A, opened B and
+     was handed A's text again (a repeated open is answered from what the turn already holds — js/atlas-turn-results.js — and never reaches this door,
+     so the browsing position stayed on B) clicked «link 1 of A» and got link 1 of B (reproduced 2026-11-27). A position kept only in this closure is
+     a fact the caller cannot see and cannot repair, so it is put on the ref itself: every ref this door hands out is `l1@<page>`, the page's state is
+     kept under that name, and a click or submit first goes back to the page the ref names. A ref without a page (older text, a ref typed from the
+     page's own markup) means the open page, as it always did. */
+  const pages = new Map();                       // page id → the browsing state that page left
+  const PAGE_REF = /^[A-Za-z]\d+$/;
+  const pageIdOf = (st) => { const u = String((st && st.url) || ''); let h = 5381; for (let i = 0; i < u.length; i++) h = ((h * 33) ^ u.charCodeAt(i)) >>> 0; return h.toString(36); };
+  function tag(j) {
+    if (!j || !j.state || !j.page || typeof j.page !== 'object') return j;
+    const id = pageIdOf(j.state);
+    pages.set(id, j.state);
+    if (pages.size > 40) pages.delete(pages.keys().next().value);
+    const out = Object.assign({}, j, { page: Object.assign({}, j.page) });
+    ['links', 'forms', 'files'].forEach((k) => {
+      if (Array.isArray(j.page[k])) out.page[k] = j.page[k].map((x) => (x && typeof x === 'object' && PAGE_REF.test(String(x.ref || ''))) ? Object.assign({}, x, { ref: x.ref + '@' + id, page: id }) : x);
+    });
+    return out;
+  }
+  /* the plain ref the server knows, after going back to the page the ref names */
+  function untag(ref) {
+    const m = /^(.+)@([0-9a-z]+)$/.exec(String(ref == null ? '' : ref));
+    if (!m) return ref;
+    const st = pages.get(m[2]);
+    if (st) state = st;
+    return m[1];
   }
 
   /* browse({action,url,ref,form,values,button,textChars}) → the engine's answer, state kept */
@@ -149,6 +178,7 @@ function makeWebBrowse(HOST) {
   }
 
   async function browse(a, signal) {
+    if (a.ref) a = Object.assign({}, a, { ref: untag(a.ref) });
     const body = { action: a.action || 'open', url: a.url, ref: a.ref, form: a.form, values: a.values, button: a.button, textChars: a.textChars, state };
     if ((a.action || 'open') === 'open' && a.url && !a.ref && !a.form) {
       const r0 = await stored('page', a, signal, '', body, undefined);
@@ -176,6 +206,7 @@ function makeWebBrowse(HOST) {
 
   /* fetchFile({ref|url}) → { ok, file:File, meta } — the bytes of ONE file, as the page's file door takes them */
   async function download(a, signal) {
+    if (a.ref) a = Object.assign({}, a, { ref: untag(a.ref) });
     const r = await call({ action: 'download', url: a.url, ref: a.ref, state }, signal);
     if (r && r.state) state = r.state;
     if (!r || !r.ok || !r.file) return r || { ok: false, code: 'upstream_unreachable' };
@@ -194,7 +225,12 @@ function makeWebBrowse(HOST) {
     try { outs = await U.handle([file], { quiet: true }); } catch (_) { outs = []; }
     const o = outs && outs[0];
     if (!o || !o.ok) return { ok: false, code: (o && o.why) || 'unreadable' };
-    return { ok: true, label: o.label || label || file.name, format: o.format || null, rows: o.n == null ? null : o.n, datasetId: o.datasetId || null, grid: !!o.grid };
+    /* what the door says it made, and nothing it did not: the count is the features READ (`features`; `n` is the layer's serial, not a count), and a file
+       the map drew but the analysis registry did not accept has no dataset id — that is a refusal to be reported, not «added» (the reader of this answer is
+       the next step of a plan, which cannot use a dataset that does not exist). `layer` says it is nonetheless on the map. */
+    const rows = (o.features != null && isFinite(+o.features)) ? +o.features : null;
+    if (!o.datasetId) return { ok: false, code: 'not_registered', layer: o.layer != null ? o.layer : null, rows, label: o.label || label || file.name, format: o.format || null };
+    return { ok: true, label: o.label || label || file.name, format: o.format || null, rows, datasetId: o.datasetId, layer: o.layer != null ? o.layer : null, grid: !!o.grid };
   }
 
   /* session({action,...}) → one step of the OPERATED real browser (?tier=session). The state it hands back is a signed token (grant + provider session);
