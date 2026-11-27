@@ -56,8 +56,8 @@ test('④ the floating card fades, sits at the Chronos bar, and says nothing the
   assert.match(f, /#atlas-float\{position:absolute;left:16px;top:36px;bottom:6px;/, "higher top, input at the Chronos bar's height");
   assert.match(f, /mask-image:linear-gradient\(to bottom,transparent 0,#000 56px,#000 calc\(100% - 30px\),transparent 100%\)/, 'both ends dissolve');
   assert.match(f, /\.atl-chat\{[^}]*padding:56px 4px 30px/, 'the padding equals the fades, so resting text is never in one');
-  const i = f.indexOf('.atl-chat{text-shadow');
-  const halo = /text-shadow:([^;]*);/.exec(f.slice(i)) || /text-shadow:([^}]*)\}/.exec(f.slice(i));
+  const i = f.indexOf('--atl-glow:');
+  const halo = /--atl-glow:([^;]*);/.exec(f.slice(i));
   assert.ok(halo && (halo[1].match(/rgba\(var\(--atl-halo\)/g) || []).length >= 5, 'a five-layer halo');
   /* the way to the tab is still there: the sidebar's own Atlas button */
   assert.match(read('index.html'), /id="btn-community"/);

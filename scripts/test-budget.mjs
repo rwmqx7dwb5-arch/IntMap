@@ -226,7 +226,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /* (monitors-retire, 2026-10-04) tests/monitors.spec.js went with the feature it tested, and with it
    its entry of 10 s: the fixed gate is 16 s over 5 files (smoke 8, security 4, internal-qa 2, r157 1,
    r510 1), and the ceiling follows that floor down 26 → 16. Nothing else moved. */
-const BUDGET_S = 16;                    /* fixed core: 0.3 min — measured 16 s over 5 files (2026-10-04) */
+const BUDGET_S = 17;                    /* fixed core: 0.3 min — measured 16 s over 5 files (2026-10-04); +1 s plainly, by its own measured amount (2026-11-27): tests/atlas-float-text-glow.spec.js (one boot, both themes, 0.5 + 0.7 s of test body, entered 1) joined the gate at its price — it is the only check that reads the floating card's COMPUTED glow, plates and bubble, and a node check cannot (no layout, no cascade). The TOTAL ceiling did not move. */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the

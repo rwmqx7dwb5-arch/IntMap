@@ -5,10 +5,8 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL('../js/' + p, import.meta.url), 'utf8');
 const float = read('atlas-float.js'), styles = read('atlas-styles.js');
 
-test('the glow is a text-shadow on the glyphs; the reader\'s own message has no bubble off the pane', () => {
-  assert.match(float, /#atlas-float #atlas-panel \.atl-chat\{text-shadow:/);
-  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:color-mix\(in srgb,#fff \d+%,transparent\);border:1px solid[^}]*box-shadow:none;backdrop-filter:none[^}]*\}/);
-  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-inbar :is\(\.atl-in,button,\.m-clock\)\{text-shadow:/);
+test('the glow is a text-shadow on the glyphs; the reader\'s own message keeps its bubble', () => {
+  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \*,[^']*\{text-shadow:var\(--atl-glow\);\}/);
 });
 
 test('the pane is more transparent and squarer than before, and the glow is off while it is on', () => {
