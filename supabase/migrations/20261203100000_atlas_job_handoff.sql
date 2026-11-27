@@ -205,3 +205,16 @@ revoke execute on function public.atlas_job_revise(uuid, uuid, text, jsonb, text
 grant  execute on function public.atlas_job_revise(uuid, uuid, text, jsonb, text[]) to service_role;
 comment on function public.atlas_job_revise(uuid, uuid, text, jsonb, text[]) is
   '(gis-result-handoff) A change of request that names which pieces to redo (with their new contracts) and which still hold. Redone pieces and everything downstream are queued again; kept pieces are marked as holding under the new version; nothing else is touched. Called by the atlas-jobs Edge Function after planJob has checked the merged list.';
+
+-- ── the account's data inventory states the new table (supabase/tests/23_account_data_center_test.sql) ──
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('atlas_job_artifacts', 'intmap',
+   'Large results of a background research job', 'バックグラウンド調査ジョブの大きな結果',
+   'The whole result of a piece of a research job when it is too large to keep with the piece itself — for example every point a map analysis found — kept in parts, so the next piece, the map and your saved work can read all of it, not only the beginning.',
+   '調査ジョブの分担の結果が、その分担の行に収まらないほど大きいとき（たとえば地図の分析で見つかったすべての地点）に、全件を分けて保存します。次の分担・地図・保存した作業が、先頭だけでなく全部を読めるようにします。',
+   'Deleted with its job, 30 days after the job finishes, and when you delete your account.',
+   'ジョブが終わって30日後に、そのジョブと一緒に削除されます。アカウントを削除したときも消えます。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by, label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;
