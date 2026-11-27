@@ -131,7 +131,7 @@
  "tests/r379-cesium.spec.js": 7,
  "tests/r379.spec.js": 3,
  "tests/r384-legend.spec.js": 29,
- "tests/r384.spec.js": 3,
+ "tests/r384.spec.js": 2,
  "tests/r386-detail.spec.js": 3,
  "tests/r386.spec.js": 2,
  "tests/r388-detail.spec.js": 10,
@@ -179,5 +179,6 @@
  "tests/atlas-screen-reach.spec.js": 8,
  "tests/gis-buffer-worker.spec.js": 5,
  "tests/globe-flat-camera.spec.js": 28,
- "tests/globe-polish.spec.js": 12
+ "tests/globe-polish.spec.js": 12,
+ "tests/atlas-float-text-glow.spec.js": 1
 }

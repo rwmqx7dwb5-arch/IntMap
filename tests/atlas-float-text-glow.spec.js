@@ -67,7 +67,7 @@ const measure = () => page.evaluate(() => {
 for (const theme of ['dark', 'light']) {
   test(`floating Atlas on a ${theme} map: glow on every glyph, no plate, the reader's bubble is there`, async () => {
     await page.evaluate((t) => { const s = document.getElementById('setting-theme'); s.value = t; s.dispatchEvent(new Event('change', { bubbles: true })); }, theme);
-    await page.waitForTimeout(800);
+    await page.waitForFunction((t) => document.documentElement.dataset.theme === t, theme);
     const m = await measure();
     expect(m.noGlow, 'text without a glow').toEqual([]);
     expect(m.plates, 'a fill, shadow or blurred plate behind a piece of the card').toEqual([]);

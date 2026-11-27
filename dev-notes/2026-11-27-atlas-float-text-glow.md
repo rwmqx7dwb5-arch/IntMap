@@ -11,3 +11,4 @@ newsjp: 浮遊 Atlas の文字すべてに、文字の形に沿ったグロー�
 - グロー: 部品を列挙せず、根（`#atlas-float:not(.bg)`）に 1 規則。`#atlas-panel *` と bar の全子孫に `text-shadow:var(--atl-glow)`、入力の placeholder も。SVG の記号（＋・マイク・矢印・bar）は `drop-shadow` で輪郭に沿う。
 - 板の全廃: bar のガラス丸薬、入力行の塗り・box-shadow・backdrop blur、送信ボタンの白丸、チップの塗りを、`:not(:empty)` を持つ全要素の `background`/`box-shadow`/`backdrop-filter` リセット 1 規則に統合。空の要素（色見本・棒の塗り）と進捗バーは意味を持つ色なので除外。`.bg`（枠付き背景スイッチ）は利用者が選ぶ別機能なのでそのまま。
 - 検査: `tests/atlas-float-text-glow.spec.js` が実ページで全要素の計算済みスタイルを測る（文字にグロー・塗り/影/blur 無し・自分の吹き出しに塗りと縁・規則に名指されていない新要素もグロー）を明暗両テーマで。綴りを固定していた 4 本の検査（typography・answer-panel・glass-look・map-ui-fixes）は新しい構造に合わせた。
+- 試験の予算: 新 spec（実測 0.5 + 0.7 秒・登録 1）が価格で core に入り、固定 core の天井 16 秒を 1 秒超えた。core の天井だけを +1（17）にし（理由は `scripts/test-budget.mjs` に明記）、全体の天井 5250 は動かさず、`tests/r384.spec.js` の登録値 3 → 2（実測 1.6 秒）で払い戻した。
