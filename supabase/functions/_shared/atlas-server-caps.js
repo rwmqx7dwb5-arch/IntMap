@@ -142,7 +142,16 @@ const gisJob = {
     const reading = !a.op && !a.describe && Array.isArray(a.inputs) && a.inputs.length > 0;
     if (!reading && (a.describe || !a.op)) {
       const ops = await ctx.gis.ops();
-      return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '.', data: { ops }, sources: [] };
+      /* (gis-worker-chain) describe ONE operation when it is named — its whole declaration (params, required, values). The list of all of them is 13 KB
+         as JSON and was read back cut at 6,012 characters, so a worker never saw aggregate's parameters and called it with "stats" for "stat"
+         (production 2026-11-28); the list now names each op with its inputs and parameter names, and says how to read one in full. */
+      if (a.op) {
+        const one = ops.find((o) => o.id === String(a.op));
+        if (!one) return { ok: false, code: 'unknown_op', text: 'No operation "' + String(a.op).slice(0, 60) + '". The operations: ' + ops.map((o) => o.id).join(', ') + '.' };
+        return { ok: true, text: one.id + '(' + one.inputs + ' input(s), accepts ' + (one.accepts || []).join('/') + ', output ' + one.output + '): ' + (one.params || []).map((p) => p.name + (p.required ? '*' : '') + (p.values ? '=' + p.values.join('|') : '')).join(', ') + '.', data: { op: one }, sources: [] };
+      }
+      const brief = ops.map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, params: (o.params || []).map((p) => p.name + (p.required ? '*' : '')) }));
+      return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '. Each one in full (types, allowed values, when a parameter is required): {"describe":true,"op":"<id>"}.', data: { ops: brief }, sources: [] };
     }
     const inputs = [], names = [], read = [], sources = [];
     const addSource = (x) => { if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: String(x.url).slice(0, 500), title: String(x.title || '').slice(0, 200) }); };

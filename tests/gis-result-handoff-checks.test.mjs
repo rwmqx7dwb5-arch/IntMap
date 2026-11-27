@@ -353,3 +353,44 @@ test('jobFacts carries the findings themselves, and jobText states them', () => 
   assert.equal(f.tasks[0].findings[0].claim, 'Japan has 3 places, POP_MAX total 48775000');
   assert.match(jobText(f), /findings: \[1\] Japan has 3 places, POP_MAX total 48775000 \(data\.gis\) — "\{"count":3,"sum":48775000\}"/);
 });
+
+/* ── (gis-worker-chain) inside a worker: one call's result is the next call's argument, across a slice too ──
+   Production 2026-11-28: the worker read 177 countries and filtered them to 51, then "@3:data.result" was refused, and it re-read and re-filtered the
+   file for 40 calls until the cost cap ended the job. Its describe answer was cut before aggregate's parameters, so it wrote "stats" for "stat". */
+test('a worker hands a call\'s whole result to its next call ("@<n>:data.result"), the kept results survive a slice, and describe names one op in full', async () => {
+  const CT = 'https://data.example.org/open/countries-poly-w.geojson';
+  const sq = (x) => ({ type: 'Polygon', coordinates: [[[x, 0], [x + 1, 0], [x + 1, 1], [x, 1], [x, 0]]] });
+  const countries = { type: 'FeatureCollection', features: Array.from({ length: 9 }, (_, i) => ({ type: 'Feature', properties: { NAME: 'k' + i, CONTINENT: i < 5 ? 'Africa' : 'Asia', POP_EST: 100 * (i + 1) }, geometry: sq(i * 2) })) };
+  const steps = [
+    { capability: 'data.gis', args: { describe: true, op: 'aggregate' } },
+    { capability: 'data.gis', args: { inputs: [CT] } },
+    { capability: 'data.gis', args: { op: 'filter', inputs: ['@2:data.result'], params: { where: [{ field: 'CONTINENT', op: '==', value: 'Africa' }] } } },
+    { capability: 'data.gis', args: { op: 'convexHull', inputs: ['@3:data.result'] } },
+    { capability: 'data.gis', args: { op: 'aggregate', inputs: ['@4:data.result', '@3:data.result'], params: { stat: 'sum', field: 'POP_EST', outName: 'pop' } } },
+  ];
+  const tasks = plan([{ id: 'africa', goal: 'count the African countries and sum POP_EST', tools: ['data.gis'] }]);
+  const db = fakeDb(tasks);
+  let round = 0, clock = 0;
+  const callModel = async (sys, prompt) => {
+    clock += 40000;   /* each round is past the slice: the loop writes its state and the next slice resumes */
+    if (round < steps.length) return { text: JSON.stringify({ calls: [steps[round++]] }), usage, citations: [] };
+    return { text: JSON.stringify({ summary: 'summed', findings: [{ claim: 'done', source: 'data.gis', excerpt: 'x' }], gaps: [] }), usage, citations: [] };
+  };
+  const lane = makeServerCaps({ gis, fetchGeoJson: files({ [CT]: countries }) });
+  for (let slice = 0; slice < 10 && db.st.job.status === 'running'; slice++) {
+    db.st.job.lease_holder = 'h1';
+    await runJob({ db, job: db.st.job, holder: 'h1', callModel, money, now: () => clock, budgetMs: 30000, leaseSeconds: 150, system: 'SYS', capabilities: lane });
+  }
+  const t = db.st.tasks.get('africa');
+  assert.equal(t.status, 'done', JSON.stringify(t.result && t.result.gaps));
+  const entries = t.progress.entries;
+  const body = (e) => JSON.parse(e.preview);   /* what the worker was shown of the answer (the whole is kept beside it — #1502) */
+  assert.deepEqual(entries.map((e) => [e.n, e.ok]), [[1, true], [2, true], [3, true], [4, true], [5, true]], JSON.stringify(entries.map((e) => [e.n, e.code, body(e).slice(0, 300)])));
+  assert.match(body(entries[0]), /^aggregate\(2 input\(s\)[^:]*\): stat\*=count\|sum/, 'describe with op names that op in full: "stat", required, and its values');
+  assert.match(body(entries[2]), /filter -> 5 feature\(s\)/, 'the filter read the 9 features the read call kept, not the clipped text');
+  assert.match(body(entries[4]), /"pop":1500/, 'the sum over the five African rows, from results handed on across slices');
+  /* the list of all operations is short enough to be read whole, and names each one's parameters */
+  const all = await lane.run('data.gis', { describe: true }, {});
+  assert.ok(JSON.stringify(all.data).length < 6000, 'the brief list fits what a worker reads back: ' + JSON.stringify(all.data).length);
+  assert.ok(all.data.ops.find((o) => o.id === 'aggregate').params.includes('stat*'));
+});
