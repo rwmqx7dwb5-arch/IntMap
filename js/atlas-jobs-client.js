@@ -122,7 +122,7 @@ export async function applyParked(f, apply, memory) {
   const visit = (t) => {
     if (seen.has(t.id) || visiting.has(t.id)) return;
     visiting.add(t.id);
-    (t.deps || []).forEach((d) => { const u = byId.get(d); if (u) visit(u); });
+    (t.deps || []).forEach((d) => { const up = byId.get(d); if (up) visit(up); });
     visiting.delete(t.id); seen.add(t.id); ordered.push(t);
   };
   sorted.forEach(visit);
