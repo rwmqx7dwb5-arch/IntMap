@@ -118,6 +118,39 @@ const DOC_CEILING = 32768;
   if (!problems.some((p) => p.startsWith('claude-import'))) ok('claude-import', `${readdirSync(join(ROOT, '.agents/rules')).length} rule file(s) imported`);
 }
 
+/* ── a hand-written list of a discovered set is a photograph ──────────────────────────────
+   MEASURED 2026-11-28: `.codex/config.toml` told Codex the rules were «execution-strategy.md・
+   no-ad-hoc-hardcoding.md・historical-verification.md». Two more had been added since; the
+   rendered copies stayed green (they are re-rendered) and the hand-written addendum did not —
+   nothing compares prose to a directory. The fact is attached to the SET, not to one file:
+   any line of the hand-written agent context that names two or more members of a set
+   discovered from disk is an enumeration, and an enumeration must name every member (or name
+   the directory instead). One mention in passing ("see one-pass-or-a-reason.md §5") is a
+   reference, not a list, and is not judged. */
+{
+  const sets = {
+    rules: readdirSync(join(ROOT, '.agents/rules')).filter((f) => f.endsWith('.md')),
+    roles: readdirSync(join(ROOT, '.agents/roles')).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, '')),
+  };
+  const walk = (d) => readdirSync(join(ROOT, d), { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : e.name.endsWith('.md') ? [`${d}/${e.name}`] : []));
+  /* the hand-written half: the sources and the per-product addenda (rendered copies are judged by `render`) */
+  const files = ['AGENTS.md', 'CLAUDE.md', '.codex/config.toml', 'docs/AGENT-SETUP.md', ...walk('.agents')];
+  let lines = 0;
+  for (const f of files) {
+    lf(rd(f)).split('\n').forEach((l, i) => {
+      for (const [name, members] of Object.entries(sets)) {
+        const hit = members.filter((m) => l.includes(m));
+        if (hit.length < 2) continue;
+        lines++;
+        const missing = members.filter((m) => !hit.includes(m));
+        if (missing.length) fail('addendum-sets', `${f}:${i + 1} lists ${hit.length} of the ${members.length} ${name} (${hit.join(', ')}) and omits ${missing.join(', ')} — name the directory, or every member`);
+      }
+    });
+  }
+  if (!problems.some((p) => p.startsWith('addendum-sets'))) ok('addendum-sets', `${lines} line(s) enumerating .agents/rules or .agents/roles name every member`);
+}
+
 /* ── frontmatter ──────────────────────────────────────────────────────────────────────────
    Deliberately not a YAML library: the shape is fixed (scalars, plus one level of nesting for
    the per-product blocks) and a strict reader that REFUSES anything else is what keeps the

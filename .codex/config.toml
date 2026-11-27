@@ -4,7 +4,7 @@
 #   「Codex でしか意味を持たない事実」だけを書く（AGENTS.md §9: 正本を2つ作らない）。
 #
 # ⚠ このファイルは PROJECT LAYER で、**信頼されたプロジェクトでしか読まれない**。
-#   信頼はパス単位に記録され、AGENTS.md §6 はラウンドごとに新しい worktree を作るので、
+#   信頼はパス単位に記録され、AGENTS.md §6 は作業ごとに新しい worktree を作るので、
 #   `node scripts/worktree.mjs new` が新しい作業場を ~/.codex/config.toml に登録する。
 #   ⚠ ここが読まれなくても AGENTS.md は読まれる——恒久指示をここに移さないこと。
 #
@@ -24,7 +24,7 @@ Claude Code 側の対応物は `CLAUDE.md`、両者の対応表は `docs/AGENT-S
 
 `SessionStart` hook は **hash に対して trust されるまで一覧に出るだけで走らない**（`/hooks`）。
 ⚠ **実測（#R704）: `~/.codex/config.toml` の `[hooks.state]` は空で、この hook は一度も走って
-いなかった**——つまり Codex のセッションは、branch も空きラウンドも、#R696 が 1 か所にまとめた
+いなかった**——つまり Codex のセッションは、branch も作業状態も、#R696 が 1 か所にまとめた
 蓄積メモリも、**一度も受け取っていなかった**。
 
 **冒頭にそれらが見えていないなら、それは「無い」ではなく「届いていない」である。** 自分で取る:
@@ -42,10 +42,10 @@ Claude Code と同じ使用感（推論の深さ・承認・サンドボック�
 
 - **セッション名は自動生成に任せる。** `/rename` を使わない。
 - `AGENTS.md` §1 の事前確認のうち、**`.agents/rules/` は自分で開く**
-  （Claude Code は自動で読み込むが、Codex は読まない）。実体は
-  `execution-strategy.md`・`no-ad-hoc-hardcoding.md`・`historical-verification.md`。
-  ⚠ **数ではなくディレクトリで確かめる**——足されたものが黙って落ちないように、
-  `.agents/rules/` にあるファイルは全部読む。
+  （Claude Code は自動で読み込むが、Codex は読まない）。
+  ⚠ **名前を憶えずディレクトリを列挙する**——足されたものが黙って落ちないように、
+  `.agents/rules/` にあるファイルは全部読む（ここに名前を並べないのも同じ理由。
+  並べた一覧は次に足された規則を落とした——`npm run check:agents` の `addendum-sets`）。
 - 状態は `node scripts/worktree.mjs status` が 1 回で出す。手で数え直さない。
 
 ## C-2. 不明点
@@ -71,8 +71,8 @@ Codex には専用の質問 UI が無いので、**質問だけを本文にし�
 
 ## C-5. dev サーバとブラウザ
 
-シェルから直に dev サーバを起動しない。`node scripts/worktree.mjs new` が
-`intmap-preview-r<N>` / ポート `4000 + N` を用意する。本番検証は browser プラグインで行い、
+シェルから直に dev サーバを起動しない。`node scripts/worktree.mjs new <slug>` が
+preview の名前とポートを用意して印字する（名前もポートも手で組み立てない）。本番検証は browser プラグインで行い、
 測った数字は**本番で**測る（`AGENTS.md` §5.1 の production verification）。
 
 ## C-6. サンドボックスと承認
@@ -88,7 +88,7 @@ merge に追加承認を求めない」と要求する。それを満たすに�
 `node scripts/agent-memory.mjs --path` が出す（このマシンの絶対パスをどの追跡ファイルにも
 書かないための導出。どの worktree から呼んでも同じ場所を指す）。
 
-- `SessionStart` hook が索引を渡す。**渡ってこないなら hook が trust されていない**（§C-6 の
+- `SessionStart` hook が索引を渡す。**渡ってこないなら hook が trust されていない**（§C-0 の
   `/hooks`）——「メモリが無い」ではないので、そう報告しない。
 - **索引は「思い出す鍵」であって全文ではない。** 鍵が当たったら、その `.md` を開いて読む。
 - **学んだことは同じディレクトリへ書く。** Codex 自身の `/memories` にだけ書くと Claude Code
