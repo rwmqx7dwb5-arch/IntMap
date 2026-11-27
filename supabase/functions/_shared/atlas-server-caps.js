@@ -119,6 +119,8 @@ const worldRelated = {
    Now every feature is returned — WHERE it is kept (in the task's row, or beside it when it is large) is the job runner's, not this twin's — and
    `sources` / `data.inputs` name each input: the address of a file, or the task (and the version of its output) an input was handed from, with
    that task's own sources carried through. */
+/* what the server's data.gis reads, said in its own words when it is asked for something else (it borrowed the world graph's sentence) */
+const notHere = (what) => ({ ok: false, code: 'part_unsupported_on_server', text: 'On the server data.gis reads: inline GeoJSON; the address of a GeoJSON file ("https://…" or "url:https://…"); or what an earlier task of this job made — "@<task id>:data.result", or simply the task id when that task is one of this task\'s inputs. "' + String(what).slice(0, 80) + '" is none of these: layers, OGC/STAC searches, acquire and raster output need the page.' });
 const sourceOfUrl = (u) => ({ url: String(u).slice(0, 500), title: 'GeoJSON file ' + (String(u).split('?')[0].split('/').filter(Boolean).pop() || String(u)).slice(0, 160) });
 export function columnsOf(features) {
   const seen = new Set();
@@ -128,10 +130,10 @@ export function columnsOf(features) {
 const gisJob = {
   id: 'data.gis',
   needs: ['gis'],
-  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"|"@<task>:data.result"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
+  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
   async run(args, ctx) {
     const a = args || {};
-    if (a.acquire || a.kind === 'raster' || a.semantics) return needPage(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
+    if (a.acquire || a.kind === 'raster' || a.semantics) return notHere(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
     if (a.describe || !a.op) {
       const ops = await ctx.gis.ops();
       return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '.', data: { ops }, sources: [] };
@@ -140,14 +142,22 @@ const gisJob = {
     const addSource = (x) => { if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: String(x.url).slice(0, 500), title: String(x.title || '').slice(0, 200) }); };
     for (const x of Array.isArray(a.inputs) ? a.inputs : []) {
       let v = x, name = '', srcs = [], from = null;
-      if (typeof x === 'string') {
-        if (/^@[A-Za-z0-9._-]+:/.test(x)) return { ok: false, code: 'input_ref_unresolved', text: 'The input "' + x.slice(0, 80) + '" refers to another task, and nothing resolved it (it must be a task of the same job).' };
-        if (!/^https:\/\//i.test(x)) return needPage('ref ' + x.slice(0, 40));
+      /* (gis-handoff-entry) THE PAGE'S VOCABULARY, ON THE SERVER. The page's data.gis names an input by a dataset id, and a file by "url:https://…";
+         a job's planner (Atlas) writes the same words in a job (measured in production 2026-11-28: "url:https://…geojson" and the bare id of the earlier
+         task, both refused — with the world graph's sentence). On the server the datasets ARE the outputs of the job's earlier tasks, so a bare name that
+         is one of this task's inputs (its task id, or its output id job:<job>/<task>) is that output; "url:" is the address it prefixes. */
+      const handed = typeof x === 'string' && ctx.outputs && typeof ctx.outputs.get === 'function' ? ctx.outputs.get(x) : null;
+      if (handed) v = handed;
+      if (typeof x === 'string' && !handed) {
+        if (/^@[A-Za-z0-9._-]+:/.test(x)) return { ok: false, code: 'input_ref_unresolved', text: 'The input "' + x.slice(0, 80) + '" refers to another task, and nothing resolved it (it must be a task of the same job, listed in this task\'s inputs).' };
+        const addr = /^url:/i.test(x) ? x.slice(4) : x;
+        if (!/^https:\/\//i.test(addr)) return notHere(x);
         if (typeof ctx.fetchGeoJson !== 'function') return { ok: false, code: 'no_file_reader', text: 'This runtime cannot read a file by address.' };
-        const f = await ctx.fetchGeoJson(x, { signal: ctx.signal });
+        const f = await ctx.fetchGeoJson(addr, { signal: ctx.signal });
         if (!f.ok) return { ok: false, code: f.code, text: f.text };
-        v = f.json; name = x.slice(0, 500); srcs = [sourceOfUrl(x)];
-      } else if (v && typeof v === 'object' && v.intmap && typeof v.intmap === 'object') {
+        v = f.json; name = addr.slice(0, 500); srcs = [sourceOfUrl(addr)];
+      }
+      if (v && typeof v === 'object' && !Array.isArray(v) && v.intmap && typeof v.intmap === 'object') {
         /* handed on from an earlier task (the runner marked it): its task, the version of its output, and the sources IT named */
         from = { task: String(v.intmap.from || '').slice(0, 64), version: String(v.intmap.version || '').slice(0, 40) };
         name = 'task ' + from.task + (from.version ? ' (output version ' + from.version + ')' : '');
@@ -199,7 +209,7 @@ export function makeServerCaps(o) {
       if ((t.needs || []).includes('db') && !(db && typeof db.rpc === 'function')) return { ok: false, code: 'no_db', text: 'This runtime has no database lane for "' + t.id + '".' };
       /* a twin never waits on an upstream without a clock: 20 s (observation: NOAA SWPC answers in under 2 s; this only has to stay inside the 150 s lease). Expires with the lease. */
       const signal = (ctx && ctx.signal) || (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined);
-      try { return await t.run(args || {}, { fetch: f, signal, db, gis, fetchGeoJson }); }
+      try { return await t.run(args || {}, { fetch: f, signal, db, gis, fetchGeoJson, outputs: (ctx && ctx.outputs) || null }); }
       catch (e) { return { ok: false, code: 'twin_threw', text: String(e && e.message || e).slice(0, 300) }; }
     },
   };

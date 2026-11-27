@@ -233,3 +233,31 @@ test('④ counted(): a cut keeps the original count as the denominator; no max, 
   assert.deepEqual(counted([1, 2, 3]), { kept: [1, 2, 3], received: 3, used: 3, dropped: 0 });
   assert.deepEqual(counted(null, 5), { kept: [], received: 0, used: 0, dropped: 0 });
 });
+
+/* ── (gis-handoff-entry) what Atlas actually wrote in production (2026-11-28) reaches the hand-over ──
+   The page's data.gis names a file "url:https://…" and an input by a dataset id; the planner wrote the same in a job — the file as "url:https://…geojson",
+   the earlier task by its bare id — and both were refused (with the world graph's sentence), so the hand-over above was never reached. */
+test('the page vocabulary reaches the hand-over: "url:https://…" reads the file, and a bare task id that is one of the inputs is that task\'s output', async () => {
+  const CT = 'https://data.example.org/open/countries.geojson';
+  const countries = { type: 'FeatureCollection', features: Array.from({ length: 12 }, (_, i) => ({ type: 'Feature', properties: { NAME: 'k' + i, CONTINENT: i % 3 === 0 ? 'Africa' : 'Asia', POP_EST: 1000 + i }, geometry: { type: 'Point', coordinates: [i, i] } })) };
+  const db = fakeDb(plan([
+    { id: 'africa_filter', kind: 'capability', capability: 'data.gis', args: { op: 'filter', inputs: ['url:' + CT], params: { where: [{ field: 'CONTINENT', op: '==', value: 'Africa' }] } } },
+    { id: 'centres', kind: 'capability', capability: 'data.gis', inputs: [{ from: 'africa_filter' }], args: { op: 'centroid', inputs: ['africa_filter'] } },
+  ]));
+  await run(db, null, files({ [CT]: countries }));
+  const f = db.st.tasks.get('africa_filter'), c = db.st.tasks.get('centres');
+  assert.equal(f.status, 'done', JSON.stringify(f.result && f.result.gaps));
+  assert.equal(f.result.data.count, 4);
+  assert.deepEqual(f.result.sources.map((x) => x.url), [CT], 'the address after "url:" is the source');
+  assert.equal(c.status, 'done', JSON.stringify(c.result && c.result.gaps));
+  assert.equal(c.result.data.count, 4, 'the bare id read the earlier output, all of it');
+  assert.deepEqual(c.result.sources.map((x) => x.url), [CT]);
+  assert.equal(db.st.job.finished.status, 'done');
+  /* a name that is not one of the inputs is not guessed into one, and the refusal says what data.gis reads — not the world graph */
+  const lane = makeServerCaps({ gis, fetchGeoJson: files({}) });
+  const r = await lane.run('data.gis', { op: 'centroid', inputs: ['africa_filter'] }, {});
+  assert.equal(r.ok, false);
+  assert.equal(r.code, 'part_unsupported_on_server');
+  assert.doesNotMatch(r.text, /world graph/);
+  assert.match(r.text, /@<task id>:data\.result/);
+});

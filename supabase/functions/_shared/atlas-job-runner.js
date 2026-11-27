@@ -206,7 +206,17 @@ async function runCapabilityTask(ctx, task, inputs) {
   if (unreadable) return fin("failed", "input_unavailable", { summary: "", findings: [], gaps: ['The output of task "' + s(unreadable.from, 64) + '" could not be read back whole (' + s(unreadable.data.unreadable, 120) + ').'], sources: [] });
   const ra = resolveArgs(c.args || {}, inputs || [], { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: (src.data && src.data.output && src.data.output.version) || "", sources: Array.isArray(src.sources) ? src.sources : [] } }) : v) });
   if (!ra.ok) return fin("failed", "input_ref_unresolved", { summary: "", findings: [], gaps: [ra.why], sources: [] });
-  const out = await lane.run(c.capability, ra.args, { signal: ctx.signal });
+  /* the outputs of this task's inputs, by the names the page would use for them (the task id, the output id) — a twin that takes datasets reads them
+     by name (data.gis), the way the page's data.gis reads a dataset by its id */
+  const outputs = new Map();
+  for (const i of inputs || []) {
+    const d = i && i.data;
+    if (!d || !isFC(d.result)) continue;
+    const fc = Object.assign({}, d.result, { intmap: { from: i.from, version: (d.output && d.output.version) || "", sources: Array.isArray(i.sources) ? i.sources : [] } });
+    outputs.set(String(i.from), fc);
+    if (d.output && d.output.id) outputs.set(String(d.output.id), fc);
+  }
+  const out = await lane.run(c.capability, ra.args, { signal: ctx.signal, outputs });
   if (!out || out.ok !== true) {
     const code = s(out && out.code, 60) || "capability_failed";
     await event(db, job, "task.request_failed", { task: task.task_id, code, capability: s(c.capability, 80) });
