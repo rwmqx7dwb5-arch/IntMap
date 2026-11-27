@@ -1386,7 +1386,7 @@ export function objectList(HOST){
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
-        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:1,
+        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:1, geom:geomKind(it.geom), area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
@@ -1399,17 +1399,17 @@ export function objectList(HOST){
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
       try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'), src:['imroute-src'],
         focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}
-      try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'), src:['im-iso-src'],
+      try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'), src:['im-iso-src'], geom:'area', area:()=>featsKm2(isf),
         focus:()=>fitFeats(isf), remove:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.clear(); }catch(_){} } }); }catch(_){}
       /* (#R120) Atlas-drawn polygons + the active place outline join the universal inventory, so "さっき
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
         out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
-          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:1,   /* what the reader set (0.1–1); the painter holds it scaled to the fill's 20 % base in p.op */
+          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:1,   /* what the reader set (0.1–1); the painter holds it scaled to the fill's base in p.op */
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           setWidth:w=>{ p.w=w; try{ HP.repaint(); }catch(_){} },
-          setOpacity:a=>{ p.op=a*0.2; p.alpha=a; try{ HP.repaint(); }catch(_){} },
+          setOpacity:a=>{ p.op=a*(HP.fillBase||0.32); p.alpha=a; try{ HP.repaint(); }catch(_){} },
           remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
       /* the lines Atlas drew (drawLine, river highlights, journey courses) — until now neither listed nor editable, though they were drawn */
       try{ const HL=window._imHlLines; ((HL&&HL.list())||[]).forEach((l,i)=>{ const lid=HL.tagId(l); if(!lid) return;
@@ -1430,14 +1430,14 @@ export function objectList(HOST){
         out.push({ id:o.id, kind:o.kind, dot:o.color, color:o.color, name:labels[o.id]||o.name, src:o.src, geom:o.geom, width:o.width, alpha:o.alpha, area:o.areaKm2!=null?(()=>o.areaKm2):null,
           setColor:o.setColor, setWidth:o.setWidth, setOpacity:o.setOpacity, rename:v=>{ labels[o.id]=v; },
           focus:()=>{ if(o.geometry) fitFeats([{geometry:o.geometry}]); else if(o.center) GE().camera.flyTo({center:o.center,zoom:Math.max(GE().camera.getZoom(),9),duration:800}); },
-          remove:()=>{ try{ AC.clear(); }catch(_){} } }); }); }catch(_){}
+          remove:()=>{ try{ AC.removeOne(o.id); }catch(_){} } }); }); }catch(_){}
       /* (map-next) the features of the reader's own map on show — js/my-map.js hands over its own entries (focus, rename, recolour, delete act on the map document) */
       try{ const MM=window.IntMapMyMap; if(MM&&MM.objects){ const mo=MM.objects(); if(mo.length){
         /* the reader's map lists its own entries; the surfaces it claims (under 'map.myMap') are theirs, found from the claims */
         let ms=[]; try{ const r=GE().render.drawn({owners:['map.myMap']}); ms=Object.keys((r&&r.surfaces)||{}); }catch(_){}
         mo.forEach(o=>out.push(Object.assign({src:ms},o))); } } }catch(_){}
       try{ const OT=window.IntMapOutline, cur=OT&&OT.current&&OT.current(); if(cur) out.push({ id:'outline', kind:'outline', dot:'#0a84ff',
-        name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'),
+        name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), geom:'area', area:()=>geomKm2(cur.geo),
         focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
       /* ══ (atlas-completion) WHAT ELSE IS DRAWN, ASKED OF THE RENDERER ═══════════════════════════════════════════
          The entries above are the subsystems that keep their own lists. Everything else drawn on the map — Atlas's answer
@@ -1517,15 +1517,15 @@ export function objectList(HOST){
          line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
          buttons (below) make it 25 px, and the head is still the drag handle it always was. */
       panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:rgba(128,128,128,0.10);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">'+icon('folder')+' '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
-        +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
+        +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;overflow-x:hidden;min-width:0;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
         st.textContent='#iol-panel .iol-head button{line-height:1;padding:0;}'   /* (#R248) the × and 全消去 stop setting the band’s height — see the note by the markup */
           /* the two head buttons were 8 px apart and ~12 px tall, so aiming at × hit 全消去. 28 px hit areas, a 14 px air gap before the ×, and a negative block margin so the 25 px band (#R248) does not grow */
           +'#iol-panel .iol-head .iol-clear,#iol-panel .iol-head .iol-close{min-width:28px;min-height:28px;margin-block:-5px;padding-inline:6px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;}'
           +'#iol-panel .iol-head .iol-close{margin-inline-start:14px;}'
-          +'#iol-panel .iol-row{flex-wrap:wrap;}'
-          +'#iol-panel .iol-sl{flex:1 0 100%;display:flex;gap:12px;padding:0 2px 3px 17px;}'
+          +'#iol-panel .iol-row{flex-wrap:wrap;min-width:0;max-width:100%;box-sizing:border-box;}#iol-panel .iol-row>*{min-width:0;}#iol-panel .iol-ic{flex-shrink:0;}#iol-panel .iol-body{overflow-x:hidden;}'
+          +'#iol-panel .iol-sl{flex:1 0 100%;box-sizing:border-box;min-width:0;display:flex;gap:12px;padding:0 2px 3px 17px;}'
           +'#iol-panel .iol-sl label{flex:1;min-width:0;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text-muted);}'
           +'#iol-panel .iol-sl input[type=range]{flex:1;min-width:0;height:16px;accent-color:var(--primary-color);}'
           +'#iol-panel .iol-q{width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid rgba(128,128,128,0.25);border-radius:9px;background:rgba(128,128,128,0.12);color:var(--text-main);font-size:12px;outline:none;}'
