@@ -14,7 +14,7 @@
  *  A fill whose opacity nobody set keeps the look its painter has always given it; `alphaOfFill` is that look expressed on the slider,
  *  so the slider opens where the map is, not at 100 %.
  */
-export const FILL_AT_FULL = 0.85;
+const FILL_AT_FULL = 0.85;
 
 /** slider value (0..1) → fill-opacity */
 export const fillFromAlpha = (a) => Math.max(0, Math.min(1, +a)) * FILL_AT_FULL;
@@ -23,7 +23,7 @@ export const fillFromAlpha = (a) => Math.max(0, Math.min(1, +a)) * FILL_AT_FULL;
 export const alphaFromFill = (f) => Math.max(0, Math.min(1, Math.round((+f / FILL_AT_FULL) * 20) / 20));
 
 /** the layer-level paint property an object's opacity drives, by style-layer type, and the value for slider value `a` */
-export const OPACITY_PROPS = Object.freeze({
+const OPACITY_PROPS = Object.freeze({
   fill: 'fill-opacity', line: 'line-opacity', circle: 'circle-opacity',
   symbol: ['text-opacity', 'icon-opacity'], 'fill-extrusion': 'fill-extrusion-opacity', raster: 'raster-opacity', heatmap: 'heatmap-opacity',
 });

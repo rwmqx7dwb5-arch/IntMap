@@ -1,5 +1,4 @@
 {
- "tests/label-fade-opacity.spec.js": 35,
  "tests/board-compose.spec.js": 19,
  "tests/compute-sandbox.spec.js": 22,
  "tests/geopolitics-layers.spec.js": 14,

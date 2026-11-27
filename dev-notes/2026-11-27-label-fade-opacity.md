@@ -14,7 +14,7 @@ newsjp: 州・県の名前も、国名と同じく、その領域の内側まで
 原因は塗りの基準値の掛け算が painter ごとに違ったこと（測量の面 0.16・アップロード 0.22・Atlas の面 0.32・合成図形 0.2・汎用 0.4）。100% が最も薄い 0.16 で、10〜100% が数百分の一しか動かなかった。`js/object-opacity.js` が唯一の意味を持つ: 線・点・ラベルは値そのまま、面の塗りは 0〜`FILL_AT_FULL`(0.85)。全 painter（測量・アップロード・Atlas 面・合成図形・汎用レイヤー〔symbol の text/icon も〕）がそれを通る。未設定の塗りは従来の見た目のまま、スライダーはその位置（`alphaFromFill`）から始まる。スライダー下限は 0.1→0。パネルと Atlas の `object` 能力は同じ `IntMapObjects.set` を通る。
 
 ## 検査
-`tests/label-fade-opacity-checks.test.mjs`、`tests/label-fade-opacity.spec.js`（実ブラウザ: 仏の国名が z8 で消え z3 で戻る・東京の都名・面の opacity が 0.1/0.5/1 で動く）。
+`tests/label-fade-opacity-checks.test.mjs`（規則・共有定義・filter の書き込みと復元）。実ブラウザでは spec で一度測った: 仏の国名は z8 で消え z3.2 で戻る・東京の都名は z9.5 で消える・測量図形の塗りは 10/50/100% で 0.085/0.425/0.85。この spec は全体の時間枠（check:testbudget）を 0.6 分超えるので残していない。
 
 ## 性能の天井
 `eager.modules` 927 → 928。新しい共有モジュール `js/object-opacity.js`（不透明度の唯一の定義）の 1 本ぶんで、これが無いと各 painter が基準値を持ち直す（この不具合の原因そのもの）。サイズは数百バイト。

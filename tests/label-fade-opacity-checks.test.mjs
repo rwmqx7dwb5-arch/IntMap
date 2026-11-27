@@ -2,7 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { FILL_AT_FULL, fillFromAlpha, alphaFromFill, opacityPaint } from '../js/object-opacity.js';
+import { fillFromAlpha, alphaFromFill, opacityPaint } from '../js/object-opacity.js';
+const FILL_AT_FULL = fillFromAlpha(1);
 
 globalThis.window = globalThis;
 await import('../js/country-extent.js');

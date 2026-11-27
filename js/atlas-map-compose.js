@@ -48,7 +48,7 @@
 import './safe-html.js';
 import { shapeAnchor } from './atlas-shape-resolve.js';
 import { makeAtlasGeoRefs } from './atlas-geo-refs.js';
-import { FILL_AT_FULL, alphaFromFill } from './object-opacity.js';   /* what the Opacity slider means for an area fill — shared with every other painter */
+import { fillFromAlpha, alphaFromFill } from './object-opacity.js';   /* what the Opacity slider means for an area fill — shared with every other painter */
 
 export function makeAtlasMapCompose(deps) {
   return (function () {
@@ -243,7 +243,7 @@ export function makeAtlasMapCompose(deps) {
            「approximate」 in the same place the legend does. */
         const HOV = ['==', ['get', 'hov'], 1];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
-          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['case', ['==', ['typeof', ['get', 'op']], 'number'], ['*', ['get', 'op'], ['case', HOV, 1, FILL_AT_FULL]], ['case', HOV, 0.4, 0.2]] } }, before);
+          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['coalesce', ['get', 'fop'], ['case', HOV, 0.4, 0.2]] } }, before);
         g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived'], ['!=', ['get', 'ref'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
@@ -340,7 +340,7 @@ export function makeAtlasMapCompose(deps) {
         const o = ovOf(shapeId(sh)); const col = (o && o.color) || sh.color;
         out.push({ type: 'Feature', id: out.length, geometry: sh.geometry,
           properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, ref: sh.reference ? 1 : 0, asOf: sh.asOf || '', color: col,
-            fc: soften(col, 0.55, 0), lc: soften(col, 0.7, 0.06), op: o && o.op != null ? o.op : null, w: o && o.w != null ? o.w : null,
+            fc: soften(col, 0.55, 0), lc: soften(col, 0.7, 0.06), op: o && o.op != null ? o.op : null, fop: o && o.op != null ? fillFromAlpha(o.op) : null, w: o && o.w != null ? o.w : null,
             hov: hovRec && hovRec.item === sh.item ? 1 : 0 } });
       });
       const spread = spreadOf(records);
