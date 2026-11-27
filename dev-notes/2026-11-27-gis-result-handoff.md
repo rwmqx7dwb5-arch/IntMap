@@ -1,6 +1,7 @@
 ---
 title: Atlas のジョブで、仕事の結果を次の仕事へ全件のまま渡す（参照＝依存・出力の置き場・出典・依頼の 2 つの版・切ってから数えない・計画器の照合）
 date: 2026-11-27
+pr: 1491
 newsen: A background job's pieces now hand their whole GIS result to the next piece — filter, join and re-count what an earlier piece fetched, with its source file kept — and the result is filed as a dataset you can put back on the map.
 newsjp: バックグラウンドの仕事が、前の段の GIS 結果を全件のまま次の段へ渡すようになりました。取得したデータを絞り込み・結合・集計し直せ、元ファイルの出典も残り、結果はデータセットとして保存されて地図に戻せます。
 ---
