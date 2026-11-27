@@ -31,9 +31,9 @@ test('③ 感度スライダー 100% は従来の 170/170/110 と同じ実効値
     events: { once() { } }, camera: {} };
   const prev = globalThis.window; globalThis.window = win;
   try {
-    const { makeWheelZoom } = await importModule('js/wheel-zoom.js', { globals: { window: win } });
+    const { makeWheelZoom, NAV_BASE } = await importModule('js/wheel-zoom.js', { globals: { window: win } });
     makeWheelZoom({}, { GE: () => GEo, i18n: {} });
-    assert.deepEqual(win.IM_NAV_BASE, { zoom: 1.7, pan: 1.7, inertia: 1.1 });
+    assert.deepEqual({ ...NAV_BASE }, { zoom: 1.7, pan: 1.7, inertia: 1.1 });
     assert.ok(Math.abs(calls.zoom[0][0] - 1.7 / 300) < 1e-12);
     assert.ok(Math.abs(calls.glide.speed - 1.7) < 1e-12 && Math.abs(calls.glide.length - 1.1) < 1e-12);
     win.imNavZoomSens = 0.5; win._applyNavSens();

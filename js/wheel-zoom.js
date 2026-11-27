@@ -12,6 +12,10 @@
  *  Everything else arrives through CTX under its ORIGINAL name, which is what lets the body stay
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
+/* The Settings sliders show a PERCENT OF THE DEFAULT, and the default is the feel the owner tuned: observed 2026-11-27 (owner's own
+   settings: Zoom 170% / Pan 170% / Inertia 110% of the older raw scale), adopted as the new 100%. imNav* hold the slider value
+   (1 = default); this is the one place that turns it into the raw rate. Expires when the owner re-tunes the default. */
+export const NAV_BASE = Object.freeze({ zoom:1.7, pan:1.7, inertia:1.1 });
 export function makeWheelZoom(HOST, CTX) {
   const GE=CTX.GE, i18n=CTX.i18n;
   /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
@@ -24,16 +28,11 @@ export function makeWheelZoom(HOST, CTX) {
   try{
 }catch(_){}
   if(GE().hasRenderer()){
-    /* The Settings sliders show a PERCENT OF THE DEFAULT, and the default is the feel the owner tuned:
-       observed 2026-11-27 (owner's own settings: Zoom 170% / Pan 170% / Inertia 110% of the older raw
-       scale), adopted as the new 100%. imNav* hold the slider value (1 = default); BASE is the one
-       place that turns it into the raw rate. Expires when the owner re-tunes the default. */
-    window.IM_NAV_BASE = window.IM_NAV_BASE || Object.freeze({ zoom:1.7, pan:1.7, inertia:1.1 });
     window.imNavZoomSens = window.imNavZoomSens || 1;
     window.imNavPanSens  = window.imNavPanSens  || 1;
     if(window.imNavInertia==null) window.imNavInertia=1;   /* (#R23) 1=default glide, 0=instant stop */
     window._applyNavSens = function(){
-      const B=window.IM_NAV_BASE;
+      const B=NAV_BASE;
       const z=B.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const p=B.pan*Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
       const iner=B.inertia*Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
@@ -81,7 +80,7 @@ export function makeWheelZoom(HOST, CTX) {
     (function(){
       const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
       let active=false, startDist=0, startZoom=0, pend=null;
-      const sens=()=>window.IM_NAV_BASE.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      const sens=()=>NAV_BASE.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
       /* (#R499) the observed box — js/runtime.js §5. The direct read is the pre-runtime fallback and
          nothing else: this listener cannot be reached before the map exists. */

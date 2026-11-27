@@ -49,7 +49,7 @@ import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, d
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
 import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
 import { makeLabelOcclusion } from './label-occlusion.js';
-import { makeWheelZoom } from './wheel-zoom.js';
+import { makeWheelZoom, NAV_BASE } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection, openingProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
@@ -1677,7 +1677,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        _applyNavSens so this is the sole double-tap zoom path. */
     GE().events.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
       if(typeof toolMode!=='undefined' && toolMode) return;
-      try{ const s=(window.IM_NAV_BASE?window.IM_NAV_BASE.zoom:1)*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      try{ const s=NAV_BASE.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
         GE().camera.easeTo({zoom:GE().camera.getZoom()+s, around:(e&&e.lngLat)||GE().camera.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
     });
     GE().events.on('mousemove',(e)=>{
@@ -3533,7 +3533,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        became 100). A value saved before that was a percent of the OLD raw scale. 1 was the old default, which
        is what an untouched slider saved, so it follows the new default; any other value was a deliberate choice
        and keeps its raw feel (value / base, to the slider's 5% step). */
-    const _nb=window.IM_NAV_BASE||{zoom:1,pan:1,inertia:1}, _nv=(v,b)=>(s.navVer>=2||v===1)?v:Math.round(v/b*20)/20;
+    const _nb=NAV_BASE, _nv=(v,b)=>(s.navVer>=2||v===1)?v:Math.round(v/b*20)/20;
     if(s.navZoom) window.imNavZoomSens=_nv(+s.navZoom||1,_nb.zoom);   /* (#R20) nav sensitivity */
     if(s.navPan)  window.imNavPanSens=_nv(+s.navPan||1,_nb.pan);
     if(s.navInertia!=null) window.imNavInertia=_nv(+s.navInertia,_nb.inertia);   /* (#R23) inertia (0..1.5); 0 allowed */
