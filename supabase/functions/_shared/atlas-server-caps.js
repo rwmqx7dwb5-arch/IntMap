@@ -130,11 +130,15 @@ export function columnsOf(features) {
 const gisJob = {
   id: 'data.gis',
   needs: ['gis'],
-  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
+  args: '{"op"?:str (omit it, with inputs, to READ them: the result is the features as read),"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
   async run(args, ctx) {
     const a = args || {};
     if (a.acquire || a.kind === 'raster' || a.semantics) return notHere(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
-    if (a.describe || !a.op) {
+    /* (gis-read-step) WITH INPUTS AND NO op, THE STEP READS. On the page, {"type":"gis","inputs":[REF]} with no op is the acquiring step — it fetches and
+       answers with the dataset (js/atlas-cap-data.js). A job's planner wrote exactly that for «read the file» (production 2026-11-28) and the server answered
+       with its list of operations, ok:true, and no data — the next step then had nothing to read. Only {"describe":true}, or no op AND no inputs, lists. */
+    const reading = !a.op && !a.describe && Array.isArray(a.inputs) && a.inputs.length > 0;
+    if (!reading && (a.describe || !a.op)) {
       const ops = await ctx.gis.ops();
       return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '.', data: { ops }, sources: [] };
     }
@@ -147,6 +151,7 @@ const gisJob = {
          task, both refused — with the world graph's sentence). On the server the datasets ARE the outputs of the job's earlier tasks, so a bare name that
          is one of this task's inputs (its task id, or its output id job:<job>/<task>) is that output; "url:" is the address it prefixes. */
       const handed = typeof x === 'string' && ctx.outputs && typeof ctx.outputs.get === 'function' ? ctx.outputs.get(x) : null;
+      if (handed && handed.noFeatures) return { ok: false, code: 'input_has_no_features', text: 'Task "' + String(x).slice(0, 64) + '" is one of the inputs, but its result holds no features to read (it answered: ' + String(handed.summary || '').slice(0, 200) + '). Make that task produce features — a data.gis step with "op", or with "inputs" and no "op" to read a file — and use its result here.' };
       if (handed) v = handed;
       if (typeof x === 'string' && !handed) {
         if (/^@[A-Za-z0-9._-]+:/.test(x)) return { ok: false, code: 'input_ref_unresolved', text: 'The input "' + x.slice(0, 80) + '" refers to another task, and nothing resolved it (it must be a task of the same job, listed in this task\'s inputs).' };
@@ -168,6 +173,18 @@ const gisJob = {
       inputs.push(feats); names.push(name);
       srcs.forEach(addSource);
       read.push(Object.assign({ name: name || '(inline GeoJSON)', count: feats.length, sources: srcs.map((y) => y && y.url).filter(Boolean) }, from ? { from: from.task, version: from.version } : null));
+    }
+    if (reading) {
+      /* the read step: its result IS its input(s) — one input is that collection, several are one collection of all of them, each feature as it came */
+      const all = [];
+      for (const f of inputs) for (const x of f) all.push(x);
+      const head = all.slice(0, 5).map((f) => (f && f.properties ? f.properties : {}));
+      return {
+        ok: true,
+        text: 'read -> ' + all.length + ' feature(s) from ' + read.map((x) => x.count + ' (' + x.name + ')').join(' + ') + '. First rows: ' + JSON.stringify(head).slice(0, 600),
+        data: { op: 'read', count: all.length, columns: columnsOf(all), result: { type: 'FeatureCollection', features: all }, inputs: read },
+        sources,
+      };
     }
     let r;
     try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params, names }); }
