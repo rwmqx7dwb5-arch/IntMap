@@ -48,6 +48,7 @@
 import './safe-html.js';
 import { shapeAnchor } from './atlas-shape-resolve.js';
 import { makeAtlasGeoRefs } from './atlas-geo-refs.js';
+import { FILL_AT_FULL, alphaFromFill } from './object-opacity.js';   /* what the Opacity slider means for an area fill — shared with every other painter */
 
 export function makeAtlasMapCompose(deps) {
   return (function () {
@@ -242,7 +243,7 @@ export function makeAtlasMapCompose(deps) {
            「approximate」 in the same place the legend does. */
         const HOV = ['==', ['get', 'hov'], 1];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
-          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 0.4, 0.2]] } }, before);
+          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['case', ['==', ['typeof', ['get', 'op']], 'number'], ['*', ['get', 'op'], ['case', HOV, 1, FILL_AT_FULL]], ['case', HOV, 0.4, 0.2]] } }, before);
         g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived'], ['!=', ['get', 'ref'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
@@ -395,7 +396,7 @@ export function makeAtlasMapCompose(deps) {
       const out = [];
       shapes.forEach((sh) => {
         const id = shapeId(sh), o = ovOf(id) || {}, area = sh.want === 'area';
-        out.push({ id, kind: 'shape', geom: area ? 'area' : 'line', name: sh.name, color: o.color || sh.color, width: o.w != null ? o.w : (area ? 1.2 : 2.2), alpha: o.op != null ? o.op : 1,
+        out.push({ id, kind: 'shape', geom: area ? 'area' : 'line', name: sh.name, color: o.color || sh.color, width: o.w != null ? o.w : (area ? 1.2 : 2.2), alpha: o.op != null ? o.op : (area ? alphaFromFill(0.2) : 1),
           areaKm2: area ? areaKm2(sh.geometry) : null, geometry: sh.geometry, src: [SRC],
           setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
       });

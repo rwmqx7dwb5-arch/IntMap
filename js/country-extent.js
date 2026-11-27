@@ -239,5 +239,30 @@
      that «the region fills the view» means something else. */
   const NAME_GONE_SHARE = 1;
 
-  window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE };
+  /* ══ THE ONE RULE FOR EVERY NAME THAT STANDS FOR A REGION ═════════════════════════════════════
+     A country's name, a past polity's name and a province's name are the same thing for this purpose: a label printed once, at one
+     point, for a region that has an extent. The rule is therefore written once and each label layer only says WHICH regions it
+     names — `gone(items, …)` answers for [{ key, box }] and `applyGone` writes the answer into the layer's filter. Nothing here
+     knows a name, a country or a layer. `st` is the layer's own bookkeeping ({}). The filter a layer had before is its BASE; if
+     another module rewrites the filter meanwhile (js/time-admin1.js does, when the clock travels), the rewrite is the new base, so
+     this never restores a stale one. */
+  function gone(items, zoom, viewW, viewH){
+    const out = new Set();
+    for(const it of items){ if(it && it.box && viewShare(it.box, zoom, viewW, viewH) >= NAME_GONE_SHARE) out.add(it.key); }
+    return out;
+  }
+  function applyGone(GE, st, layerId, keyExpr, keys){
+    if(!GE().layers.has(layerId)) return;
+    const list = [...keys]; list.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const key = JSON.stringify(list);
+    const cur = GE().layers.getFilter(layerId) || null, curS = JSON.stringify(cur);
+    if(st.base === undefined || curS !== st.written) st.base = cur;   /* someone else wrote the filter: that is the base now */
+    if(key === st.key && curS === st.written) return;
+    st.key = key;
+    const next = list.length ? ['all', st.base || ['has', 'name'], ['!', ['in', keyExpr, ['literal', list]]]] : st.base;
+    st.written = JSON.stringify(next || null);
+    GE().layers.setFilter(layerId, next);
+  }
+
+  window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE, gone, applyGone };
 })();

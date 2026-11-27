@@ -1586,14 +1586,13 @@ export function timeBorders(HOST){
        box of the part it stands on (`_lblBox`, from the same geometry the point was found in); no name is listed. The source keeps the
        objects in JS (a vector-tile round trip would turn the array into a string), the layers get a filter on the numbered ids. */
     function _polyBox(poly){ let w=Infinity,s=Infinity,e=-Infinity,n=-Infinity; try{ for(const r of (poly||[])) for(const c of r){ if(c[0]<w) w=c[0]; if(c[0]>e) e=c[0]; if(c[1]<s) s=c[1]; if(c[1]>n) n=c[1]; } }catch(_){} return isFinite(w)?[w,s,e,n]:null; }
-    let _lblFeats=[], _lblGoneKey='';
-    const _LBL_BASE={ 'imtb-lbl':['!=',['coalesce',['get','_same'],0],1], 'imtb-lbl2':['==',['coalesce',['get','_same'],0],1] };
+    let _lblFeats=[], _lblGoneKey=''; const _eraFit={};
+    const _LBL_IDS=['imtb-lbl','imtb-lbl2'];
     function _fitEraNames(){ try{ const CE=window.IntMapCountryExtent; if(!CE||!CE.viewShare||!GE().layers.has('imtb-lbl')) return;
       const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
-      const z=GE().camera.getZoom(); const gone=[];
-      for(const f of _lblFeats){ const bb=_lblBox.get(f); if(bb&&CE.viewShare(bb,z,vw,vh)>=CE.NAME_GONE_SHARE) gone.push(f.id); }
-      const key=gone.join(','); if(key===_lblGoneKey) return; _lblGoneKey=key;
-      Object.keys(_LBL_BASE).forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,gone.length?['all',_LBL_BASE[id],['!',['in',['id'],['literal',gone]]]]:_LBL_BASE[id]); }catch(_){} }); }catch(_){} }
+      const z=GE().camera.getZoom(); const gone=CE.gone(_lblFeats.map(f=>({key:f.id,box:_lblBox.get(f)})),z,vw,vh);
+      _LBL_IDS.forEach(id=>{ try{ _eraFit[id]=_eraFit[id]||{}; if(_lblGoneKey==='~'){ if(_eraFit[id].base!==undefined) GE().layers.setFilter(id,_eraFit[id].base); _eraFit[id]={}; }   /* new numbering: the old ids no longer mean the same labels */
+        CE.applyGone(GE,_eraFit[id],id,['id'],gone); }catch(_){} }); _lblGoneKey=''; }catch(_){} }
     try{ GE().events.on('moveend',_fitEraNames); GE().events.on('idle',_fitEraNames); }catch(_){}
     function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')){ const L=_labelFC(fc); L.features.forEach((f,i)=>{ f.id=i; }); _lblFeats=L.features; _lblGoneKey='~'; GE().layers.setSourceData('imtb-lbl-src',L); setTimeout(_fitEraNames,0); } }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
