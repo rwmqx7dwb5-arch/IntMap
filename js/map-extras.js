@@ -13,6 +13,7 @@ import { IntMapLang } from './lang-registry.js';
 import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — IntMapLocate.start below, Atlas's view.locate and 「現在地から…」 */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { fillFromAlpha } from './object-opacity.js';   /* what the Objects list's Opacity slider means for a fill */
 
 
 export function locate(HOST){
@@ -170,7 +171,7 @@ export function annotations(HOST){
     if(!GE().hasRenderer()) return { add(){}, remove(){}, clear(){}, _items:[] };
     const SRC='annot-src'; const ANNOT_LINE_W=2.6; /* the width shipped before the Objects list could set one */ let seq=0, popup=null; const items=[];
     const jp=()=>HOST.lang==='jp';
-    function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op*(it.alpha==null?1:it.alpha),lw:it.width,lop:it.alpha}}))}; }   /* lw/lop: the Objects list's per-shape line width and opacity (absent = the layer's own defaults) */
+    function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:(it.alpha==null?it.op:fillFromAlpha(it.alpha)),lw:it.width,lop:it.alpha}}))}; }   /* lw/lop: the Objects list's per-shape line width and opacity (absent = the layer's own defaults) */
     function ensure(){ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource(SRC,{type:'geojson',data:fc()});
         GE().layers.add({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});

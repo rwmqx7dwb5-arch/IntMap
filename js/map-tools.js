@@ -26,6 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
+import { fillFromAlpha, alphaFromFill, opacityPaint } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 
 
@@ -1436,7 +1437,7 @@ export function objectList(HOST){
       return {
         setColor:col=>each(l=>{ const p=({fill:'fill-color',line:'line-color',circle:'circle-color'})[l.type]; if(p) GE().layers.setPaint(l.id,p,col); }),
         setWidth:w=>each(l=>{ if(l.type==='line') GE().layers.setPaint(l.id,'line-width',w); }),
-        setOpacity:a=>each(l=>{ const p=({fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity'})[l.type]; if(p) GE().layers.setPaint(l.id,p,l.type==='fill'?a*0.4:a); }),
+        setOpacity:a=>each(l=>{ for(const [p,v] of opacityPaint(l.type,a)) GE().layers.setPaint(l.id,p,v); }),
         toggleHide:null }; }
     function hasType(sids,t){ return layersOf(sids).some(l=>l.type===t); }
     /* one normalised object list gathered live from every subsystem */
@@ -1446,14 +1447,14 @@ export function objectList(HOST){
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
-        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:1, geom:geomKind(it.geom), area:()=>geomKm2(it.geom),
+        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
-        width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha:it.alpha!=null?it.alpha:1, area:()=>featsKm2(srcFeats(it.sid)), geom:(()=>{ const k=srcFeats(it.sid).map(f=>geomKind(f&&f.geometry)); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':'point'; })(),
+        width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha:it.alpha!=null?it.alpha:alphaFromFill(UPLOAD_FILL_OP), area:()=>featsKm2(srcFeats(it.sid)), geom:(()=>{ const k=srcFeats(it.sid).map(f=>geomKind(f&&f.geometry)); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':'point'; })(),
         setWidth:w=>{ it.lw=w; try{ if(GE().layers.has(it.sid+'-line')) GE().layers.setPaint(it.sid+'-line','line-width',w); }catch(_){} },
-        setOpacity:a=>{ it.alpha=a; [['-fill','fill-opacity',UPLOAD_FILL_OP],['-line','line-opacity',1],['-pt','circle-opacity',1]].forEach(([sfx,prop,base])=>{ try{ if(GE().layers.has(it.sid+sfx)) GE().layers.setPaint(it.sid+sfx,prop,base*a); }catch(_){} }); },
+        setOpacity:a=>{ it.alpha=a; [['-fill','fill'],['-line','line'],['-pt','circle']].forEach(([sfx,type])=>{ try{ if(GE().layers.has(it.sid+sfx)) for(const [prop,v] of opacityPaint(type,a)) GE().layers.setPaint(it.sid+sfx,prop,v); }catch(_){} }); },
         setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
         toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',v); }catch(_){} }); },
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
@@ -1465,11 +1466,11 @@ export function objectList(HOST){
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
         out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
-          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:1,   /* what the reader set (0.1–1); the painter holds it scaled to the fill's base in p.op */
+          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:alphaFromFill(p.op!=null?p.op:HP.fillBase),   /* what the reader set (0–1); the painter holds it as the fill opacity in p.op */
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           setWidth:w=>{ p.w=w; try{ HP.repaint(); }catch(_){} },
-          setOpacity:a=>{ p.op=a*(HP.fillBase||0.32); p.alpha=a; try{ HP.repaint(); }catch(_){} },
+          setOpacity:a=>{ p.op=fillFromAlpha(a); p.alpha=a; try{ HP.repaint(); }catch(_){} },
           remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
       /* the lines Atlas drew (drawLine, river highlights, journey courses) — until now neither listed nor editable, though they were drawn */
       try{ const HL=window._imHlLines; ((HL&&HL.list())||[]).forEach((l,i)=>{ const lid=HL.tagId(l); if(!lid) return;
@@ -1559,7 +1560,7 @@ export function objectList(HOST){
             +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">×</button>'
             +((o.setWidth||o.setOpacity)?('<div class="iol-sl">'
               +(o.setWidth?('<label title="'+esc(OL('Line width','線の太さ','Linienbreite','Толщина линии','Grosor de línea'))+'"><span>'+esc(OL('Line width','線の太さ','Linienbreite','Толщина линии','Grosor de línea'))+'</span><input type="range" min="0.5" max="12" step="0.5" value="'+esc(o.width)+'" data-act="width"></label>'):'')
-              +(o.setOpacity?('<label title="'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'"><span>'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'</span><input type="range" min="0.1" max="1" step="0.05" value="'+esc(o.alpha)+'" data-act="alpha"></label>'):'')
+              +(o.setOpacity?('<label title="'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'"><span>'+esc(OL('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'))+'</span><input type="range" min="0" max="1" step="0.05" value="'+esc(o.alpha)+'" data-act="alpha"></label>'):'')
               +'</div>'):'')
           +'</div>'; });
       });
@@ -1716,7 +1717,7 @@ export function objectList(HOST){
       const applied={}, unsupported=[], bad=[];
       if(a.color!=null){ const c=normColor(a.color); if(!c) bad.push('color'); else if(o.setColor){ try{ o.setColor(c); applied.color=c; }catch(_){ unsupported.push('color'); } } else unsupported.push('color'); }
       if(a.width!=null){ const w=+a.width; if(!isFinite(w)||w<=0) bad.push('width'); else if(o.setWidth){ try{ o.setWidth(Math.min(24,w)); applied.width=Math.min(24,w); }catch(_){ unsupported.push('width'); } } else unsupported.push('width'); }
-      if(a.opacity!=null){ let v=+a.opacity; if(v>1&&v<=100) v=v/100; if(!isFinite(v)||v<0) bad.push('opacity'); else if(o.setOpacity){ v=Math.max(0.05,Math.min(1,v)); try{ o.setOpacity(v); applied.opacity=v; }catch(_){ unsupported.push('opacity'); } } else unsupported.push('opacity'); }
+      if(a.opacity!=null){ let v=+a.opacity; if(v>1&&v<=100) v=v/100; if(!isFinite(v)||v<0) bad.push('opacity'); else if(o.setOpacity){ v=Math.max(0,Math.min(1,v)); try{ o.setOpacity(v); applied.opacity=v; }catch(_){ unsupported.push('opacity'); } } else unsupported.push('opacity'); }
       if(a.name!=null){ if(o.rename){ try{ o.rename(String(a.name).slice(0,60)); applied.name=String(a.name).slice(0,60); }catch(_){ unsupported.push('name'); } } else unsupported.push('name'); }
       if(a.hidden!=null){ const want=!!a.hidden; if(o.toggleHide){ try{ if(!!o.hidden!==want) o.toggleHide(); applied.hidden=want; }catch(_){ unsupported.push('hidden'); } } else unsupported.push('hidden'); }
       refresh(); const now=get(id); return { ok:Object.keys(applied).length>0, id:String(id), applied, unsupported, invalid:bad, object:now?describe(now,0):null }; }
