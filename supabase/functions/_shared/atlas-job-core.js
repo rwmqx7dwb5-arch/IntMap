@@ -127,11 +127,46 @@ export function workerSystem(persona) {
 }
 
 /* extra — what the reader changed while the work was running (server jobs): the latest instructions, which outrank the contract where they differ */
-export function workerPrompt(task, extra) {
+/* ══ WHAT A WORKER IS HANDED OF ANOTHER WORKER'S RESULT — a manifest and the whole, not the first 12,000 characters ══════════════════════════
+   The input used to be `JSON.stringify(...).slice(0, 12000)`: a 1,251-row table stopped in the middle of row 96 and the worker answered as if the
+   table had ended there (measured 2026-11-27). The cut is now stated and the rest is kept:
+     · an input that fits is given whole, exactly as before;
+     · a larger one is given as a MANIFEST (which task, a version digest of the exact bytes, how many rows and which columns the table has, how many
+       findings) followed by as much of it as fits, and — where the worker can read (`opts.read`: the page's delegation keeps the whole under `ref`) —
+       the way to read any range of the rest. A reader that cannot (the server runner) is told how many characters it did not see, so it says so in
+       `gaps` instead of treating a prefix as the whole.
+   `inputView(i, {read})` → { text, ref, whole } — `whole` is the full text when it was cut (the caller keeps it under `ref`), else null. */
+const INPUT_SHOW_CHARS = 12000;
+function tableOf(data) {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') {
+    let best = null;
+    Object.keys(data).forEach((k) => { const v = data[k]; if (Array.isArray(v) && v.length && v[0] && typeof v[0] === 'object' && (!best || v.length > best.length)) best = v; });
+    return best;
+  }
+  return null;
+}
+export function inputView(i, o) {
+  const whole = JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data });
+  if (whole.length <= INPUT_SHOW_CHARS) return { text: whole, ref: '', whole: null };
+  const ref = 'input:' + String(i.from);
+  let h = 5381; for (let k = 0; k < whole.length; k++) h = ((h * 33) ^ whole.charCodeAt(k)) >>> 0;
+  const rows = tableOf(i.data);
+  const manifest = { task: String(i.from), version: h.toString(36), chars: whole.length, findings: Array.isArray(i.findings) ? i.findings.length : 0,
+    rows: rows ? rows.length : undefined, columns: (rows && rows[0] && typeof rows[0] === 'object') ? Object.keys(rows[0]).slice(0, 40) : undefined };
+  const room = INPUT_SHOW_CHARS - 600;
+  const tail = (o && o.read)
+    ? '\n[characters 0-' + room + ' of ' + whole.length + ' shown — nothing was dropped: read any other range with {"capability":"read_step","args":{"ref":"' + ref + '","offset":N,"length":L}}]'
+    : '\n[only characters 0-' + room + ' of ' + whole.length + ' are shown; the rest was NOT given to you — do not treat what is shown as the whole, and say in "gaps" what you could not see]';
+  return { text: 'MANIFEST ' + JSON.stringify(manifest) + '\n' + whole.slice(0, room) + tail, ref, whole };
+}
+
+export function workerPrompt(task, extra, opts) {
   let p = 'YOUR PIECE OF THE WORK:\n' + task.goal;
   if (task.returns) p += '\n\nWHAT ATLAS NEEDS BACK:\n' + task.returns;
   (task.inputs || []).forEach((i) => {
-    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }).slice(0, 12000);
+    const v = inputView(i, { read: !!(opts && opts.read) });
+    p += '\n\nWHAT ANOTHER WORKER FOUND (task "' + i.from + '") — build on it, do not repeat it:\n' + v.text;
   });
   if (Array.isArray(extra) && extra.length) p += '\n\nTHE READER CHANGED THE REQUEST WHILE THIS WAS RUNNING — their latest instructions, oldest first; they outrank the piece above wherever they differ:\n' + extra.map((x, i) => (i + 1) + '. ' + s(x, 1000)).join('\n');
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';

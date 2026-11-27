@@ -243,10 +243,12 @@ export function makeAtlasAgent() {
       for (let i = ms.length - 1; i >= 0; i--) { const m = ms[i]; if (m && m.role === 'user') return typeof m.content === 'string' ? m.content : ''; }
       return '';
     }
-    function unmetOf(answerMode, produced, planSnap) {
+    function unmetOf(answerMode, produced, planSnap, ran) {
       const out = [];
       const asked = MODE_NEEDS[answerMode] || null;
-      if (asked && !asked.some((m) => produced.indexOf(m) >= 0)) {
+      /* ⚠ THE SAME RULE THE OUTPUT GATE USES (`made`, below): a call that RAN and could not be seen is a call that was made. The gate accepted it
+         and this list then reported the map as «not done» over a drawing the reader was looking at (one-pass-or-a-reason §2 ①). */
+      if (asked && !asked.some((m) => produced.indexOf(m) >= 0 || (ran || []).indexOf(m) >= 0)) {
         out.push({ kind: 'output', mode: answerMode, code: GATE_CODE[answerMode] || 'output_not_produced' });
       }
       if (planSnap && planSnap.thisTurn && Array.isArray(planSnap.steps)) {
@@ -1095,7 +1097,14 @@ export function makeAtlasAgent() {
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
             /* the ledger of the LAST observed read: what the request asked, what the record covers, what it does not, and how many reads it took (observed-only: an unobserved read leaves the previous ledger) */
             if (list !== null) { goalPrev = { met: metList, unmet: list.map((u) => ({ need: u.need, why: u.why })) }; trace.goalLedger = { rounds: goalRounds, met: metList, unmet: goalPrev.unmet }; }
-            goalUnmet = list || [];
+            /* ⚠ NOT OBSERVED IS NOT RESOLVED. A shortfall an earlier reading CONFIRMED («12 of the 20 rows are missing») is closed only by a reading that
+               observed it closed, or by a record that it was met — never by the next reader failing to answer. This line used to be `list || []`: with
+               the second check silent, the 12 missing rows were dropped, `unmet` came out empty and the turn was reported complete over 8 rows of 20
+               (measured 2026-11-27). The held finding stays on the record, and goalAt returns to «not put to Atlas» so it is carried into `unmet`. */
+            if (list === null && goalPrev && goalPrev.unmet.length) {
+              goalUnmet = goalPrev.unmet.map((u) => ({ kind: 'goal', need: u.need, why: u.why }));
+              goalAt = -1; trace.goalHeld = goalUnmet.length;
+            } else goalUnmet = list || [];
             if (list && list.length) {
               if ((step + 1) < lim.maxSteps && !outOfTime()) {
                 goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
@@ -1661,13 +1670,15 @@ export function makeAtlasAgent() {
          (one-pass-or-a-reason §3: the ceiling is not the fix); what changes is what the turn SAYS when
          they run out. Only 'answered' is renamed — every other stop already names what happened, and
          the sentence Atlas wrote is returned as it stands. */
-      const outputUnmet = unmetOf(answerMode, produced, null).length > 0;
+      const ranModes = [];
+      results.forEach((r) => ranBy(r).forEach((m) => { if (ranModes.indexOf(m) < 0) ranModes.push(m); }));
+      const outputUnmet = unmetOf(answerMode, produced, null, ranModes).length > 0;
       if (outputUnmet && stopped === 'answered') stopped = 'output_unmet';
       endPlan(stopped);
       /* …and the plan, read AFTER endTurn has settled what was still in flight (unobserved / stopped) */
       let planSnap = null;
       if (PLAN) { try { planSnap = PLAN.snapshot(); } catch (_) { planSnap = null; } }
-      const unmet = unmetOf(answerMode, produced, planSnap).concat((goalAt < 0 || results.length === goalAt) ? goalUnmet : []);   /* (atlas-goal-verifier) the independent reader's findings that stood */
+      const unmet = unmetOf(answerMode, produced, planSnap, ranModes).concat((goalAt < 0 || results.length === goalAt) ? goalUnmet : []);   /* (atlas-goal-verifier) the independent reader's findings that stood */
       const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : 'complete');
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was

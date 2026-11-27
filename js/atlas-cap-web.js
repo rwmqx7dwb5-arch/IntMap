@@ -199,12 +199,17 @@ export default [
         return R(false, warn(esc(say)), { meta: { code }, exec: { web: Object.assign(web, { code, say, page: d && d.page }) } });
       }
       const t = await D.toDataset(d.file, a.label);
+      if (!t.ok && t.code === 'not_registered') {
+        /* drawn on the map, but no dataset exists: said as a failure with what DID happen, so the next step does not plan on a dataset id it was never given */
+        return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(' and drew ' + (t.rows != null ? t.rows + ' feature(s) ' : '') + 'on the map, but the analysis registry did not accept it, so there is no dataset to analyse.', ' 地図には ' + (t.rows != null ? t.rows + ' 件 ' : '') + '描きましたが、分析用データセットとして登録されませんでした。分析に使えるデータセットはありません。'))),
+          { meta: { code: 'dataset_not_registered' }, exec: { web: Object.assign(web, { file: d.meta, reason: 'not_registered', drawn: { layer: t.layer, features: t.rows } }) } });
+      }
       if (!t.ok) {
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(', but IntMap could not read it as data (' + t.code + ').', ' が、データとして読み取れませんでした(' + t.code + ')。'))),
           { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }, await textExcerpt(d.file)) } });
       }
       return R(true, note(L('Added the dataset ', 'データセットを追加しました: ') + '<b>' + esc(t.label) + '</b>' + (t.rows != null ? ' — ' + t.rows + L(' rows', ' 行') : '') + ' · ' + esc(host(d.meta.url))),
-        { exec: { web: Object.assign(web, { file: d.meta, dataset: { id: t.datasetId, label: t.label, format: t.format, rows: t.rows }, source: d.meta.url }) } });
+        { exec: { web: Object.assign(web, { file: d.meta, dataset: { id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });
     },
   },
   {
