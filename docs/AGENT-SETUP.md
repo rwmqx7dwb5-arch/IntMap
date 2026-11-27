@@ -299,6 +299,7 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
 - **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、相対パス・存在・
   SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
 - **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
+- **`extras\` はミラーの外。** `$NotMirrored`（`System Volume Information` 等 + `extras`）が削除・検証・空ディレクトリ掃除の 3 つの歩きすべてに効き、追跡対象に `extras/` があればミラーを拒否する（`extras-name-collision`）。中身と暗号化は `scripts/backup-extras.ps1`・`docs/BACKUP-RESTORE.md` Layer 3。
 - **成功したときだけ**台帳に日時を書く: `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`
   （リポジトリの外・追跡対象外）。
 

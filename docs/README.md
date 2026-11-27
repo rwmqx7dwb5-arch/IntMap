@@ -99,7 +99,7 @@
 |---|---|---|---|
 | [`DATABASE.md`](DATABASE.md) | DB を触る人 | **表・関係・関数・RLS の3大保証**と、それを**証明する pgTAP ハーネス** | 表・ポリシー・RPC を変えたとき |
 | [`MIGRATIONS.md`](MIGRATIONS.md) | 同上 | migration の作り方と**本番への当て方**（`db push` は使えない理由を含む） | 適用手順が変わったとき |
-| [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) | 同上 | バックアップ2層と隔離復元のドリル | バックアップ構成が変わったとき |
+| [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) | 同上 | バックアップ2層・USB extras（Layer 3）と隔離復元のドリル | バックアップ構成が変わったとき |
 
 ## セキュリティ
 

@@ -77,6 +77,10 @@ $IdFile = '.intmap-backup-id.json'
 # Directories the VOLUME owns, not the mirror. Matched on the FIRST path segment only, so a
 # directory with one of these names inside the repository would still be treated as content.
 $VolumeSystem = @('System Volume Information', '$RECYCLE.BIN', 'RECYCLER', '.Trashes', '.Spotlight-V100', 'found.000')
+# `extras\` is written by scripts/backup-extras.ps1 (memory, settings, encrypted credentials and DB dump). It is NOT part of
+# the mirror, so the mirror must neither delete it as an extra, count it in verification, nor prune it as an empty directory.
+$ExtrasDir = 'extras'
+$NotMirrored = $VolumeSystem + @($ExtrasDir)
 $Ledger = Join-Path $env:USERPROFILE '.claude\projects\C--Users-gyuuk-OneDrive-IntMap\usb-backup-state.json'
 
 function Say($m) { Write-Host $m }
@@ -184,7 +188,7 @@ function Get-UsbFiles($root) {
   # -Force to see hidden/system entries; SilentlyContinue so a directory Windows will not let us
   # enter (System Volume Information) is skipped rather than aborting the run.
   Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
-    Where-Object { $VolumeSystem -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
+    Where-Object { $NotMirrored -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
 }
 
 function Get-Sha256([string]$path) {
@@ -238,7 +242,7 @@ function Invoke-Mirror($drive, $files) {
   }
   # prune directories that are now empty, deepest first
   $dirs = Get-ChildItem -LiteralPath $root -Recurse -Directory -Force -ErrorAction SilentlyContinue |
-    Where-Object { $VolumeSystem -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
+    Where-Object { $NotMirrored -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
   foreach ($d in ($dirs | Sort-Object { $_.FullName.Length } -Descending)) {
     if (-not (Get-ChildItem -LiteralPath $d.FullName -Force -ErrorAction SilentlyContinue)) {
       if ($PSCmdlet.ShouldProcess($d.FullName, 'remove empty directory')) { Remove-Item -LiteralPath $d.FullName -Force }
@@ -312,6 +316,10 @@ if ($LASTEXITCODE -ne 0) {
   exit 0
 }
 $files = Get-SourceFiles
+if (@($files | Where-Object { (($_ -replace '/', '\') -split '\\')[0] -ieq $ExtrasDir }).Count -gt 0) {
+  Say "The repository tracks a path under '$ExtrasDir\', which the USB reserves for scripts/backup-extras.ps1. Refusing to mirror."
+  Result 'failed' 'extras-name-collision'; exit 1
+}
 Say ("master: {0} · {1} tracked files at HEAD" -f $Repo, $files.Count)
 $dataFiles = Get-DataFiles
 if ($null -eq $dataFiles) {
