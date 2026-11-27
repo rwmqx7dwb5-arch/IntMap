@@ -42,7 +42,19 @@ export function producesTable(root = ROOT) {
   return out;
 }
 
-/** the control kinds a turn's calls drew (tabs / steps / button / layerToggle ...) */
+/* A call whose RESULT says it did not happen drew nothing. The statuses are the ones js/atlas-results.js stamps (completed · partial · unobserved
+   ran; failed · cancelled · superseded · needs_input · running did not finish what was asked), and `ok:false` is a failure whatever it is called.
+   A result that cannot be read states nothing, so the call counts as made (an old record that kept only the arguments). */
+const NO_EFFECT = new Set(['failed', 'cancelled', 'superseded', 'needs_input', 'running', 'refused']);
+export function tookEffect(resultText) {
+  let o = resultText;
+  if (typeof o === 'string') { try { o = JSON.parse(o); } catch (_) { return true; } }
+  if (!o || typeof o !== 'object') return true;
+  if (o.ok === false) return false;
+  return !NO_EFFECT.has(str(o.status));
+}
+
+/** the control kinds a turn's calls drew (tabs / steps / button / layerToggle ...) — a call that failed drew none (atlas-autonomy) */
 function controlKinds(calls) {
   const kinds = new Set();
   const walk = (v, d) => {
@@ -53,6 +65,7 @@ function controlKinds(calls) {
     Object.keys(v).forEach((k) => walk(v[k], d + 1));
   };
   for (const c of calls || []) {
+    if (c && c.resultText != null && !tookEffect(c.resultText)) continue;
     let a = c && c.args;
     if (typeof a === 'string') { try { a = JSON.parse(a); } catch (_) { a = null; } }
     walk(a, 0);
@@ -70,7 +83,7 @@ export function expressionOf(obs, table = producesTable()) {
   if (!ops) return null;
   const fam = new Set(), caps = new Set();
   for (const o of ops) {
-    if (!o || str(o.status) === 'failed') continue;
+    if (!o || NO_EFFECT.has(str(o.status))) continue;
     const id = str(o.capabilityId);
     if (!id) continue;
     caps.add(id);

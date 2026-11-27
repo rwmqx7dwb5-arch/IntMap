@@ -321,6 +321,14 @@
             ],
             "why": "「ロンドンからパリまで線を引いて」"
           }
+        ],
+        "objects": [
+          {
+            "kind": "line",
+            "count": { "min": 1, "max": 1 },
+            "style": { "color": { "near": "#ff0000" }, "width": { "min": 4 }, "opacity": { "max": 0.95 } },
+            "why": "「さっきの線を赤くして、太くして、少し透かして」: the SAME line (exactly one line on the map — a second one drawn beside it is not a restyle) is red, wider than the 2.6 a new line is drawn with (js/map-extras.js ANNOT_LINE_W), and not fully opaque"
+          }
         ]
       }
     }

@@ -24,6 +24,11 @@
  *                                                            they are and where they came from (`line:real` = an
  *                                                            upstream's course; `line:unstated` = a line nobody
  *                                                            vouches for) — the criterion for 「the thing itself」
+ *    objects     [{ kind, count:{min,max}, style:{ color:{near,deltaE}, width:{min,max}, opacity:{min,max} }, why }] — the drawn OBJECTS themselves,
+ *                read off the `objects` section's items (id · kind · colour · width · opacity): HOW MANY of a kind the map holds and what each one LOOKS
+ *                LIKE. Every item of that kind must satisfy every stated style bound, so a second line drawn beside the old one (count) or the
+ *                old one left blue (colour) is a mismatch, where `drawn` only counts «a line exists». A style field the object does not carry
+ *                is unobserved, never a pass.
  *    era         { year, in:[w,s,e,n], includes:[name], excludes:{pattern,why}, source, why }
  *                                                            the historical units in force that year, there
  *
@@ -52,6 +57,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { codeOnly } from '../code-only.mjs';
+import { deltaE00 } from '../../tests/helpers/colour-difference.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const str = (v) => (v == null ? '' : String(v));
@@ -164,7 +170,7 @@ export function eraReference(root = ROOT) {
 
 /* ── the key's own schema ─────────────────────────────────────────────────────────────────────── */
 
-const KNOWN = new Set(['view', 'layers', 'clock', 'comparison', 'drawn', 'era', 'why']);
+const KNOWN = new Set(['view', 'layers', 'clock', 'comparison', 'drawn', 'objects', 'era', 'why']);
 const isBox = (b) => Array.isArray(b) && b.length === 4 && b.every(Number.isFinite) && b[0] < b[2] && b[1] < b[3];
 
 /** the problems with one path of a `drawn` criterion against the discovered sections */
@@ -202,6 +208,17 @@ export function validateMapState(ms, vocab, id = '(question)') {
     for (const p of pts || []) {
       if (!str(p && p.name).trim() || !Number.isFinite(p && p.lng) || !Number.isFinite(p && p.lat) || Math.abs(p.lat) > 90 || Math.abs(p.lng) > 180) say('view.contains has a point without a name and a lng/lat: ' + JSON.stringify(p));
       else if (!/^https?:\/\//.test(str(p.source))) say('view.contains «' + p.name + '» names no source url for its coordinate');
+    }
+  }
+  if (ms.objects) {
+    if (!Array.isArray(ms.objects) || !ms.objects.length) say('objects is a non-empty list of { kind, count?, style? }');
+    for (const o of Array.isArray(ms.objects) ? ms.objects : []) {
+      needWhy('objects', o);
+      if (!vocab.objectKinds.has(str(o && o.kind))) say('objects names kind «' + str(o && o.kind) + '», which js/map-tools.js puts no object of on the map');
+      const st = (o && o.style) || {};
+      if (!o.count && !Object.keys(st).length) say('objects «' + str(o.kind) + '» states neither a count nor a style');
+      for (const k of Object.keys(st)) if (!['color', 'width', 'opacity'].includes(k)) say('objects style has an unknown field «' + k + '» (the snapshot carries colour, width, opacity)');
+      if (st.color && !(parseColour(st.color.near))) say('objects style.color.near is a #rrggbb or rgb(r,g,b) colour');
     }
   }
   if (ms.layers) {
@@ -267,6 +284,19 @@ export function validateMapState(ms, vocab, id = '(question)') {
   }
   return bad;
 }
+
+/** a colour as [r,g,b] bytes — #rgb / #rrggbb / rgb(…) / rgba(…); null when it is none of those (a name the snapshot did not resolve) */
+export function parseColour(c) {
+  const t = str(c).trim().toLowerCase();
+  let m = /^#([0-9a-f]{3})$/.exec(t);
+  if (m) return [...m[1]].map((h) => parseInt(h + h, 16));
+  m = /^#([0-9a-f]{6})(?:[0-9a-f]{2})?$/.exec(t);
+  if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  m = /^rgba?\(\s*(\d+(?:\.\d+)?)[,\s]+(\d+(?:\.\d+)?)[,\s]+(\d+(?:\.\d+)?)/.exec(t);
+  return m ? [+m[1], +m[2], +m[3]] : null;
+}
+/** CIEDE2000 within which two colours are «the same colour» to a map reader: 1 is one just-noticeable difference (tests/helpers/colour-difference.js), 10 is the same hue family at another lightness */
+const SAME_COLOUR_DE = 10;
 
 /* ── grading (pure) ───────────────────────────────────────────────────────────────────────────── */
 
@@ -395,6 +425,37 @@ export function gradeMap(ms, snapshot, ctx = {}) {
       put('comparison', miss.length ? 'mismatch' : 'match', miss.length ? miss.join('; ') : 'as expected');
     }
   }
+  /* the drawn objects THEMSELVES: how many of a kind, and what each looks like (js/atlas-state.js `objects` items) */
+  (Array.isArray(ms.objects) ? ms.objects : []).forEach((o, i) => {
+    const label = 'objects' + (ms.objects.length > 1 ? '[' + i + ']' : '') + ':' + o.kind;
+    const sec = sectionOf(snap, 'objects');
+    if (!sec || !Array.isArray(sec.items)) { put(label, 'unobserved', notRead('objects')); return; }
+    const items = sec.items.filter((x) => x && x.kind === o.kind);
+    const miss = [], unseen = [];
+    if (o.count) {
+      if (o.count.min != null && items.length < o.count.min) miss.push(items.length + ' ' + o.kind + '(s), expected at least ' + o.count.min);
+      if (o.count.max != null && items.length > o.count.max) miss.push(items.length + ' ' + o.kind + '(s), expected at most ' + o.count.max + ' (' + items.map((x) => x.id).join(', ') + ')');
+    }
+    const st = o.style || {};
+    for (const it of items) {
+      if (st.color) {
+        const want = parseColour(st.color.near), have = parseColour(it.color);
+        if (it.color == null) unseen.push(it.id + ' carries no colour');
+        else if (!have) unseen.push(it.id + ' colour «' + it.color + '» is not a hex/rgb value');
+        else { const de = deltaE00(have, want); if (de > (st.color.deltaE != null ? st.color.deltaE : SAME_COLOUR_DE)) miss.push(it.id + ' is ' + it.color + ', ΔE00 ' + de.toFixed(1) + ' from ' + st.color.near); }
+      }
+      for (const k of ['width', 'opacity']) {
+        if (!st[k]) continue;
+        const v = it[k];
+        if (v == null || !Number.isFinite(+v)) { unseen.push(it.id + ' carries no ' + k); continue; }
+        if (st[k].min != null && +v < st[k].min) miss.push(it.id + ' ' + k + ' ' + v + ' < ' + st[k].min);
+        if (st[k].max != null && +v > st[k].max) miss.push(it.id + ' ' + k + ' ' + v + ' > ' + st[k].max);
+      }
+    }
+    if (miss.length) put(label, 'mismatch', miss.join('; '));
+    else if (unseen.length) put(label, 'unobserved', unseen.join('; '));
+    else put(label, 'match', items.length + ' ' + o.kind + '(s)' + (items.length ? ': ' + items.map((x) => x.id).join(', ') : ''));
+  });
   (ms.drawn || []).forEach((d, i) => {
     const alts = Array.isArray(d.anyOf) ? d.anyOf : [d];
     const seen = alts.map((a) => ({ a, n: countAt(snap, a.path) }));
@@ -460,6 +521,7 @@ export function sectionsRead(questions) {
     if (ms.clock) s.add('time');
     if (ms.comparison) s.add('comparison');
     if (ms.era) { s.add('time'); s.add('viewport'); }
+    if (Array.isArray(ms.objects) && ms.objects.length) s.add('objects');
     for (const d of ms.drawn || []) for (const a of (Array.isArray(d.anyOf) ? d.anyOf : [d])) s.add(str(a && a.path).split('.')[0]);
   }
   return [...s].filter(Boolean).sort();
