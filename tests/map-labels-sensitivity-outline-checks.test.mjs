@@ -51,3 +51,9 @@ test('④ Isolate は国の ofm 国境線をマスクの上に引き直す', () 
   assert.match(src, /for\(const id of top\) GE\(\)\.layers\.move\(id\)/, 'the edge stays above the mask');
   assert.match(src, /function exit\(\)\{[^}]*\} hideEdge\(\);|hideEdge\(\);/);
 });
+
+test('④ …and the label raise puts Isolate\'s border lines back above its mask', () => {
+  const src = read('js/label-occlusion.js');
+  assert.match(src, /iso-\(mask\|edge\)/);
+  assert.match(src, /\['iso-mask','iso-edge-poly','iso-edge'\]\.forEach/);
+});
