@@ -237,7 +237,7 @@ function pinchRig(sens) {
   globalThis.window.imNavZoomSens = sens;
   const RT = makeRuntime({});
   globalThis.window.IntMapRuntime = RT;
-  makeWheelZoom({}, { GE: () => GEo, i18n: {} });
+  makeWheelZoom({}, { GE: () => GEo, i18n: {}, NAV_BASE: { zoom: 1.7, pan: 1.7, inertia: 1.1 } });
   const fire = (t, touches) => { for (const fn of (L[t] || []).slice()) fn({ touches, cancelable: true, preventDefault() { } }); };
   return { B, fire, counts, RT, last: () => last, zoom: () => zoom, armed: () => !!L.touchmove };
 }
@@ -271,8 +271,8 @@ test('R499 ② …and the gesture still ends where the finger did', () => {
     assert.equal(rig.counts.ease, 0, 'a touchmove drove the camera synchronously again');
     rig.fire('touchend', []);
     assert.equal(rig.counts.ease, 1, 'the last pending zoom was dropped on touchend — the pinch ends on a stale value');
-    /* the #R27 arithmetic, unchanged: z0 + log2(d/d0) * sens */
-    assert.ok(Math.abs(rig.zoom() - (10 + Math.log2(200 / 100) * 2)) < 1e-9,
+    /* the #R27 arithmetic, unchanged: z0 + log2(d/d0) * sens, where sens = slider × the default's raw rate (1.7) */
+    assert.ok(Math.abs(rig.zoom() - (10 + Math.log2(200 / 100) * 2 * 1.7)) < 1e-9,
       `the pinch produced zoom ${rig.zoom()} — the sensitivity arithmetic moved`);
     /* the anchor is the midpoint, in CANVAS coordinates (the box's left/top subtracted) */
     assert.deepEqual(rig.last().around, { lng: 195, lat: 400 });
@@ -281,7 +281,7 @@ test('R499 ② …and the gesture still ends where the finger did', () => {
 });
 
 test('R499 ② at the default sensitivity MapLibre still owns the pinch and this path costs nothing', () => {
-  const rig = pinchRig(1);
+  const rig = pinchRig(1 / 1.7);                               /* the slider value whose raw rate is exactly 1 */
   try {
     rig.fire('touchstart', spread(60));
     for (let i = 1; i <= 20; i++) rig.fire('touchmove', spread(60 + i * 5));

@@ -13,7 +13,7 @@
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
 export function makeWheelZoom(HOST, CTX) {
-  const GE=CTX.GE, i18n=CTX.i18n;
+  const GE=CTX.GE, i18n=CTX.i18n, NAV_BASE=CTX.NAV_BASE;   /* the default's raw rates — js/app-body.js owns them (the sliders' 100%) */
   /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
      The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
      zoom-toward-the-cursor UX on the globe ("カーソル地点へとズームされるというUXがなくなってしまった").
@@ -28,9 +28,10 @@ export function makeWheelZoom(HOST, CTX) {
     window.imNavPanSens  = window.imNavPanSens  || 1;
     if(window.imNavInertia==null) window.imNavInertia=1;   /* (#R23) 1=default glide, 0=instant stop */
     window._applyNavSens = function(){
-      const z=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
-      const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
-      const iner=Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
+      const B=NAV_BASE;
+      const z=B.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      const p=B.pan*Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
+      const iner=B.inertia*Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
       try{
         GE().input.set('scrollZoom',true);
         GE().input.setZoomRate(z*(1/300),true);   /* 1.0 = the long-standing default feel */
@@ -75,7 +76,7 @@ export function makeWheelZoom(HOST, CTX) {
     (function(){
       const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
       let active=false, startDist=0, startZoom=0, pend=null;
-      const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      const sens=()=>NAV_BASE.zoom*Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
       /* (#R499) the observed box — js/runtime.js §5. The direct read is the pre-runtime fallback and
          nothing else: this listener cannot be reached before the map exists. */
@@ -85,7 +86,7 @@ export function makeWheelZoom(HOST, CTX) {
         try{ GE().camera.easeTo({ zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),p.z)),
           around:GE().coords.unproject([p.mx-r.left,p.my-r.top]), duration:0 }); }catch(_){} };
       cv.addEventListener('touchstart',(e)=>{
-        if(sens()===1) return;                                 /* default feel → MapLibre handles it */
+        if(sens()===1) return;                                 /* a raw rate of exactly 1 → MapLibre handles it (the default is 1.7 now, so this path is the usual one) */
         if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom(); pend=null;
           try{ GE().input.set('touchZoomRotate',false); }catch(_){} }
       },{passive:true});

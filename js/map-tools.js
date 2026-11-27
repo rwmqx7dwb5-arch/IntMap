@@ -26,6 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
+import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 
 
 
@@ -469,6 +470,14 @@ export function drawTool(HOST){
   })();
 }
 
+/* The ofm `boundary` tiles name a frontier by ISO 3166-1 alpha-3 (`adm0_l` / `adm0_r`). A bundled country feature carries the same code
+   under several property names; this is the ONE reading of them, shared by the outline (a clicked country) and Isolate (its mask edge). */
+function ofmCountryCodes(f){ try{ const p=(f&&f.properties)||{}, out=[];
+  for(const c of [f&&f.id,p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3]){ const v=c==null?'':String(c).toUpperCase(); if(/^[A-Z]{3}$/.test(v)&&out.indexOf(v)<0) out.push(v); }
+  return out.length?out:null; }catch(_){ return null; } }
+/* ofm carries the country frontier from z5 (measured 2026-11-18); below it the polygon edge stands in. Expires if OpenFreeMap changes its boundary tiles. */
+const OFM_EDGE_MINZOOM=5;
+
 export function isolate(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
@@ -484,6 +493,14 @@ export function isolate(HOST){
     function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         GE().layers.add({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
+        /* THE EDGE OF THE HOLE IS THE MAP'S OWN BORDER. The hole is cut from a Natural Earth polygon and the visible frontier is the ofm
+           `boundary` line — two surveys of the same line that differ by up to a kilometre, so the mask edge sat beside the border it
+           frames. The ofm line of the isolated country is drawn again ABOVE the mask (z>=5; the polygon edge below it), so what the
+           reader reads as the border is the one line, whichever survey cut the hole. */
+        GE().layers.addSource('iso-edge-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        GE().layers.add({id:'iso-edge-poly',type:'line',source:'iso-edge-src',maxzoom:OFM_EDGE_MINZOOM,layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
+        if(GE().layers.hasSource('ofm')) GE().layers.add({id:'iso-edge',type:'line',source:'ofm','source-layer':'boundary',minzoom:OFM_EDGE_MINZOOM,
+          filter:['==',['get','admin_level'],-1],layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
         return true;
       }catch(_){ return false; } }
     function findFeature(id){ const cg=window.countryGeo; if(!cg||!cg.features) return null;
@@ -523,7 +540,16 @@ export function isolate(HOST){
     /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
        very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
-    function toTop(){ try{ if(!GE().layers.has('iso-mask')) return; const ls=GE().scene.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') GE().layers.move('iso-mask'); }catch(_){} }
+    function toTop(){ try{ if(!GE().layers.has('iso-mask')) return; const ls=GE().scene.getStyle().layers; const top=['iso-mask','iso-edge-poly','iso-edge'].filter(id=>GE().layers.has(id));
+      if(ls&&ls.length&&ls[ls.length-1].id!==top[top.length-1]) for(const id of top) GE().layers.move(id); }catch(_){} }
+    /* show / hide the border line above the mask: the ofm frontier of this country's codes, and its polygon edge for the zooms ofm does not carry */
+    function setEdge(feat){ try{ const codes=ofmCountryCodes(feat), g=feat&&feat.geometry; const lines=[];
+        const polys=g?(g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[])):[]; for(const poly of polys) for(const r of poly) lines.push({type:'Feature',geometry:{type:'LineString',coordinates:r},properties:{}});
+        GE().layers.setSourceData('iso-edge-src',{type:'FeatureCollection',features:lines});
+        if(GE().layers.has('iso-edge-poly')) GE().layers.setLayout('iso-edge-poly','visibility','visible');
+        if(GE().layers.has('iso-edge')){ if(codes){ GE().layers.setFilter('iso-edge',['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1],['any',['in',['get','adm0_l'],['literal',codes]],['in',['get','adm0_r'],['literal',codes]]]]); GE().layers.setLayout('iso-edge','visibility','visible'); }
+          else GE().layers.setLayout('iso-edge','visibility','none'); } }catch(_){} }
+    function hideEdge(){ for(const id of ['iso-edge-poly','iso-edge']){ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} } }
     function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
@@ -532,7 +558,7 @@ export function isolate(HOST){
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
-        try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){}
+        try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); setEdge(feat); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
@@ -575,7 +601,7 @@ export function isolate(HOST){
        isolate THAT geometry directly — no countryGeo lookup at all. Accepts a bare geometry or a Feature. */
     function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
       applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
-    function exit(){ active=false; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
+    function exit(){ active=false; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
     GE().events.on('idle',()=>{ if(active) toTop(); });
@@ -854,9 +880,7 @@ export function outline(HOST){
       if(ctx&&ctx.iso3) return [String(ctx.iso3).toUpperCase()];
       const cg=window.countryGeo; if(!geo||!cg||!cg.features) return null;
       const f=cg.features.find(x=>x&&x.geometry===geo); if(!f) return null;
-      const p=f.properties||{}, out=[];
-      for(const c of [f.id,p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3]){ const v=c==null?'':String(c).toUpperCase(); if(/^[A-Z]{3}$/.test(v)&&out.indexOf(v)<0) out.push(v); }
-      return out.length?out:null; }catch(_){ return null; } }
+      return ofmCountryCodes(f); }catch(_){ return null; } }
     let _codes=null;   /* ofm country codes of the active outline, or null = polygon-edge line */
     function setVis(v){ try{ for(const id of ['pl-outline-fill','pl-outline-line','pl-outline-pline']) if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v); }catch(_){} }
     function _rmLine(){ for(const id of ['pl-outline-line','pl-outline-pline']){ try{ if(GE().layers.has(id)) GE().layers.remove(id); }catch(_){} } }

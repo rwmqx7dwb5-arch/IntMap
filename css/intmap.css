@@ -860,10 +860,10 @@
        in a stylesheet that may arrive later, or nowhere, had the same fate. `:where()` keeps this at the specificity
        of a bare `button`, so a class or an inline style that says something else still wins. */
     :where(.plc-popup .maplibregl-popup-content) button:not(.maplibregl-popup-close-button){ background:var(--input-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); }
-    /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
-    .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
-    .plc-popup .plc-acts button{ flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; }
-    @media(max-width:768px){ .plc-popup .plc-acts{ flex-direction:column; } .plc-popup .plc-acts button{ width:100%; flex:none; }
+    /* Place-label popup action buttons: TWO COLUMNS (two rows when four buttons show) on every width (「二行二列に」; was a wrapping flex row, stacked on mobile). Hidden buttons (Wikipedia until its probe answers) take no cell. */
+    .plc-popup .plc-acts{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+    .plc-popup .plc-acts button{ display:inline-flex; align-items:center; justify-content:center; min-width:0; }
+    @media(max-width:768px){
       /* Keep the close × aligned to the buttons' right edge on mobile too; only the top needs clearing. */
       .plc-popup .maplibregl-popup-content{ padding-top:14px !important; }
       .plc-popup .maplibregl-popup-close-button{ width:30px; height:30px; top:9px; right:12px; } }
