@@ -1394,7 +1394,7 @@ export function objectList(HOST){
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
-        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), area:()=>geomKm2(it.geom),
+        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), geo:()=>it.geom, area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
@@ -1413,7 +1413,7 @@ export function objectList(HOST){
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
         out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
-          geom:'area', area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:alphaFromFill(p.op!=null?p.op:HP.fillBase),   /* what the reader set (0–1); the painter holds it as the fill opacity in p.op */
+          geom:'area', geo:()=>p.geo, area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:alphaFromFill(p.op!=null?p.op:HP.fillBase),   /* what the reader set (0–1); the painter holds it as the fill opacity in p.op */
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           setWidth:w=>{ p.w=w; try{ HP.repaint(); }catch(_){} },
@@ -1422,7 +1422,7 @@ export function objectList(HOST){
       /* the lines Atlas drew (drawLine, river highlights, journey courses) — until now neither listed nor editable, though they were drawn */
       try{ const HL=window._imHlLines; ((HL&&HL.list())||[]).forEach((l,i)=>{ const lid=HL.tagId(l); if(!lid) return;
         out.push({ id:lid, kind:'line', dot:l.color||'#2f9bff', color:l.color||'#2f9bff', name:labels[lid]||l.name||(OL('Line drawn by Atlas','ライン')+' '+(i+1)), src:['nlq-line-src'],
-          geom:'line', width:l.w!=null?l.w:3, alpha:l.op!=null?l.op:0.92,
+          geom:'line', geo:()=>l.geo, width:l.w!=null?l.w:3, alpha:l.op!=null?l.op:0.92,
           focus:()=>{ if(l.geo) fitFeats([{geometry:l.geo}]); }, rename:v=>{ labels[lid]=v; l.name=v; },
           setColor:col=>{ l.color=col; try{ HL.repaint(); }catch(_){} },
           setWidth:w=>{ l.w=w; try{ HL.repaint(); }catch(_){} },
@@ -1654,9 +1654,16 @@ export function objectList(HOST){
        list() = sanitized inventory; get(id) = live handle (focus/rename/remove/setColor); remove/focus/rename
        are id-based conveniences. The ids also appear in Atlas's state context. */
     /* (atlas-completion) an entry discovered from the renderer also lists its features — the same ids the painter and its result use */
+    /* (atlas-completion-verdict) WHERE an object is, as a fixed-size fingerprint: its vertex count, ends, bounds and a hash of its rounded coordinates.
+       «Restyle the line you drew» is met by the SAME object on the SAME course — an evaluation that saw only «one red line» passed a line deleted and drawn
+       again under another id. Fixed size, so describe()'s callers that stringify every object stay as cheap as they were. */
+    function shapeOfGeo(g){ const pts=[]; (function walk(c){ if(Array.isArray(c)&&typeof c[0]==='number') pts.push(c); else if(Array.isArray(c)) c.forEach(walk); })(g&&g.coordinates); if(!pts.length) return null;
+      const r6=v=>Math.round(v*1e6)/1e6; let w=Infinity,s=Infinity,e=-Infinity,n=-Infinity,h=0x811c9dc5;
+      pts.forEach(p=>{ const x=r6(p[0]),y=r6(p[1]); if(x<w)w=x; if(x>e)e=x; if(y<s)s=y; if(y>n)n=y; const t=x+','+y+';'; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } });
+      return { n:pts.length, first:[r6(pts[0][0]),r6(pts[0][1])], last:[r6(pts[pts.length-1][0]),r6(pts[pts.length-1][1])], bbox:[w,s,e,n], key:('0000000'+h.toString(16)).slice(-8) }; }
     function describe(o,i){ const ed=[]; if(o.setColor) ed.push('color'); if(o.setWidth) ed.push('width'); if(o.setOpacity) ed.push('opacity'); if(o.toggleHide) ed.push('hidden'); if(o.rename) ed.push('name');
       let ar=null; if(typeof o.area==='function'){ try{ ar=o.area(); }catch(_){} }
-      return Object.assign({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i, geom:o.geom||null, width:o.width!=null?o.width:null, opacity:o.alpha!=null?o.alpha:null, areaKm2:ar!=null?Math.round(ar*100)/100:null, editable:ed }, o.features?{ features:o.features.map(f=>({id:f.id,name:f.name})) }:null); }
+      return Object.assign({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i, geom:o.geom||null, shape:(typeof o.geo==='function')?(()=>{ try{ return shapeOfGeo(o.geo()); }catch(_){ return null; } })():null, width:o.width!=null?o.width:null, opacity:o.alpha!=null?o.alpha:null, areaKm2:ar!=null?Math.round(ar*100)/100:null, editable:ed }, o.features?{ features:o.features.map(f=>({id:f.id,name:f.name})) }:null); }
     function list(){ try{ return collect().map(describe); }catch(_){ return []; } }
     /* the ONE way an object's look is changed — Atlas's `object` capability and the panel's own controls both end in these setters.
        Returns what took effect and what this object cannot take, so a refusal is a fact the caller can read (never a silent no-op). */

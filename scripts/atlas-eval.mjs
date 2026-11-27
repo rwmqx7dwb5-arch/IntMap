@@ -173,6 +173,12 @@ export const PAGE = {
     return {
       turn: t ? {
         question: t.question, status: t.status, reply: t.reply || '', aiCalls: t.aiCalls,
+        /* (atlas-completion-verdict) what the turn declared about itself (js/atlas-console.js endTurn: `completion`, and the
+           `unmet` it is computed from). This copy used to name the fields it carried and these were not among them, so every
+           live turn reached deliverables.mjs with no declaration and a turn that said complete over an empty map read
+           `unknown` — the false completion it exists to count was never counted. */
+        completion: t.completion == null ? null : String(t.completion),
+        unmet: Array.isArray(t.unmet) ? JSON.parse(JSON.stringify(t.unmet)) : null,
         operations: (t.operations || []).map((o) => ({ capabilityId: o.capabilityId, args: o.args, status: o.status, code: o.code, ms: o.ms })),
       } : null,
       steps: (dbg && Array.isArray(dbg.steps)) ? dbg.steps.map((s) => ({ step: s.step, calls: s.calls || [] })) : [],
@@ -218,7 +224,7 @@ export const PAGE = {
 
 /* observeTurn(q, raw) — the page's records turned into what judge.mjs reads. Here and only here the
    harness decides 「was this turn measured at all」, from the records themselves. */
-export function observeTurn(q, raw, askRes) {
+export function observeTurn(q, raw, askRes, earlier) {
   const t = raw && raw.turn;
   if (!t || t.question !== q.text) return { measured: false, unmeasured: 'no_observation', detail: 'IntMapAtlasState.lastTurn() holds no record of this question' };
   /* run() opened the record and returned before Atlas was called: the login gate or the daily allowance
@@ -232,9 +238,20 @@ export function observeTurn(q, raw, askRes) {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
     completion: t.completion || null,   /* (atlas-completion-rate) what the turn's own trace declared — read only to compare with what existed */
+    unmet: Array.isArray(t.unmet) ? t.unmet : null,   /* (atlas-completion-verdict) what `completion` is computed from — deliverables.mjs claimOf derives the claim from it when `completion` is missing, and says so */
     replies: raw.replies || null, dispatches: raw.dispatches || null,
     aiCalls: Number.isFinite(+t.aiCalls) ? +t.aiCalls : null,   /* (atlas-delegation-eval) the model calls of the turn, for the A/B bench */
+    ...conversationOf(earlier),
   };
+}
+/* (atlas-completion-verdict) the earlier turns of a conversation question, each observed as a turn of its own right after it
+   ended; the last one's map is `before` — what a `restyle` is graded against. An earlier turn that was not measured leaves
+   no `before`: the change is then unobserved, never graded against a map nobody read. */
+function conversationOf(earlier) {
+  if (!Array.isArray(earlier) || !earlier.length) return {};
+  const obs = earlier.map((e) => (e.unmeasured ? e.unmeasured : observeTurn({ text: e.text }, e.raw, e.askRes)));
+  const last = obs[obs.length - 1];
+  return { earlier: obs, before: last && last.measured ? (last.snapshot || null) : null };
 }
 
 /* (atlas-delegation-eval) THE SESSION AND THE ASKING, SHARED. evaluate() below and scripts/atlas-delegation-bench.mjs
@@ -284,11 +301,27 @@ export function harnessPatienceMs(rules, patienceMin) {
 /** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
  *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
  *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
-export async function askOnFreshPage(S, text, { patienceMs, sections }) {
+export async function askOnFreshPage(S, text, { patienceMs, sections, earlier }) {
   const { page } = S;
   await S.boot(); await page.evaluate(PAGE.ensureAtlas);
   await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 });
   await page.evaluate(PAGE.tap);
+  /* (atlas-completion-verdict) A CONVERSATION. The earlier turns are asked first on the SAME page — the console keeps the
+     conversation and the map between them, as it does for a reader — and each is observed the moment it ends, so the map
+     it left (ids, courses, looks) is on record before the next turn can change it. */
+  const said = [];
+  for (const t of earlier || []) {
+    const a = await askOnce(page, t, patienceMs);
+    if (a.unmeasured) return { unmeasured: Object.assign({}, a.unmeasured, { detail: 'earlier turn «' + t + '»: ' + (a.unmeasured.detail || a.unmeasured.unmeasured) }) };
+    said.push({ text: t, askRes: a.askRes, raw: await page.evaluate(PAGE.observe, sections) });
+  }
+  const a = await askOnce(page, text, patienceMs);
+  if (a.unmeasured) return { unmeasured: a.unmeasured };
+  const raw = await page.evaluate(PAGE.observe, sections);
+  return { askRes: a.askRes, raw, earlier: said };
+}
+/** one question on the page as it stands, under the harness's watchdog → { askRes } | { unmeasured } */
+async function askOnce(page, text, patienceMs) {
   let askRes, timer = null;
   const asking = page.evaluate(PAGE.ask, text);
   asking.catch(() => { });   /* if the watchdog wins, the next boot() rejects this one — that is not an error */
@@ -298,26 +331,40 @@ export async function askOnFreshPage(S, text, { patienceMs, sections }) {
   finally { clearTimeout(timer); }
   if (askRes.timedOut) { await page.evaluate(PAGE.stop).catch(() => { }); return { unmeasured: { measured: false, unmeasured: 'harness_timeout', detail: 'no end after ' + Math.round(patienceMs / 1000) + ' s' } }; }
   if (askRes.err && !Number.isFinite(askRes.ms)) return { unmeasured: { measured: false, unmeasured: 'page_error', detail: askRes.err } };
-  const raw = await page.evaluate(PAGE.observe, sections);
-  return { askRes, raw };
+  return { askRes };
 }
 
 /* (atlas-quality-lab) cassetteOf — one measured turn as a cassette scripts/atlas-eval/replay.mjs replays
    with no model: the model's replies, what the dispatch returned, the find_capability answers, the final
    map, and what the turn produced. A turn whose two sides were not both observed is not a cassette —
    a replay of half a turn would diverge on the half that is missing. */
-export function cassetteOf(q, obs, judged, meta) {
+/* one turn's two sides (the model's replies, what the world returned) — null unless both were observed */
+function sideOf(obs) {
   if (!obs || !obs.measured || !Array.isArray(obs.replies) || !Array.isArray(obs.dispatches) || !obs.calls) return null;
   const find = [];
   for (const c of obs.calls) if (c.name === 'find_capability') { try { find.push({ query: String((c.args && c.args.query) || ''), result: JSON.parse(c.resultText) }); } catch (_) { } }
+  return {
+    model: obs.replies.map((r) => ({ final: !!r.final, text: r.text || '', turnState: r.turnState || '', answerMode: r.answerMode || '', webUsed: !!r.webUsed, toolCalls: r.toolCalls || [] })),
+    world: { dispatch: obs.dispatches, find, snapshot: obs.snapshot || {} },
+    golden: goldenOf({ stopped: obs.stopped, calls: obs.calls, text: obs.reply }),
+  };
+}
+export function cassetteOf(q, obs, judged, meta) {
+  const side = sideOf(obs);
+  if (!side) return null;
+  /* (atlas-completion-verdict) a conversation is a cassette only when every earlier turn's two sides were observed too */
+  let earlier;
+  if (Array.isArray(q.earlier) && q.earlier.length) {
+    const sides = q.earlier.map((e, i) => { const sd = sideOf(obs.earlier && obs.earlier[i]); return sd ? Object.assign({ text: e.text }, sd) : null; });
+    if (sides.some((sd) => !sd)) return null;
+    earlier = sides;
+  }
   const kinds = [...new Set(judged.failures.map((f) => f.kind))];
   return {
     id: q.id + '-' + String(meta.when).slice(0, 10), text: q.text, lang: q.lang,
     origin: { kind: 'recorded', from: meta.url + (meta.build ? ' (build ' + meta.build + ')' : '') + ' ' + meta.when + (meta.runUrl ? ' ' + meta.runUrl : '') },
     question: { set: q.set || 'records', id: q.id }, recordedMs: obs.ms,
-    model: obs.replies.map((r) => ({ final: !!r.final, text: r.text || '', turnState: r.turnState || '', answerMode: r.answerMode || '', webUsed: !!r.webUsed, toolCalls: r.toolCalls || [] })),
-    world: { dispatch: obs.dispatches, find, snapshot: obs.snapshot || {} },
-    golden: goldenOf({ stopped: obs.stopped, calls: obs.calls, text: obs.reply }),
+    earlier, model: side.model, world: side.world, golden: side.golden,
     /* what the judge concluded live is what the replay must keep concluding */
     expect: { verdict: kinds.length ? 'fail' : 'pass', failures: kinds.length ? kinds : undefined, grade: judged.metrics.grade ? judged.metrics.grade.verdict : undefined, map: judged.metrics.map ? judged.metrics.map.verdict : undefined },
   };
@@ -373,9 +420,10 @@ async function evaluate() {
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
-      const asked = await askOnFreshPage(S, q.text, { patienceMs, sections: [...new Set([...sectionsRead(questions), ...deliverableSectionsOf(questions)])] });
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, earlier: (q.earlier || []).map((e) => e.text),
+        sections: [...new Set([...sectionsRead(questions), ...sectionsRead(questions.flatMap((x) => x.earlier || [])), ...deliverableSectionsOf(questions)])] });
       if (asked.unmeasured) { turns.push(judgeTurn(q, asked.unmeasured, rules)); continue; }
-      const obs = observeTurn(q, asked.raw, asked.askRes);
+      const obs = observeTurn(q, asked.raw, asked.askRes, asked.earlier);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
          asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
          deterministic grade already says 「absent」) */
@@ -388,7 +436,9 @@ async function evaluate() {
       }
       const judged = judgeTurn(q, obs, rules);
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
-      if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot };
+      if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot,
+        completion: obs.completion, unmet: obs.unmet,   /* (atlas-completion-verdict) the declaration as the turn recorded it — deliverables claimBasis says when it was derived */
+        before: obs.before, earlier: obs.earlier ? obs.earlier.map((e) => (e.measured ? { stopped: e.stopped, reply: e.reply, operations: e.operations, snapshot: e.snapshot } : { unmeasured: e.unmeasured, detail: e.detail })) : undefined };
       judged.deliverables = deliverablesOfTurn(q, obs, rules);
       if (obs.measured) judged.expression = expressionOf(obs);   /* (atlas-ui-parts) the families of output the turn realized — a fact beside the grade, never a target */
       turns.push(judged);

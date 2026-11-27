@@ -26,8 +26,12 @@ export const ATLAS_VERIFY_SCHEMA = {
         properties: {
           need: { type: "STRING" },   // the part of the request the record does not cover, in the reader's words
           why: { type: "STRING" },    // what the record shows (or lacks) that says so
+          /* "missing" — the record SHOWS the part is not there; "unconfirmed" — the record cannot show either way.
+             Only "missing" is a finding about the turn (js/atlas-goal-verify.js): not observed is not unmet. */
+          seen: { type: "STRING" },
+          prev: { type: "STRING" },   // the id of the same need in the reader's previous reading of this turn, when it is one
         },
-        required: ["need"],
+        required: ["need", "seen"],
       },
     },
   },

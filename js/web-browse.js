@@ -164,7 +164,8 @@ function makeWebBrowse(HOST) {
   const urlOf = makeAtlasEvidence().canonicalizeUrl;
   const wantChars = (a) => Math.max(500, Math.floor(+a.textChars || 6000));
   const evNote = (e, how) => ({ id: e.id, reused: how !== 'fetched', how, fetchedAt: new Date(e.fetchedAt).toISOString(), ageSec: Math.round((Date.now() - e.fetchedAt) / 1000) });
-  async function stored(kind, a, signal, shape, fetchBody, tier) {
+  /* use: { turn, worker } — the turn this read is for (js/atlas-cap-web.js readFor); the store records that turn as one that used the page */
+  async function stored(kind, a, signal, shape, fetchBody, tier, use) {
     const c = a.url ? urlOf(a.url) : null;
     if (!c || !c.ok) return null;
     const key = c.key + shape;
@@ -173,18 +174,18 @@ function makeWebBrowse(HOST) {
       const r = await call(fetchBody, signal, tier);
       const ok = !!(r && r.ok && !r.handoff && r.page);
       return { ok, result: r, url: (r && r.state && r.state.url) || a.url, title: ok ? r.page.title : '', text: ok ? String(r.page.text || '') : '', value: ok ? { r, chars: want } : null };
-    }, { refresh: a.refresh === true, fits: (e) => !!(e.value && (e.value.chars >= want || !(e.value.r.page && e.value.r.page.textTruncated))) });
+    }, { refresh: a.refresh === true, turn: use && use.turn, worker: !!(use && use.worker), fits: (e) => !!(e.value && (e.value.chars >= want || !(e.value.r.page && e.value.r.page.textTruncated))) });
     if (!got.entry) return got.result && got.result.result;   /* a failure is the caller's answer, as it always was; the next call tries again */
     const r = got.entry.value.r;
     if (r && r.state) state = got.how === 'fetched' || !state ? r.state : Object.assign({}, r.state, { cookies: Object.assign({}, state.cookies || {}, r.state.cookies || {}) });   /* a reused page brings its page and refs, and keeps the cookies this browsing already holds */
     return Object.assign({}, r, { evidence: evNote(got.entry, got.how) });
   }
 
-  async function browse(a, signal) {
+  async function browse(a, signal, use) {
     if (a.ref) a = Object.assign({}, a, { ref: untag(a.ref) });
     const body = { action: a.action || 'open', url: a.url, ref: a.ref, form: a.form, values: a.values, button: a.button, textChars: a.textChars, state };
     if ((a.action || 'open') === 'open' && a.url && !a.ref && !a.form) {
-      const r0 = await stored('page', a, signal, '', body, undefined);
+      const r0 = await stored('page', a, signal, '', body, undefined, use);
       if (r0) return r0;
     }
     const r = await call(body, signal);
@@ -194,12 +195,12 @@ function makeWebBrowse(HOST) {
 
   /* render({url?,wait,viewport,fullPage,screenshot,textChars}) → the REAL-browser tier's answer (same page shape as browse, plus `screenshot`), state kept
      so a rendered page's links are clickable by the light tier. READ-ONLY by construction: only these fields are ever sent. */
-  async function render(a, signal) {
+  async function render(a, signal, use) {
     const body = { url: a.url, wait: a.wait, viewport: a.viewport, fullPage: a.fullPage, screenshot: a.screenshot, textChars: a.textChars, state };
     if (a.url) {
       /* the real browser costs the site money: the same address, in the same way of being looked at (wait, viewport, full page, picture), is rendered once */
       const shape = '|' + [a.wait || '', a.viewport || '', a.fullPage ? 'full' : '', a.screenshot === false ? 'nopic' : 'pic'].join(',');
-      const r0 = await stored('render', a, signal, shape, body, 'render');
+      const r0 = await stored('render', a, signal, shape, body, 'render', use);
       if (r0) return r0;
     }
     const r = await call(body, signal, 'render');

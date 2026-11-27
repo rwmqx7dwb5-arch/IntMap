@@ -1,36 +1,213 @@
 {
   "id": "drawn-line-restyled-by-id-across-turns",
-  "text": "ロンドンからパリまで線を引いて。次に、さっきの線を赤くして、太くして、少し透かして。",
+  "text": "さっきのロンドンからパリの線を赤くして、太くして、少し透かして。",
   "lang": "jp",
   "origin": {
     "kind": "scripted",
-    "from": "atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map."
+    "from": "atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map. (atlas-completion-verdict) Asked as the conversation it was: turn 1 draws London–Paris and an unrelated Berlin–Rome, turn 2 restyles the first by its id; the restyle is graded against the map turn 1 left."
   },
   "question": {
     "set": "records",
     "id": "restyle-drawn-line-across-turns"
   },
-  "model": [
+  "earlier": [
     {
-      "text": "",
-      "turnState": "continuing",
-      "toolCalls": [
+      "text": "ロンドンからパリまでと、ベルリンからローマまで、線を2本引いて。",
+      "model": [
         {
-          "id": "c0",
-          "name": "run_capability",
-          "arguments": {
-            "id": "map.drawLine",
-            "args": {
+          "text": "",
+          "turnState": "continuing",
+          "toolCalls": [
+            {
+              "id": "c0",
+              "name": "run_capability",
+              "arguments": {
+                "id": "map.drawLine",
+                "args": {
+                  "places": [
+                    "London",
+                    "Paris"
+                  ],
+                  "label": "London-Paris"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "text": "",
+          "turnState": "continuing",
+          "toolCalls": [
+            {
+              "id": "c0",
+              "name": "run_capability",
+              "arguments": {
+                "id": "map.drawLine",
+                "args": {
+                  "places": [
+                    "Berlin",
+                    "Rome"
+                  ],
+                  "label": "Berlin-Rome"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "text": "ロンドンからパリまでと、ベルリンからローマまでの線を2本引きました（line_1・line_2）。",
+          "toolCalls": []
+        }
+      ],
+      "world": {
+        "dispatch": [
+          {
+            "action": {
               "places": [
                 "London",
                 "Paris"
               ],
-              "label": "London-Paris"
+              "label": "London-Paris",
+              "type": "drawLine"
+            },
+            "out": {
+              "ok": true,
+              "html": "<div>London-Paris</div>",
+              "objectIds": [
+                "line_1"
+              ],
+              "meta": {
+                "status": "completed",
+                "produced": [
+                  "map",
+                  "object"
+                ],
+                "objectIds": [
+                  "line_1"
+                ]
+              }
+            }
+          },
+          {
+            "action": {
+              "places": [
+                "Berlin",
+                "Rome"
+              ],
+              "label": "Berlin-Rome",
+              "type": "drawLine"
+            },
+            "out": {
+              "ok": true,
+              "html": "<div>Berlin-Rome</div>",
+              "objectIds": [
+                "line_2"
+              ],
+              "meta": {
+                "status": "completed",
+                "produced": [
+                  "map",
+                  "object"
+                ],
+                "objectIds": [
+                  "line_2"
+                ]
+              }
             }
           }
+        ],
+        "find": [],
+        "snapshot": {
+          "objects": {
+            "n": 2,
+            "items": [
+              {
+                "id": "line_1",
+                "kind": "line",
+                "name": "London-Paris",
+                "color": "#2f9bff",
+                "width": 3,
+                "opacity": 0.92,
+                "geom": "line",
+                "shape": {
+                  "n": 2,
+                  "first": [
+                    -0.1278,
+                    51.5074
+                  ],
+                  "last": [
+                    2.3522,
+                    48.8566
+                  ],
+                  "bbox": [
+                    -0.1278,
+                    48.8566,
+                    2.3522,
+                    51.5074
+                  ],
+                  "key": "8c195324"
+                },
+                "editable": [
+                  "color",
+                  "width",
+                  "opacity",
+                  "name"
+                ]
+              },
+              {
+                "id": "line_2",
+                "kind": "line",
+                "name": "Berlin-Rome",
+                "color": "#2f9bff",
+                "width": 3,
+                "opacity": 0.92,
+                "geom": "line",
+                "shape": {
+                  "n": 2,
+                  "first": [
+                    13.405,
+                    52.52
+                  ],
+                  "last": [
+                    12.4964,
+                    41.9028
+                  ],
+                  "bbox": [
+                    12.4964,
+                    41.9028,
+                    13.405,
+                    52.52
+                  ],
+                  "key": "0c095341"
+                },
+                "editable": [
+                  "color",
+                  "width",
+                  "opacity",
+                  "name"
+                ]
+              }
+            ]
+          }
         }
-      ]
-    },
+      },
+      "golden": {
+        "stopped": "answered",
+        "calls": [
+          {
+            "name": "run_capability:map.drawLine",
+            "status": "completed"
+          },
+          {
+            "name": "run_capability:map.drawLine",
+            "status": "completed"
+          }
+        ],
+        "text": "ロンドンからパリまでと、ベルリンからローマまでの線を2本引きました（line_1・line_2）。"
+      }
+    }
+  ],
+  "model": [
     {
       "text": "",
       "turnState": "continuing",
@@ -52,39 +229,12 @@
       ]
     },
     {
-      "text": "ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。",
+      "text": "ロンドンからパリの線（line_1）を赤・太さ5・不透明度60%に変えました。",
       "toolCalls": []
     }
   ],
   "world": {
     "dispatch": [
-      {
-        "action": {
-          "places": [
-            "London",
-            "Paris"
-          ],
-          "label": "London-Paris",
-          "type": "drawLine"
-        },
-        "out": {
-          "ok": true,
-          "html": "<div>London-Paris</div>",
-          "objectIds": [
-            "line_1"
-          ],
-          "meta": {
-            "status": "completed",
-            "produced": [
-              "map",
-              "object"
-            ],
-            "objectIds": [
-              "line_1"
-            ]
-          }
-        }
-      },
       {
         "action": {
           "op": "set",
@@ -115,7 +265,7 @@
     "find": [],
     "snapshot": {
       "objects": {
-        "n": 1,
+        "n": 2,
         "items": [
           {
             "id": "line_1",
@@ -125,6 +275,57 @@
             "width": 5,
             "opacity": 0.6,
             "geom": "line",
+            "shape": {
+              "n": 2,
+              "first": [
+                -0.1278,
+                51.5074
+              ],
+              "last": [
+                2.3522,
+                48.8566
+              ],
+              "bbox": [
+                -0.1278,
+                48.8566,
+                2.3522,
+                51.5074
+              ],
+              "key": "8c195324"
+            },
+            "editable": [
+              "color",
+              "width",
+              "opacity",
+              "name"
+            ]
+          },
+          {
+            "id": "line_2",
+            "kind": "line",
+            "name": "Berlin-Rome",
+            "color": "#2f9bff",
+            "width": 3,
+            "opacity": 0.92,
+            "geom": "line",
+            "shape": {
+              "n": 2,
+              "first": [
+                13.405,
+                52.52
+              ],
+              "last": [
+                12.4964,
+                41.9028
+              ],
+              "bbox": [
+                12.4964,
+                41.9028,
+                13.405,
+                52.52
+              ],
+              "key": "0c095341"
+            },
             "editable": [
               "color",
               "width",
@@ -140,19 +341,15 @@
     "stopped": "answered",
     "calls": [
       {
-        "name": "run_capability:map.drawLine",
-        "status": "completed"
-      },
-      {
         "name": "run_capability:map.object",
         "status": "completed"
       }
     ],
-    "text": "ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。"
+    "text": "ロンドンからパリの線（line_1）を赤・太さ5・不透明度60%に変えました。"
   },
   "expect": {
     "verdict": "pass",
-    "dispatched": 2,
+    "dispatched": 3,
     "map": "match"
   }
 }

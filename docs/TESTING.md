@@ -1708,6 +1708,12 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   **disk** — not a list — that none appears again. Fixtures, corpora and the shared helpers import
   nothing of the kind and are not demanded.
 
+- **No regex literal has lost its backslash** (`regex-escape`; `scripts/regex-escapes.mjs`) — a
+  pattern that BEGINS with a bare `s`/`d`/`w` (or `S`/`D`/`W`) under a quantifier (`/s+/g`,
+  `/^d{4}$/`) is a lost `\`. Measured 2026-11-27: five such literals were written months apart, and
+  one handed Atlas's independent verifier English with every «s» erased, so it found finished
+  turns unmet. The rule reads acorn's token, not the call site, so it covers code not yet written.
+
 - **Test file names carry no round number** (`round-name`; #R674, then 2026-09-25) — a new file
   under `tests/` is named for its **subject**: `<slug>-checks.test.mjs` / `<slug>.spec.js`, the slug
   being the one `node scripts/worktree.mjs new <slug>` was given. The **round number is not a name**:

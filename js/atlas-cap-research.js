@@ -25,6 +25,7 @@ import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-
 import { settleWithin, lateNote } from './atlas-deadlines.js';
 import { lateCostSink, runMarkSink } from './atlas-run-ledger.js';   /* (atlas-autonomy) the cost of a worker that ends after the answer that left it running */
 import { webEvidence } from './atlas-web-evidence.js';   /* (atlas-search-evidence-store) the pages and searches this turn's web readers retrieved — one store with the parent and the workers */
+import { makeAtlasEvidence } from './atlas-evidence.js';   /* (atlas-completion-verdict) the ONE identity of an address: two spellings of one page are one source, two queries of one path are two */
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -86,10 +87,22 @@ function turnPages(turn) {
   if (_turnPages.turn !== turn) { _turnPages.turn = turn; _turnPages.pages = []; }
   return _turnPages.pages;
 }
+const canonUrl = makeAtlasEvidence().canonicalizeUrl;
+const sourceKey = (u) => { const c = canonUrl(u); return c && c.ok ? c.key : String(u == null ? '' : u); };
+/* one entry per source by that identity — the first spelling kept */
+const oneEachSource = (list) => { const seen = new Set(); return (list || []).filter((x) => { const k = x && x.url ? sourceKey(x.url) : ''; if (!k || seen.has(k)) return false; seen.add(k); return true; }); };
+/* (atlas-completion-verdict) the text this session read at an address, whole — or null when it holds none, holds only a citation, or holds a cut
+   copy (an excerpt missing from a cut copy may be in the part not read). A checker's excerpt is looked for in it (js/atlas-orchestrate.js verifyOutcome). */
+function heldTextOf(url) {
+  const e = webEvidence.lookup(url);
+  if (!e || (e.kind !== 'page' && e.kind !== 'render')) return null;
+  const p = e.value && e.value.r && e.value.r.page;
+  return p && !p.textTruncated && e.text ? String(e.text) : null;
+}
 function keepTurnPages(turn, list) {
   if (!turn) return;
   const pages = turnPages(turn);
-  (list || []).forEach((x) => { if (x && x.url && !pages.some((q) => q.url === x.url)) pages.push({ url: x.url, title: x.title || '', publisher: x.publisher || '', retrievedAt: x.retrievedAt || '' }); });
+  (list || []).forEach((x) => { if (x && x.url && !pages.some((q) => sourceKey(q.url) === sourceKey(x.url))) pages.push({ url: x.url, title: x.title || '', publisher: x.publisher || '', retrievedAt: x.retrievedAt || '' }); });
 }
 
 /* ══ (world-objects) RESOLVING «THAT EARTHQUAKE / THIS VOLCANO / THAT COMPANY» TO ONE REAL-WORLD OBJECT ═══════════════
@@ -813,7 +826,7 @@ export default [
               temporalMode:String((a&&a.temporalMode)||'unspecified'),
               requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
               ...modelCallKey(dctx,K), webMode:analysisWebMode, clientSources:evRecs.map(s=>Object.assign({label:_newsLbl(s&&s.origin)},s)),
-              webSources:turnPages(K._curTurnKey).concat(webEvidence.turnSources(K._curTurnKey)).filter((x,i,all)=>all.findIndex(y=>y.url===x.url)===i),   /* (atlas-completion) pages an earlier call of this turn retrieved — they get ids before this call */
+              webSources:oneEachSource(turnPages(K._curTurnKey).concat(webEvidence.turnSources(K._curTurnKey,{use:!(dctx&&dctx.source==='atlas-worker')}))),   /* (atlas-completion) pages an earlier call of this turn retrieved or used — they get ids before this call; handing them to the answer is this turn using them (evidence_used) */
               appFacts:_statsFacts(codes).map(f=>Object.assign({label:L('country stats','国別統計','Länderstatistik','статистика','estadísticas')},f)).concat((()=>{ try{ return datasetFactsOnPage(a&&a.datasets); }catch(_){ return []; } })()), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
           catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
@@ -1283,7 +1296,7 @@ export default [
           const toCheck = results.filter((r, i) => entry.eligible(r, i));   /* (atlas-claim-check) a task whose claims a program decided has no checker, and still has its verdicts */
           if (toCheck.length) {
             const vres = results.map((r, i) => fu[i]).filter(Boolean);
-            verification = verifyOutcome(toCheck.map((r) => ({ of: r, by: fu[results.indexOf(r)] || null, det: entry.det(r) })));
+            verification = verifyOutcome(toCheck.map((r) => ({ of: r, by: fu[results.indexOf(r)] || null, det: entry.det(r) })), { heldText: heldTextOf });
             verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
             verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
           }
@@ -1353,7 +1366,7 @@ export default [
       if (differ.length) notes.push(L('Figures differ between workers at: ', '子どうしで数値が異なる地点: ') + differ.map((p) => p.place).slice(0, 6).join(', '));
       if (I.unreturned.length) notes.push(L('Did not return: ', '結果が戻らなかった仕事: ') + I.unreturned.map((u) => u.task + ' (' + stateWord(u.state) + (u.code ? ', ' + u.code : '') + ')').slice(0, 8).join(', '));
       if (pendingIds.length) notes.push(L('Still running (not waited for): ', 'まだ実行中（待たずに返しました）: ') + pendingIds.join(', ') + L(' — ask the same task list again to wait for the next one (with "wait":"any") or for all of them; what ended is already recorded and is not run again.', ' — 同じ仕事の一覧をもう一度呼ぶと次の到着（"wait":"any"）か残り全部を待ちます（終わった分は記録済みで再実行しません）。'));
-      if (verification) { const c = verification.counts, pg = (verification.basis && verification.basis.program) || 0; notes.push(L('Checked' + (verification.verifiers.some((v) => v.state !== 'not_started') ? ' by a second worker' : '') + ': ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked' + (pg ? ' (' + pg + ' contradicted by a program check of the coordinates or shape, with no model asked)' : ''), '検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked + (pg ? '（うち ' + pg + ' 件は座標や形のプログラム検査による反証で、モデルには尋ねていません）' : ''))); }
+      if (verification) { const c = verification.counts, pg = (verification.basis && verification.basis.program) || 0; notes.push(L('Checked' + (verification.verifiers.some((v) => v.state !== 'not_started') ? ' by a second worker' : '') + ': ' + c.supported + ' supported, ' + c.contradicted + ' contradicted, ' + c.unsupported + ' unsupported, ' + c.unchecked + ' not checked' + (c.asserted ? ', ' + c.asserted + ' agreed with no source or excerpt (not counted as supported)' : '') + (pg ? ' (' + pg + ' contradicted by a program check of the coordinates or shape, with no model asked)' : ''), '検証: 支持 ' + c.supported + ' / 反証 ' + c.contradicted + ' / 根拠なし ' + c.unsupported + ' / 未検証 ' + c.unchecked + (c.asserted ? ' / 出典・抜粋のない同意 ' + c.asserted + '（支持には数えません）' : '') + (pg ? '（うち ' + pg + ' 件は座標や形のプログラム検査による反証で、モデルには尋ねていません）' : ''))); }
       const totalUsd = I.cost.usd + (verification ? verification.costUsd : 0), totalCalls = I.cost.calls + (verification ? verification.calls : 0);
       if (totalUsd > 0) notes.push(L('Worker cost ', '子の費用 ') + usd(totalUsd) + ' · ' + totalCalls + L(' request(s)', ' 回'));
       const noteHtml = notes.length ? '<div style="margin-top:4px;opacity:.7;">' + notes.map((n) => '<div>' + esc(n) + '</div>').join('') + '</div>' : '';

@@ -16,7 +16,7 @@
  * ==========================================================================*/
 
 /* the two ENDS of a long text: a request's last condition and an answer's conclusion sit at the end, which a head-only cut dropped */
-const clipEnds = (s, n) => { const t = String(s == null ? '' : s).replace(/s+/g, ' ').trim(); return t.length > 2 * n ? t.slice(0, n) + ' … [' + (t.length - 2 * n) + ' characters between are not shown] … ' + t.slice(-n) : t; };
+const clipEnds = (s, n) => { const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return t.length > 2 * n ? t.slice(0, n) + ' … [' + (t.length - 2 * n) + ' characters between are not shown] … ' + t.slice(-n) : t; };
 const clip = (s, n) => { const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; };
 
 /** one line per operation the turn ran: what ran, and whether it worked — the record the reader is shown */
@@ -35,8 +35,17 @@ export function recordOf(results) {
     else if (r.status === 'partial') state = 'partial' + (r.error ? ' (' + clip(r.error, 60) + ')' : '') + (Array.isArray(r.producedModes) && r.producedModes.length ? '' : ' [nothing observed]');
     else if (r.ok === false) state = 'FAILED' + (r.error ? ' (' + clip(r.error, 60) + ')' : '');
     else state = (r.status && r.status !== 'completed' ? String(r.status) : 'ok');
+    /* WHAT THE OPERATION ITSELF REPORTED — the objects it placed, the names it could not place, the line it said. Without these the reader saw
+       «compose_map → ok [produced: map]» and could not tell whether the map holds what was asked, so it guessed, and a guess was read as
+       «not met» (one-pass-or-a-reason §2 ①). Facts the result carries, never inferred. */
+    const placed = Array.isArray(r.objectIds) && r.objectIds.length ? ' [objects placed: ' + r.objectIds.length + ']' : '';
+    const unplaced = Array.isArray(r.unresolved) && r.unresolved.length
+      ? ' [could not place: ' + r.unresolved.slice(0, 12).map((x) => clip(typeof x === 'string' ? x : (x && (x.name || x.query)) || '', 40)).filter(Boolean).join(', ')
+        + (r.unresolved.length > 12 ? ', … ' + (r.unresolved.length - 12) + ' more' : '') + ']' : '';
+    const said = (typeof r.summary === 'string' && r.summary.trim()) ? r.summary : ((typeof r.message === 'string' && r.message.trim() && r.ok !== false) ? r.message : '');
     rows.push(id + ' → ' + state
-      + (Array.isArray(r.producedModes) && r.producedModes.length ? ' [produced: ' + r.producedModes.join(', ') + ']' : ''));
+      + (Array.isArray(r.producedModes) && r.producedModes.length ? ' [produced: ' + r.producedModes.join(', ') + ']' : '')
+      + placed + unplaced + (said ? ' — reported: ' + clip(said, 160) : ''));
   }
   return rows;
 }
@@ -44,8 +53,11 @@ export function recordOf(results) {
 /** the previous read of THIS turn, shown when the record has grown since: lets the reader judge whether the work done closed what it found (its own earlier finding, not a rule) */
 function prevSection(p) {
   if (!p || !Array.isArray(p.unmet) || !p.unmet.length) return '';
-  return '\n\nYOUR PREVIOUS READING OF THIS TURN found these not covered (the operations above include what was done since):\n'
-    + p.unmet.map((u) => '- ' + clip(u.need, 200) + (u.why ? ' (' + clip(u.why, 150) + ')' : '')).join('\n');
+  /* each earlier finding carries its id, so a reading that finds the SAME need again says so by id ("prev") rather than by repeating the words:
+     the loop matched findings by their spelling, and a reader that reworded one need each round («all prefectures» → «every prefecture») made
+     it a new finding every time — the answer was streamed and withdrawn twenty times over one shortfall (measured 2026-11-27) */
+  return '\n\nYOUR PREVIOUS READING OF THIS TURN found these not covered (the operations above include what was done since). When a need you list is the same as one of these, give its id in "prev":\n'
+    + p.unmet.map((u, i) => '- ' + (u.id || ('g' + (i + 1))) + ': ' + clip(u.need, 200) + (u.why ? ' (' + clip(u.why, 150) + ')' : '')).join('\n');
 }
 
 /**
@@ -84,7 +96,16 @@ export function makeGoalVerify(deps) {
       const data = env && env.data;
       if (!data || !Array.isArray(data.unmet)) return null;
       const met = Array.isArray(data.met) ? data.met.filter((m) => m && typeof m === 'object' && String(m.need || '').trim()).map((m) => ({ need: String(m.need), how: String(m.how || '') })) : [];
-      return { ...(met.length ? { met } : {}), unmet: data.unmet.filter((u) => u && typeof u === 'object' && String(u.need || '').trim()).map((u) => ({ need: String(u.need), why: String(u.why || '') })) };
+      /* "seen": whether the record SHOWS the part missing ('missing') or cannot show whether it is there ('unconfirmed'). Only the first is a
+         finding about the turn; the second is the reader saying it could not observe — not observed is not unmet (one-pass-or-a-reason §5).
+         A reading that does not say (an older answer) is taken as 'missing', as every finding was before. */
+      const unmet = [], unconfirmed = [];
+      data.unmet.filter((u) => u && typeof u === 'object' && String(u.need || '').trim()).forEach((u) => {
+        const x = { need: String(u.need), why: String(u.why || '') };
+        const prev = String(u.prev || '').trim(); if (prev) x.prev = prev.slice(0, 16);
+        (String(u.seen || '').trim().toLowerCase() === 'unconfirmed' ? unconfirmed : unmet).push(x);
+      });
+      return { ...(met.length ? { met } : {}), unmet, ...(unconfirmed.length ? { unconfirmed } : {}) };
     } catch (_) { return null; } finally { if (timer) clearTimeout(timer); }
   };
 }
@@ -92,7 +113,8 @@ export function makeGoalVerify(deps) {
 /** the task rules the system prompt adds beside the persona (the persona itself is js/atlas-persona.js's, never written here) */
 export const GOAL_VERIFY_RULES = 'You are given a REQUEST and the RECORD of what a turn did about it. List each part of the request that the '
   + 'record does NOT cover — something the reader asked to be shown, drawn, compared, computed or stated that no produced output, '
-  + 'completed operation or written answer provides. Return STRICT JSON ONLY: {"met":[{"need":"<a part of the request the record covers>","how":"<which output, figure or written answer covers it>"}],"unmet":[{"need":"<the part of the request, in the reader\'s words>","why":"<what the record shows or lacks>"}]}. '
+  + 'completed operation or written answer provides. Return STRICT JSON ONLY: {"met":[{"need":"<a part of the request the record covers>","how":"<which output, figure or written answer covers it>"}],"unmet":[{"need":"<the part of the request, in the reader\'s words>","why":"<what the record shows or lacks>","seen":"missing|unconfirmed","prev":"<id of the same need in your previous reading, if any>"}]}. '
+  + 'For each unmet part say how you know it: "missing" when the record SHOWS it is not there (an operation failed or produced nothing, a count falls short, a name could not be placed, the answer says it was not done); "unconfirmed" when the record does not show enough to tell either way (an operation completed and the record does not list what it holds). Never write "missing" for something you could not see. '
   + 'Read the request for what it fixes — the set of things it covers (every item it names or implies, not a sample), the sources or data it requires, the conditions or period of the analysis, and the form of the deliverable — and compare each with the record: a set asked for in full but covered in part, a source required but not used, a condition not applied, or a deliverable of a different form is NOT met. These are what to look for, not a list to fill: name only what this request actually asks. '
   + 'An answer that is a plain statement of fact to a plain question is complete; do not ask for a drawing the request did not ask for. '
   + 'An operation that returned ok is not a part met: when WHAT THE OUTPUTS ACTUALLY HOLD shows a table or figure that does not hold what the request asked for (e.g. values present for 8 of the 20 rows asked, a figure no record states, several citations that are one origin), that part is NOT met — say what is missing. '

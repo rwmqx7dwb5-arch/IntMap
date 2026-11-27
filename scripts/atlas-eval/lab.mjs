@@ -92,6 +92,11 @@ export async function evaluateCassettes(cassettes, { P, sets, root }) {
     const q = questionOf(sets, cas);
     if (!q) problems.push('names question ' + JSON.stringify(cas.question) + ', which the problem set does not have');
     else if (q.text !== cas.text) problems.push('was recorded for «' + cas.text + '» but the problem set now asks «' + q.text + '» — re-record it');
+    else {
+      /* (atlas-completion-verdict) a conversation is recorded turn for turn: the earlier turns the question asks are the ones the cassette holds */
+      const want = (q.earlier || []).map((e) => e.text), have = (cas.earlier || []).map((e) => e.text);
+      if (canon(want) !== canon(have)) problems.push('the problem set asks the earlier turn(s) ' + JSON.stringify(want) + '; the cassette holds ' + JSON.stringify(have) + ' — re-record it');
+    }
     if (problems.length) { out.push({ id: cas.id, file: cas.__file, origin: cas.origin, judged: null, divergences: [], problems }); continue; }
     const r = await replayCassette(cas, P);
     const judged = judgeTurn(q, r.obs, rules);

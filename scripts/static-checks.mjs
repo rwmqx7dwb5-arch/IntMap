@@ -629,6 +629,16 @@ try {
   err('round-name', 'could not run the round-artefact name check: ' + (e && e.message));
 }
 
+// ── 11b. (atlas-completion-verdict) a regex literal that lost its backslash — `/s+/g` for `/\s+/g`.
+// Four were written months apart and one made Atlas's verifier read English with every «s» erased;
+// the rule reads the tokenizer's pattern, so it covers code not yet written (scripts/regex-escapes.mjs).
+try {
+  const { lostEscapeProblems } = await import('./regex-escapes.mjs');
+  for (const p of lostEscapeProblems(ALL, read)) err('regex-escape', p);
+} catch (e) {
+  err('regex-escape', 'could not run the lost-backslash check: ' + (e && e.message));
+}
+
 // ── 12. (safe-output-one-source) one output encoder: local escapers, live-document text parses and
 // href/src values not started by IntMapSafe.url may only go DOWN — the rule and the ledger are in
 // scripts/safe-output.mjs / scripts/safe-output-ledger.json.

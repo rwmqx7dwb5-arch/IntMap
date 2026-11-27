@@ -677,10 +677,23 @@ export function makeComputeSandbox(opts) {
     /* ── run(args) — validate, execute, register ─────────────────────────────────────────────
        `fixedIds` (rerun only) puts an output back under the id it had, so the map layer, the query
        bridge and every later step keep pointing at the same name. */
+    /* (atlas-completion-verdict) WHAT THE RUN READ, STATED BY THE RUN: each validated input — the records the program was
+       handed — in the registry's own shape (js/gis-datasets.js readRecord), `ok` when the run completed and `ok:false` with its
+       code when it did not. A request refused before the program started (an unknown name, a stale input) handed the program
+       nothing, so it read nothing: `[]`. A registry that does not state the shape leaves the field absent («not observed»).
+       A reused answer was computed from inputs whose CONTENT was just fingerprinted equal, so it is a read of them too; the
+       cached object is shared (REUSE), so the record always goes on a copy. */
     async function run(a, runOpts) {
-      const ro = runOpts || {};
       const job = validate(a);
-      if (!job.ok) return job;
+      const res = job.ok ? await runJob(job, runOpts) : job;
+      const reg = registry();
+      if (!res || typeof res !== 'object' || !reg || typeof reg.readRecord !== 'function') return res;
+      const read = job.ok ? job.inputs.map((rec) => reg.readRecord(rec.id, 'compute.run', !!res.ok, res.ok ? null : res.why)) : [];
+      return Object.assign({}, res, { datasetsRead: read });
+    }
+
+    async function runJob(job, runOpts) {
+      const ro = runOpts || {};
       /* (result-reuse) THE KEY IS CODE + THE INPUTS' CONTENT + THE CONDITIONS. A rerun (fixedIds / only) restores specific records and is never answered from the cache. A hit is served only while every dataset it made is still in the registry, not stale, and the same size. */
       let reuseK = null;
       if (!ro.fixedIds && !ro.only && !ro.bridge && reusableCode(job.code)) {
@@ -750,6 +763,8 @@ export function makeComputeSandbox(opts) {
 
     const API = {
       run, rerun, reuseStats: () => REUSE.stats(), validate, payloadOf, readDataset, classify, provenanceFor, workerSource,
+      /* (atlas-completion-verdict) a read through the capability bridge, in the registry's one shape (js/gis-datasets.js readRecord) — null when it states none */
+      readRecord: (id, ok, why) => { const reg = registry(); return reg && typeof reg.readRecord === 'function' ? reg.readRecord(id, 'compute.run', ok, why) : null; },
       runtime: () => ({ name: RUNTIME.name, version: RUNTIME.version, base: RUNTIME.base, files: Object.assign({}, RUNTIME.files) }),
       limits: () => Object.assign({}, LIMITS),
       reasons: () => ({ refusals: REFUSALS.slice(), failures: FAILURES.slice(), unobserved: UNOBSERVED.slice() }),

@@ -156,8 +156,12 @@ test('④ the restyled line is a match; another id beside it, a blue line, a thi
 });
 test('④ the question in the key states the objects, and the key validates', () => {
   const q = JSON.parse(readFileSync(new URL('../scripts/atlas-eval/questions.json', import.meta.url), 'utf8')).questions.find((x) => x.id === 'restyle-drawn-line-across-turns');
-  assert.equal(q.mapState.objects[0].count.max, 1);
+  /* (atlas-completion-verdict) a conversation: turn 1 draws two lines (its own `objects` count), turn 2's change is graded
+     against that map — tests/atlas-completion-verdict-eval-checks.test.mjs holds the restyle itself */
+  assert.equal(q.earlier[0].mapState.objects[0].count.max, 2);
+  assert.equal(q.mapState.restyle.kind, 'line');
   assert.deepEqual(validateMapState(q.mapState, V, q.id), []);
+  assert.deepEqual(validateMapState(q.earlier[0].mapState, V, q.id), []);
   assert.deepEqual(parseColour('#f00'), [255, 0, 0]);
   assert.ok(validateMapState({ objects: [{ kind: 'unicorn', count: { min: 1 }, why: 'x' }] }, V, 'q').length, 'a kind the product never draws is refused');
 });
@@ -179,9 +183,11 @@ test('⑤ a tabs call that failed is not «the reply drew tabs»; the same call 
 /* ⑥ */
 test('⑥ the held-data line lists what predates the turn and no result names; a dataset the turn used is left out; an unreadable registry says nothing', () => {
   const ds = [{ id: 'dem_1', title: 'Elevation', kind: 'raster', createdAt: 100 }, { id: 'lc_2', title: 'Land cover', count: 40, fields: [{ name: 'cls' }], createdAt: 150 }, { id: 'new_3', title: 'Made now', createdAt: 900 }];
-  const partly = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [{ capability: 'data.gis', args: { inputs: ['lc_2'] } }] });
-  assert.match(partly[0], /dem_1/);
-  assert.ok(!/lc_2/.test(partly[0]), 'a dataset the turn named is left out');
+  /* (atlas-completion-verdict) «used» is the operation's own record (`datasetsRead`), not the id appearing in its text — tests/atlas-completion-verdict-held-checks.test.mjs */
+  const partly = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [{ capability: 'data.gis', details: { datasetsRead: [{ id: 'lc_2', op: 'filter', ok: true }] } }] });
+  const left = partly.find((l) => /no operation of this turn took/.test(l));
+  assert.match(left, /dem_1/);
+  assert.ok(!/lc_2/.test(left), 'a dataset the turn read is left out');
   const lines = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [] });
   assert.equal(lines.length, 1);
   assert.match(lines[0], /Elevation \[dem_1\]/);
@@ -189,7 +195,8 @@ test('⑥ the held-data line lists what predates the turn and no result names; a
   assert.ok(!/Made now/.test(lines[0]));
   assert.deepEqual(makeHeldObserver(500, {})({ results: [] }), []);
   assert.deepEqual(makeHeldObserver(500, { IntMapData: { list: () => { throw new Error('x'); } } })({ results: [] }), []);
-  assert.deepEqual(makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [{ args: 'dem_1 lc_2' }] }), []);
+  const both = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [{ datasetsRead: [{ id: 'dem_1', op: 'zonal', ok: true }, { id: 'lc_2', op: 'zonal', ok: true }] }] });
+  assert.ok(!both.some((l) => /no operation of this turn took/.test(l)), 'every held dataset read: none is listed as untouched');
 });
 test('⑥ the verifier is told what the line is and when it matters, and the console hands it over', () => {
   assert.match(readFileSync(new URL('../js/atlas-goal-verify.js', import.meta.url), 'utf8'), /DATA THE MAP ALREADY HELD/);

@@ -256,6 +256,9 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 （同じ門）。差し戻しは回数でなく進展で止まる——前回の差し戻しから道具が走ったか、矛盾の種類か返答の文が変わった間は返し、同じ返答が同じ矛盾で戻ったら受け入れて `produced` を記録する。`changedMap` はこの集合の地図要素の旧称。
 **受け入れても完了とは呼ばない。** 宣言した出力が `produced` に無いまま終わったターンは `stopped:'output_unmet'`（`'answered'` ではない）。返り値は `completion`
 （`complete`／`partial`／`none`）と `unmet`（`{kind:'output',mode,code}` と、このターンの計画のうち観測状態が completed・noop 以外のステップ `{kind:'step',n,title,state}`）を持ち、
+独立した検証役（`js/atlas-goal-verify.js`・task `atlas_verify`）の所見は、記録が**欠けていると示す**もの（`seen:"missing"`）だけが未達で、記録からは
+**確かめられない**もの（`"unconfirmed"`）は `trace.goalUnconfirmed` に残るだけで差し戻しも未達表示もしない。所見は id（`g1`…）を持ち、言い換えても前回と同じ所見なら
+（`prev` か同じ語）Atlas へは 1 回だけ返す。差し戻さなかった読みはその時点の記録についての所見としてターンの終わりに残る。
 コンソールは回答の下に「このターンで完了していないもの」を出し、会話履歴には元の要求と未達項目を返信の抜粋とは別の行で残す。`[did: …]` に入るのは実行器の観測（`__exec` を
 `opState` で読む）が completed の操作だけ。プロバイダの途中停止（`meta.status:'incomplete'`）は `trace.incomplete`・`outputIncomplete` に、最後の回答生成の失敗は
 `trace.finalError` に、通信失敗の原因は `trace.transportErrorInfo`（code・status・retryable）に残る。最終回答が書かれたあとは、調査ツールの途中の回答と失敗した操作の

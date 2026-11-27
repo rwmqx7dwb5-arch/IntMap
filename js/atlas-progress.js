@@ -658,6 +658,16 @@ export function makeAtlasProgress(HOST, deps) {
   function sayText(rec, text) {
     try { const d = rec && rec.row && rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || ''); } catch (_) { }
   }
+  /* unsay(bubble, rec) — (atlas-completion-verdict) the row of a reply that was a CANDIDATE for the answer, taken out when the turn accepted it:
+     the same words are now the answer itself (js/atlas-live.js end), and the trace keeps only what was said on the way. A candidate the turn
+     handed back is not taken out — it stays where it was written, as a note. */
+  function unsay(bubble, rec) {
+    const tr = traces.get(bubble); if (!tr || !rec) return;
+    try { if (rec.row && rec.row.parentNode) rec.row.parentNode.removeChild(rec.row); } catch (_) { }
+    const i = tr.rows.indexOf(rec); if (i >= 0) tr.rows.splice(i, 1);
+    if (tr.live === rec) tr.live = null;
+    paintHead(tr);
+  }
 
   /* devNote(bubble, text) — what only a developer needs about this turn (what it cost, which model, a step's raw failure). It goes to the console
      always and, in the developer view, into the trace's own expanded area: the reader's default screen carries none of it, whoever is signed in. */
@@ -708,7 +718,7 @@ export function makeAtlasProgress(HOST, deps) {
     return m;
   }
 
-  return { open, step, phase, plan, watch, done, live, devNote, stageHtml, setStage, setLive, wordFor, knownWordFor, detailFor, detail, say, sayText,
+  return { open, step, phase, plan, watch, done, live, devNote, stageHtml, setStage, setLive, wordFor, knownWordFor, detailFor, detail, say, sayText, unsay,
     outcome, traceEl, liveWord, markEl, endWord: (how) => (ENDWORD[how] ? ENDWORD[how]() : ''),
     /* ⚠ (#R744) phaseWord() EXISTS BECAUSE A CHECK NEEDS THE WORD, NOT THE MARKUP. #R723 ② asked
        「does any capability announce itself as thinking?」 by testing stageHtml('think') for the

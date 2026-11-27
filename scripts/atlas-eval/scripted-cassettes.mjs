@@ -54,6 +54,17 @@ const failed = (html, code) => ({ ok: false, html, meta: { status: 'failed', cod
 const frame = (west, south, east, north) => ({ viewport: { west, south, east, north } });
 /* js/atlas-console.js `_atlasOverlayState` as it starts: every drawing null, no country highlighted */
 const ATLAS_EMPTY = { highlightCountries: 0, highlight: null, choropleth: null, customScore: null, pins: null, polygons: null, lines: null, measure: null, radius: null, userPins: null, tool: '' };
+/* (atlas-completion-verdict) a line as the `objects` section states it, WITH its course (`shape`: vertex count, first / last
+   vertex, bbox, a key over every vertex — the field a `restyle` criterion compares). The look defaults are what js/map-tools.js
+   collect() reports for a line Atlas drew (colour #2f9bff, width 3, opacity 0.92); the coordinates are the scripted world's. */
+const fnvKey = (t) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); };
+const shapeOfCoords = (pts) => ({ n: pts.length, first: pts[0], last: pts[pts.length - 1],
+  bbox: [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))],
+  key: fnvKey(pts.map((p) => p.join(',')).join(';')) });
+const lineObject = (id, name, pts, look = {}) => ({ id, kind: 'line', name, color: '#2f9bff', width: 3, opacity: 0.92, geom: 'line', shape: shapeOfCoords(pts), editable: ['color', 'width', 'opacity', 'name'], ...look });
+const LONDON = [-0.1278, 51.5074], PARIS = [2.3522, 48.8566], BERLIN = [13.405, 52.52], ROME = [12.4964, 41.9028];
+const earlierOf = (set, id) => ((set === 'answers' ? key : records).questions.find((x) => x.id === id).earlier || []).map((e) => ({ text: e.text }));
+const drewLine = (id, label) => ({ ok: true, html: '<div>' + label + '</div>', objectIds: [id], meta: { status: 'completed', produced: ['map', 'object'], objectIds: [id] } });
 const objects = (...kinds) => ({ objects: { n: kinds.length, items: kinds.map((k, i) => ({ id: k + '-' + i, kind: k, name: '' })) } });
 
 /* ── (atlas-delegation-eval) research.delegate, as its result reaches the model ──────────────────────────────────
@@ -248,17 +259,23 @@ export const SCENARIOS = [
   {
     id: 'drawn-line-restyled-by-id-across-turns',
     ...textOf('records', 'restyle-drawn-line-across-turns'),
-    origin: { kind: 'scripted', from: 'atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map.' },
+    origin: { kind: 'scripted', from: 'atlas-objects-unify — the reported case: a line Atlas drew could not be recoloured (the capability had list/remove/focus/rename, drawLine returned no object id, and the observer saw only id lists). The line now comes back with its id, and the later step edits THAT object through map.object set; the observer reads the look back from the map. (atlas-completion-verdict) Asked as the conversation it was: turn 1 draws London–Paris and an unrelated Berlin–Rome, turn 2 restyles the first by its id; the restyle is graded against the map turn 1 left.' },
+    earlier: earlierOf('records', 'restyle-drawn-line-across-turns').map((e) => Object.assign(e, {
+      model: [
+        step(run('map.drawLine', { places: ['London', 'Paris'], label: 'London-Paris' })),
+        step(run('map.drawLine', { places: ['Berlin', 'Rome'], label: 'Berlin-Rome' })),
+        say('ロンドンからパリまでと、ベルリンからローマまでの線を2本引きました（line_1・line_2）。'),
+      ],
+      respond: (a) => (a && a.label === 'Berlin-Rome' ? drewLine('line_2', 'Berlin-Rome') : drewLine('line_1', 'London-Paris')),
+      snapshot: { objects: { n: 2, items: [lineObject('line_1', 'London-Paris', [LONDON, PARIS]), lineObject('line_2', 'Berlin-Rome', [BERLIN, ROME])] } },
+    })),
     model: [
-      step(run('map.drawLine', { places: ['London', 'Paris'], label: 'London-Paris' })),
       step(run('map.object', { op: 'set', id: 'line_1', color: 'red', width: 5, opacity: 0.6 })),
-      say('ロンドンからパリまで線を引き、その線（line_1）を赤・太さ5・不透明度60%に変えました。'),
+      say('ロンドンからパリの線（line_1）を赤・太さ5・不透明度60%に変えました。'),
     ],
-    respond: (a) => (a && a.op === 'set'
-      ? { ok: true, html: '<div>✓ set · line_1 · color=#ff0000, width=5, opacity=0.6</div>', objectIds: ['line_1'], meta: { status: 'completed', produced: ['object'], objectIds: ['line_1'] } }
-      : { ok: true, html: '<div>London-Paris</div>', objectIds: ['line_1'], meta: { status: 'completed', produced: ['map', 'object'], objectIds: ['line_1'] } }),
-    snapshot: { objects: { n: 1, items: [{ id: 'line_1', kind: 'line', name: 'London-Paris', color: '#ff0000', width: 5, opacity: 0.6, geom: 'line', editable: ['color', 'width', 'opacity', 'name'] }] } },
-    expect: { verdict: 'pass', dispatched: 2, map: 'match' },
+    respond: () => ({ ok: true, html: '<div>✓ set · line_1 · color=#ff0000, width=5, opacity=0.6</div>', objectIds: ['line_1'], meta: { status: 'completed', produced: ['object'], objectIds: ['line_1'] } }),
+    snapshot: { objects: { n: 2, items: [lineObject('line_1', 'London-Paris', [LONDON, PARIS], { color: '#ff0000', width: 5, opacity: 0.6 }), lineObject('line_2', 'Berlin-Rome', [BERLIN, ROME])] } },
+    expect: { verdict: 'pass', dispatched: 3, map: 'match' },
   },
   {
     id: 'river-traced-on-its-course',

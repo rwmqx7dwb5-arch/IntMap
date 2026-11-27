@@ -226,7 +226,7 @@ export function makeAtlasControls(HOST, CTX) {
         { const r=el.getAttribute('role'); if(r&&!WIDGET_ROLE.test(r)&&!el.matches('button,input,select,textarea,summary,a[href]')) return; }
         if(el.type==='hidden') return;
         total++; if(el.matches(_CTL_SEL)||(el.closest&&el.closest(_CTL_SEL))) return;
-        out.push({ tag:el.tagName.toLowerCase(), id:el.id||'', cls:String(el.className&&el.className.baseVal!=null?el.className.baseVal:el.className||'').split(/s+/)[0]||'', role:el.getAttribute('role')||'', why:why, text:(el.textContent||el.getAttribute('aria-label')||'').replace(/s+/g,' ').trim().slice(0,30) }); };
+        out.push({ tag:el.tagName.toLowerCase(), id:el.id||'', cls:String(el.className&&el.className.baseVal!=null?el.className.baseVal:el.className||'').split(/\s+/)[0]||'', role:el.getAttribute('role')||'', why:why, text:(el.textContent||el.getAttribute('aria-label')||'').replace(/\s+/g,' ').trim().slice(0,30) }); };
       [].slice.call(document.querySelectorAll(WIDGET)).forEach(el=>consider(el,'semantic'));
       [].slice.call(document.querySelectorAll('body *')).forEach(el=>{ if(seen.has(el)) return; try{ if(getComputedStyle(el).cursor==='pointer'&&!el.closest('a[href],button,[role],[onclick],summary,label,select')) consider(el,'cursor'); }catch(_){} });
       return { total:total, unreached:out.length, list:out }; }

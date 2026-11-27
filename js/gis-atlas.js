@@ -976,7 +976,26 @@ export function makeGisAtlas(core) {
       return { ok: true, semantics: descs, inputs: ids, dataset: datasetRow(data.get(ids[0])), html: '<div class="atlas-gis-result">' + describeHtml(descs) + '</div>' };
     }
 
+    /* ══ (atlas-completion-verdict) EVERY ANSWER OF THIS DOOR STATES WHAT IT READ ══════════════════════
+       `datasetsRead` is js/gis-ops.js run()'s record when an op ran (it is the one place every op opens its
+       inputs). When no op ran, nothing was opened: a success that only resolved, described or checked its
+       inputs (`semantics`, an acquisition) read none of them — `[]` — and a refusal is the inputs it had
+       resolved, each `ok:false` with the refusal's code. The ids are the cache's own (every resolveRef
+       success files its id there), so no second resolution rule is written here. `opens` is the caller saying that its success DID open the contents (a draw paints
+       the features, an export serialises them). A registry that does not
+       state the shape (readRecord) leaves the field ABSENT: «not observed», never «read nothing». */
+    function withReads(out, cache, op, opens) {
+      if (!out || typeof out !== 'object' || Array.isArray(out.datasetsRead)) return out;
+      if (!data || typeof data.readRecord !== 'function') return out;
+      const ids = Array.from(new Set(cache.values()));
+      out.datasetsRead = (out.ok && !opens) ? [] : ids.map((id) => data.readRecord(id, op, !!out.ok, out.ok ? null : out.why));
+      return out;
+    }
     async function run(action) {
+      const a = action || {}, cache = makeCache();
+      return withReads(await runAction(a, cache), cache, (a.op == null) ? '' : String(a.op));
+    }
+    async function runAction(action, cache) {
       const a = action || {};
       const op = (a.op == null) ? '' : String(a.op);
       /* ⚠⚠ (#R759) 取得だけを頼めるようになった。A step with inputs and NO op is an acquisition, and
@@ -989,7 +1008,7 @@ export function makeGisAtlas(core) {
          selects. js/atlas-console.js therefore needed no new line, and js/atlas-capabilities.js no new
          row — a row per shape is the hand-written list this file exists not to grow. */
       if (op === '' && a.semantics === true) {
-        const cacheS = makeCache(), idsS = [];
+        const cacheS = cache, idsS = [];
         for (const g of (Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]))) { const r = await resolveRef(g, idsS.length, {}, cacheS, a); if (!r.ok) return r; idsS.push(r.id); }
         if (!idsS.length) return fail('input-count', { op: '', needs: 1, got: 0 });
         return semanticDescribe(idsS);
@@ -1003,7 +1022,6 @@ export function makeGisAtlas(core) {
       const given = Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]);
       if (given.length !== want) return fail('input-count', { op: op, needs: want, got: given.length, declaration: decl });
 
-      const cache = makeCache();
       const ids = [];
       for (let i = 0; i < given.length; i++) {
         const r = await resolveRef(given[i], i, decl, cache, a);
@@ -1029,11 +1047,11 @@ export function makeGisAtlas(core) {
          corrected call instead of a search. */
       if (!res.ok) {
         const d = Object.assign({}, res.detail || {}, { declaration: decl });
-        return { ok: false, why: res.why, detail: d, declaration: decl, html: refusalHtml(res.why, d) };
+        return { ok: false, why: res.why, detail: d, declaration: decl, html: refusalHtml(res.why, d), datasetsRead: res.datasetsRead };
       }
 
       const row = datasetRow(res.dataset);
-      const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null };
+      const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null, datasetsRead: res.datasetsRead };
       if (semWarn.length) out.semantic = { warnings: semWarn, caution: sem.caution };
       /* (#R759) 何をどこから取ったか、そしてまだ続きがあるか。See fromLayer. */
       if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.slice();
@@ -1059,8 +1077,9 @@ export function makeGisAtlas(core) {
     async function draw(action) {
       const a = action || {};
       const cache = makeCache();
+      const said = (out) => withReads(out, cache, 'draw', true);   /* (atlas-completion-verdict) see withReads */
       const r = await resolveRef(a.dataset, 0, {}, cache, a);
-      if (!r.ok) return r;
+      if (!r.ok) return said(r);
       const ds = data.get(r.id);
       /* ⚠ (#R752) THIS CALL USED TO BE `core.draw(r.id)` — NO SECOND ARGUMENT AT ALL. js/gis-core.js
          drawRaster() reads `band` and `spec` and the comment directly above it says 「AND THE BAND IS
@@ -1073,13 +1092,13 @@ export function makeGisAtlas(core) {
          schema declares that this reader drops is silently ignored — [[intmap-two-readers-one-field-list]]
          measured both halves of that in production. tests/atlas-gis-checks.test.mjs (#R752) measures the pair. */
       const d = core.draw(r.id, { band: a.band, spec: a.spec || null });
-      if (!d.ok) return fail(d.why, Object.assign({ id: r.id }, d.detail || {}));
-      return {
+      if (!d.ok) return said(fail(d.why, Object.assign({ id: r.id }, d.detail || {})));
+      return said({
         ok: true, drawn: true, dataset: datasetRow(ds), sid: d.sid || null,
         band: (d.band == null) ? null : d.band,
         html: '<div class="atlas-gis-result">' + esc(L('Drawn on the map', '地図に描きました')) + ': '
           + esc(ds.title) + ' · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>',
-      };
+      });
     }
 
     /* ── taking a dataset out of the app as a file ───────────────────────────────────────────── */
@@ -1095,8 +1114,11 @@ export function makeGisAtlas(core) {
        what the file did NOT keep comes first, because a line that opens with 「書き出しました」 and
        mentions the lost rows at the end is read as a success. */
     async function exportDataset(action) {
-      const a = action || {};
       const cache = makeCache();
+      return withReads(await exportWith(action, cache), cache, 'export', true);
+    }
+    async function exportWith(action, cache) {
+      const a = action || {};
       const r = await resolveRef(a.dataset, 0, {}, cache, a);
       if (!r.ok) return r;
       let X = null;
