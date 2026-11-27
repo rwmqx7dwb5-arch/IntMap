@@ -241,20 +241,67 @@ async function runCapabilityTask(ctx, task, inputs) {
    bounded in time, so a loop that is past the slice's budget at a round boundary writes its state (atlas_job_task_progress) and
    hands the task back; the next slice resumes at the next round. Nothing a tool returns is an instruction (CONSTITUTION: external input is data). */
 const TOOL_CALLS_PER_ROUND = 4;   /* observation 2026-11-20: a tool-using round asks for the few reads it can make independently — 4 is above the handful Atlas's own turns make at once (docs/architecture/05-ai.md). Expires if a worker legitimately needs a wider fan-out: raise it. Canonical: here. */
-const ENTRY_CHARS = 6000;          /* one tool answer as the model reads it back. Observation: the twins' answers are a few hundred characters to a few KB (a depth-3 world subgraph is the largest); beyond this the rest is truncated and says so. */
-const TRANSCRIPT_CHARS = 24000;    /* what of the earlier answers goes into the next request (newest first; older ones shrink to one line). Estimate: ~6k tokens, well under the request's input limit. */
+const ENTRY_CHARS = 6000;          /* the existing per-answer preview and read_step page size */
+const TRANSCRIPT_CHARS = 24000;    /* body budget (newest first); up to four full read_step pages fit with their headings outside it */
 const clip = (v, n) => { const t = typeof v === "string" ? v : JSON.stringify(v === undefined ? null : v); return t.length > n ? t.slice(0, n) + "…[truncated]" : t; };
-/* read_step — the name js/atlas-job-core.js inputView tells a worker to call; one call returns at most what one tool answer is read back as (ENTRY_CHARS) */
 const READ_STEP = "read_step";
-const READ_STEP_CHARS = ENTRY_CHARS;
-function readStep(wholes, args) {
+const toolRef = (n) => "tool:" + n;
+const toolBody = (out) => String((out && out.text) || "") + (out && out.data !== undefined ? "\nDATA: " + (typeof out.data === "string" ? out.data : JSON.stringify(out.data)) : "");
+/* An artifact is JSON-encoded again to preserve even a UTF-16 boundary inside a surrogate pair or a NUL in tool text.
+   At most seven RPC payload bytes per code unit (an escaped lone surrogate plus its escaped backslash).
+   Dividing the existing artifact budget by eight also leaves room for the enclosing object and RPC fields. */
+const TOOL_PART_CHARS = Math.floor(INLINE_OUTPUT_BYTES / 8);
+
+async function storeToolBody(ctx, task, body, first) {
+  const preview = JSON.stringify(body.slice(0, ENTRY_CHARS));
+  const chars = body.length;
+  if (chars <= ENTRY_CHARS) return { preview, chars };
+  const parts = Math.ceil((chars - ENTRY_CHARS) / TOOL_PART_CHARS);
+  const version = digestOf(body);
+  /* Worker and capability tasks use the same artifact table, but a task has only one kind. Revisions that
+     replace the task clear both progress and artifacts. Write parts before checkpointing the ref. */
+  for (let i = 0; i < parts; i++) {
+    const start = ENTRY_CHARS + i * TOOL_PART_CHARS;
+    const text = JSON.stringify(body.slice(start, start + TOOL_PART_CHARS));
+    const ok = await rpc(ctx.db, "atlas_job_artifact_put", { p_job: ctx.job.id, p_holder: ctx.holder, p_task: task.task_id, p_part: first + i, p_body: { version, text } });
+    if (ok !== true) return null;
+  }
+  return { preview, chars, first, parts, partChars: TOOL_PART_CHARS, version };
+}
+
+async function readToolBody(ctx, task, entry, off, end) {
+  const preview = JSON.parse(entry.preview);
+  if (end <= preview.length || off === end) return preview.slice(off, end);
+  const { partChars } = entry;
+  const first = Math.floor(Math.max(0, off - preview.length) / partChars);
+  const last = Math.floor((end - 1 - preview.length) / partChars);
+  const pieces = await Promise.all(Array.from({ length: last - first + 1 }, async (_, i) => {
+    const index = first + i;
+    const q = await ctx.db.from(ARTIFACTS).select("body").eq("job_id", ctx.job.id).eq("task_id", task.task_id).eq("part", entry.first + index).maybeSingle();
+    if (q.error) throw new Error("tool_artifact_read");
+    const stored = q.data && q.data.body;
+    const encoded = stored && stored.version === entry.version && stored.text;
+    const part = typeof encoded === "string" ? JSON.parse(encoded) : null;
+    const start = preview.length + index * partChars;
+    if (typeof part !== "string" || part.length !== Math.min(partChars, entry.chars - start)) return null;
+    return part.slice(Math.max(0, off - start), end - start);
+  }));
+  return pieces.includes(null) ? null : preview.slice(off) + pieces.join("");
+}
+
+/* input:<task> and tool:<n> use the same offsets into the exact text the worker was shown. */
+async function readStep(wholes, args, ctx, task) {
   const a = args || {};
-  const whole = wholes.get(String(a.ref || ""));
-  if (whole == null) return { ok: false, code: "unknown_ref", text: 'No input "' + s(a.ref, 80) + '" to read; the refs are: ' + Array.from(wholes.keys()).join(", ") };
-  const off = Math.max(0, Math.floor(Number(a.offset) || 0));
-  const len = Math.max(1, Math.min(READ_STEP_CHARS, Math.floor(Number(a.length) || READ_STEP_CHARS)));
-  const part = whole.slice(off, off + len);
-  return { ok: true, text: "characters " + off + "-" + (off + part.length) + " of " + whole.length + (off + part.length >= whole.length ? " (the end)" : ""), data: part };
+  const ref = String(a.ref || "");
+  const whole = wholes.get(ref);
+  if (whole == null) return { ok: false, code: "unknown_ref", text: 'No saved input or tool answer "' + s(ref, 80) + '". Use a ref from the manifest or tool answers above.' };
+  const input = typeof whole === "string";
+  const total = input ? whole.length : whole.chars;
+  const off = Math.min(total, Math.max(0, Math.floor(Number(a.offset) || 0)));
+  const end = Math.min(total, off + Math.max(1, Math.min(ENTRY_CHARS, Math.floor(Number(a.length) || ENTRY_CHARS))));
+  const part = input ? whole.slice(off, end) : await readToolBody(ctx, task, whole, off, end);
+  if (part == null) return { ok: false, code: "tool_result_unavailable", text: 'The saved range for "' + ref + '" could not be read whole.' };
+  return { ok: true, range: { ref, off, total }, data: part };
 }
 
 function toolsSection(catalogue, mustAnswer) {
@@ -265,18 +312,46 @@ function toolsSection(catalogue, mustAnswer) {
     : "\n\nTO CALL THEM, return ONLY {\"calls\":[{\"capability\":ID,\"args\":{…}}]} (up to " + TOOL_CALLS_PER_ROUND + " at once) INSTEAD of the final answer; you will be given each answer and asked again. When you have what you need, return the final JSON object described above. A call you already made is answered below — do not repeat it.";
   return p;
 }
-function transcriptText(entries) {
+const rangeText = (off, end, total) => "characters " + off + "-" + end + " of " + total;
+const readNotice = (ref, off) => ' — read with {"capability":"read_step","args":' + JSON.stringify({ ref, offset: off, length: ENTRY_CHARS }) + '}';
+
+function restoreEntry(entry) {
+  if (entry.preview !== undefined) return entry;
+  const { text, data, ...rest } = entry;
+  const body = toolBody({ text, data: data || undefined });
+  /* v1 previously kept only these prefixes. A 600-character text may already have been cut
+     without a marker, so it is only evidence of the prefix, even if it might be the whole. */
+  const lengthUnknown = text?.length === 600 || data?.endsWith("…[truncated]");
+  return { ...rest, preview: JSON.stringify(body), chars: lengthUnknown ? null : body.length };
+}
+
+function transcriptText(entries, focus) {
   if (!entries.length) return "";
-  let used = 0;
-  const lines = [];
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const e = entries[i];
-    const head = "[" + e.n + "] " + e.capability + " " + clip(e.args, 400) + " → " + (e.ok ? "ok" : "FAILED " + (e.code || ""));
-    const full = head + ": " + (e.text || "") + (e.data ? "\nDATA: " + e.data : "");
-    const line = used + full.length <= TRANSCRIPT_CHARS ? full : head;
-    used += line.length;
-    lines.unshift(line);
+  let left = TRANSCRIPT_CHARS;
+  const recent = entries.slice().reverse();
+  const wanted = new Set(focus);
+  /* A repeated read reuses the saved page. Give this round's requested pages space before
+     older answers, even when the worker asked for the same range again. */
+  const previews = new Map();
+  for (const e of recent.filter((x) => wanted.has(x.n)).concat(recent.filter((x) => !wanted.has(x.n)))) {
+    const body = JSON.parse(e.preview);
+    const shown = body.slice(0, left);
+    left -= shown.length;
+    previews.set(e.n, { shown, shortened: shown.length < body.length });
   }
+  const lines = entries.map(e => {
+    const head = "[" + e.n + "] " + e.capability + " " + clip(e.args, 400) + " → " + (e.ok ? "ok" : "FAILED " + (e.code || ""));
+    const { shown, shortened } = previews.get(e.n);
+    if (e.range) {
+      const { ref, off, total } = e.range;
+      const end = off + shown.length;
+      return head + ": " + rangeText(off, end, total) + (end === total ? " (the end)" : "") +
+        (shortened ? readNotice(ref, end) : "") + (shown ? "\nDATA: " + shown : "");
+    }
+    const body = shown ? ": " + shown : "";
+    if (e.chars > shown.length) return head + body + "\n[" + rangeText(0, shown.length, e.chars) + " shown" + readNotice(toolRef(e.n), shown.length) + "]";
+    return head + body + (e.chars === null ? "\n[This answer may have been shortened in an earlier checkpoint. Its full length and remaining text are unavailable.]" : "");
+  });
   return "\n\nTOOL ANSWERS SO FAR (in the order they were asked):\n" + lines.join("\n");
 }
 
@@ -286,22 +361,27 @@ async function runToolWorker(ctx, task, inputs) {
   const granted = new Set(contract.tools || []);
   const lane = ctx.capabilities;
   const catalogue = lane && typeof lane.catalogue === "function" ? lane.catalogue().filter((c) => granted.has(c.id)) : [];
-  /* (gis-result-handoff) AN INPUT TOO LONG TO SHOW IS READ, NOT LOST: the whole of each cut input is kept here under its ref and `read_step` returns
-     any range of it — the same call the page's delegation answers (js/atlas-delegate.js), so the worker is told one way to read on both */
   const wholes = new Map();
   (inputs || []).forEach((i) => { const v = inputView(i, { read: true }); if (v.whole) wholes.set(v.ref, v.whole); });
-  if (wholes.size) catalogue.push({ id: READ_STEP, args: '{"ref":"input:<task>","offset":N,"length"?:L} — characters offset..offset+L of an input that was shown to you cut (at most ' + READ_STEP_CHARS + ' per call; the MANIFEST says how many there are)' });
+  const readInput = wholes.size > 0;
+  const readTool = { id: READ_STEP, args: '{"ref":REF,"offset":N,"length"?:L} — read a range of an input or tool answer using its stated ref (up to ' + ENTRY_CHARS + ' characters per call)' };
   const P = task.progress && task.progress.v === 1 ? task.progress : {};
-  const st = { calls: Number(P.calls) || 0, cost: Number(P.cost) || 0, entries: Array.isArray(P.entries) ? P.entries : [], web: P.web !== false, note: String(P.note || ""), dup: Number(P.dup) || 0, shapeFails: Number(P.shapeFails) || 0 };
+  const st = { calls: Number(P.calls) || 0, cost: Number(P.cost) || 0, entries: Array.isArray(P.entries) ? P.entries.map(restoreEntry) : [], web: P.web !== false, note: String(P.note || ""), dup: Number(P.dup) || 0, shapeFails: Number(P.shapeFails) || 0, focus: Array.isArray(P.focus) ? P.focus : [] };
+  let nextPart = 0;
+  const register = (entry) => {
+    if (entry.chars > 0) wholes.set(toolRef(entry.n), entry);
+    if (entry.parts) nextPart = entry.first + entry.parts;
+  };
+  st.entries.forEach(register);
   const sources = Array.isArray(P.sources) ? P.sources : [];
   const addSource = (c) => { if (c && c.url && !sources.some((x) => x.url === c.url)) sources.push({ url: s(c.url, 500), title: s(c.title, 200) }); };
-  const save = (y) => rpc(db, "atlas_job_task_progress", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_progress: { v: 1, calls: st.calls, cost: st.cost, entries: st.entries, web: st.web, note: st.note, dup: st.dup, shapeFails: st.shapeFails, sources }, p_yield: y });
+  const save = (y) => rpc(db, "atlas_job_task_progress", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_progress: { v: 1, ...st, sources }, p_yield: y });
   let seen = Number(ctx.requestVersion) || 0;   /* the request version the answer was written under: the amendments of the last round's checkpoint */
   const finish = async (status, code, result) => {
     await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: stamped(ctx, result, seen, inputs), p_cost: st.cost, p_calls: st.calls });
     return { state: status };
   };
-  if (!catalogue.length) return finish("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ["None of this worker's tools has a server twin, so it cannot run them."], sources });
+  if (!catalogue.length && !wholes.size) return finish("refused", "capability_unsupported_on_server", { summary: "", findings: [], gaps: ["None of this worker's tools has a server twin, so it cannot run them."], sources });
   const taskView = { id: task.task_id, goal: contract.goal, returns: contract.returns, inputs };
   const shown = await loadImages(ctx, task);
   let retried = false;
@@ -312,7 +392,7 @@ async function runToolWorker(ctx, task, inputs) {
     if (cp.action !== "go") return finish("cancelled", cp.action, null);
     const mustAnswer = st.dup >= 2;
     seen = Array.isArray(cp.amends) ? cp.amends.length : 0;
-    const prompt = workerPrompt(taskView, Array.isArray(cp.amends) ? cp.amends : [], { read: wholes.size > 0 }) + toolsSection(catalogue, mustAnswer) + transcriptText(st.entries) + st.note + shown.note;
+    const prompt = workerPrompt(taskView, Array.isArray(cp.amends) ? cp.amends : [], { read: readInput }) + toolsSection(wholes.size ? catalogue.concat(readTool) : catalogue, mustAnswer) + transcriptText(st.entries, st.focus) + st.note + shown.note;
     const est = money.estimate(ctx.system.length + prompt.length, st.web, contract.maxOutput, shown.urls.length);
     if ((await rpc(db, "atlas_job_reserve", { p_job: job.id, p_holder: holder, p_micros: est })) !== true) {
       return finish("refused", "cost_cap", { summary: "", findings: [], gaps: ["The job's cost cap was reached before this piece could finish."], sources, toolCalls: st.entries.length });
@@ -357,7 +437,7 @@ async function runToolWorker(ctx, task, inputs) {
         /* (atlas-child-loop-reuse) the LATEST answer to this call, and only while its reason still holds (atlas-job-core.js priorStands): a failure of
            the moment (the twin threw, or said so) is retried; a success and the capability's own answer are not run again */
         const prior = st.entries.filter((e) => e.key === key).pop();
-        if (prior && priorStands(prior, granted.has(id) && !!lane.has(id))) { repeated.push(prior.n); continue; }   /* answered already: the same answer is below, it is not run a second time */
+        if (prior && priorStands(prior, id === READ_STEP ? wholes.has(String(args.ref || "")) : (granted.has(id) && !!lane && lane.has(id)))) { repeated.push(prior.n); continue; }   /* answered already: the same answer is below, it is not run a second time */
         if (seenKey.has(key)) { repeated.push(seenKey.get(key)); continue; }   /* the same call twice in ONE round: run once */
         const n = st.entries.length + planned.length + 1;
         seenKey.set(key, n);
@@ -365,7 +445,7 @@ async function runToolWorker(ctx, task, inputs) {
       }
       let exclusiveTail = Promise.resolve();
       const runPlanned = (p) => {
-        if (p.id === READ_STEP && wholes.size) return Promise.resolve(readStep(wholes, p.args));
+        if (p.id === READ_STEP && wholes.size) return readStep(wholes, p.args, ctx, task);
         if (!granted.has(p.id) || !lane || !lane.has(p.id)) return Promise.resolve({ ok: false, code: "not_granted", text: '"' + p.id + '" is not one of your tools.' });
         const run = () => lane.run(p.id, p.args, { signal: ctx.signal });
         const excl = typeof lane.exclusive === "function" ? lane.exclusive(p.id) !== false : true;
@@ -381,15 +461,23 @@ async function runToolWorker(ctx, task, inputs) {
         (out && Array.isArray(out.sources) ? out.sources : []).forEach(addSource);
         const failed = !(out && out.ok === true);
         const why = !failed ? "" : (out && out.code === "twin_threw") ? "transient" : (out && out.code === "not_granted") ? "grant" : failureWhy(Object.assign({}, out, { ok: false }));
-        st.entries.push({ n, key, capability: id, args, ok: !failed, why, code: s(out && out.code, 60), text: s(out && out.text, 600), data: out && out.data !== undefined ? clip(out.data, ENTRY_CHARS) : "" });
+        /* A read_step page keeps its original range rather than creating a second ref for the same data. */
+        const stored = id === READ_STEP
+          ? { preview: JSON.stringify(out && out.range ? out.data : toolBody(out)), range: out && out.range }
+          : await storeToolBody(ctx, task, toolBody(out), nextPart);
+        if (!stored) return { state: "lost", lost: true };
+        const entry = { n, key, capability: id, args, ok: !failed, why, code: s(out && out.code, 60), ...stored };
+        st.entries.push(entry);
+        register(entry);
         await event(db, job, "task.tool_call", { task: task.task_id, capability: id, ok: !!(out && out.ok === true), code: s(out && out.code, 60) });
         fresh += 1;
       }
       st.dup = fresh ? 0 : st.dup + 1;
+      st.focus = repeated.concat(planned.map((p) => p.n));
       st.note = repeated.length ? "\n\nYOU REPEATED A CALL: answer [" + repeated.join("], [") + "] above already has it. Use the answers; call something new or return the final JSON object." : "";
       /* past the slice's budget at a round boundary: write the loop's state and hand the task back — the next slice resumes at the next round */
       const yielding = now() - ctx.t0 > ctx.budgetMs;
-      await save(yielding);
+      if (await save(yielding) !== true) return { state: "lost", lost: true };
       if (yielding) return { state: "yielded" };
       continue;
     }
@@ -401,7 +489,7 @@ async function runToolWorker(ctx, task, inputs) {
     st.shapeFails += 1;
     if (st.shapeFails >= 2) return finish("failed", "shape", { summary: "", findings: [], gaps: ["The worker did not return the requested shape (" + sh.why + ")."], sources, toolCalls: st.entries.length });
     st.note = "\n\nYOUR PREVIOUS ANSWER COULD NOT BE USED: " + sh.why + ". Return either {\"calls\":[…]} or the final JSON object described, with a non-empty \"summary\".";
-    await save(false);
+    if (await save(false) !== true) return { state: "lost", lost: true };
   }
 }
 
