@@ -1,6 +1,7 @@
 ---
 title: Atlas の回答内の切り替えと地図の状態を 1 つにする——チップは描いた面の受領証から、タブは確定状態から、評価は押した後の地図から
 date: 2026-11-27
+pr: 1497
 newsen: The on/off switch under an Atlas reply now turns off everything that reply drew (isolate, shaded areas, composed labels), and a comparison tab that fails comes back to the last state it really showed.
 newsjp: Atlas の回答の下のオンオフが、その回答が描いたもの（Isolate・塗り分け・構成図のラベル）を全部消せるようになり、比較タブの切り替えが失敗したときは直前に実際に表示していた状態へ戻ります。
 ---
