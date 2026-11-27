@@ -7,9 +7,9 @@
 //   node scripts/static-checks.mjs            # full run (exit 1 on any error)
 //   node scripts/static-checks.mjs --list     # just print the files it would scan
 //
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +22,7 @@ import { COUNTRY_HUB } from './country-pages.mjs';
 import { pagePath as UPDATES_PAGE, feedPath as UPDATES_FEED } from './whats-new.mjs';
 import { WEEKLY_HUB } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written by the build */
 import { hardeningProblems } from './workflow-hardening.mjs';   /* (security-audit) what a CI step may carry into the runner */
+import { gitUniverse } from './check-universe.mjs';
 import { findSecrets, SECRET_SCAN_SELF, secretScanUniverse } from './secret-scan.mjs';   /* (security-hardening) rule 2's shapes and judgement */
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -75,9 +76,18 @@ function walk(dir, out = []) {
   return out;
 }
 
-const ALL = walk(ROOT);
+/* THE UNIVERSE IS WHAT GIT WOULD COMMIT, NOT EVERYTHING ON DISK (scripts/check-universe.mjs: the measurement and
+   the reason). Not a git checkout (an unpacked archive): the directory walk is all there is. */
+const ALL = gitUniverse(ROOT, SKIP_DIRS) ?? walk(ROOT);
 const textFiles = ALL.filter((f) => TEXT_EXT.has(f.ext) && !BINARY_EXT.has(f.ext));
-const read = (f) => { try { return readFileSync(f.abs, 'utf8'); } catch { return ''; } };
+/* each file is read once per run: the checks below all ask for the same text */
+const readCache = new Map();
+const read = (f) => {
+  if (readCache.has(f.abs)) return readCache.get(f.abs);
+  let t; try { t = readFileSync(f.abs, 'utf8'); } catch { t = ''; }
+  readCache.set(f.abs, t);
+  return t;
+};
 
 if (process.argv.includes('--list')) {
   console.log(textFiles.map((f) => f.rel).join('\n'));
@@ -234,9 +244,31 @@ const codeFiles = ALL.filter((f) => ['.js', '.mjs', '.cjs', '.ts'].includes(f.ex
       res();
     });
   });
+  /* A verdict is a pure function of (this node binary, the file's bytes), so a file whose bytes passed under this
+     node version before is not launched again: a re-run launches only what changed (measured 2026-11-28: ~2,000
+     launches were 37 of 134 s on this machine). The cache lives in `.cache/` (gitignored, never walked) and holds
+     PASSES only — a failing file is always re-checked, and a cold cache (CI, a fresh clone) checks everything. */
+  const cacheFile = join(ROOT, '.cache', 'static-syntax-pass.json');
+  let passed = {};
+  try { const c = JSON.parse(readFileSync(cacheFile, 'utf8')); if (c && c.node === process.version) passed = c.passed || {}; } catch { /* no cache */ }
+  const digest = (f) => createHash('sha1').update(readFileSync(f.abs)).digest('hex');
+  const todo = [];
+  const nowPassed = {};
+  for (const f of codeFiles) {
+    const h = digest(f);
+    if (passed[f.rel] === h) nowPassed[f.rel] = h; else todo.push({ f, h });
+  }
   let next = 0;
-  const lane = async () => { while (next < codeFiles.length) await check(codeFiles[next++]); };
+  const lane = async () => {
+    while (next < todo.length) {
+      const { f, h } = todo[next++];
+      const before = errors.length;
+      await check(f);
+      if (errors.length === before) nowPassed[f.rel] = h;
+    }
+  };
   await Promise.all(Array.from({ length: LANES }, lane));
+  try { mkdirSync(dirname(cacheFile), { recursive: true }); writeFileSync(cacheFile, JSON.stringify({ node: process.version, passed: nowPassed })); } catch { /* read-only checkout: just no cache */ }
   /* ⚠ the errors are pushed from callbacks, so the ORDER of `errors` is now completion order rather
      than directory order. Nothing reads it as an order — the report below prints the list — and a
      stable order is restored by sorting there if it is ever needed. */
