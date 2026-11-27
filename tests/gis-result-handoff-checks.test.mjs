@@ -384,10 +384,11 @@ test('a worker hands a call\'s whole result to its next call ("@<n>:data.result"
   const t = db.st.tasks.get('africa');
   assert.equal(t.status, 'done', JSON.stringify(t.result && t.result.gaps));
   const entries = t.progress.entries;
-  assert.deepEqual(entries.map((e) => [e.n, e.ok]), [[1, true], [2, true], [3, true], [4, true], [5, true]], JSON.stringify(entries.map((e) => [e.n, e.code, e.text])));
-  assert.match(entries[0].text, /^aggregate\(2 input\(s\)[^:]*\): stat\*=count\|sum/, 'describe with op names that op in full: "stat", required, and its values');
-  assert.match(entries[2].text, /filter -> 5 feature\(s\)/, 'the filter read the 9 features the read call kept, not the clipped text');
-  assert.match(entries[4].data, /"pop":1500/, 'the sum over the five African rows, from results handed on across slices');
+  const body = (e) => JSON.parse(e.preview);   /* what the worker was shown of the answer (the whole is kept beside it — #1502) */
+  assert.deepEqual(entries.map((e) => [e.n, e.ok]), [[1, true], [2, true], [3, true], [4, true], [5, true]], JSON.stringify(entries.map((e) => [e.n, e.code, body(e).slice(0, 300)])));
+  assert.match(body(entries[0]), /^aggregate\(2 input\(s\)[^:]*\): stat\*=count\|sum/, 'describe with op names that op in full: "stat", required, and its values');
+  assert.match(body(entries[2]), /filter -> 5 feature\(s\)/, 'the filter read the 9 features the read call kept, not the clipped text');
+  assert.match(body(entries[4]), /"pop":1500/, 'the sum over the five African rows, from results handed on across slices');
   /* the list of all operations is short enough to be read whole, and names each one's parameters */
   const all = await lane.run('data.gis', { describe: true }, {});
   assert.ok(JSON.stringify(all.data).length < 6000, 'the brief list fits what a worker reads back: ' + JSON.stringify(all.data).length);
