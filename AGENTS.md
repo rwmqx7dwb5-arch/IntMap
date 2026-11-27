@@ -252,6 +252,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
 （`ok` / `skipped` / `failed`）。`skipped` は**エラーではない**（USB 未接続、または候補が一意に決まらない）。
 **ミラー元は原本であって worktree ではない**——先に原本を最新化し、`node scripts/master-sync.mjs --check` が
 exit 0 を返してから走らせる（そうでなければスクリプトは同期せず `skipped` で終わる）。
+**USB の `extras\`（メモリ・設定・暗号化した資格情報と DB ダンプ）は `scripts/backup-extras.ps1`**。暗号化は利用者のパスフレーズ入力が要り、エージェントの shell では平文を避けて skip する（`docs/BACKUP-RESTORE.md` Layer 3）。
 
 ### 11.3 スクリプトが守っていること
 

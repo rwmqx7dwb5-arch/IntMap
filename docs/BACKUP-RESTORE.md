@@ -108,6 +108,44 @@ use a **managed** backup. Record dashboard-only settings in [`MIGRATIONS.md`](MI
 retired area monitors' job. Their secrets live in vault — `refresh_news_secret`, `news_ingest_secret` — and a job
 whose secret is absent posts nothing.)
 
+## Layer 3 — USB `extras\` (memory, settings, encrypted credentials and DB dump)
+
+`scripts/backup-usb.ps1` mirrors the tracked tree; it cannot restore what is not in git. `scripts/backup-extras.ps1`
+keeps those in the USB folder `extras\` — a folder the mirror never deletes, never verifies and never prunes
+(`tests/usb-extras-backup-checks.test.mjs`). Run it after the mirror, **in a terminal you are typing in**:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-extras.ps1
+```
+
+It asks for a passphrase twice (hidden). **The passphrase is yours alone**: it is not a parameter, is never written or
+printed, and is not recorded anywhere — lose it and the encrypted files are unrecoverable. With no way to ask (an agent's
+shell), the encrypted steps are skipped and the last line says `RESULT partial skipped: …`; nothing is written in plain.
+
+| On the USB | What | Plain? |
+|---|---|---|
+| `extras\memory\` | agent memory store (`node scripts/agent-memory.mjs --path`) | plain; a file that matches a secret shape is **not** copied here |
+| `extras\config\claude\`, `codex\` | `settings.json`, `settings.local.json`, `launch.json`, Codex `config.toml`, `AGENTS.md`, `skills` | plain, same scan. `~/.codex/auth.json` (a login token) is never copied: log in again |
+| `extras\secrets\credentials.tar.gpg` | `CLAUDE.local.md` (+ any file the scan flagged) | **AES-256, symmetric** |
+| `extras\db\intmap-<UTC>.dump.gpg` (+ `.sha256`) | `pg_dump` of `public auth storage` (last 3 kept) | **AES-256, symmetric** |
+| `extras\supabase-secret-names.txt` | the NAMES of the production secrets — re-create each with `supabase secrets set NAME=…` | names only |
+| `extras\MANIFEST.json` | what this run did, skipped and why | — |
+
+The dump needs `pg_dump` (Postgres client **17**, `scoop install postgresql`) and `SUPABASE_ACCESS_TOKEN` in the
+environment (`scripts/db-login-url.mjs` turns it into a short-lived login; no DB password exists). Missing either, the
+DB step is skipped and says which. Plaintext intermediates exist only under `%TEMP%` and are deleted in `finally`; nothing
+here is written inside the repository.
+
+**Decrypt** (gpg ships with Git for Windows: `C:\Program Files\Git\usr\bin\gpg.exe`; it asks for the passphrase):
+
+```powershell
+gpg --decrypt D:\extras\secrets\credentials.tar.gpg > credentials.tar   # then: tar -xf credentials.tar
+gpg --decrypt D:\extras\db\intmap-<UTC>.dump.gpg > intmap.dump          # then restore as in the drill below (pg_restore)
+```
+
+Self-test of the encryption path with a dummy passphrase (no USB, no real data):
+`'dummy' | powershell -NoProfile -File scripts/backup-extras.ps1 -SelfTest -PassphraseFromStdin` → `RESULT ok selftest`.
+
 ## Verify a backup restores (drill) — §10
 
 **Never restore into production.** Restore into a throwaway local database and check it.
