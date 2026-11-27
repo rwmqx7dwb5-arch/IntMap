@@ -62,8 +62,24 @@ Natural Earth の多角形がそれとは別の線（実効支配）に沿って
 多角形の辺に沿って続いていない線は `walk` が通らない）。
 バールレ＝ナッサウ（オランダ @13）の飛び地は Natural Earth に無いので、当てはめる辺が無い（多角形に無い形は作らない）。
 
+### Chronos（過去の年）
+
+- 1900 年・ザクセンとボヘミアの境（ドイツ帝国を Isolate、z8）: 描かれた era 線とマスクの縁は修正前から一致（中央値・p90 とも 0）。
+  CShapes は簡略化なしで、線は束のリングそのものなので、当てはめは何も変えない（変えないことが正しい）。
+- 1750 年・神聖ローマ帝国とハンガリーの境（z8）: マスクの縁 → 描かれた線は最大 0.22 px（1 px 超 0 点）。
+  逆向き（描かれた線 → 縁）で最大 2 px の点があるが、それは隣の政体の束の輪郭が別の線として描かれている所
+  （二つの束の重なり・隙間。輪郭と線のずれではない）。
+- OHM の詳細線が描かれる所、今と同じ区間で現代の線（`imtb-now-src`）が描かれる所では、政体の共有辺がその線に置き換わる
+  （検査の Chronos の場合）。
+
 ## 4. 検査
 
 `tests/isolate-outline-geometry-checks.test.mjs` は綴りでなく幾何を測る。フィクスチャ `tests/fixtures/frontier-fit-erzgebirge.json` は、動いているアプリから取った実データ（Natural Earth の DEU-CZE 共有辺 53 頂点と、ドイツのコードを持たない ofm 国境片 787 点）。
 修正前の形が数百 m 離れていること、当てはめた輪郭が線と 0.5 m 以内で両方向に一致すること、隣国同士が同じ国境を共有すること、海岸を動かさないこと、コードは否定の証拠だけであること、入口 `countryShapeOnMap` が z9 で当てはめ z4 で多角形のままにすること、Chronos の政体が描かれた era 線に当たることを測る。
 旧方式の綴りを固定していた検査（`atlas-map-ui-fixes`・`ui-polish-draw`・`map-labels-sensitivity-outline` の各 1 件）は、この幾何の検査に置き換えた。
+
+## 5. 増えた接点と性能の天井（理由）
+
+- **IM_HOST member countryShape**（`check:surface`）: Atlas の国ハイライトは遅延チャンク（`js/atlas-console.js`）にあり、本体側の `js/frontier-fit.js` を直接 import すると共有部品がチャンクに分かれる（起動時リクエストが増えた実測がある）。`loadNECountries` と同じ理由で host 表から渡す。
+- **window.IntMapTimeBorders の読み取りが 1 つ増えた**（`js/frontier-fit.js` の `eraShapeOnMap`）: Chronos が描いている政体の集合と、それが今描いているかを訊く。`js/time-borders.js` は import できる形でなく（古典スクリプトの公開窓口）、既存の読み手（`js/atlas-era-highlight.js` ほか）と同じ窓口を使う。
+- **perf: eager.modules +1・eager.raw +25.8 kB**（gzip +3.8 kB・リクエスト数は変わらない）: 新しいモジュール `js/frontier-fit.js`（当てはめの本体）が Isolate / ハイライトと同じ本体の束に入るため。Isolate とハイライトは本体にあるので、その形を作る関数も本体に要る。
