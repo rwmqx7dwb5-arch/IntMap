@@ -65,14 +65,12 @@ test('③ pages the prose cited are counted and listed once each', () => {
   assert.match(h, /Cite this answer/, 'the citation formats are kept (behind the menu)');
 });
 
-test('④ what Atlas drew is offered as buttons that go to it', () => {
+test('④ no row of «drawn» chips follows an answer, and a figure with no stated basis is not listed as a source', () => {
   const c = core();
-  const arts = c.artifacts([{ ok: true, exec: { shown: { names: ['Eurostar'] } }, drew: [{ kind: 'route', surfaces: ['nlq-route-1'] }, { kind: 'route', surfaces: ['nlq-route-1'] }] }]);
-  assert.equal(arts.length, 1);
-  const h = c.artifactsHtml(arts);
-  assert.match(h, /data-atl-art="0"/);
-  assert.match(h, /Eurostar/);
-  assert.equal(c.artifactsHtml([]), '');
+  assert.equal(c.artifacts, undefined);
+  assert.equal(c.artifactsHtml, undefined);
+  const items = c.collect([{ ok: true, drew: [{ kind: 'map.compose', surfaces: ['s1'] }] }], null);
+  assert.equal(items.filter((it) => it.kind === 'figure').length, 0, 'a source list line that names no source is not a source');
 });
 
 test('⑤ headings are in proportion to the sentence under them', () => {
@@ -82,17 +80,13 @@ test('⑤ headings are in proportion to the sentence under them', () => {
   assert.match(css, /\.atl-a\{color:inherit;/, 'prose links do not shout in the accent colour');
 });
 
-test('⑥ an artifact button never carries a raw capability id; the source card stands above a floating window', () => {
-  const c = core();
-  const arts = c.artifacts([{ ok: true, drew: [{ kind: 'map.compose', surfaces: ['s1'] }, { kind: 'map.compose', surfaces: ['s2'] }] }]);
-  assert.deepEqual(arts.map((a) => a.label), ['Map explanation 1', 'Map explanation 2']);
+test('⑥ the source card stands above a floating window', () => {
   const src = readFileSync(new URL('../js/atlas-answer-sources.js', import.meta.url), 'utf8');
   assert.match(src, /\.atl-scard\{[^}]*z-index:var\(--z-toast\)/, 'above the front window (2650), as a toast is');
 });
 
-test('⑦ a plain kind keeps its name; only a dotted capability id becomes 「Shape N」; host labels are read without a backtracking pattern', () => {
+test('⑦ host labels are read without a backtracking pattern', () => {
   const c = core();
-  assert.equal(c.artifacts([{ ok: true, drew: [{ kind: 'route', surfaces: ['s'] }] }])[0].label, 'route');
   const t0 = Date.now();
   c.chipSources(md('([' + 'aa.'.repeat(5000) + '!](https://x.com/a))'));
   assert.ok(Date.now() - t0 < 1000, 'no exponential backtracking');

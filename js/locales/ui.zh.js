@@ -6218,8 +6218,8 @@ IntMapLang.define('zh', {
   "bar chart, {n} values from {y0} to {y1}": "長條圖，{n} 個數值，從 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
   "timeline, {n} events from {y0} to {y1}": "年表，{y0} 年至 {y1} 年共 {n} 個事件",   /* atlas-chart.js (#R543) */
   "The chart renderer could not be loaded.": "無法載入圖表繪製模組。",   /* atlas-console.js (#R543) */
-  "Map as it was": "當時的地圖",   /* atlas-msg-tools.js (#R543) */
-  "Put the map back the way it was when this answer was written": "將地圖還原成撰寫這則回答時的狀態",   /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
   "Restored": "已還原",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "已還原（之後開啟的 {n} 個圖層維持不變）",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "無法還原",   /* atlas-msg-tools.js (#R543) */

@@ -550,21 +550,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       } catch (_) { }
       return out.sort();
     }
+    /* the live object list — the ONE read of window.IntMapObjects this file makes */
+    function objectList() {
+      try { var O = window.IntMapObjects; return (O && O.list && O.list()) || []; } catch (_) { return []; }
+    }
     function objectIds() {
-      try {
-        var O = window.IntMapObjects;
-        if (!O || !O.list) return [];
-        return (O.list() || []).map(function (o) { return String(o && (o.id != null ? o.id : o)); });
-      } catch (_) { return []; }
+      return objectList().map(function (o) { return String(o && (o.id != null ? o.id : o)); });
     }
     /* what each object LOOKS like (colour · width · opacity · hidden · name), id → one string. The `object` observer reads it before and after, so a restyle is a change
        it can see — an id list alone cannot tell a recoloured line from one nobody touched (that blind spot reported every restyle `no_change`). */
     function objectSig() {
       var out = {};
-      try {
-        var O = window.IntMapObjects;
-        if (O && O.list) (O.list() || []).forEach(function (o) { if (o) out[String(o.id)] = [o.color, o.width, o.opacity, o.hidden ? 1 : 0, o.name].join('|'); });
-      } catch (_) { }
+      objectList().forEach(function (o) { if (o) out[String(o.id)] = [o.color, o.width, o.opacity, o.hidden ? 1 : 0, o.name].join('|'); });
+      return out;
+    }
+    /* the same look as VALUES, id → {color,width,opacity,hidden,name}: what a restyle is judged against, one requested attribute at a time */
+    function objectLook() {
+      var out = {};
+      objectList().forEach(function (o) { if (o) out[String(o.id)] = { color: o.color, width: o.width, opacity: o.opacity, hidden: !!o.hidden, name: o.name }; });
       return out;
     }
     /* ══ ⚠⚠⚠ 「IS IT ON THE MAP」 IS ASKED OF THE RENDERER, ONCE (render.drawn — js/geo-engine.js) ══════
@@ -1343,16 +1346,36 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         }
       },
       object: {
-        observe: function () { return { ids: objectIds(), sig: objectSig() }; },
+        observe: function () { return { ids: objectIds(), sig: objectSig(), look: objectLook() }; },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           /* a restyle (op set): the object must still be there and its look must be what the call says it made it — read from the map, not from the reply */
           var op = String((args && (args.op || args.action)) || '').toLowerCase();
           if (op === 'set' || op === 'style') {
-            var sid = raw && raw.objectIds && raw.objectIds[0], sb = (before && before.sig) || {}, sa = (after && after.sig) || {};
-            if (!sid || sa[sid] === undefined) return { status: 'failed', code: 'not_rendered', observed: { objects: after }, html: (raw && raw.html) || '' };
-            if (sb[sid] === sa[sid]) return { status: 'completed', code: 'already_there', objectIds: [sid], observed: { objects: after, already: true }, html: (raw && raw.html) || '' };
-            return { status: 'completed', code: 'ok', objectIds: [sid], observed: { objects: after }, html: (raw && raw.html) || '' };
+            /* THE TARGET AND EACH REQUESTED ATTRIBUTE ARE READ BACK FROM THE MAP (one-pass-or-a-reason §2: an observer that answers from a
+               signature hears "nothing changed" for a value that was already right and "something changed" for the wrong attribute).
+               target = the id the call was given (else the one it resolved); expected = what the setter says it applied; actual = the live list afterwards. */
+            var asked = args && args.id != null ? String(args.id) : null;
+            var sid = asked || (raw && raw.objectIds && raw.objectIds[0]);
+            var lb = (before && before.look) || {}, la = (after && after.look) || {};
+            var html = (raw && raw.html) || '';
+            if (!sid || !la[sid]) return { status: 'failed', code: 'not_rendered', observed: { objects: after }, html: html };
+            if (raw && raw.objectIds && raw.objectIds[0] && String(raw.objectIds[0]) !== sid) return { status: 'failed', code: 'wrong_target', observed: { objects: after, asked: sid, touched: String(raw.objectIds[0]) }, html: html };
+            var want = (raw && raw.applied) || {}, mism = [], same = [], unread = [], moved = false, req = [];
+            ['color', 'width', 'opacity', 'name', 'hidden'].forEach(function (k) {
+              var given = k === 'name' ? (args.name != null ? args.name : args.to) : args[k];
+              if (given == null) return;
+              req.push(k);
+              if (want[k] === undefined) { mism.push(k); return; }
+              var eq = function (x, y) { return typeof x === 'number' || typeof y === 'number' ? Math.abs(+x - +y) < 0.005 : String(x).toLowerCase() === String(y).toLowerCase(); };
+              if (la[sid][k] == null) { unread.push(k); return; }   /* the entry does not expose this value: not observed, which is not a failure */
+              if (!eq(la[sid][k], want[k])) { mism.push(k); return; }
+              if (lb[sid] && eq(lb[sid][k], want[k])) same.push(k); else moved = true;
+            });
+            if (!req.length) return { status: 'partial', produced: [], code: 'no_change', observed: { objects: after }, html: html };
+            if (mism.length) return { status: 'partial', produced: [], code: 'not_rendered', observed: { objects: after, notReadBack: mism, requested: req }, html: html };
+            if (!moved && !unread.length) return { status: 'completed', code: 'already_there', objectIds: [sid], observed: { objects: after, already: true, requested: req }, html: html };
+            return { status: 'completed', code: 'ok', objectIds: [sid], observed: { objects: after, requested: req, alreadyHad: same, unread: unread }, html: html };
           }
           var made = [];
           try {

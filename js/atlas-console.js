@@ -370,7 +370,7 @@ export function atlasConsole(HOST){
     function ensurePolyLayer(){ try{ if(!GE().layers.hasSource('nlq-poly-src')) GE().layers.addSource('nlq-poly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poly-fill')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
-      GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','fc'],['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.2]}},before);   /* a quieter fill (the colour's saturation pulled down, 20 % opacity) so the map under it still reads */
+      GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','fc'],['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],_POLY_FILL_BASE]}},before);   /* the fill opacity Atlas's areas have always had (32 %); only the colour is quieter */
       /* (#R64) composed regions (unions of many real admin polygons) get FAINT member outlines so the internal
          admin seams don't dominate — the region reads as one shape. */
       GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','lc'],['get','color'],'#ff9f0a'],'line-width':['coalesce',['get','w'],['case',['==',['get','comp'],1],1,1.4]],'line-opacity':['case',['==',['get','comp'],1],0.35,0.8]}},before);
@@ -383,8 +383,9 @@ export function atlasConsole(HOST){
     function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
        enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
+    const _POLY_FILL_BASE=0.32;   /* the area fill opacity before the quieter figures (#1468); an object's own opacity scales this */
     let _hlPolySeq=0;
-    window._imHlPolys={ list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
+    window._imHlPolys={ fillBase:_POLY_FILL_BASE, list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
       remove:id=>{ const i=_hlPolys.findIndex(p=>String(p.id)===String(id)); if(i<0) return false; _hlPolys.splice(i,1); paintPolys(); return true; },
       repaint:()=>paintPolys(), clear:()=>clearPolyHl() };
     /* the lines Atlas drew, handed over the same way (an id, a list, a remover): a line has been a map-object only since it could be recoloured from the Objects panel and by Atlas */
@@ -2817,7 +2818,7 @@ export function atlasConsole(HOST){
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
       let head=say?(((!ai.__atlCancelled&&ai.__atlInterim)?LIVE.saidHtml(ai.__atlInterim,say):'')+'<div class="atl-md" style="margin-bottom:6px;">'+mdMini(say)+'</div>'):((!ai.__atlCancelled&&ai.__atlInterim)?LIVE.saidHtml(ai.__atlInterim,''):LIVE.draftHtml(ai));   /* (atlas-interim-kept) what Atlas wrote on the way stands above its answer — js/atlas-live.js saidHtml */   /* (atlas-live-stream) no answer yet: what is being written stands where it will stand — a compose between tools must not erase it */ try{ const _cr=COMPOSE.refsFor(keep,ai); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R589) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
-      let srcs=''; try{ const _sv=SRCS.compose(ai,keep,{ final:!!say, question:ai.__atlQ||'' }); head=_sv.head(head); srcs=_sv.artifacts+_sv.footer; }catch(_){}   /* (atlas-cited-answers) a number in Atlas's words that equals a value a tool returned gets that source's [n]; the list and the answer's Cite go under the reply — js/atlas-answer-sources.js */
+      let srcs=''; try{ const _sv=SRCS.compose(ai,keep,{ final:!!say, question:ai.__atlQ||'' }); head=_sv.head(head); srcs=_sv.footer; }catch(_){}   /* (atlas-cited-answers) a number in Atlas's words that equals a value a tool returned gets that source's [n]; the list and the answer's Cite go under the reply — js/atlas-answer-sources.js */
       /* ⚠⚠⚠ (#R733) A TURN THAT RAN OUT IS NOT A TURN THAT FINISHED, and only IntMap knows which it was:
          js/atlas-agent.js stops for two reasons that are not Atlas deciding it is done, and neither reaches
          the model. Measured, three production turns ended `stopped:'step_budget'` reading as finished answers

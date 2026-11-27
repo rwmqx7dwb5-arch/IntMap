@@ -5985,8 +5985,8 @@ IntMapLang.define('ko', { ui: {
   "bar chart, {n} values from {y0} to {y1}": "막대그래프, 값 {n}개, {y0}부터 {y1}까지",   /* atlas-chart.js (#R543) */
   "timeline, {n} events from {y0} to {y1}": "연표, {y0}년부터 {y1}년까지 사건 {n}건",   /* atlas-chart.js (#R543) */
   "The chart renderer could not be loaded.": "그래프 렌더러를 불러오지 못했습니다.",   /* atlas-console.js (#R543) */
-  "Map as it was": "당시 지도",   /* atlas-msg-tools.js (#R543) */
-  "Put the map back the way it was when this answer was written": "이 답변을 작성했을 때의 지도 상태로 되돌립니다",   /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
   "Restored": "되돌렸습니다",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "되돌렸습니다 (이후 켠 레이어 {n}개는 그대로)",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "되돌릴 수 없습니다",   /* atlas-msg-tools.js (#R543) */

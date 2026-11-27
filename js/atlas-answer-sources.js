@@ -127,13 +127,9 @@ export function makeAtlasAnswerSources(deps) {
           origin: p.origin || '', values: Array.isArray(p.values) ? p.values.filter((v) => typeof v === 'number' && isFinite(v)) : [],
           date: p.date || '', at: p.at || null });
       });
-      /* a figure the run drew whose tool stated no basis for it: said so, in those words — never given the basemap's credit, never left out.
-         A tool that DOES state one (meta.provenance kind 'figure') has already been added above and covers its own drawing. */
-      const stated = prov.some((p) => p && p.kind === 'figure');
-      if (!stated) (Array.isArray(r.drew) ? r.drew : []).forEach((d) => {
-        if (!d || !d.kind) return;
-        add({ kind: 'figure', what: d.what || d.kind, source: say(LA('Drawn by Atlas — no data source was recorded for this shape', 'Atlas が作図 — この図形のデータの出典は記録されていません')), origin: 'atlas' });
-      });
+      /* (atlas-float-typography) A FIGURE WHOSE TOOL STATED NO BASIS IS NOT LISTED. It used to get a row 「Drawn by Atlas — no data source was recorded」, one per
+         shape («説明の図 1»): a source list line that names no source tells the reader nothing and is not a source. A tool that DOES state one
+         (meta.provenance kind 'figure', added above) still lists it. The shape itself is on the map and in Objects. */
     });
     const x = extra || {};
     const b = x.borders;
@@ -322,48 +318,6 @@ export function makeAtlasAnswerSources(deps) {
     return h + '</details>';
   }
 
-  /* ── (atlas-answer-sources) WHAT ATLAS PUT ON THE MAP, AS THINGS THE READER CAN GO TO ───────────────────────────────────
-     A route or a zone the run drew was filed under 「途中の調査結果と操作のメッセージ」 — a name that says it is leftovers. It is the deliverable. Each
-     drawn thing is one button that moves the map to it; what it names is what the tool said it showed (exec.shown), else its subject, else its kind. */
-  /* What a chip says when the call named nothing: WHAT was drawn (the capability's own word), not 「図形」 — which told the reader nothing about what it was or why it was there. */
-  function drewWord(kind) {
-    const k = String(kind || '').split('.').pop();
-    switch (k) {   /* calls, not a table of pairs: a pair held as data is an English-only fallback the i18n gate counts (PAIR_CEILING) */
-      case 'line': return T('Line drawn by Atlas', 'ライン');
-      case 'polygon': return T('Polygon', 'ポリゴン');
-      case 'poi': return T('Markers', 'マーカー');
-      case 'compose': return T('Map explanation', '説明の図');
-      case 'highlight': return T('Highlight', 'ハイライト');
-      case 'choropleth': return T('Colour map', '色分け地図');
-      case 'outline': return T('Border line', '境界線');
-      case 'pin': return T('Pin dropped', 'ピン');
-      case 'radius': return T('Circle', '円');
-      case 'isochrone': return T('Reachable area', '到達圏');
-      case 'route': return T('Route', '経路');
-      default: return T('Drawing', '描画');
-    }
-  }
-  function artifacts(results) {
-    const out = [], seen = Object.create(null);
-    (results || []).forEach((r) => {
-      if (!r || r.ok === false || !Array.isArray(r.drew)) return;
-      const names = r.exec && r.exec.shown && Array.isArray(r.exec.shown.names) ? r.exec.shown.names.filter(Boolean) : [];
-      const subj = r.meta && r.meta.subject ? say(r.meta.subject) : '';
-      r.drew.forEach((d) => {
-        if (!d || !d.kind || !Array.isArray(d.surfaces) || !d.surfaces.length) return;
-        const k = d.kind + '|' + d.surfaces.join(',');
-        if (seen[k]) return; seen[k] = 1;
-        out.push({ i: out.length, kind: d.kind, label: names.length ? names.join(', ') : (subj || (String(d.kind).indexOf('.') > 0 ? drewWord(d.kind) + ' ' + (out.length + 1) : d.kind)), surfaces: d.surfaces.slice() });
-      });
-    });
-    return out;
-  }
-  function artifactsHtml(list) {
-    if (!(list && list.length)) return '';
-    return '<div class="atl-arts"><span class="atl-arts-h">' + esc(T('Atlas drew this on the map', 'Atlas が地図に描いたもの')) + '</span>'
-      + list.map((a) => '<button type="button" class="atl-art" data-atl-art="' + a.i + '" title="' + esc(T('Show this on the map', '地図でこの場所を表示')) + '">' + esc(a.label) + '</button>').join('') + '</div>';
-  }
-
   /** plainItems(items) → the list as stored data and as text (the notebook, a briefing, a copy): no values, no markup */
   function plainItems(items) {
     return (items || []).map((it) => {
@@ -378,7 +332,7 @@ export function makeAtlasAnswerSources(deps) {
     return out;
   }
 
-  return { numbersIn, collect, linkNumbers, chipSources, artifacts, artifactsHtml, footerHtml, plainItems, creditsOf, anchor, say, T, lang, MIN_DIGITS };
+  return { numbersIn, collect, linkNumbers, chipSources, footerHtml, plainItems, creditsOf, anchor, say, T, lang, MIN_DIGITS };
 }
 
 /* ══ THE BROWSER HALF ═════════════════════════════════════════════════════════════════════════════════
@@ -418,10 +372,6 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-scard-d{color:var(--text-muted);font-size:11.5px;margin-top:2px;}'
   + '.atl-scard-s{margin-top:5px;color:var(--text-main);opacity:.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}'
   + '.atl-scard-open{display:inline-block;margin-top:8px;color:var(--accent,#0a84ff);font-weight:600;text-decoration:none;}'
-  + '.atl-arts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:var(--atl-zone-gap,10px);}'
-  + '.atl-arts-h{font-size:11px;font-weight:650;color:var(--text-muted);letter-spacing:.02em;}'
-  + '.atl-art{border:1px solid var(--glass-border,rgba(128,128,128,.25));background:var(--input-bg);color:var(--text-main);border-radius:999px;font-size:12px;padding:4px 11px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-  + '.atl-art:hover{border-color:var(--accent,#0a84ff);}'
   + '.atl-menu>summary{display:inline-block;list-style:none;border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--text-muted);font-weight:600;}'
   + '.atl-menu>summary::-webkit-details-marker{display:none;}'
   + 'sup.atl-srcn a{color:var(--accent,#0a84ff);text-decoration:none;font-size:0.78em;font-weight:650;margin-left:1px;}';
@@ -476,8 +426,6 @@ export function attachSources(ctx) {
     }
     bubble.__atlSrcCredit = credit;
     let web = [];
-    const arts = core.artifacts(keep);
-    bubble.__atlArts = arts;
     return {
       head: (html) => {
         let out = core.linkNumbers(html, items, bubble.__atlSrcId); if (out !== html) linked = true;
@@ -488,7 +436,6 @@ export function attachSources(ctx) {
         bubble.__atlWeb = web;
         return out;
       },
-      artifacts: core.artifactsHtml(arts),
       /* read AFTER head(): whether any number was actually linked decides whether the mark's key is shown */
       get footer() { return o.final ? core.footerHtml(items, { id: bubble.__atlSrcId, pending, credit, linked, web, open: !!bubble.__atlSrcsOpen }) : ''; },
       items,
@@ -553,15 +500,6 @@ export function attachSources(ctx) {
     const below = r.bottom + 8, h = cardEl.offsetHeight;
     cardEl.style.top = (below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) + 'px';
   }
-  /* an artifact's button: the map moves to the shapes it drew (their extent, read from the sources the renderer holds) */
-  function focusArt(bubble, i) {
-    const a = (bubble.__atlArts || [])[i]; if (!a) return;
-    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
-    const walk = (c) => { if (!Array.isArray(c)) return; if (typeof c[0] === 'number') { if (isFinite(c[0]) && isFinite(c[1])) { w = Math.min(w, c[0]); e = Math.max(e, c[0]); s = Math.min(s, c[1]); n = Math.max(n, c[1]); } } else c.forEach(walk); };
-    try { a.surfaces.forEach((id) => { const d = ctx.GE().layers.sourceData(id); ((d && d.features) || []).forEach((f) => walk(f && f.geometry && f.geometry.coordinates)); }); } catch (_) { /* the surface is gone */ }
-    if (!(isFinite(w) && isFinite(e))) return;
-    try { ctx.GE().camera.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 12, duration: 700 }); } catch (_) { /* renderer refused */ }
-  }
   function bind(bubble, question) {
     style();
     const root = bubble && bubble.querySelector && bubble.querySelector('.atl-srcs');
@@ -579,8 +517,6 @@ export function attachSources(ctx) {
         if (li) { try { li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) { /* old engine */ } li.classList.add('atl-srcs-flash'); setTimeout(() => li.classList.remove('atl-srcs-flash'), 1400); }
         return;
       }
-      const art = t && t.closest ? t.closest('button[data-atl-art]') : null;
-      if (art) { focusArt(bubble, +art.getAttribute('data-atl-art')); return; }
       const more = t && t.closest ? t.closest('button.atl-sc-more') : null;
       if (more) { const grp = more.parentNode; Array.prototype.forEach.call(grp.querySelectorAll('.atl-sc[hidden]'), (c) => { c.hidden = false; }); more.remove(); return; }
       const sc = t && t.closest ? t.closest('a.atl-sc') : null;

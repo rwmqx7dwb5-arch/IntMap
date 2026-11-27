@@ -5995,8 +5995,8 @@ IntMapLang.define('fr', { ui: {
   "bar chart, {n} values from {y0} to {y1}": "diagramme en barres, {n} valeurs de {y0} à {y1}",   /* atlas-chart.js (#R543) */
   "timeline, {n} events from {y0} to {y1}": "chronologie, {n} événements de {y0} à {y1}",   /* atlas-chart.js (#R543) */
   "The chart renderer could not be loaded.": "Le moteur de rendu des graphiques n’a pas pu être chargé.",   /* atlas-console.js (#R543) */
-  "Map as it was": "Carte d’alors",   /* atlas-msg-tools.js (#R543) */
-  "Put the map back the way it was when this answer was written": "Remettre la carte dans l’état où elle était quand cette réponse a été écrite",   /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
+  /* atlas-msg-tools.js (#R543) */
   "Restored": "Carte restaurée",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "Carte restaurée ({n} calque(s) ajouté(s) depuis restent actifs)",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "Restauration impossible",   /* atlas-msg-tools.js (#R543) */

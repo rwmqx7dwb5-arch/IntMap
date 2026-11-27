@@ -242,7 +242,7 @@ export function makeAtlasMapCompose(deps) {
            「approximate」 in the same place the legend does. */
         const HOV = ['==', ['get', 'hov'], 1];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
-          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 0.34, 0.17]] } }, before);
+          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 0.4, 0.2]] } }, before);
         g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived'], ['!=', ['get', 'ref'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
@@ -376,6 +376,20 @@ export function makeAtlasMapCompose(deps) {
       if (patch.width != null && isFinite(+patch.width)) o.w = Math.max(0.3, Math.min(24, +patch.width));
       if (patch.opacity != null && isFinite(+patch.opacity)) o.op = Math.max(0.05, Math.min(1, +patch.opacity));
       return paint();
+    }
+    /* remove ONE figure — the one the object list names. A place takes with it the links that end at it (a link with a missing end is not a drawing of anything);
+       its real shape, its other places and the rest of the map stay. The whole map goes only through clear(). */
+    function removeOne(id) {
+      id = String(id);
+      const n0 = records.length + shapes.length + relations.length;
+      records = records.filter((r) => r.id !== id);
+      shapes = shapes.filter((sh) => shapeId(sh) !== id);
+      relations = relations.filter((rel) => relId(rel) !== id && rel.from !== id && rel.to !== id);
+      if (hoverId === id) hoverId = '';
+      delete styleOv[id];
+      const gone = records.length + shapes.length + relations.length !== n0;
+      if (gone) paint();
+      return gone;
     }
     function objects() {
       const out = [];
@@ -1244,7 +1258,7 @@ export function makeAtlasMapCompose(deps) {
 
     const API = { SRC, LAYERS, PALETTE, run, clear, paint, focus, bind, linkProse, recordsFor, refsFor, reveal, setVisible, isVisible,
       records: () => records.map(pub), relations: () => relations.map((r) => ({ from: r.from, to: r.to, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(), sea: Object.assign({}, r.sea) })),
-      objects, setStyle, areaKm2, soften, gcPoints, splitAntimeridian };
+      objects, removeOne, setStyle, areaKm2, soften, gcPoints, splitAntimeridian };
     try { window.IntMapAtlasCompose = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
