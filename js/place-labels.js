@@ -127,9 +127,9 @@ export function placeLabels(HOST){
      already filtered out is not rendered, and would never be asked again when the reader zooms back out. Only the count of
      matched names is kept, so nothing is rewritten while the answer is unchanged. */
   const _fitState={ 'ofm-country':{}, 'ofm-admin1':{} };
-  function fitCountryNames(){
+  function fitCountryNames(CE){
     if(!GE().layers.has('ofm-country')) return;
-    const CE=window.IntMapCountryExtent, stats=HOST.countryStats; if(!CE||!CE.viewShare||!stats) return;
+    const stats=HOST.countryStats; if(!CE||!CE.viewShare||!stats) return;
     const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
     const z=GE().camera.getZoom();
     const rows=[]; for(const k of Object.keys(stats)){ const b=stats[k]&&stats[k].bbox; if(b&&b.length===4&&isFinite(b[0])) rows.push(b); }
@@ -146,17 +146,17 @@ export function placeLabels(HOST){
      (data/admin1-world.json.gz, one read shared with Atlas and the warning packs through js/data-door.js). Read only when the layer is
      on and the view is deep enough that a province can fill it; until then the names are exactly what they were. */
   let _a1Boxes=null, _a1Loading=false;
-  function admin1Boxes(){ if(_a1Boxes||_a1Loading) return _a1Boxes; _a1Loading=true;
-    import('./data-door.js').then(m=>m.loadData('data/admin1-world.json.gz')).then(j=>{ const CE=window.IntMapCountryExtent, out=[];
+  function admin1Boxes(CE){ if(_a1Boxes||_a1Loading) return _a1Boxes; _a1Loading=true;
+    import('./data-door.js').then(m=>m.loadData('data/admin1-world.json.gz')).then(j=>{ const out=[];
       for(const f of (j&&Array.isArray(j.f)?j.f:[])){ const b=f&&f.g&&CE.homeExtent(f.g,null); if(b) out.push(b); }
-      _a1Boxes=out; fitAdmin1Names(); }).catch(()=>{ _a1Loading=false; });
+      _a1Boxes=out; fitAdmin1Names(CE); }).catch(()=>{ _a1Loading=false; });
     return _a1Boxes; }
-  function fitAdmin1Names(){
+  function fitAdmin1Names(CE){
     if(!GE().layers.has('ofm-admin1')) return;
-    const CE=window.IntMapCountryExtent; if(!CE||!CE.gone) return;
+    if(!CE||!CE.gone) return;
     const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
     const z=GE().camera.getZoom(); if(z<4) return;
-    const boxes=admin1Boxes(); if(!boxes) return;
+    const boxes=admin1Boxes(CE); if(!boxes) return;
     const feats=GE().coords.querySourceFeatures('ofm',{sourceLayer:'place',filter:['in',['get','class'],['literal',['state','province']]]})||[];
     CE.applyGone(GE,_fitState['ofm-admin1'],'ofm-admin1',['get','name'],CE.gone(boxedLabels(feats,boxes),z,vw,vh)); }
   function ensurePlaceLabels(){
@@ -458,7 +458,7 @@ export function placeLabels(HOST){
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
-      if(!ensurePlaceLabels._fitHooked){ ensurePlaceLabels._fitHooked=true; const _fit=()=>{ try{ fitCountryNames(); }catch(_){} try{ fitAdmin1Names(); }catch(_){} }; GE().events.on('moveend',_fit); GE().events.on('idle',_fit); }
+      if(!ensurePlaceLabels._fitHooked){ ensurePlaceLabels._fitHooked=true; const _fit=()=>{ const CE=window.IntMapCountryExtent; try{ fitCountryNames(CE); }catch(_){} try{ fitAdmin1Names(CE); }catch(_){} }; GE().events.on('moveend',_fit); GE().events.on('idle',_fit); }
       if(!ensurePlaceLabels._harvestHooked){ ensurePlaceLabels._harvestHooked=true; GE().events.on('idle',()=>{ try{ harvestStableLabels(); }catch(_){}
         /* (#R72) SELF-HEAL: a basemap/style swap can wipe individual label layers; if the water/sea layers are
            gone while the toggle is on, re-add + re-apply. This was the reported "東シナ海が全体を写していても

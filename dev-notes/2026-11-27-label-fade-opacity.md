@@ -15,3 +15,6 @@ newsjp: 州・県の名前も、国名と同じく、その領域の内側まで
 
 ## 検査
 `tests/label-fade-opacity-checks.test.mjs`、`tests/label-fade-opacity.spec.js`（実ブラウザ: 仏の国名が z8 で消え z3 で戻る・東京の都名・面の opacity が 0.1/0.5/1 で動く）。
+
+## 性能の天井
+`eager.modules` 927 → 928。新しい共有モジュール `js/object-opacity.js`（不透明度の唯一の定義）の 1 本ぶんで、これが無いと各 painter が基準値を持ち直す（この不具合の原因そのもの）。サイズは数百バイト。

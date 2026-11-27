@@ -643,6 +643,7 @@ locate-me.js                      **端末の現在地を 1 回読む唯一の�
                                   #btn-locate）が使う。読み取った位置は `IntMapLocate.start({fix})` に渡し、同じ要求で 2 回読まない
 map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
+object-opacity.js                 Objects の「不透明度」スライダーが何を意味するかの唯一の定義（線・点・ラベルは値そのまま、面の塗りは 0〜0.85）
 place-labels.js                   地名・海洋名ラベルと、そのローカライズ。⚠ `name:ja` のうち**上流が壊している組**
                                   （地名の意味を漢字に訳したもの）を拒み、既存の鍵の並びに落とす。表は生成物で、
                                   正本は `scripts/build-osm-ja-rejects.mjs`
