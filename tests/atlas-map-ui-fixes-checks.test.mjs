@@ -63,17 +63,6 @@ test('the Objects panel is placed again after a language rebuild and after its a
   assert.match(s, /function open\(\)\{ ensurePanel\(\); renderList\(\); tickFab\(\); _placePanel\(\)/);
 });
 
-test('the reader\'s own bubble stays off the pane — a plain wash and a hairline, never a gradient, shadow or blur', () => {
-  const f = read('js/atlas-float.js');
-  const m = /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{([^}]*)\}/.exec(f)[1];
-  assert.match(m, /background:color-mix\(in srgb,#fff \d+%,transparent\)/);
-  assert.match(m, /border:1px solid/);
-  assert.match(m, /box-shadow:none/);
-  assert.match(m, /backdrop-filter:none/);
-  assert.ok(!/gradient/.test(m));
-  assert.match(f, /:is\(button,input,select,textarea\)\{text-shadow:inherit;\}/);
-});
-
 test('era names follow the same size-of-region rule as today\'s names', () => {
   const t = read('js/time-borders.js');
   assert.match(t, /function _fitEraNames\(\)/);

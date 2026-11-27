@@ -62,9 +62,7 @@ const CSS =
   + '#atlas-float.on.idle .atl-float-card{opacity:.86;}'
   + '#atlas-float.on .atl-float-card:hover,#atlas-float.on .atl-float-card:focus-within{opacity:1;}'
   + '#atlas-float:not(.on){visibility:hidden;transition:visibility 0s linear .5s;}'
-  /* the bar is a control, so it is a small glass pill: the popup colour at 45%, blurred behind */
-  + '#atlas-float .atl-float-bar{'
-  + 'background:color-mix(in srgb,var(--popup-bg) 45%,transparent);backdrop-filter:saturate(170%) blur(14px);-webkit-backdrop-filter:saturate(170%) blur(14px);}'
+  /* the bar is a control, a row of glyphs (the surface of it is NOT painted off the pane: see the glow rules below) */
   + '#atlas-float .atl-float-bar{pointer-events:auto;align-self:flex-start;border-radius:999px;margin-bottom:6px;display:flex;align-items:center;gap:2px;padding:3px 6px;flex:0 0 auto;}'
   + '#atlas-float .atl-float-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:none;border-radius:9px;'
   + 'background:none;color:var(--text-muted);cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .2s ease;}'
@@ -91,20 +89,27 @@ const CSS =
      from are re-pointed to white inside it, so every piece that used the muted grey (labels, step lines, the time, sources) turns white with
      the rest instead of each rule being found one by one. The glow is a dark falloff on the GLYPHS (text-shadow), never a box or a
      filter on a block: a shadow on a rectangle reads as a rectangle. text-shadow is inherited, so it is set once here. */
-  + '#atlas-float{--atl-halo:0,0,0;}'
-  + '#atlas-float #atlas-panel .atl-chat{text-shadow:0 0 2px rgba(var(--atl-halo),.95),0 0 4px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 14px rgba(var(--atl-halo),.78),0 0 24px rgba(var(--atl-halo),.65),0 0 40px rgba(var(--atl-halo),.5);--text-main:#fff;--text-muted:#fff;color:#fff;}'
-  /* THE READER OWN MESSAGE KEEPS ITS BUBBLE (the reader, twice: the bubble must not be gone, and no rectangle may stand in for the glow). Those
-     are two different things: the glow is on the glyphs (text-shadow, inherited from the conversation); the bubble is a SHAPE that says whose
-     words these are — a plain translucent white wash with a hairline edge, in the bubble's own rounded outline, with no gradient, no
-     box-shadow and no backdrop blur, so it is never a glow and never reads as one. */
-  + '#atlas-float:not(.bg) #atlas-panel .atl-chat .atl-b.u:not(.atl-imgrow){background:color-mix(in srgb,#fff 14%,transparent);border:1px solid color-mix(in srgb,#fff 36%,transparent);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:6px 12px;}'
-  /* every control inside the conversation carries the same glow: a button, input, select or textarea does not inherit text-shadow by itself */
-  + '#atlas-float:not(.bg) #atlas-panel .atl-chat :is(button,input,select,textarea){text-shadow:inherit;}'
-  /* a passive block that was a rectangle of its own (inline code, a table header or a zebra row) is text here: no fill */
-  + '#atlas-float:not(.bg) #atlas-panel .atl-chat :is(.atl-code-i,.atl-md th,.atl-md tr:nth-child(even),.atl-md tr:nth-child(even) td){background:none;box-shadow:none;}'
-  /* the input row and the bar are surfaces, so their words carry the glow in the own colour of the surface (opposite the ink), not the black of the map */
-  + '#atlas-float:not(.bg) #atlas-panel .atl-inbar :is(.atl-in,button,.m-clock){text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent),0 0 16px color-mix(in srgb,var(--popup-bg) 60%,transparent);}'
-  + '#atlas-float:not(.bg) #atlas-panel .atl-in::placeholder{text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent);}'
+  + '#atlas-float:not(.bg){--atl-halo:0,0,0;--atl-glow:0 0 2px rgba(var(--atl-halo),.95),0 0 4px rgba(var(--atl-halo),.9),0 0 8px rgba(var(--atl-halo),.85),0 0 14px rgba(var(--atl-halo),.78),0 0 24px rgba(var(--atl-halo),.65),0 0 40px rgba(var(--atl-halo),.5);}'
+  /* EVERYTHING THE CARD IS MADE OF IS TEXT ON THE MAP, AND CARRIES THE GLOW ON ITS GLYPHS — ONE RULE AT THE ROOT (the reader: every piece of text in the floating Atlas
+     glows, and no rectangle stands in for the glow). It is set on the root and on every descendant (`*`) instead of on a list of the pieces we know about today, so what
+     is added to the conversation tomorrow carries it without a rule of its own: a button, an input, a placeholder, a chip, a table cell, a note. */
+  + '#atlas-float:not(.bg) #atlas-panel,#atlas-float:not(.bg) .atl-float-bar{--text-main:#fff;--text-muted:#fff;color:#fff;}'
+  + '#atlas-float:not(.bg) #atlas-panel *,#atlas-float:not(.bg) .atl-float-bar *,#atlas-float:not(.bg) #atlas-panel ::placeholder{text-shadow:var(--atl-glow);}'
+  /* a glyph that is a drawing, not a letter (the bar, the composer: a plus, a mic, an arrow) glows along its own outline — a drop-shadow on the SVG shape, never on its box */
+  + '#atlas-float:not(.bg) :is(#atlas-panel .atl-inbar,.atl-float-bar) svg{filter:drop-shadow(0 0 2px rgba(var(--atl-halo),.95)) drop-shadow(0 0 6px rgba(var(--atl-halo),.8)) drop-shadow(0 0 14px rgba(var(--atl-halo),.6));}'
+  /* NO RECTANGLE, ANYWHERE: no piece of the card paints a fill, a drop shadow or a blurred plate behind itself. A shadow or a plate on a box reads as a box. What is left out is
+     only what the reader's message keeps (its bubble is a SHAPE that says whose words these are — it is the bubble the panel always had, restored untouched below) and the
+     things that are DATA, not decoration: an empty element is a swatch or a bar fill (its colour is the meaning) and a progress bar or meter keeps its track. */
+  + '#atlas-float:not(.bg) :is(#atlas-panel *,.atl-float-bar,.atl-float-bar *):not(.atl-b.u,.atl-b.u *,.atl-fchip,[role=progressbar],[role=progressbar] *,progress,meter){box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'
+  + '#atlas-float:not(.bg) :is(#atlas-panel *,.atl-float-bar,.atl-float-bar *):not(:empty,.atl-b.u,.atl-b.u *,[role=progressbar],[role=progressbar] *,progress,meter){background:none;}'
+  /* THE READER OWN MESSAGE KEEPS ITS BUBBLE — exactly the panel's own (js/atlas-styles.js): no rule here restyles its surface. Its words keep the theme's ink (the bubble is the surface they sit on, not the map) and glow in the colour of that surface, opposite the ink. */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-b.u,#atlas-float:not(.bg) #atlas-panel .atl-b.u *{--text-main:var(--atl-ink-main);--text-muted:var(--atl-ink-muted);color:var(--atl-ink-main);text-shadow:0 0 3px color-mix(in srgb,var(--popup-bg) 95%,transparent),0 0 8px color-mix(in srgb,var(--popup-bg) 80%,transparent),0 0 16px color-mix(in srgb,var(--popup-bg) 60%,transparent);}'
+  /* the composer has no plate: a hairline outline says where to type (an outline is not a fill), brighter while the caret is in it */
+  + '#atlas-float:not(.bg) #atlas-panel .atl-inbar{border-color:rgba(255,255,255,.34);}'
+  + '#atlas-float:not(.bg) #atlas-panel .atl-inbar:is(:hover,:focus-within){border-color:rgba(255,255,255,.7);}'
+  + '#atlas-float:not(.bg) #atlas-panel .atl-go{color:#fff;border:1.5px solid rgba(255,255,255,.85);border-radius:50%;}'
+  + '#atlas-float:not(.bg) .atl-float-btn:is(:hover,[aria-pressed="true"]){background:none;}'
+  + '#atlas-float:not(.bg) .atl-float-btn[aria-pressed="true"]{text-decoration:underline;text-underline-offset:4px;}'
   /* THE CONVERSATION CAN BE REACHED. The rectangle used to be pointer-events:none all the way down, with a few inner pieces opting back in, so a
      wheel over a bubble, its copy/edit buttons or the gaps between lines went to the map (it zoomed, the answer did not scroll). The structure
      is now: the empty column stays transparent to the pointer (the fades and padding), and everything the conversation is made of takes it. */

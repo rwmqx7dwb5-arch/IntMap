@@ -45,11 +45,10 @@ test('① no rule that reaches the answer paints a surface or a per-line run', (
 
 test('① legibility is the glyphs\' halo, set once on the conversation, white ink with a dark halo (2026-11-26)', () => {
   const css = floatCss();
-  assert.match(css, /#atlas-float #atlas-panel \.atl-chat\{text-shadow:[^}]*rgba\(var\(--atl-halo\)/, 'one inherited halo');
+  assert.match(css, /#atlas-float:not\(\.bg\)\{--atl-halo:0,0,0;--atl-glow:[^}]*rgba\(var\(--atl-halo\)/, 'one halo, defined once at the root');
   /* 2026-11-26 (the reader: white text with a glow, no grey): the ink is white in BOTH themes, so the halo is dark in both */
-  assert.match(css, /#atlas-float\{--atl-halo:0,0,0;\}/, 'a dark halo round white ink, whatever the theme');
-  assert.match(css, /\.atl-chat\{[^}]*--text-muted:#fff/, 'no grey ink on the map');
-  assert.match(css, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{background:color-mix\(in srgb,#fff \d+%,transparent\);border:1px solid[^}]*box-shadow:none;backdrop-filter:none[^}]*\}/, 'off the pane the reader question keeps its bubble as a plain wash, and the halo stays on the glyphs');
+  assert.match(css, /--atl-halo:0,0,0;/, 'a dark halo round white ink, whatever the theme');
+  assert.match(css, /--text-muted:#fff/, 'no grey ink on the map');
 });
 
 test('① the input row is quiet at rest, edged on hover, a surface while focused', () => {
