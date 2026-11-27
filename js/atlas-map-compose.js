@@ -154,6 +154,7 @@ export function makeAtlasMapCompose(deps) {
     let artifact = { id: '', revision: 0 };
     let soloSeq = 0;           /* composes that arrive with no turn to belong to (a bare dispatch, the node checks) */
     let hoverId = '';
+    let eraAsOf = '';          /* the instant of the current run, as a short label ('1914', '500 BCE'…) — what each drawn thing says it is valid for */
     let era = null;            /* (text-to-era-map) the current run's `a.era`; read by resolveOne */
     let mapBound = false;
 
@@ -242,10 +243,10 @@ export function makeAtlasMapCompose(deps) {
         const HOV = ['==', ['get', 'hov'], 1];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
           paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 0.4, 0.2]] } }, before);
-        g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived']],
+        g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived'], ['!=', ['get', 'ref'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
-        g.layers.add({ id: 'atl-compose-sld', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'basis'], 'derived']],
+        g.layers.add({ id: 'atl-compose-sld', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['any', ['==', ['get', 'basis'], 'derived'], ['==', ['get', 'ref'], 1]]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.78]], 'line-dasharray': [2.2, 1.6] } }, before);
         g.layers.add({ id: 'atl-compose-line', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['!=', ['get', 'dash'], 1]],
@@ -337,7 +338,7 @@ export function makeAtlasMapCompose(deps) {
       shapes.forEach((sh) => {
         const o = ovOf(shapeId(sh)); const col = (o && o.color) || sh.color;
         out.push({ type: 'Feature', id: out.length, geometry: sh.geometry,
-          properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, color: col,
+          properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, ref: sh.reference ? 1 : 0, asOf: sh.asOf || '', color: col,
             fc: soften(col, 0.55, 0), lc: soften(col, 0.7, 0.06), op: o && o.op != null ? o.op : null, w: o && o.w != null ? o.w : null,
             hov: hovRec && hovRec.item === sh.item ? 1 : 0 } });
       });
@@ -509,11 +510,14 @@ export function makeAtlasMapCompose(deps) {
       const name = str(it.name, 120);
       if (!name) return { ok: false, reason: 'no_name' };
       const kind = str(it.kind, 40).toLowerCase();
+      /* ⚠ A DATED MAP ASKS THE DATED RECORDS FIRST. The ledger remembers a place by TODAY's name, so with `era` it used to answer in front of the
+         historical rung and a modern same-named place never reached the past-name lookup. Now the ledger is the fallback, and what it gives is
+         flagged `modernRef` so the legend and the result say it is today's coordinate, not the place as it was at that instant. */
       const known = fromLedger(it);
-      if (known) {
-        return { ok: true, lng: known.lng, lat: known.lat, canonical: known.canonicalName || known.name, cc: known.countryCode || '',
-          provenance: known.provenance || (isArea(known.kind || kind) ? 'resolved_place_centroid' : 'geocoded_point'), bbox: known.bbox || null, source: 'ledger', stableId: known.stableId };
-      }
+      const fromKnown = () => ({ ok: true, lng: known.lng, lat: known.lat, canonical: known.canonicalName || known.name, cc: known.countryCode || '',
+        provenance: known.provenance || (isArea(known.kind || kind) ? 'resolved_place_centroid' : 'geocoded_point'), bbox: known.bbox || null, source: 'ledger', stableId: known.stableId,
+        modernRef: !!era && known.provenance !== 'historical_record' });
+      if (known && !era) return fromKnown();
       /* (text-to-era-map) the historical rung: the spelling in the text first, then the form Atlas gave in `as`.
          ⚠ TWO PLACES UNDER ONE NAME ARE NOT RESOLVED BY THE GAZETTEER EITHER: with no `country` to tell them apart the
          item is `ambiguous` and the candidates go back to Atlas — today's gazetteer would only pick one of them silently. */
@@ -528,8 +532,9 @@ export function makeAtlasMapCompose(deps) {
           }
           if (h && h.reason === 'ambiguous' && !hist) hist = h;
         }
+        if (known) return fromKnown();
         if (hist && !str(it.country)) return { ok: false, reason: 'ambiguous', candidates: (hist.candidates || []).slice(0, 6) };
-      }
+      } else if (known) return fromKnown();
       if (typeof geocode !== 'function') return { ok: false, reason: 'no_geocoder' };
       const left = deadline - now();
       if (left <= 0) return { ok: false, reason: 'timeout', tried: queries(it) };
@@ -611,6 +616,7 @@ export function makeAtlasMapCompose(deps) {
        historical record holds at that instant, Atlas's identification of it, and today's gazetteer */
     function sourceText(r) {
       const as = r.identifiedAs ? (' → ' + r.identifiedAs) : '';
+      if (r.modernRef) return L("today's coordinates, shown for reference (not the place as of " + (r.asOf || 'that date') + ')', '現代の座標を参考表示（' + (r.asOf || 'その時点') + ' の位置ではない）') + as;
       if (r.source === 'histCities') return L('historical city name', '歴史都市名') + as;
       if (r.source === 'pleiades') return L('ancient place · Pleiades', '古代の地名・Pleiades') + as;
       if (r.provenance === 'web_verified') return L('web-verified', 'ウェブで確認') + as;
@@ -677,7 +683,8 @@ export function makeAtlasMapCompose(deps) {
       }
       if (shp && shp.length) {
         h += '<div class="atl-cmp-rels">' + shp.map((x) => '<span class="atl-cmp-rel"><span class="atl-geo-n" style="background:' + esc(x.color) + '">' + esc(x.want === 'line' ? '—' : '▢') + '</span>'
-          + '<span class="atl-cmp-rl">' + esc(x.name) + ' · ' + esc(SHAPE_TEXT[x.basis](x)) + '</span></span>').join('') + '</div>';
+          + '<span class="atl-cmp-rl">' + esc(x.name) + ' · ' + esc(SHAPE_TEXT[x.basis](x))
+          + (x.reference ? ' · ' + esc(L('the current outline, shown for reference — not the ' + x.asOf + ' boundary', '現代の輪郭を参考表示（' + x.asOf + ' の境界ではない）')) : '') + '</span></span>').join('') + '</div>';
       }
       if (shpMiss && shpMiss.length) {
         h += '<div class="atl-cmp-un">' + esc(L('Shapes not drawn', '描けなかった形')) + ': ' + esc(shpMiss.map((x) => x.name + (SHAPE_WHY[x.reason] ? ' (' + SHAPE_WHY[x.reason]() + ')' : '')).join(', ')) + '</div>';
@@ -727,6 +734,7 @@ export function makeAtlasMapCompose(deps) {
       const composeId = 'c' + (++seq);
       /* (text-to-era-map) the instant the names are read at — a line js/where-when.js parses, or the reading itself */
       era = (a.era && (typeof a.era === 'object' || str(a.era))) ? a.era : null;
+      eraAsOf = !era ? '' : (typeof era === 'object' ? (era.y != null ? String(era.y) : str(era.label || era.text, 40)) : str(era, 40));
       const deadline = now() + PASS_BUDGET_MS;
       /* ⚠⚠⚠ (#R551) WHICH MAP THIS IS A REVISION OF — from the EXECUTION CONTEXT, not the arguments.
          The turn id arrives as the third argument js/atlas-executor.js hands every capability and
@@ -811,10 +819,12 @@ export function makeAtlasMapCompose(deps) {
         if (want) {
           let sh = null;
           if (typeof resolveShape === 'function' && now() < deadline + ITEM_TIMEOUT_MS) {
-            try { sh = await withTimeout(resolveShape(str(it.name, 120), want, { country: str(it.country, 90) }), ITEM_TIMEOUT_MS * 2); } catch (_) { sh = null; }
+            try { sh = await withTimeout(resolveShape(str(it.name, 120), want, { country: str(it.country, 90), era: eraAsOf || undefined }), ITEM_TIMEOUT_MS * 2); } catch (_) { sh = null; }
           }
           if (sh && sh.ok && sh.geometry) {
-            shapes.push({ name: str(it.name, 120), want, geometry: sh.geometry, basis: sh.basis === 'derived' ? 'derived' : 'real', method: str(sh.method, 40), source: str(sh.source, 120), color: colour, item: i + 1 });
+            shapes.push({ name: str(it.name, 120), want, geometry: sh.geometry, basis: sh.basis === 'derived' ? 'derived' : 'real', method: str(sh.method, 40), source: str(sh.source, 120), color: colour, item: i + 1,
+              /* ⚠ every outline the shape ladders hold is a CURRENT one (OSM, IntMap country outlines). On a dated map it is shown as a reference and says so; a ladder that answers for the instant itself says `validAt` and is not demoted. */
+              reference: !!eraAsOf && !(sh.validAt && String(sh.validAt) === eraAsOf), asOf: eraAsOf, validAt: sh.validAt ? String(sh.validAt) : (eraAsOf ? '' : 'present') });
             /* a name whose only answer is its shape still gets its numbered marker — at the shape, said so */
             if (!res.ok) { const c = shapeAnchor(sh.geometry); if (c) res = { ok: true, lng: c.lng, lat: c.lat, canonical: str(it.name, 120), provenance: 'resolved_place_centroid', bbox: null, source: 'shape' }; }
           } else {
@@ -826,6 +836,7 @@ export function makeAtlasMapCompose(deps) {
         const rec = { id: sid || (composeId + ':' + (placed.length + 1)), n: placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
           kind: str(it.kind, 40), country: str(it.country, 90), role: role, note: str(it.note, 240), color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
           bbox: res.bbox, source: res.source, histNote: res.histNote || '', identifiedAs: res.identifiedAs || '', compose: composeId, artifact: artifactId, revision: revision,
+          asOf: eraAsOf, modernRef: !!eraAsOf && res.provenance !== 'historical_record' && res.source !== 'histCities' && res.source !== 'pleiades',
           item: i + 1,   /* the 1-based position in THIS call's `items` — what a numeric `from`/`to` refers to (see below) */
           spellings: [str(it.name, 120), res.canonical, str(it.as, 120)].concat(res.altNames || []).filter(Boolean) };
         placed.push(rec);
@@ -927,7 +938,7 @@ export function makeAtlasMapCompose(deps) {
       const relOut = drawn.map(relPub);
       const exec = { status: ok ? (partial ? 'partial' : 'ok') : 'failed', compose: composeId,
         artifact: artifactId, revision: revision, counts: counts,
-        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
+        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance, ...(era ? { source: r.source, as: r.identifiedAs || undefined, record: r.canonical, asOf: r.asOf, validity: r.modernRef ? 'modern_reference' : 'dated_record' } : null) })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
         /* (atlas-fewer-rounds) what the camera now shows, as IntMap set it — not a request to check it */
         view: framed ? Object.assign({ framed: framed.items === placed.length ? 'all_placed' : 'all_resolved' }, framed,
           { note: 'The camera was fitted to these items: every one of them is inside the view now (padded, not cut at the edge). You do not need to move or look at the map to confirm the framing; move it only if you want a DIFFERENT view.' })
@@ -941,6 +952,7 @@ export function makeAtlasMapCompose(deps) {
       if (shapeMiss.length) {
         exec.shapeNote = 'The items under `shapesUnresolved` were asked as an AREA or a LINE and IntMap could NOT obtain their real geometry (`reason`: not_found = no feature with that name; kind_mismatch = the name exists but as the other kind — `got` says which; only_extent = only a bounding box exists, which is not a shape; ambiguous = several features share the name, see `candidates`; timeout). Their SHAPE IS NOT ON THE MAP. Do NOT stand relations, a schematic line or a ring of nearby places in for it — that draws a picture of something else. Say in your answer that the shape could not be drawn, and why; if another name is the same feature (its official name, its name in the local language), you may ask again with that name.';
       }
+      if (eraAsOf && (shapes.some((x) => x.reference) || placed.some((r) => r.modernRef))) exec.validityNote = 'Items with validity "modern_reference" are present-day coordinates or outlines shown for reference on a map dated ' + eraAsOf + ': they are drawn dashed / labelled so the reader can tell them from dated records, and they are NOT the boundary or place as of that date. Do not describe them as the ' + eraAsOf + ' situation.';
       if (shapes.some((x) => x.basis === 'derived')) exec.shapeDerivedNote = 'Shapes with basis "derived" were BUILT by IntMap (method says how), not held by a source: they are drawn dashed and labelled approximate. Say so if the answer depends on the exact outline.';
       const html = ok ? legendHtml(a.title, placed, drawn, missing, fills, !!era, skipped, shapes, shapeMiss) : '';
       /* ⚠⚠⚠ (#R551) `resultKey` IS WHAT STOPS THE READER SEEING THE DRAFT AND THE FINISHED MAP AT
@@ -964,12 +976,12 @@ export function makeAtlasMapCompose(deps) {
     /* (atlas-real-shapes) what the reader asked to SEE of an item: 'area' | 'line' | '' (a point) */
     function shapeOf(it) { const v = str(it && it.shape, 10).toLowerCase(); return (v === 'area' || v === 'line') ? v : ''; }
     /* what the result says about one drawn shape — no geometry (the map holds it; the model does not need the vertices) */
-    function shapePub(x) { return { name: x.name, shape: x.want, basis: x.basis, method: x.method, source: x.source, item: x.item, bbox: refs.bboxOf(x.geometry) }; }
+    function shapePub(x) { return { name: x.name, shape: x.want, basis: x.basis, method: x.method, source: x.source, item: x.item, validity: x.reference ? 'modern_reference' : (x.asOf ? 'dated_record' : 'current'), ...(x.asOf ? { asOf: x.asOf } : null), bbox: refs.bboxOf(x.geometry) }; }
     /* what the result says about one drawn relation */
     function relPub(r) { return { from: r.fromName, to: r.toName, fromId: r.from, toId: r.to, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
       km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }
     /* what the bubble is allowed to keep about a record — no functions, no engine handles */
-    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, country: r.country, item: r.item, bbox: r.bbox || null, note: r.note || '', role: r.role, color: r.color, lng: r.lng, lat: r.lat, spellings: r.spellings.slice() }; }
+    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, country: r.country, item: r.item, bbox: r.bbox || null, note: r.note || '', role: r.role, color: r.color, lng: r.lng, lat: r.lat, ...(r.asOf ? { asOf: r.asOf, validity: r.modernRef ? 'modern_reference' : 'dated_record', source: r.source } : null), spellings: r.spellings.slice() }; }
 
     /**
      * recordsFor(results) — the compose records carried by a set of dispatch results (the bubble's
