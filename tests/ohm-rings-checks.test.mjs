@@ -236,7 +236,11 @@ test('#R669 ⑬ the sharp shape replaces the coarse one in place — it is never
   const tools = read('js/map-tools.js');
   const i = tools.indexOf('ctx.refine');
   const block = tools.slice(i, i + 700);
-  assert.ok(block.includes('setData('), 'the same source is set again');
+  /* (isolate-outline-geometry) the refine hands its shape to paintShape, the one writer of the outline's source — the same
+     source is set again from there, fill and line together */
+  assert.ok(block.includes('paintShape('), 'the sharper shape goes through the outline\'s one painter');
+  const p = tools.indexOf('function paintShape('); const painter = tools.slice(p, p + 400);
+  assert.ok(p > 0 && painter.includes('setData('), 'the same source is set again');
   assert.ok(!/addLayer|layers\.add\(/.test(block), 'a second outline layer would draw the boundary twice');
 });
 

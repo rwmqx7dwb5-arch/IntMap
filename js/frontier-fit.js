@@ -220,7 +220,7 @@ export function countryCodes(f) {
     return out.length ? out : null; } catch (_) { return null; }
 }
 const _shared = new WeakMap();   /* geometry → its shared-edge set; the polygon data never changes under a geometry */
-export function shapeOnMap(GE, feat, countryGeo, { filter, minZoom, codes } = {}) {
+function shapeOnMap(GE, feat, countryGeo, { filter, minZoom, codes } = {}) {
   const g = feat && feat.geometry;
   const rings = !g ? [] : g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : [];
   const plain = { geometry: g, frontier: rings, fitted: false, key: 'orig' };
