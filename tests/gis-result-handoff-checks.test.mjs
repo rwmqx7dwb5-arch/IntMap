@@ -298,3 +298,42 @@ test('a data.gis step with inputs and no op READS them (as on the page); a step 
   assert.match(use.result.gaps[0], /"list" is one of the inputs, but its result holds no features/);
   assert.equal(db2.st.job.finished.status, 'partial');
 });
+
+/* ── (gis-dataset-slots) the African job of 2026-11-28 as Atlas built it: four capability tasks, the earlier ones named ONLY in data.gis "inputs",
+   every contract's inputs empty. No dependency was made, all four started at once, and three were refused. ── */
+const planServer = (contracts) => { const lane = makeServerCaps(); const p = planJob(contracts, { kinds: ['worker', 'capability'], capabilityOk: (id) => lane.has(id), datasetSlots: (id) => lane.datasetSlots(id) }); assert.equal(p.ok, true, JSON.stringify(p)); return p.tasks; };
+test('a task named where data.gis takes its data is a dependency: filter → hull → count/sum run in order on the real GIS', async () => {
+  const CT = 'https://data.example.org/open/countries-poly.geojson';
+  const sq = (x, y) => ({ type: 'Polygon', coordinates: [[[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1], [x, y]]] });
+  const countries = { type: 'FeatureCollection', features: Array.from({ length: 9 }, (_, i) => ({ type: 'Feature', properties: { NAME: 'k' + i, CONTINENT: i < 5 ? 'Africa' : 'Asia', POP_EST: 100 * (i + 1) }, geometry: sq(i * 2, 0) })) };
+  const tasks = planServer([
+    { id: 'africa', kind: 'capability', capability: 'data.gis', args: { op: 'filter', inputs: [CT], params: { where: [{ field: 'CONTINENT', op: '==', value: 'Africa' }] } } },
+    { id: 'zone', kind: 'capability', capability: 'data.gis', args: { op: 'convexHull', inputs: ['africa'] } },
+    { id: 'count', kind: 'capability', capability: 'data.gis', args: { op: 'aggregate', inputs: ['zone', 'africa'], params: { stat: 'count', outName: 'n' } } },
+    { id: 'sum', kind: 'capability', capability: 'data.gis', args: { op: 'aggregate', inputs: ['zone', 'africa'], params: { stat: 'sum', field: 'POP_EST', outName: 'pop' } } },
+  ]);
+  assert.deepEqual(tasks.map((t) => [t.id, t.deps]), [['africa', []], ['zone', ['africa']], ['count', ['zone', 'africa']], ['sum', ['zone', 'africa']]]);
+  const db = fakeDb(tasks);
+  await run(db, null, files({ [CT]: countries }));
+  for (const id of ['africa', 'zone', 'count', 'sum']) assert.equal(db.st.tasks.get(id).status, 'done', id + ': ' + JSON.stringify(db.st.tasks.get(id).result && db.st.tasks.get(id).result.gaps));
+  assert.equal(db.st.tasks.get('africa').result.data.count, 5);
+  const row = (id) => db.st.tasks.get(id).result.data.result.features[0].properties;
+  assert.equal(row('count').n, 5, 'counted over the five African rows');
+  assert.equal(row('sum').pop, 100 + 200 + 300 + 400 + 500, 'summed over them');
+  assert.deepEqual(db.st.tasks.get('sum').result.sources.map((x) => x.url), [CT], 'the file is the source at the end of the chain');
+  assert.equal(db.st.job.finished.status, 'done');
+  /* only the declared slot is read: a filter VALUE equal to a task id is not a reference */
+  const t2 = planServer([
+    { id: 'Africa', kind: 'capability', capability: 'data.gis', args: { op: 'filter', inputs: [CT], params: { where: [{ field: 'CONTINENT', op: '==', value: 'Asia' }] } } },
+    { id: 'asia', kind: 'capability', capability: 'data.gis', args: { op: 'filter', inputs: [CT], params: { where: [{ field: 'CONTINENT', op: '==', value: 'Africa' }] } } },
+  ]);
+  assert.deepEqual(t2.map((t) => t.deps), [[], []]);
+});
+
+/* ── (gis-dataset-slots) a worker's findings reach Atlas: they were reduced to a count, so Atlas said the result held no figures ── */
+test('jobFacts carries the findings themselves, and jobText states them', () => {
+  const f = jobFacts({ id: 'j1', status: 'done', tasks_total: 1, result: { summary: 's' } }, [{ task_id: 'aggregate', status: 'done', contract: { goal: 'count Japan' }, result: { summary: 'counted', findings: [{ claim: 'Japan has 3 places, POP_MAX total 48775000', source: 'data.gis', excerpt: '{"count":3,"sum":48775000}' }], gaps: [] } }]);
+  assert.equal(f.tasks[0].findings.length, 1);
+  assert.equal(f.tasks[0].findings[0].claim, 'Japan has 3 places, POP_MAX total 48775000');
+  assert.match(jobText(f), /findings: \[1\] Japan has 3 places, POP_MAX total 48775000 \(data\.gis\) — "\{"count":3,"sum":48775000\}"/);
+});

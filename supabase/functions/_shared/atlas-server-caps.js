@@ -130,6 +130,8 @@ export function columnsOf(features) {
 const gisJob = {
   id: 'data.gis',
   needs: ['gis'],
+  /* the arguments that hold datasets: a task id written there is that task's output (planJob makes it a dependency — js/atlas-job-core.js) */
+  datasetArgs: ['inputs'],
   args: '{"op"?:str (omit it, with inputs, to READ them: the result is the features as read),"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
   async run(args, ctx) {
     const a = args || {};
@@ -215,6 +217,8 @@ export function makeServerCaps(o) {
   return {
     catalogue: () => Object.keys(SERVER_CAPS).map((id) => ({ id, args: SERVER_CAPS[id].args })),
     has: (id) => Object.prototype.hasOwnProperty.call(SERVER_CAPS, String(id || '')),
+    /* which arguments of a twin hold datasets (the twin's own declaration; none when it declares none) */
+    datasetSlots: (id) => { const t = SERVER_CAPS[String(id || '')]; return t && Array.isArray(t.datasetArgs) ? t.datasetArgs.slice() : []; },
     /* (atlas-autonomy) does this twin share in-process state with another call — the GIS engine and its layers — so that two of it must not run
        at once? Derived from `needs`, not listed: a twin that only reads over HTTP or the database can overlap with anything. */
     exclusive: (id) => { const t = SERVER_CAPS[String(id || '')]; return !t || (t.needs || []).includes('gis'); },
