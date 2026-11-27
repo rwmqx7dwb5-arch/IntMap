@@ -20,7 +20,7 @@
 import { str, int, one, obj, bool, list } from './atlas-caps.js';
 import { webEvidence, queryKey } from './atlas-web-evidence.js';
 import { modelCallKey } from './atlas-model-call-key.js';
-import { webBrowseDoor, handoffText, sayFor, WEB_BROWSE_NOTICE } from './web-browse.js';
+import { webBrowseDoor, handoffText, HANDOFF_NEXT, sayFor, WEB_BROWSE_NOTICE } from './web-browse.js';
 
 const door = webBrowseDoor;   /* the one instance lives in js/web-browse.js (a capability module holds no `let`: scripts/atlas-caps-split.mjs) */
 const safeUrl = (u) => window.IntMapSafe.url(u);   /* the one read of the global in this file (one edge, not one per capability) */
@@ -57,7 +57,7 @@ export default [
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
         return R(false, warn(esc(say) + (r.handoff.url ? ' <a href="' + esc(safeUrl(r.handoff.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(host(r.handoff.url)) + '</a>' : '')),
-          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.state && r.state.url, say, next: 'Tell the reader what to do; do not retry this page.' }) } });
+          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.state && r.state.url, say, next: HANDOFF_NEXT }) } });
       }
       if (!r || !r.ok) {
         const code = (r && r.code) || 'upstream_unreachable';
@@ -91,7 +91,7 @@ export default [
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
         return R(false, warn(esc(say) + (r.handoff.url ? ' <a href="' + esc(safeUrl(r.handoff.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(host(r.handoff.url)) + '</a>' : '')),
-          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.state && r.state.url, say, next: 'Tell the reader what to do; do not retry this page.' }) } });
+          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.state && r.state.url, say, next: HANDOFF_NEXT }) } });
       }
       if (!r || !r.ok) {
         const code = (r && r.code) || 'render_unreachable';
@@ -147,9 +147,9 @@ export default [
       const r = await D.session(a, dctx && dctx.signal);
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
-        const live = r.handoff.liveView ? ' <a href="' + esc(safeUrl(r.handoff.liveView)) + '" target="_blank" rel="noopener noreferrer">' + esc(L('Open the live browser', 'ライブブラウザを開く')) + '</a>' : '';
-        return R(false, warn(esc(r.handoff.liveView ? L('This page needs you to sign in or pass a check. Do it in the live browser, then tell Atlas to continue — Atlas will carry on in the same session.', 'このページはログインまたは確認が必要です。ライブブラウザで済ませてから、続けるよう Atlas に伝えてください。同じセッションから Atlas が続けます。') : say) + live),
-          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.url, say, next: 'Tell the reader to do the step in the live browser (liveView), then call observe in the same session. Never type credentials yourself.' }) } });
+        const live = r.handoff.liveView ? ' <a href="' + esc(safeUrl(r.handoff.liveView)) + '" target="_blank" rel="noopener noreferrer">' + esc(L('Open the live browser (optional)', 'ライブブラウザを開く（任意）')) + '</a>' : '';
+        return R(false, warn(esc(say) + live),
+          { meta: { code: 'handoff_' + r.handoff.kind, permanent: true }, exec: { web: Object.assign(web, { handoff: r.handoff, url: r.url, say, next: HANDOFF_NEXT + (r.handoff.liveView ? ' (A live browser view exists for this session; it is an option for the reader, never a request: do not ask for it, and never type credentials yourself.)' : '') }) } });
       }
       if (!r || !r.ok) {
         const code = (r && r.code) || 'session_unreachable';

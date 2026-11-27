@@ -257,7 +257,9 @@ export function makeAtlasAgent() {
              cannot tell «skipped» from «done under the step that was current» (a model that drew everything in step 1 and never moved
              `current` leaves steps 2..n pending while the map is complete). A reader was told 「完了していないもの: 計画の手順 2」 over a finished
              drawing. What IS observed — a call that failed, stayed partial, was not confirmed, is waiting or was stopped — is still listed. */
-          if (!st || st.state === 'completed' || st.state === 'noop' || st.state === 'pending') return;
+          /* 'unobserved' is «it ran and its effect could not be seen» — not a failure, and the output gate (`made`) counts a call that ran as made;
+             the list used to say «not completed» over a step that had run (one-pass-or-a-reason §5: not observed is not failed) */
+          if (!st || st.state === 'completed' || st.state === 'noop' || st.state === 'pending' || st.state === 'unobserved') return;
           /* a step that holds a completed call and whose OTHER calls failed ('partial' by mixture, js/atlas-plan.js stepState) delivered what it was for: the failure
              was an alternative path or a look-up that did not matter, and Atlas's answer says so when it did. A step whose non-completed calls are partial,
              unobserved, waiting, stopped or running is still listed. */
@@ -1026,6 +1028,13 @@ export function makeAtlasAgent() {
           if (!interim.length || interim[interim.length - 1].text !== reply.text) interim.push({ step, text: reply.text });
         }
         if (reply && reply.noteToIntMap) { (trace.machineNotes = trace.machineNotes || []).push({ step, note: reply.noteToIntMap }); }
+        /* ⚠ A FINDING ATLAS ANSWERED WITH A REASON IS CONTESTED, NOT UNFINISHED. The independent reader is a model and can be wrong: when its finding was put to
+           Atlas and Atlas made no call but wrote why the request does not need it (note_to_intmap, the place the note itself told it to put the reason), the
+           finding is kept on the trace for the evaluation and is no longer shown to the reader as «not completed» over an answer that was complete. */
+        if (goalAt >= 0 && results.length === goalAt && !calls.length && goalUnmet.length && reply && reply.noteToIntMap) {
+          trace.goalContested = { unmet: goalUnmet.map((u) => ({ need: u.need, why: u.why })), reason: reply.noteToIntMap };
+          goalUnmet = [];
+        }
         nextEffort = (reply && NEXT_EFFORTS.indexOf(reply.nextEffort) >= 0) ? reply.nextEffort : undefined;
         nextOutput = (reply && Number.isInteger(reply.nextOutput) && reply.nextOutput > 0) ? reply.nextOutput : undefined;
         if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
@@ -1085,6 +1094,7 @@ export function makeAtlasAgent() {
           let goalNote = '';
           if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
             goalVerifiedAt = results.length; goalRounds++;
+            const prevNeeds = (goalPrev && goalPrev.unmet && goalPrev.unmet.length) ? goalPrev.unmet.map((u) => String(u.need).trim().toLowerCase()).sort().join('|') : '';
             let v = null;
             const verifyT0 = wallNow();
             try {
@@ -1105,7 +1115,13 @@ export function makeAtlasAgent() {
               goalUnmet = goalPrev.unmet.map((u) => ({ kind: 'goal', need: u.need, why: u.why }));
               goalAt = -1; trace.goalHeld = goalUnmet.length;
             } else goalUnmet = list || [];
-            if (list && list.length) {
+            /* THE SAME FINDING TWICE IS THE LOOP LEARNING NOTHING (the same rule as the output gate's `moved`, below): the reader found these needs unmet,
+               Atlas did something, and the reader found the SAME needs. Sending them back again re-streams an answer and withdraws it each round, with
+               nothing new to act on. The finding stands on the record (it is still shown as it was); the turn is not bounced for it again. */
+            const needKey = (xs) => (xs || []).map((u) => String(u.need).trim().toLowerCase()).sort().join('|');
+            const repeated = !!(list && list.length && prevNeeds && needKey(list) === prevNeeds);
+            if (repeated) trace.goalRepeated = (trace.goalRepeated || 0) + 1;
+            if (list && list.length && !repeated) {
               if ((step + 1) < lim.maxSteps && !outOfTime()) {
                 goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
                   + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')

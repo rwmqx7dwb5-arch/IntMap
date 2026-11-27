@@ -47,7 +47,7 @@ async function drawn(names) {
     }
     const data = m.getSource('nlq-line-src') && m.getSource('nlq-line-src')._data;
     const assigned = data && Array.isArray(data.features) ? data.features : (data && data.geojson && data.geojson.features) || null;
-    return { layer: !!m.getLayer('nlq-line'), tiled: [...new Set(feats.map((f) => f.properties && f.properties.name))], assigned: assigned ? assigned.map((f) => f.properties.name) : null };
+    return { layer: !!m.getLayer('nlq-lines'), tiled: [...new Set(feats.map((f) => f.properties && f.properties.name))], assigned: assigned ? assigned.map((f) => f.properties.name) : null };
   }, names);
 }
 

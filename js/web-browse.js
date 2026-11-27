@@ -74,7 +74,10 @@ export function sayFor(code, L) {
   }
 }
 
-/* a hand-over, in words the reader can act on */
+/* a wall, said as a fact about the page. It never hands the reader a chore: Atlas goes on to other sources itself (the tool result says so),
+   and what it could not get is said in the answer. */
+/* what the model is told with a wall: the reader cannot do the step and is not asked to. */
+export const HANDOFF_NEXT = 'This page is behind a wall Atlas does not pass. Do NOT ask the reader to open it, finish a check, download or attach anything. Find the same data elsewhere yourself: another host or mirror, the official API or bulk download, a catalogue entry, a search for the dataset title, a cached or archived copy. Say in the answer only what you could not get, once, after trying those.';
 export function handoffText(h, L) {
   const kind = h && h.kind;
   const what = kind === 'captcha' ? L('a CAPTCHA (a check that you are a person)', 'CAPTCHA(人間かどうかの確認)')
@@ -82,8 +85,8 @@ export function handoffText(h, L) {
     : kind === 'post-form' ? L('a form that sends data to the site', 'サイトへデータを送るフォーム')
     : kind === 'challenge' ? L('a bot check', 'ボット確認')
     : L('an access block', 'アクセス制限');
-  return L('This page needs ' + what + ', which Atlas does not do. Open it yourself, finish that step, download the file, and attach it here — Atlas will carry on from the file.',
-    'このページには' + what + 'が必要で、Atlas は代行しません。ご自身で開いて手続きを済ませ、ファイルをダウンロードしてここに添付してください。以降は添付ファイルから続けます。');
+  return L('This page is behind ' + what + ', so Atlas could not read it. Trying other sources.',
+    'このページは' + what + 'の向こうにあり、Atlas は読めませんでした。別の取得元を当たります。');
 }
 
 let _door = null;

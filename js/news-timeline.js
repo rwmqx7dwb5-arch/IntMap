@@ -117,7 +117,13 @@ export function newsTimeline(HOST){
         if(tl.style.getPropertyValue(key)!==px) tl.style.setProperty(key,px);
       }
     }
-    function queueCreditSpace(){ if(!creditFrame) creditFrame=requestAnimationFrame(measureCreditSpace); }
+    /* --ntl-clear: how far up from the bottom of the map the Chronos bar reaches (0 when it is not on the map). Popups anchored to the bottom read it
+       (`bottom:max(24px,var(--ntl-clear,0px))`), so none opens on top of the bar. Its own function: measureCreditSpace is a unit of its own. */
+    function measureClear(){ const parent=tl.offsetParent; if(!parent) return; const area=parent.getBoundingClientRect(), panel=tl.getBoundingClientRect();
+      const on=panel.width>0&&panel.height>0&&getComputedStyle(tl).display!=='none';
+      const px=(on?Math.ceil(Math.max(0,area.bottom-panel.top))+12:0)+'px';
+      const root=document.documentElement; if(root.style.getPropertyValue('--ntl-clear')!==px) root.style.setProperty('--ntl-clear',px); }
+    function queueCreditSpace(){ if(!creditFrame) creditFrame=requestAnimationFrame(()=>{ measureCreditSpace(); try{ measureClear(); }catch(_){} }); }
     let creditResize=null, creditMutation=null;
     if(mapCredit){
       if(window.ResizeObserver){ creditResize=new ResizeObserver(queueCreditSpace);

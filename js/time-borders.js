@@ -1522,6 +1522,8 @@ export function timeBorders(HOST){
        candidate. The area is the name's LARGEST part (`_partKm2`, the sphere) — every point of one name
        carries the same properties (#R707 ⑤), so a far territory's label is ordered with its polity's
        first one. The floor keeps log10 finite. */
+    /* the box of the part each name point stands on, kept BESIDE the feature (not in its properties: every point of a name must read exactly what the first one does) */
+    const _lblBox=new WeakMap();
     function _labelFC(fc,keyOf,asParts){ const feats=[];
       try{ const by=new Map();
         for(const f of ((fc&&fc.features)||[])){ const p=f.properties||{};
@@ -1571,14 +1573,29 @@ export function timeBorders(HOST){
                label carried before — so `_same` still decides which of the two layers draws it,
                `_locName`/`_modName` still say the same words, and `_clk` opens the same country
                from whichever of them was tapped. The copy is #R520's: see the note above. */
-            feats.push({type:'Feature',geometry:asParts?{type:'Polygon',coordinates:it.part.poly}:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({_sort:-Math.log10(Math.max(_partKm2(list[0].part),1e-6))},own.properties)}); } });
+            feats.push({type:'Feature',geometry:asParts?{type:'Polygon',coordinates:it.part.poly}:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({_sort:-Math.log10(Math.max(_partKm2(list[0].part),1e-6))},own.properties)}); try{ const bx=_polyBox(it.part.poly); if(bx) _lblBox.set(feats[feats.length-1],bx); }catch(_){} } });
       }catch(_){}
       return {type:'FeatureCollection',features:feats}; }
     /* the names follow the borders on every push — one state, two sources. */
     /* (#R707) …and the unnamed-shape popup goes with them. It states what upstream says about ONE
        shape of the collection that was on the source; a new collection (another year, or the same
        year re-localized) makes that statement describe something that is no longer drawn. */
-    function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
+    /* ══ AN ERA NAME GOES WHEN THE VIEW HAS ENTERED ITS TERRITORY — the rule js/place-labels.js applies to today's country names
+       (js/country-extent.js viewShare / NAME_GONE_SHARE: the size of the region against the size of the view), applied here to the era
+       names, which had no zoom rule at all (only collision decided) and so stayed on the map at any depth. Each name point has the
+       box of the part it stands on (`_lblBox`, from the same geometry the point was found in); no name is listed. The source keeps the
+       objects in JS (a vector-tile round trip would turn the array into a string), the layers get a filter on the numbered ids. */
+    function _polyBox(poly){ let w=Infinity,s=Infinity,e=-Infinity,n=-Infinity; try{ for(const r of (poly||[])) for(const c of r){ if(c[0]<w) w=c[0]; if(c[0]>e) e=c[0]; if(c[1]<s) s=c[1]; if(c[1]>n) n=c[1]; } }catch(_){} return isFinite(w)?[w,s,e,n]:null; }
+    let _lblFeats=[], _lblGoneKey='';
+    const _LBL_BASE={ 'imtb-lbl':['!=',['coalesce',['get','_same'],0],1], 'imtb-lbl2':['==',['coalesce',['get','_same'],0],1] };
+    function _fitEraNames(){ try{ const CE=window.IntMapCountryExtent; if(!CE||!CE.viewShare||!GE().layers.has('imtb-lbl')) return;
+      const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
+      const z=GE().camera.getZoom(); const gone=[];
+      for(const f of _lblFeats){ const bb=_lblBox.get(f); if(bb&&CE.viewShare(bb,z,vw,vh)>=CE.NAME_GONE_SHARE) gone.push(f.id); }
+      const key=gone.join(','); if(key===_lblGoneKey) return; _lblGoneKey=key;
+      Object.keys(_LBL_BASE).forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,gone.length?['all',_LBL_BASE[id],['!',['in',['id'],['literal',gone]]]]:_LBL_BASE[id]); }catch(_){} }); }catch(_){} }
+    try{ GE().events.on('moveend',_fitEraNames); GE().events.on('idle',_fitEraNames); }catch(_){}
+    function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')){ const L=_labelFC(fc); L.features.forEach((f,i)=>{ f.id=i; }); _lblFeats=L.features; _lblGoneKey='~'; GE().layers.setSourceData('imtb-lbl-src',L); setTimeout(_fitEraNames,0); } }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:ERA_BORDER_CREDIT});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
@@ -2281,7 +2298,7 @@ export function timeBorders(HOST){
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-ln-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ clearTimeout(_prT); if(GE().layers.hasSource('imtb-now-src')) GE().layers.setSourceData('imtb-now-src',{type:'FeatureCollection',features:[]}); }catch(_){}
-      try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); _lblFeats=[]; }catch(_){}
       try{ _DRAWN_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     /* ══ (time-compare-lapse) WHICH COLLECTION ANSWERS AN INSTANT — ONE CHAIN, ANY MAP ══════════════════

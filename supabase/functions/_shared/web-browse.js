@@ -262,7 +262,10 @@ export function parseHtml(html, baseUrl) {
   /* a page whose scripts are most of what it is and which says almost nothing is a page that is drawn by
      script — what a reader would see is not in this HTML. Said, never guessed around. */
   const blank = scriptsSeen >= 3 && text.length < 200 && uniq.length < 5 && !forms.length;
-  return { title, text, links: uniq, forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank };
+  /* a page that says almost nothing and links almost nowhere (the same measure as `blank`, without the script and form conditions):
+     only such a page can be a WALL. A footer widget or a header sign-in box on a page whose body was read is not one. */
+  const bare = text.length < 200 && uniq.length < 5;
+  return { title, text, links: uniq, forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank, bare };
 }
 
 /* "csv" | "…" | "" — the format a link points at, from the link alone */
@@ -278,11 +281,14 @@ export function fileKind(link) {
 /* ── hand-over: what a reader must do themself ─────────────────────────────────────────────────────── */
 export function handoffOf(page, status, headers, url) {
   const h = (n) => { try { return String((headers && headers.get && headers.get(n)) || ""); } catch (_) { return ""; } };
-  if (page && page.forms && page.forms.some((f) => f.password)) return { kind: "login", url };
-  if (page && page.captcha) return { kind: "captcha", url };
+  /* a sign-in box or a captcha tag on a page whose body WAS read is not a wall (a header login form, a footer widget): the reader
+     (the model) was handed the page, and a hand-over would have thrown away a page that was fine. Only a page with nothing to read is one. */
+  if (page && page.bare && page.forms && page.forms.some((f) => f.password)) return { kind: "login", url };
+  if (page && page.bare && page.captcha) return { kind: "captcha", url };
   if (h("cf-mitigated") === "challenge" || (page && /^\s*(just a moment|attention required|access denied|ddos protection)/i.test(page.title || ""))) return { kind: "challenge", url };
   if (status === 401) return { kind: "login", url };
-  if (status === 403 || status === 429) return { kind: "blocked", url };
+  /* 429 is "slower", not a step a person can do: it is an upstream_status, said as such */
+  if (status === 403) return { kind: "blocked", url };
   return null;
 }
 

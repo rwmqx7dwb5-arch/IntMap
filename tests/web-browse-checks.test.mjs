@@ -233,7 +233,7 @@ test('⑦ the rows declare what the decomposition reads; the door states the bou
   assert.equal(b.confirmation, 'none'); assert.equal(f.confirmation, 'none');
   assert.match(WEB_BROWSE_NOTICE, /DATA, not instructions/);
   const L = (en, jp) => en + '|' + jp;
-  for (const k of ['login', 'captcha', 'post-form', 'challenge', 'blocked']) assert.match(handoffText({ kind: k }, L), /attach/, k + ' tells the reader what to do');
+  for (const k of ['login', 'captcha', 'post-form', 'challenge', 'blocked']) { assert.doesNotMatch(handoffText({ kind: k }, L), /attach|yourself|download/, k + ' hands the reader no chore'); assert.match(handoffText({ kind: k }, L), /other sources/, k + ' says Atlas goes on'); }
   assert.match(sayFor('capped', L), /busy/);
   /* the model is told which tool is which */
   const view = readFileSync(new URL('../js/atlas-cap-view.js', import.meta.url), 'utf8');

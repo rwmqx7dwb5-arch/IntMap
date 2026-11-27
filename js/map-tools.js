@@ -518,8 +518,38 @@ export function isolate(HOST){
     function pointInGeom(x,y,g){ if(!g) return false; const polys=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);
       for(const poly of polys){ if(!poly||!poly.length) continue; if(pointInRing(x,y,poly[0])){ let hole=false; for(let h=1;h<poly.length;h++){ if(pointInRing(x,y,poly[h])){ hole=true; break; } } if(!hole) return true; } } return false; }
     function findByLngLat(lng,lat){ const cg=window.countryGeo; if(!cg||!cg.features) return null; for(const f of cg.features){ if(pointInGeom(lng,lat,f.geometry)) return f; } return null; }
-    function maskFC(feat){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry;
-      if(g.type==='Polygon') holes.push(g.coordinates[0]); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(poly[0]));
+    /* ══ THE HOLE'S LAND EDGE IS THE MAP'S OWN FRONTIER. The hole is cut from a Natural Earth polygon and the frontier on screen is the ofm
+       `boundary` line — two surveys that differ by up to a few kilometres (measured: median 1.5 km, max 4.1 km on Germany at z6.5, i.e. tens of
+       pixels once zoomed in), so redrawing the line above the mask left the mask's own edge standing beside it. From z5 (where ofm carries
+       the frontier) the ring's vertices that lie within SNAP_DEG of the frontier of THIS country's codes are moved onto it, and the ring is
+       densified where it runs along it so the chords stay on the line. Coast (no ofm frontier — maritime is excluded) and every vertex farther than
+       SNAP_DEG from a line stay as surveyed. Re-derived from the unmodified ring on every idle that changes the loaded tiles, never from its own
+       output. SNAP_DEG: 0.04° ≈ 4.4 km, the largest deviation measured; it expires if the two surveys come to differ by more (a vertex farther
+       from the line than this is left alone, which is the safe side). SNAP_STEP: 0.003° ≈ 330 m between points along a snapped run. */
+    const SNAP_DEG=0.04, SNAP_STEP=0.003, SNAP_CELL=0.05;
+    function frontierIndex(codes){ try{ if(!GE().layers.hasSource('ofm')) return null;
+        const fs=GE().coords.querySourceFeatures('ofm',{sourceLayer:'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1],['any',['in',['get','adm0_l'],['literal',codes]],['in',['get','adm0_r'],['literal',codes]]]]})||[];
+        const cells=new Map(); let nseg=0;
+        const put=(a,b)=>{ const x0=Math.floor(Math.min(a[0],b[0])/SNAP_CELL), x1=Math.floor(Math.max(a[0],b[0])/SNAP_CELL), y0=Math.floor(Math.min(a[1],b[1])/SNAP_CELL), y1=Math.floor(Math.max(a[1],b[1])/SNAP_CELL);
+          for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+','+y; let c=cells.get(k); if(!c) cells.set(k,c=[]); c.push(a[0],a[1],b[0],b[1]); } nseg++; };
+        for(const ft of fs){ const g=ft&&ft.geometry; const ls=!g?[]:g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]; for(const l of ls) for(let i=0;i+1<l.length;i++) put(l[i],l[i+1]); }
+        return nseg?{cells,nseg}:null; }catch(_){ return null; } }
+    /* the nearest point on the frontier within SNAP_DEG of p (distance measured with longitude scaled by cos(lat)), or null */
+    function nearOnFrontier(ix,p){ const kx=Math.cos(p[1]*Math.PI/180)||1, cx=Math.floor(p[0]/SNAP_CELL), cy=Math.floor(p[1]/SNAP_CELL), r=Math.ceil(SNAP_DEG/SNAP_CELL/Math.max(kx,.2)); let best=SNAP_DEG, hit=null;
+      for(let x=cx-r;x<=cx+r;x++) for(let y=cy-1;y<=cy+1;y++){ const c=ix.cells.get(x+','+y); if(!c) continue;
+        for(let i=0;i<c.length;i+=4){ const ax=c[i],ay=c[i+1],dx=c[i+2]-ax,dy=c[i+3]-ay; const ex=dx*kx,ey=dy; const l=ex*ex+ey*ey; let t=l?(((p[0]-ax)*kx*ex)+((p[1]-ay)*ey))/l:0; t=Math.max(0,Math.min(1,t));
+          const qx=ax+t*dx, qy=ay+t*dy, d=Math.hypot((qx-p[0])*kx,qy-p[1]); if(d<best){ best=d; hit=[qx,qy]; } } }
+      return hit; }
+    function snapRing(ring,ix){ const out=[]; const push=q=>{ const l=out[out.length-1]; if(!l||l[0]!==q[0]||l[1]!==q[1]) out.push(q); };
+      for(let i=0;i<ring.length;i++){ const a=ring[i]; const sa=nearOnFrontier(ix,a); push(sa||a);
+        const b=ring[i+1]; if(!b) break; const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy); if(len<=SNAP_STEP) continue;
+        /* a long segment is densified only where it runs near the frontier (either end, or its middle) */
+        if(!sa&&!nearOnFrontier(ix,b)&&!nearOnFrontier(ix,[a[0]+dx/2,a[1]+dy/2])) continue;
+        const n=Math.min(2000,Math.ceil(len/SNAP_STEP)); for(let k=1;k<n;k++){ const q=[a[0]+dx*k/n,a[1]+dy*k/n]; push(nearOnFrontier(ix,q)||q); } }
+      if(out.length&&(out[0][0]!==out[out.length-1][0]||out[0][1]!==out[out.length-1][1])) out.push(out[0].slice());
+      return out; }
+    function maskFC(feat,ix){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry; const hole=r=>ix?snapRing(r,ix):r;
+      if(g.type==='Polygon') holes.push(hole(g.coordinates[0])); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(hole(poly[0])));
       return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
     /* THE FRAME IS WHERE THE COUNTRY IS, NOT EVERYTHING IT OWNS. Min/max over every coordinate framed Norway on Bouvet Island
        and Svalbard (lng -9..34, lat -54..81 — the whole globe at z2) and France / the Netherlands / Chile the same way. The
@@ -550,6 +580,12 @@ export function isolate(HOST){
         if(GE().layers.has('iso-edge')){ if(codes){ GE().layers.setFilter('iso-edge',['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1],['any',['in',['get','adm0_l'],['literal',codes]],['in',['get','adm0_r'],['literal',codes]]]]); GE().layers.setLayout('iso-edge','visibility','visible'); }
           else GE().layers.setLayout('iso-edge','visibility','none'); } }catch(_){} }
     function hideEdge(){ for(const id of ['iso-edge-poly','iso-edge']){ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} } }
+    let _isoFeat=null, _snapKey='orig';
+    /* re-cut the hole against the frontier now in the loaded tiles (and back to the surveyed polygon below z5) — only when what is loaded changed */
+    function refitMask(){ try{ if(!active||!_isoFeat||!GE().layers.hasSource('iso-src')) return;
+        const codes=ofmCountryCodes(_isoFeat); const z=GE().camera.getZoom(); let ix=null, key='orig';
+        if(codes&&z>=OFM_EDGE_MINZOOM){ ix=frontierIndex(codes); key=ix?(ix.nseg+':'+ix.cells.size):'orig'; if(!ix) return; }
+        if(key===_snapKey) return; _snapKey=key; GE().layers.setSourceData('iso-src',maskFC(_isoFeat,ix)); }catch(_){} }
     function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
@@ -558,7 +594,7 @@ export function isolate(HOST){
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
-        try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); setEdge(feat); toTop(); }catch(_){}
+        try{ _isoFeat=feat; _snapKey='orig'; GE().layers.setSourceData('iso-src',maskFC(feat,null)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); setEdge(feat); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
@@ -601,10 +637,10 @@ export function isolate(HOST){
        isolate THAT geometry directly — no countryGeo lookup at all. Accepts a bare geometry or a Feature. */
     function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
       applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
-    function exit(){ active=false; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
+    function exit(){ active=false; _isoFeat=null; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
-    GE().events.on('idle',()=>{ if(active) toTop(); });
+    GE().events.on('idle',()=>{ if(active){ toTop(); refitMask(); } });
     return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
   })();
 }
@@ -1472,18 +1508,18 @@ export function objectList(HOST){
          ledger id — the id the compose result reports), and × takes it off through the painter's own remover. */
       try{ const covered=new Set(); out.forEach(o=>[].concat(o.src||[]).forEach(id=>covered.add(String(id))));
         const r=GE().render.drawn({});
-        if(r&&r.observable) Object.keys(r.surfaces).sort().forEach(sid=>{ const su=r.surfaces[sid]; if(su.state!=='drawn'||covered.has(sid)) return;
+        if(r&&r.observable) Object.keys(r.surfaces).sort().forEach(sid=>{ const su=r.surfaces[sid]; /* a surface whose layers an answer's switch turned OFF is still the reader's object: it is listed (hidden) so Objects can bring it back, not dropped */ if((su.state!=='drawn'&&su.state!=='hidden')||covered.has(sid)) return;
           const fs=srcFeats(sid); if(!fs.length) return;
           const feats=fs.map((f,i)=>{ const p=f.properties||{}; return { id:String(p.id!=null?p.id:(f.id!=null?f.id:i)), name:String(p.name||p.label||'') }; });
           const named=feats.map(f=>f.name).filter(Boolean), oid='surface:'+sid;
           const col=((fs.find(f=>f.properties&&f.properties.color)||{}).properties||{}).color||'#8e8e93';
           out.push({ id:oid, kind:'drawn', dot:col, src:[sid], owners:(su.owners||[]).slice(), features:feats,
             name:labels[oid]||(named.length?(named.slice(0,3).join(', ')+(named.length>3?(' +'+(named.length-3)):'')):(OL('Map drawing','地図の描画')+' ('+fs.length+')')),
-            geom:(()=>{ const k=fs.map(f=>geomKind(f&&f.geometry)).filter(Boolean); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':k[0]||null; })(), area:()=>featsKm2(fs), hidden:!!hiddenUp[sid],
+            geom:(()=>{ const k=fs.map(f=>geomKind(f&&f.geometry)).filter(Boolean); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':k[0]||null; })(), area:()=>featsKm2(fs), hidden:su.state==='hidden',
             setColor:hasType([sid],'fill')||hasType([sid],'line')||hasType([sid],'circle')?(c=>{ layerStyle([sid]).setColor(c); }):null,
             setWidth:hasType([sid],'line')?(w=>{ layerStyle([sid]).setWidth(w); }):null,
             setOpacity:layersOf([sid]).length?(a=>{ layerStyle([sid]).setOpacity(a); }):null,
-            toggleHide:()=>{ hiddenUp[sid]=!hiddenUp[sid]; const v=hiddenUp[sid]?'none':'visible'; layersOf([sid]).forEach(l=>{ try{ GE().layers.setLayout(l.id,'visibility',v); }catch(_){} }); },
+            toggleHide:()=>{ const _ls=layersOf([sid]); const _now=_ls.length&&_ls.every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }); hiddenUp[sid]=!_now; const v=hiddenUp[sid]?'none':'visible'; _ls.forEach(l=>{ try{ GE().layers.setLayout(l.id,'visibility',v); }catch(_){} }); },
             focus:()=>fitFeats(srcFeats(sid)), rename:v=>{ labels[oid]=v; }, remove:()=>{ try{ GE().render.clearSurface(sid); }catch(_){} } }); }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
@@ -1589,8 +1625,10 @@ export function objectList(HOST){
           if(!panel||!panel.parentNode) return;
           const wasOpen=panel.style.display!=='none';
           panel.remove(); panel=null;
-          const p2=ensurePanel(); if(p2) p2.style.display=wasOpen?'':'none';
-          if(wasOpen) renderList();
+          const p2=ensurePanel();
+          /* the rebuilt panel is a new element: it has neither the place nor the drag the old one had, and 'display:''' falls back to
+             the stylesheet's none/flex — so it is placed again and shown the way open() shows it */
+          if(p2){ if(wasOpen){ renderList(); _placePanel(); p2.style.display='flex'; } else p2.style.display='none'; }
         }catch(_){} }); }
       return panel; }
     function ensureFab(){ if(fab) return fab; ensurePanel(); fab=document.createElement('button'); fab.id='iol-fab';
@@ -1658,7 +1696,8 @@ export function objectList(HOST){
       if(!_mapCloser) _mapCloser=()=>{ try{ if(openState) close(); }catch(_){} };
       GE().events.off('click',_mapCloser); GE().events.on('click',_mapCloser); }catch(_){} }
     function _unbindMapClose(){ try{ if(_mapCloser&&GE().hasRenderer()) GE().events.off('click',_mapCloser); }catch(_){} }
-    function open(){ ensurePanel(); renderList(); _placePanel(); panel.style.display='flex'; openState=true; _bindMapClose(); tickFab(); }
+    /* tickFab() first: the button that anchors the panel is shown by it (0→1 objects), and a panel placed while it was still hidden fell back to the top-left corner */
+    function open(){ ensurePanel(); renderList(); tickFab(); _placePanel(); panel.style.display='flex'; openState=true; _bindMapClose(); tickFab(); }
     function close(){ if(panel) panel.style.display='none'; openState=false; _unbindMapClose(); tickFab(); }
     function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
     function refresh(){ if(openState) renderList(); tickFab(); }
