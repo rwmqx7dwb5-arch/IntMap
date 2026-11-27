@@ -237,6 +237,12 @@ try {
   else {
     $pgd = Get-Command pg_dump -ErrorAction SilentlyContinue
     if (-not $pgd) { $dbWhy = 'pg_dump-not-installed (scoop install postgresql)' }
+    elseif (-not $env:SUPABASE_ACCESS_TOKEN -and -not [Console]::IsInputRedirected -and [Environment]::UserInteractive) {
+      # typed hidden by the owner, kept in this process's environment only (never written, never printed)
+      $t = Read-Host 'Supabase access token (hidden; sbp_...)' -AsSecureString
+      $env:SUPABASE_ACCESS_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($t))
+      if (-not $env:SUPABASE_ACCESS_TOKEN) { $dbWhy = 'SUPABASE_ACCESS_TOKEN-not-given' }
+    }
     elseif (-not $env:SUPABASE_ACCESS_TOKEN) { $dbWhy = 'SUPABASE_ACCESS_TOKEN-not-set (needed by scripts/db-login-url.mjs)' }
   }
   if ($dbWhy) { Part 'db' 'skipped' $dbWhy; $skipped += 'db' } else {
