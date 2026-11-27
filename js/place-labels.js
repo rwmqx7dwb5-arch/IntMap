@@ -152,7 +152,7 @@ export function placeLabels(HOST){
       _a1Boxes=out; fitAdmin1Names(CE); }).catch(()=>{ _a1Loading=false; });
     return _a1Boxes; }
   function fitAdmin1Names(CE){
-    if(!GE().layers.has('ofm-admin1')) return;
+    const L=GE().layers; if(!L.has('ofm-admin1')) return;
     if(!CE||!CE.gone) return;
     const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
     const z=GE().camera.getZoom(); if(z<4) return;

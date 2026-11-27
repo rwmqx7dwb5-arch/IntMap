@@ -30,7 +30,7 @@ test('① a country name goes when the view has entered the country — by size,
 test('① no country is named in the rule', () => {
   const src = read('js/place-labels.js'); const i = src.indexOf('function fitCountryNames');
   const body = src.slice(i, src.indexOf('function ensurePlaceLabels', i));
-  assert.match(body, /viewShare\(/);
+  assert.ok(body.includes('CE.gone('));   /* the size-of-region rule, shared (js/country-extent.js) */
   assert.doesNotMatch(body, /Russia|France|Japan|Monaco|'[A-Z]{3}'/);
 });
 
