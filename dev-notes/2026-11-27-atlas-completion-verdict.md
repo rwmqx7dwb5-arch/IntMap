@@ -26,6 +26,10 @@ newsjp: Atlas は確認中の回答を答えとして出してから取り下げ
 - **監査 5**: GIS の op（`js/gis-ops.js` `run`）・`data.gis`/`draw`/`export`・`compute.run` が `datasetsRead:[{id,version,op,ok,why}]` を返し、`heldUntouched` は文字列検索をやめてこれだけを読む（読んだ／試して失敗／未使用／観測不能、と同じ操作で 2 つを読んだ）。未対応の経路（`data.query` ほか）は「観測不能」と述べる。
 - **監査 6・8**: 証拠ストアは取得（`fetchedTurn`）と使用（`usedBy`）を分け、`turnSources` は使ったターンで返す。出典の同一視は `canonicalizeUrl` の鍵で完全一致（`?id=dem` と `?id=landcover` は別）。`evidence_used` は親が出典を使った最初の時刻として記録される。
 
-## 2. 検査
+## 2. 起動費用（`check:perf` の天井を上げた理由）
+
+非同期の合計（`async.raw`）が約 +80 kB、チャンク `atlas-console`（約 +14 kB）と `atlas-cap-runs`（約 +6 kB）が天井を超えた。増えたのは観測の記録そのもの——検証役の所見の分類と id、証拠ストアの取得／使用の分離と出典の正規化、GIS・計算の `datasetsRead`、根拠の照合——と、その理由を述べるコメント。どれも Atlas のターン中にだけ読み込まれる遅延チャンクで、起動時（eager）は帯の内側。削れば観測が嘘に戻るので、天井を上げた（`perf-budget --update`）。
+
+## 3. 検査
 
 `tests/atlas-completion-verdict-checks.test.mjs`（A〜C と正規表現）・`-eval-`・`-evidence-`・`-held-`（各監査項目の合格条件）。`tests/atlas-live-stream.spec.js` ②③ は候補が経過に出て回答の場所に出ないことを見る形に更新。
