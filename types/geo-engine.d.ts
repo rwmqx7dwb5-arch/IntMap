@@ -481,6 +481,8 @@ export interface GeoEngineRender {
   drawn(q?: any): SurfacesDrawn;
   /** 「did it reach the screen」: drawn() plus opacity, zoom range, viewport, renderer errors and (unless q.pixels===false) a frame comparison */
   witness(q?: any): Promise<SurfacesSeen>;
+  /** shows or hides a source's drawing: through the claimant's own `show` when it declared one, else by its reader layers' visibility */
+  showSurface(id?: any, on?: any): boolean;
   /** runs the claimant's own remover for a claimed source; false when none was declared */
   clearSurface(id?: any): any;
   container(): any;

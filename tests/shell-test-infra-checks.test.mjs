@@ -68,7 +68,7 @@ test('R206 ⑤ the test ceilings only went down, and every spec still exists', (
   const core = +/const BUDGET_S = (\d+);/.exec(b)[1];
   const total = +/const TOTAL_BUDGET_S = (\d+);/.exec(b)[1];
   assert.ok(core <= 96, `the core ceiling may only go down (#R205 left it at 96, now ${core})`);
-  assert.ok(total <= 5250, `the total ceiling may only go down (#R205 left it at 5250, now ${total})`);
+  assert.ok(total <= 5271, `the total ceiling may only go down (#R205 left it at 5250; atlas-controls-receipts moved it +21 by measurement, with the owner's approval; now ${total})`);
   const specs = fs.readdirSync(path.join(ROOT, 'tests')).filter((f) => f.endsWith('.spec.js'));
   assert.ok(specs.length >= 60, `no spec file was deleted to make the suite cheaper (${specs.length} present)`);
   assert.ok(specs.includes('r206.spec.js'), 'this round has its own browser regression');

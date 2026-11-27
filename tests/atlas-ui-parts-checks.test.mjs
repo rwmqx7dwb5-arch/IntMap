@@ -86,7 +86,12 @@ test('families come from what the registry says a capability produces, and a pre
   assert.ok(Object.keys(table).length > 100, 'the registry rows were discovered, not listed');
   const words = expressionOf({ operations: [{ capabilityId: 'chart.compose', status: 'done' }, { capabilityId: 'view.flyTo', status: 'failed' }], calls: [] });
   assert.ok(words.families.includes('chart') && !words.capabilities.includes('view.flyTo'));
-  const sw = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'done' }], calls: [{ args: { items: [{ kind: 'tabs', options: [] }] } }] });
+  /* (atlas-controls-receipts) the family is earned when the drawn switch, pressed, moved the map — not by the arguments asking for one */
+  const call = { args: { items: [{ kind: 'tabs', options: [] }] }, resultText: JSON.stringify({ ok: true, status: 'completed', details: { drawn: [{ id: 'ctl1-0', kind: 'tabs', options: 2 }] } }) };
+  const asked = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'done' }], calls: [{ args: call.args }] });
+  assert.ok(!asked.families.includes('interactive') && !asked.controls.length, 'arguments alone state no control');
+  const pressed = [{ id: 'ctl1-0', kind: 'tabs', found: true, options: [{ i: 0, confirmed: true, after: { snapshot: { time: 1900 } } }, { i: 1, confirmed: true, after: { snapshot: { time: 2000 } } }] }];
+  const sw = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'done' }], calls: [call], pressed });
   assert.ok(sw.families.includes('interactive'));
   assert.match(factsLine(null), /no operations/);
   assert.match(factsLine(expressionOf({ operations: [] })), /words only/);

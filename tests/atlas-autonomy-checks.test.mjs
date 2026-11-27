@@ -167,13 +167,15 @@ test('④ the question in the key states the objects, and the key validates', ()
 });
 
 /* ⑤ */
-test('⑤ a tabs call that failed is not «the reply drew tabs»; the same call that ran is', () => {
+test('⑤ a tabs call that failed is not «the reply drew tabs»; the same call that ran is — by what its result says it drew', () => {
   const args = { items: [{ kind: 'tabs', options: [] }] };
+  const drew = { ok: true, status: 'completed', details: { drawn: [{ id: 'ctl1-0', kind: 'tabs', options: 2 }] } };
   const failed = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'failed' }], calls: [{ args, resultText: JSON.stringify({ ok: false, error: 'bad' }) }] });
   assert.deepEqual(failed.controls, []);
-  const ran = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'completed' }], calls: [{ args, resultText: JSON.stringify({ ok: true, status: 'completed' }) }] });
+  const ran = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'completed' }], calls: [{ args, resultText: JSON.stringify(drew) }] });
   assert.deepEqual(ran.controls, ['tabs']);
-  assert.ok(ran.families.includes('interactive'));
+  /* (atlas-controls-receipts) drawn is not yet pressable: `interactive` waits for the press (tests/atlas-controls-receipts-checks.test.mjs) */
+  assert.ok(!ran.families.includes('interactive'));
   const cancelled = expressionOf({ operations: [{ capabilityId: 'ui.inlineControls', status: 'cancelled' }], calls: [{ args, resultText: JSON.stringify({ status: 'cancelled' }) }] });
   assert.deepEqual(cancelled.controls, []);
   assert.ok(!cancelled.capabilities.includes('ui.inlineControls'));

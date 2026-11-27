@@ -64,8 +64,18 @@
   `map.route`・`map.radiation`・`map.los`・`map.shakemap`・`map.outbreaks`・`panel.compare`・`map.poi`・`map.elevation`・`map.factions`・`map.fly`・`map.ballistic`・
   `map.compose`）ならその効果キーで `render.claim` されたソースを読むレイヤー（claim は `js/routing.js`・`js/sims.js`・`js/stats-compare.js`・`js/viewshed.js`・
   `js/shakemap.js`・`js/outbreaks.js`・`js/map-tools.js` の到達圏・`js/atlas-map-compose.js`・Atlas 自身の描画が層を作る関数の頭で行う）。`_OVL` に手で残るのは、
-  共有ソース `nlq-src` を feature-state で塗るもの（強調・コロプレス・線）、`js/map-tools.js` の輪郭と孤立化マスク、`js/app-body.js` のピン、ストリートビューの行、
-  `js/routing-ops.js` の 2 解析（`map.route` の claim に足される）。
+  共有ソース `nlq-src` を feature-state で塗るもの（強調・コロプレス・線）、`js/map-tools.js` の輪郭、`js/app-body.js` のピン、ストリートビューの行、
+  `js/routing-ops.js` の 2 解析（`map.route` の claim に足される）。孤立化（`iso-src`・`iso-edge-src`、効果キー `map.isolate`）と取り込みレイヤー（`js/map-ui.js` の `ugj-N`、
+  効果キー `map.object`。`geo.shadeAreas` と GIS の結果もここを通る）は claim する。回答の受領証はソース id で持つ（`__atlDrewSurf`）ので、同じ kind でも
+  チップはその回答のターンが描いた面だけを切り替え、別の面を描いた後の回答は前の回答から所有を奪わない。
+- **チップの受領証と切り替え** — run の前後で `render.drawn()` の各ソースの **内容の版 `rev`**（レンダラが持つデータオブジェクトの同一性）と件数を比べ、変わったソースの
+  持ち主の kind をその回答の受領証にする（隠れていたソースへの描き込みも数え、表示に戻す）。切り替えは申告されたソースなら `render.showSurface(id,on)`——claim に
+  `show(on)` を添えた描き手（自分で可視性を持ち直すもの: 孤立化）はその扉を、無ければ読むレイヤーの可視性を変える。Objects の表示切替も同じ扉。前の回答の描画を
+  クローンへ退避するのは、この run の開始時にその回答の内容（`revs`）がまだ表示されていたときだけ。
+- **回答内の切り替え（tabs / steps）** — `ui.inlineControls`・`ui.compose` の結果 `meta.drawn` は**実際に描いたコントロール**の `{id, kind, options}` で、`id` は
+  markup の `data-ctl-id`。押すと各呼び出しはカーネル（`EXEC.execute`、source `ui`）を通り、能力の観測器の判定で成否を決める（`unobserved` は失敗ではない）。
+  戻り先は押した操作の順番が来たときの確定状態（`data-confirmed`）で、戻せたら表示・記録・地図を同じ値で確定する。評価（`scripts/atlas-eval.mjs` `PAGE.press`）は
+  `drawn` の id を押して各状態の地図を読み、`interactive` は押して地図が変わった切り替えにだけ付く（`scripts/atlas-eval/initiative.mjs`）。
 - **回答の族** — `js/atlas-turn-results.js` の `ANSWER_TYPES` は登録表の `isAnswer` から綴りを導出する（登録表は依存として注入され、無ければ公開しない複製
   `makeAtlasCapabilities({}, { publish: false })`）。
 - **system prompt の順序** — `SYS()` は persona → 中核指示 → 返答形式 → 能力の索引 → 道具 → **最後に返答言語の 1 行**（その前はどの言語でも同じバイト列）。

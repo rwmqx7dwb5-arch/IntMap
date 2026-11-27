@@ -151,7 +151,8 @@ test('atlas-one-declaration ②: updateWctx counts every declared spelling — `
 /* ── ③ OVL_OF: one entry per capability, every spelling through the row ───────────────────────── */
 /* the kinds that became the effect key their painter claims under */
 const RENAMED = { poi: 'map.poi', elevation: 'map.elevation', historical: 'map.factions', fly: 'map.fly', blast: 'map.ballistic', isochrone: 'map.isochrone', compose: 'map.compose',
-  route: 'map.route', radiation: 'map.radiation', compare: 'panel.compare', los: 'map.los', shakemap: 'map.shakemap', outbreaks: 'map.outbreaks' };
+  route: 'map.route', radiation: 'map.radiation', compare: 'panel.compare', los: 'map.los', shakemap: 'map.shakemap', outbreaks: 'map.outbreaks',
+  isolate: 'map.isolate' };   /* (atlas-controls-receipts) js/map-tools.js claims iso-src / iso-edge-src */
 /* (atlas-capability-single-source) the table is each entry's `chips` now — js/atlas-console.js derives OVL_OF from them the same way */
 const OVL_OF = Object.create(null);
 for (const e of (await import('../js/atlas-caps.js')).capabilityEntries((await import('../js/atlas-caps-modules.js')).CAPABILITY_MODULES)) if (e.chips) OVL_OF[e.id] = e.chips;
@@ -238,6 +239,9 @@ function paintEverything(eng) {
   const isoClaim = /try\{ GE\(\)\.render\.claim\(SRC,'map\.isochrone',\{clear\}\); \}catch\(_\)\{\}/.exec(iso);
   assert.ok(isoClaim, 'js/map-tools.js no longer claims the reach under map.isochrone');
   new Function('GE', "const SRC='im-iso-src'; const clear=()=>{};\n" + liftFunction(iso, 'ensureLayers') + '\nensureLayers();\n' + isoClaim[0])(eng.GE);
+  /* (atlas-controls-receipts) js/map-tools.js — Isolate's mask and border, created and claimed in its own ensure(), as it ships */
+  const ISO = MT.slice(MT.indexOf('window.IntMapIsolate=(function(){'));
+  runLifted(ISO, ['ensure'], { GE: eng.GE, _imCanDraw: yes, bg: () => '#000', OFM_FRONTIER_MINZOOM: 5, BORDER_LAYOUT: () => ({}), BORDER_PAINT: () => ({}), exit: nop, show: nop }, 'ensure();');
   /* js/atlas-sims.js — the four surfaces js/atlas-console.js claims for it */
   const SIMS = codeOnly(read('js/atlas-sims.js'));
   for (const f of ['ensureFlyLayers', 'ensureBlastLayers', 'ensureElevLayers', 'ensureFacLayers']) runLifted(SIMS, [f], { GE: eng.GE, geo: () => ({}), window: W }, f + '();');
@@ -292,12 +296,14 @@ test('atlas-one-declaration ④: each claimed kind switches the layers its paint
   const sorted = (a) => a.slice().sort();
   for (const [old, key] of Object.entries(RENAMED)) {
     assert.ok(!(old in OVL), `_OVL still types '${old}' — the claim under ${key} is the list`);
-    if (old === 'blast' || old === 'radiation' || old === 'los' || old === 'compose') continue;   /* measured below */
+    if (old === 'blast' || old === 'radiation' || old === 'los' || old === 'compose' || old === 'isolate') continue;   /* measured below */
     assert.deepEqual(sorted(ovlIds(key)), sorted(BEFORE.ovl[old]), `${key} switches ${ovlIds(key)} — it switched ${BEFORE.ovl[old]}`);
   }
   assert.deepEqual(sorted(ovlIds('map.ballistic')), sorted(BEFORE.ovl.fly.concat(BEFORE.ovl.blast)), 'a strike switches its trajectory and its rings — the same union as fly + blast');
   /* measured when replaced: the radiation row missed the deposition outline, which stayed on the map when the chip went OFF */
   assert.deepEqual(sorted(ovlIds('map.radiation')), sorted(BEFORE.ovl.radiation.concat(['imrad-dep-line'])));
+  /* (atlas-controls-receipts) measured when replaced: the isolate row switched the mask and left its border lines on the map */
+  assert.deepEqual(sorted(ovlIds('map.isolate')), sorted(BEFORE.ovl.isolate.concat(['iso-edge-poly', 'iso-edge'])));
   /* (atlas-real-shapes) the compose map gained the real shapes of its items — fill, solid and dashed outline — and its chip switches them with the rest */
   assert.deepEqual(sorted(ovlIds('map.compose')), sorted(BEFORE.ovl.compose.concat(['atl-compose-sf', 'atl-compose-sl', 'atl-compose-sld'])));
   /* …and the line-of-sight row named three layers no file creates, and missed the analysis image */

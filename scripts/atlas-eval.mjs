@@ -57,7 +57,7 @@ import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
 import { deliverablesOfTurn, completionRateOf, deliverableSectionsOf } from './atlas-eval/deliverables.mjs';
-import { expressionOf, factsLine, initiativeOf } from './atlas-eval/initiative.mjs';   /* (atlas-ui-parts) the initiative axis */
+import { expressionOf, factsLine, initiativeOf, drawnSwitches } from './atlas-eval/initiative.mjs';   /* (atlas-ui-parts) the initiative axis */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PROD_URL = SITE_URL;   // (domain-portable) the address is site-origin.js, written nowhere else
@@ -164,6 +164,34 @@ export const PAGE = {
     return { ms: Date.now() - t0, err };
   },
   stop: () => { try { window.IntMapConsole.stopRun(); } catch (_) { } },
+  /* ⚠ (atlas-controls-receipts) A SWITCH IS GRADED BY PRESSING IT. The ids are the ones the UI generator returned as DRAWN (ui.inlineControls / ui.compose
+     `details.drawn`), never the arguments: each option is pressed in turn, the presses are awaited the way a reader's are (the row stops being busy), and what is
+     kept is the map's own state after each — the clock, the ticked layers, the legend on screen — and whether the row confirmed that option. A tab that is
+     drawn but leaves the map where it was, or that the row could not confirm, is a fact the record now states. */
+  press: async (switches) => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const S = window.IntMapAtlasState;
+    const state = () => { let snap = null; try { snap = S.snapshot({ only: ['time', 'activeLayers'] }); } catch (_) { snap = null; }
+      const legend = [...document.querySelectorAll('.legend-box, .map-legend, [data-legend]')].filter((n) => n.offsetParent !== null).map((n) => String(n.innerText || '').trim().slice(0, 300)).filter(Boolean);
+      return { snapshot: snap, legend }; };
+    const out = [];
+    for (const sw of switches || []) {
+      const row = document.querySelector('[data-ctl-id="' + String(sw.id).replace(/"/g, '') + '"]');
+      if (!row) { out.push({ id: sw.id, kind: sw.kind, found: false, options: [] }); continue; }
+      const opts = [];
+      for (let i = 0; i < (+sw.options || 0); i++) {
+        if (sw.kind === 'steps') { const r = row.querySelector('.atl-ctl-step'); if (!r) break; r.value = String(i); r.dispatchEvent(new Event('input', { bubbles: true })); }
+        else { const b = row.querySelector('.atl-ctl-tab[data-i="' + i + '"]'); if (!b) break; b.click(); }
+        await sleep(50);
+        for (let w = 0; w < 300 && row.querySelector('.busy'); w++) await sleep(100);
+        await sleep(400);
+        const why = row.querySelector('.atl-ctl-why');
+        opts.push({ i, confirmed: row.getAttribute('data-confirmed') === String(i), note: why ? String(why.textContent || '').slice(0, 200) : '', after: state() });
+      }
+      out.push({ id: sw.id, kind: sw.kind, found: true, options: opts });
+    }
+    return out;
+  },
   observe: (extra) => {
     const S = window.IntMapAtlasState, D = window.IntMapAtlasDebug;
     const t = S && S.lastTurn();
@@ -237,6 +265,7 @@ export function observeTurn(q, raw, askRes, earlier) {
   return {
     measured: true, ms: askRes.ms, stopped: String(t.status || raw.stopped || ''), reply: t.reply,
     operations: t.operations, calls, steps: raw.steps, snapshot: raw.snapshot,
+    pressed: Array.isArray(raw.pressed) ? raw.pressed : null,   /* (atlas-controls-receipts) each drawn switch pressed, and the map after each option */
     completion: t.completion || null,   /* (atlas-completion-rate) what the turn's own trace declared — read only to compare with what existed */
     unmet: Array.isArray(t.unmet) ? t.unmet : null,   /* (atlas-completion-verdict) what `completion` is computed from — deliverables.mjs claimOf derives the claim from it when `completion` is missing, and says so */
     replies: raw.replies || null, dispatches: raw.dispatches || null,
@@ -318,6 +347,9 @@ export async function askOnFreshPage(S, text, { patienceMs, sections, earlier })
   const a = await askOnce(page, text, patienceMs);
   if (a.unmeasured) return { unmeasured: a.unmeasured };
   const raw = await page.evaluate(PAGE.observe, sections);
+  /* (atlas-controls-receipts) the graded turn's drawn switches are pressed after it is observed — never an earlier turn's, which would change the map the next turn starts from */
+  const switches = drawnSwitches(raw.calls);
+  if (switches.length) raw.pressed = await page.evaluate(PAGE.press, switches).catch((e) => [{ error: String((e && e.message) || e) }]);
   return { askRes: a.askRes, raw, earlier: said };
 }
 /** one question on the page as it stands, under the harness's watchdog → { askRes } | { unmeasured } */

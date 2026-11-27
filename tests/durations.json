@@ -1,5 +1,5 @@
 {
- "tests/board-compose.spec.js": 19,
+ "tests/board-compose.spec.js": 40,
  "tests/compute-sandbox.spec.js": 22,
  "tests/geopolitics-layers.spec.js": 14,
  "tests/gis-chain-audit.spec.js": 10,
