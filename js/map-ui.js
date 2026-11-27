@@ -3144,6 +3144,15 @@ export function geojsonUpload(HOST){
        measure, which is how #R575's arithmetic went untested inside a closure.
        Returns {ok:true,legend} or {ok:false,why,detail}: refusals are CODES, sentences live in
        styleReason() below (docs/GIS-CORE.md §2.2 — the same split js/geo-import.js uses). */
+    /* ══ SHARED SCALES — 「同じカテゴリ = 同じ色」「同じ濃さ = 同じ値」を地図をまたいで保つ ═══════════════════
+       classify は 1 つの地図の値だけから色を決める。出現頻度順に色を割り当てる（上）ので、年代を切り替えて
+       比較する 2 枚の地図で [A,A,B] と [B,B,A] が来ると A の色が反転する（実測）。比較する地図が同じ
+       spec.compare（文字列）を持つとき、その鍵の尺度を共有する: カテゴリは最初に見た順に 1 度だけ色を
+       受け取り以後変わらない／数値は最初の地図の階級境界と基調色を以後の地図が引き継ぐ。
+       鍵を持たない呼び出しの挙動は従来どおり（1 枚の地図の中で閉じる）。尺度は会話の間だけ生きる。 */
+    const SCALES=new Map();
+    function scaleOf(key){ const k=String(key==null?'':key).trim(); if(!k) return null;
+      let sc=SCALES.get(k); if(!sc){ sc={cats:[],cuts:null,base:null}; SCALES.set(k,sc); } return sc; }
     function classify(values,spec,rules){
       const R=rules||(function(){ try{ return window.IntMapData; }catch(_){ return null; } })();
       if(!R||typeof R.isEmpty!=='function'||typeof R.typeColumn!=='function'||typeof R.asNumber!=='function') return {ok:false,why:'data-unavailable'};
@@ -3171,6 +3180,18 @@ export function geojsonUpload(HOST){
         /* spec.values は読者が選んだ並びだが、その値が 1 つもこのデータに無いことはある——
            そのとき「全部その他」の地図を描くのではなく、着色できないと述べる。 */
         if(!shown.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+        const sc=scaleOf(spec&&spec.compare);
+        if(sc){
+          /* 色の位置は尺度の中の登録順。その他の枠 1 つを常に残す（尺度は後から増える） */
+          keys.forEach(k=>{ if(!sc.cats.includes(k)&&sc.cats.length<MAX_CLASSES-1) sc.cats.push(k); });
+          const reg=keys.filter(k=>sc.cats.includes(k)).sort((a,b)=>sc.cats.indexOf(a)-sc.cats.indexOf(b));
+          const rest=keys.filter(k=>!sc.cats.includes(k));
+          if(!reg.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+          legend.classes=reg.map(k=>({keys:[k],label:k,color:PALETTE[sc.cats.indexOf(k)],count:counts.get(k)}));
+          if(rest.length) legend.other={color:OTHER_COL,distinct:rest.length,count:rest.reduce((n,k)=>n+counts.get(k),0)};
+          legend.compare=String(spec.compare);
+          return {ok:true,legend};
+        }
         legend.classes=shown.map((k,i)=>({keys:[k],label:k,color:PALETTE[i%PALETTE.length],count:counts.get(k)}));
         if(folded.length) legend.other={color:OTHER_COL,distinct:folded.length,count:folded.reduce((s,k)=>s+counts.get(k),0)};
         return {ok:true,legend};
@@ -3192,10 +3213,16 @@ export function geojsonUpload(HOST){
           raw.push(nums[f]+((nums[Math.min(f+1,nums.length-1)]-nums[f])*fr)); } }
         /* ⚠ 潰れた区分は黙って消さない。分位は同値が多いと同じ切れ目を何度も返す——そこで区分を
            減らすのは正しいが、減ったことを述べないと「5 段で塗った」という嘘が凡例に残る。 */
-        const cuts=[]; for(const c of raw){ if(c>lo&&(!cuts.length||c>cuts[cuts.length-1])) cuts.push(c); }
-        legend.method=method; legend.collapsed=want-(cuts.length+1);
-        const cols=ramp(base,cuts.length+1);
-        legend.classes=cols.map((c,i)=>({color:c,count:0,from:i===0?lo:cuts[i-1],to:i===cuts.length?hi:cuts[i]}));
+        const sh=scaleOf(spec&&spec.compare);
+        const given=(Array.isArray(spec&&spec.cuts)?spec.cuts.map(Number).filter(Number.isFinite).sort((a,b)=>a-b):null);
+        const fixed=given&&given.length?given:(sh&&sh.cuts?sh.cuts:null);
+        const cuts=[]; for(const c of (fixed||raw)){ if(fixed||(c>lo&&(!cuts.length||c>cuts[cuts.length-1]))) cuts.push(c); }
+        legend.method=fixed?'shared':method; legend.collapsed=fixed?0:want-(cuts.length+1);
+        const rampBase=(sh&&sh.base)||base;
+        if(sh&&!sh.cuts){ sh.cuts=cuts.slice(); sh.base=base; }
+        if(sh) legend.compare=String(spec.compare);
+        const cols=ramp(rampBase,cuts.length+1);
+        legend.classes=cols.map((c,i)=>({color:c,count:0,from:i===0?Math.min(lo,cuts.length?cuts[0]:lo):cuts[i-1],to:i===cuts.length?Math.max(hi,cuts.length?cuts[cuts.length-1]:hi):cuts[i]}));
         legend.cuts=cuts.slice();
         for(const n of nums){ let i=0; while(i<cuts.length&&n>=cuts[i]) i++; legend.classes[i].count++; }
         return {ok:true,legend};
@@ -3932,7 +3959,7 @@ export function geojsonUpload(HOST){
     /* (data-studio) `handle` is the file door itself (the studio's drop, picker and paste come through it), and `maxClasses`
        the classifier's own bound — so a control that offers a number of classes offers the number the classifier keeps. */
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,
-      find, link, style, styleOf, styleReason, classify, classifyRaster, handle:handleFiles, maxClasses:MAX_CLASSES, _items:items };
+      find, link, style, styleOf, styleReason, classify, resetScales:()=>SCALES.clear(), classifyRaster, handle:handleFiles, maxClasses:MAX_CLASSES, _items:items };
   })();
 }
 

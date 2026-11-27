@@ -167,10 +167,10 @@ export default [
     row: ['geo.shadeAreas', 'shadeAreas', 'colourAreas,joinTableToAreas,areaChoropleth,shadeRegions,shadeUnits', 'map', 'paint', 'map.object', 'map,explanation', 'session', 'none', '', ''],
     ui: { none: '2026-11-26' },
     doc: [
-      { in: 'spatial-analysis', at: 54.5, text: 'SHADE FIRST-LEVEL AREAS BY A TABLE YOU HOLD (自分で集めた表を行政区分の輪郭に結んで色分け): {"type":"shadeAreas","title"?:str,"rows":[{"area":str (a name or an ISO 3166-2 code),"value":num | "group":str,"country"?:str,…any other fields are kept on the shape}],"country"?:str,"unit"?:str,"source":str,"classes"?:int,"method"?:"quantile"|"equal"} = the join and the paint, for ANY figure: put in the values a statistics office stated (read its CSV / Excel with fetchFile or read the page), and the REAL shipped outline of each unit (the same 4,515-unit index highlight uses) is shaded by it — "value" gives a numeric ladder with a legend (濃淡), "group" gives one colour per category (陣営・言語・類型の色分け). Units are joined by identifier or by name, never by position; "country" (or a row\'s own) settles a name two countries share, and a name that is still ambiguous or unknown is LISTED in the answer as unplaced — never guessed, never painted. "source" is required: the layer says where the numbers came from, because a shaded map reads as a fact. Use it whenever the point is a PATTERN ACROSS AREAS (where it is high, where it changed, which side each belongs to) rather than one place — the table alone does not show a pattern the map would. Below first level (counties, municipalities) and whole countries are not shaded here.\n' },
+      { in: 'spatial-analysis', at: 54.5, text: 'SHADE FIRST-LEVEL AREAS BY A TABLE YOU HOLD (自分で集めた表を行政区分の輪郭に結んで色分け): {"type":"shadeAreas","title"?:str,"rows":[{"area":str (a name or an ISO 3166-2 code),"value":num | "group":str,"country"?:str,…any other fields are kept on the shape}],"country"?:str,"unit"?:str,"source":str,"classes"?:int,"method"?:"quantile"|"equal","compare"?:str,"cuts"?:[num,…]} = the join and the paint, for ANY figure: put in the values a statistics office stated (read its CSV / Excel with fetchFile or read the page), and the REAL shipped outline of each unit (the same 4,515-unit index highlight uses) is shaded by it — "value" gives a numeric ladder with a legend (濃淡), "group" gives one colour per category (陣営・言語・類型の色分け). Units are joined by identifier or by name, never by position; "country" (or a row\'s own) settles a name two countries share, and a name that is still ambiguous or unknown is LISTED in the answer as unplaced — never guessed, never painted. "source" is required: the layer says where the numbers came from, because a shaded map reads as a fact. COMPARING SEVERAL MAPS (one era against another, before / after): a category keeps ONE colour for the whole conversation — a group that was orange stays orange on every later shadeAreas map, whatever its share. For numbers give the SAME "compare" label (any string) on each map and the later ones reuse the class boundaries of the first map and base colour, so one shade means one value on all of them; or pass "cuts" (ascending class boundaries) chosen over ALL the maps. A row whose country does not match its unit is listed as unplaced, never moved onto another country\'s unit; two rows with different values for one unit are listed as conflicting and not painted. Use it whenever the point is a PATTERN ACROSS AREAS (where it is high, where it changed, which side each belongs to) rather than one place — the table alone does not show a pattern the map would. Below first level (counties, municipalities) and whole countries are not shaded here.\n' },
     ],
     phrases: () => ['表を行政区分に結んで色分け', '都道府県を値で色分け', '州ごとの濃淡'].concat(['shade areas by my table', 'colour the states by a value', 'join a table to boundaries']),
-    schema: () => ({ type: 'object', properties: { title: str(), rows: list(obj(), 1), country: str(), unit: str(), source: str(), classes: int(2, 9), method: str() }, required: ['rows', 'source'] }),
+    schema: () => ({ type: 'object', properties: { title: str(), rows: list(obj(), 1), country: str(), unit: str(), source: str(), classes: int(2, 9), method: str(), compare: str(), cuts: list(num()) }, required: ['rows', 'source'] }),
     async run(a, dctx, K) {
       const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
       const fail = (msg, code) => R(false, warn(esc(msg)), { meta: { code, category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
@@ -194,33 +194,42 @@ export default [
       const asks = [];
       for (const r of rows) { const h = r.country ? await hintOf(r.country) : defaultHint; asks.push(Object.assign({ name: areaOf(r) }, h)); }
       const adm = window.IntMapAtlasAdmin1 || (await import('./atlas-admin1.js')).makeAtlasAdmin1();
-      const res = await adm.resolveMany(asks.filter((x) => x.name), {});
-      if (res.error) return R(false, warn(esc(L('The boundary index could not be read.', '境界の索引を読み込めませんでした。'))), { meta: { code: 'DATA_UNREADABLE', category: 'data', retryable: true, produced: [], userGoalSatisfied: false } });
-      const byAsked = new Map(); res.hits.forEach((h) => { byAsked.set(h.asked + '\u0000' + (h.iso3 || ''), h); if (!byAsked.has(h.asked)) byAsked.set(h.asked, h); });
-      const feats = [], unplaced = [], ambiguous = [], seen = new Set();
+      /* Each row is resolved ON ITS OWN and kept by its row index. The old shape keyed hits by the asked NAME, so a row whose country-narrowed
+         search found nothing fell back to the name-only entry another row had made (`Aomori・USA` took `Aomori・Japan`'s unit), and the answer
+         depended on the order of the rows. A row that states a country must land in THAT country, or it is unplaced. */
+      const per = await Promise.all(asks.map((q) => (q.name ? adm.resolveMany([q], {}) : Promise.resolve({ hits: [], misses: [] }))));
+      if (per.some((x) => x && x.error)) return R(false, warn(esc(L('The boundary index could not be read.', '境界の索引を読み込めませんでした。'))), { meta: { code: 'DATA_UNREADABLE', category: 'data', retryable: true, produced: [], userGoalSatisfied: false } });
+      const feats = [], unplaced = [], ambiguous = [], conflicting = [], wrongCountry = [], byUnit = new Map();
+      const sameCountry = (q, hit) => (q.iso3 ? String(hit.iso3 || '').toUpperCase() === q.iso3 : q.iso2 ? [hit.countryCode, hit.iso2].some((c) => String(c || '').toUpperCase() === String(q.iso2).toUpperCase()) : true);
       rows.forEach((r, i) => {
-        const nm = areaOf(r); const hit = byAsked.get(nm + '\u0000' + (asks[i].iso3 || '')) || byAsked.get(nm);
+        const nm = areaOf(r); const hit = per[i].hits && per[i].hits[0];
         if (!hit) { unplaced.push(nm || '(blank)'); return; }
         const hasHint = !!(asks[i].iso3 || asks[i].iso2 || asks[i].countryCode);
+        if (hasHint && !sameCountry(asks[i], hit)) { wrongCountry.push(nm + ' (' + (r.country || a.country) + ')'); return; }
         if (!hasHint && hit.ambiguousCountries && hit.ambiguousCountries.length > 1) { ambiguous.push(nm + ' (' + hit.ambiguousCountries.join('/') + ')'); return; }
-        if (seen.has(hit.stableId)) return;   /* a second row for the same unit: the first stands — said below */
-        seen.add(hit.stableId);
+        const v = numeric ? String(Number(r.value)) : String(r.group);
+        const prev = byUnit.get(hit.stableId);
+        if (prev) { if (prev.v !== v && !prev.conflict) { prev.conflict = true; conflicting.push(hit.canonicalName); } return; }   /* two rows, one unit: equal values are one fact; different values are a conflict, never "first wins" */
         const props = { name: hit.canonicalName, code: hit.stableId, asked: nm };
         Object.keys(r).forEach((k) => { if (!(k in props) && k !== 'area' && k !== 'country' && (typeof r[k] === 'string' || typeof r[k] === 'number' || typeof r[k] === 'boolean')) props[k] = r[k]; });
         if (numeric) props.value = Number(r.value); else props.group = String(r.group);
-        feats.push({ type: 'Feature', geometry: hit.geo, properties: props });
+        const feat = { type: 'Feature', geometry: hit.geo, properties: props };
+        byUnit.set(hit.stableId, { v, feat, conflict: false });
       });
-      if (!feats.length) return R(false, warn(esc(L('None of the ' + rows.length + ' rows could be joined to a first-level outline: ', '行 ' + rows.length + ' 件のどれも第1級行政区分の輪郭に結べませんでした: ') + unplaced.concat(ambiguous).slice(0, 12).join(', '))), { meta: { code: 'NO_MATCH', category: 'data', retryable: false, produced: [], userGoalSatisfied: false, unplaced: unplaced.slice(0, 50) } });
+      byUnit.forEach((u) => { if (!u.conflict) feats.push(u.feat); });
+      unplaced.push(...wrongCountry.map((w) => w + ' [country mismatch]'));
+      if (!feats.length) return R(false, warn(esc(L('None of the ' + rows.length + ' rows could be joined to a first-level outline: ', '行 ' + rows.length + ' 件のどれも第1級行政区分の輪郭に結べませんでした: ') + unplaced.concat(ambiguous, conflicting).slice(0, 12).join(', '))), { meta: { code: 'NO_MATCH', category: 'data', retryable: false, produced: [], userGoalSatisfied: false, unplaced: unplaced.slice(0, 50) } });
       const title = String(a.title || L('Shaded areas', '色分けした地域')).slice(0, 120) + (a.unit ? ' (' + String(a.unit).slice(0, 24) + ')' : '');
       const put = GU.add({ type: 'FeatureCollection', features: feats }, title, null, {});
       if (!put) return R(false, warn(esc(L('The layer was not drawn.', 'レイヤーを描けませんでした。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: true, produced: [], userGoalSatisfied: false } });
-      const st = await GU.style(put.n, numeric ? { field: 'value', mode: 'graduated', method: a.method === 'equal' ? 'equal' : 'quantile', classes: Number(a.classes) || 5 } : { field: 'group', mode: 'categorical' });
+      const st = await GU.style(put.n, numeric ? { field: 'value', mode: 'graduated', method: a.method === 'equal' ? 'equal' : 'quantile', classes: Number(a.classes) || 5, compare: String(a.compare || '').trim() || undefined, cuts: Array.isArray(a.cuts) ? a.cuts : undefined } : { field: 'group', mode: 'categorical', compare: String(a.compare || '').trim() || 'shadeAreas' });
       if (!st || !st.ok) return R(false, warn(esc(L('The layer was added but could not be coloured (' + String(st && st.why || 'unknown') + ').', 'レイヤーは追加しましたが色を付けられませんでした（' + String(st && st.why || '不明') + '）。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: false, produced: [], userGoalSatisfied: false } });
       let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(title) + '</div>';
       h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L(feats.length + ' of ' + rows.length + ' rows joined to real first-level outlines', rows.length + ' 行中 ' + feats.length + ' 行を第1級行政区分の輪郭に結びました') + ' · ' + L('source: ', '出典: ') + String(a.source).slice(0, 200)) + '</div>';
       if (unplaced.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not placed (no such unit in the index): ', '特定できず塗っていません: ') + unplaced.slice(0, 20).join(', ')) + '</div>';
       if (ambiguous.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Ambiguous between countries, not painted (give "country"): ', '複数の国で同名のため塗っていません（"country" を指定）: ') + ambiguous.slice(0, 20).join(', ')) + '</div>';
-      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['map', 'explanation'], userGoalSatisfied: true, shadeAreas: { rows: rows.length, joined: feats.length, unplaced: unplaced.length, ambiguous: ambiguous.length, mode: numeric ? 'graduated' : 'categorical', layer: put.n } } });
+      if (conflicting.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Rows gave different values for the same unit, not painted: ', '同じ行政区に異なる値の行があり塗っていません: ') + conflicting.slice(0, 20).join(', ')) + '</div>';
+      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['map', 'explanation'], userGoalSatisfied: true, shadeAreas: { rows: rows.length, joined: feats.length, unplaced: unplaced.length, ambiguous: ambiguous.length, conflicting: conflicting.length, wrongCountry: wrongCountry.length, unplacedNames: unplaced.slice(0, 50), mode: numeric ? 'graduated' : 'categorical', layer: put.n } } });
     },
   },
   {

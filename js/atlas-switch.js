@@ -42,24 +42,66 @@ export function makeAtlasSwitch(deps) {
     n.textContent = text;
   }
 
+  /* ⚠ A SELECTION IS A CLAIM ABOUT THE MAP, SO IT IS MADE ONLY AFTER THE MAP HAS CHANGED. It used to be marked first, then the calls ran: with the time
+     change succeeding and the layer change failing the row read 「歴史」 while the map showed 500 CE on today's layers (measured). Now the row keeps what the map
+     last confirmed (`data-confirmed`); the pressed option is marked when ALL its calls ran; if one did not, the calls of the confirmed option are run
+     again to bring the map back (every call here is reversible within the session — switchCallProblem), and the row says so. If even that fails the row
+     marks NOTHING and says the map is in an unknown state, so the reader never trusts a tab that is not what they see. */
+  function confirmedOf(el) {
+    const root = el.closest('.atl-ctl-row'); if (!root) return null;
+    const v = root.getAttribute('data-confirmed');
+    if (v === '') return null;                                  /* explicitly unknown after a failed rollback */
+    if (v != null) return +v;
+    const on = root.querySelector('.atl-ctl-tab.on'); return on ? +on.getAttribute('data-i') : null;   /* first press: the option drawn as selected is what the map was built for */
+  }
+  function setConfirmed(el, idx) { const root = el.closest('.atl-ctl-row'); if (root) root.setAttribute('data-confirmed', idx == null ? '' : String(idx)); }
+  function unmark(el) {
+    const root = el.closest('.atl-ctl-row'); if (!root) return;
+    root.querySelectorAll('.atl-ctl-tab').forEach((b) => { b.classList.remove('on'); b.setAttribute('aria-selected', 'false'); });
+    root.querySelectorAll('.atl-ctl-stops span').forEach((x) => x.classList.remove('on'));
+  }
+  function optionEl(el, idx) {
+    const root = el.closest('.atl-ctl-row'); if (!root) return null;
+    return root.querySelector('.atl-ctl-tab[data-i="' + idx + '"]');
+  }
+  function callsOfIndex(el, idx) {
+    const root = el.closest('.atl-ctl-row'); if (!root) return null;
+    const tab = optionEl(el, idx);
+    if (tab) return callsOf(tab);
+    const step = root.querySelector('.atl-ctl-step'); if (step) return callsOf({ classList: { contains: () => true }, getAttribute: (k) => step.getAttribute(k.replace(/^data-cd+$/, 'data-c' + idx)), value: idx });
+    return null;
+  }
+  async function runAll(calls) {
+    let failed = '';
+    for (let i = 0; i < calls.length && !failed; i++) {
+      try {
+        const r = await dispatch(Object.assign({}, calls[i]));
+        if (r && r.ok === false) failed = (r.meta && r.meta.code) || L('a step did not run', '実行できなかった操作があります');
+      } catch (e) { failed = (e && e.message) || L('a step did not run', '実行できなかった操作があります'); }
+    }
+    return failed;
+  }
+
   function press(el) {
     const idx = el.classList.contains('atl-ctl-step') ? +el.value : +el.getAttribute('data-i');
     const calls = callsOf(el);
-    mark(el, idx);
-    if (!calls || !calls.length) { say(el, L('This option has nothing to run.', 'このオプションには実行する内容がありません。')); return Promise.resolve(); }
-    for (let i = 0; i < calls.length; i++) { const why = switchCallProblem(calls[i], CAPS, L); if (why) { say(el, why); return Promise.resolve(); } }
+    const before = confirmedOf(el);
+    if (!calls || !calls.length) { say(el, L('This option has nothing to run.', 'このオプションには実行する内容がありません。')); if (before != null) mark(el, before); return Promise.resolve(); }
+    for (let i = 0; i < calls.length; i++) { const why = switchCallProblem(calls[i], CAPS, L); if (why) { say(el, why); if (before != null) mark(el, before); return Promise.resolve(); } }
     say(el, '');
     el.classList.add('busy');
     chain = chain.then(async () => {
-      let failed = '';
-      for (let i = 0; i < calls.length && !failed; i++) {
-        try {
-          const r = await dispatch(Object.assign({}, calls[i]));
-          if (r && r.ok === false) failed = (r.meta && r.meta.code) || L('a step did not run', '実行できなかった操作があります');
-        } catch (e) { failed = (e && e.message) || L('a step did not run', '実行できなかった操作があります'); }
-      }
+      const failed = await runAll(calls);
       el.classList.remove('busy');
-      if (failed) say(el, failed);
+      if (!failed) { setConfirmed(el, idx); mark(el, idx); return; }
+      /* part of this option may have run: put the map back to the last confirmed option before saying anything is selected */
+      const back = before != null ? callsOfIndex(el, before) : null;
+      if (back && back.length && before !== idx) {
+        const again = await runAll(back);
+        if (!again) { mark(el, before); say(el, L('Could not switch (' + failed + '); the map is back on the previous option.', '切り替えに失敗しました（' + failed + '）。地図は前の選択に戻しました。')); return; }
+      }
+      setConfirmed(el, null); unmark(el);
+      say(el, L('Could not switch (' + failed + '); the map may be showing a mix of two options — pick one again.', '切り替えに失敗しました（' + failed + '）。地図が 2 つの選択の途中の状態かもしれません。もう一度選んでください。'));
     });
     return chain;
   }
