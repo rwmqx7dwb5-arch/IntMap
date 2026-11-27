@@ -276,6 +276,7 @@ export function rubricRequest(q, reply, facts) {
     'QUESTION (' + (q.lang === 'jp' ? 'Japanese' : 'English') + '): ' + str(q.text),
     'VERIFIED ANSWER: ' + expected + (q.note ? ' — ' + q.note : ''),
     'SOURCE: ' + (q.source ? str(q.source.title) + ' — ' + str(q.source.url) + ' — ' + str(q.source.states) : '(none)'),
+    ...(q.ideal ? ['THE OUTCOME THE READER WOULD HAVE WANTED (their own words; a reference for judging usefulness and depth, not an answer key — a reply that reaches the same understanding another way is as good): ' + str(q.ideal)] : []),
     ...(facts ? ['WHAT THE TURN DID (from IntMap\'s own record, not the reply\'s words): ' + str(facts)] : []),
     'REPLY:',
     str(reply).slice(0, 6000),
