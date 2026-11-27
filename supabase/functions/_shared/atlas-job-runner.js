@@ -28,6 +28,10 @@ import { capClass } from "./atlas-cap-classes.js";
    Expires if the default number of workers grows. Canonical: here. */
 export const TASK_CONCURRENCY = 3;
 
+/* How long one worker is allowed to need once started past the slice. Observation 2026-11-25: a worker that searches runs ~110 s
+   (dev-notes/2026-11-25-atlas-delegation-efficiency.md); 120 s leaves a margin. Expires if workers get slower than that. Canonical: here. */
+export const WORKER_WINDOW_MS = 120000;
+
 /* parseJson(text) — the first JSON object in a model's answer, tolerating a code fence; null when there is none */
 export function parseJson(text) {
   let t = String(text == null ? "" : text).trim();
@@ -237,16 +241,37 @@ async function runToolWorker(ctx, task, inputs) {
     if (asked.length) {
       let fresh = 0;
       const repeated = [];
+      /* (atlas-autonomy) THE CALLS OF ONE ROUND START TOGETHER. They were awaited one after another, so four independent reads cost the
+         sum of their latencies. A call whose twin shares in-process state (the GIS: one engine, one set of layers — `lane.exclusive(id)`)
+         keeps its turn behind the earlier exclusive ones; every other call starts at once. A lane that does not say is treated as exclusive
+         (the old, safe behaviour). The entries are written in the order the worker asked, so [n] means what it always meant. */
+      const planned = [];
+      const seenKey = new Map();
       for (const c of asked) {
         const id = s(c.capability, 80);
         const args = c.args && typeof c.args === "object" && !Array.isArray(c.args) ? c.args : {};
         const key = id + stable(args);
         const prior = st.entries.find((e) => e.key === key);
         if (prior) { repeated.push(prior.n); continue; }   /* answered already: the same answer is below, it is not run a second time */
-        const n = st.entries.length + 1;
-        let out;
-        if (!granted.has(id) || !lane.has(id)) out = { ok: false, code: "not_granted", text: '"' + id + '" is not one of your tools.' };
-        else out = await lane.run(id, args, { signal: ctx.signal });
+        if (seenKey.has(key)) { repeated.push(seenKey.get(key)); continue; }   /* the same call twice in ONE round: run once */
+        const n = st.entries.length + planned.length + 1;
+        seenKey.set(key, n);
+        planned.push({ n, id, args, key });
+      }
+      let exclusiveTail = Promise.resolve();
+      const runPlanned = (p) => {
+        if (!granted.has(p.id) || !lane.has(p.id)) return Promise.resolve({ ok: false, code: "not_granted", text: '"' + p.id + '" is not one of your tools.' });
+        const run = () => lane.run(p.id, p.args, { signal: ctx.signal });
+        const excl = typeof lane.exclusive === "function" ? lane.exclusive(p.id) !== false : true;
+        if (!excl) return run();
+        const mine = exclusiveTail.then(run, run);
+        exclusiveTail = mine.catch(() => {});
+        return mine;
+      };
+      const outs = await Promise.all(planned.map((p) => runPlanned(p).catch((e) => ({ ok: false, code: "twin_threw", text: s(e && e.message, 300) }))));
+      for (let i = 0; i < planned.length; i++) {
+        const { n, id, args, key } = planned[i];
+        const out = outs[i];
         (out && Array.isArray(out.sources) ? out.sources : []).forEach(addSource);
         st.entries.push({ n, key, capability: id, args, ok: !!(out && out.ok === true), code: s(out && out.code, 60), text: s(out && out.text, 600), data: out && out.data !== undefined ? clip(out.data, ENTRY_CHARS) : "" });
         await event(db, job, "task.tool_call", { task: task.task_id, capability: id, ok: !!(out && out.ok === true), code: s(out && out.code, 60) });
@@ -376,7 +401,14 @@ export async function runJob(ctx0) {
     }
     const over = now() - t0 > budgetMs;
     if (over && !running.size) { await rpc(db, "atlas_job_release", { p_job: job.id, p_holder: holder }); return { outcome: "more" }; }
-    if (!over) {
+    /* (atlas-autonomy) PAST THE SLICE, WHILE SOMETHING IS STILL RUNNING, THIS INVOCATION IS ALIVE ANYWAY. Measured on a mock clock: A ends at
+       31 s, B (independent) at 90 s, C needs only A — C waited for B's end and a whole extra tick, because 31 s is past the 30 s slice. The slice
+       exists so an invocation does not take new work it cannot finish (a tool-using worker hands itself back at a round boundary past it, so a
+       task started now cannot hold the lease beyond the platform's wall); while another task is in flight the invocation lives until that task
+       ends, so what is needed is only that a whole worker window still fits before the wall (`ctx.hardMs`). A host that states no wall
+       (the node tests) keeps the old rule. */
+    const fits = running.size > 0 && Number(ctx.hardMs) > 0 && now() - t0 + WORKER_WINDOW_MS <= Number(ctx.hardMs);
+    if (!over || fits) {
       const byId = new Map(tasks.map((t) => [t.task_id, t]));
       for (const t of startable) {
         if (running.size >= TASK_CONCURRENCY) break;

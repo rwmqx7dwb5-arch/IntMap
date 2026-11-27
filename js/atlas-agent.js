@@ -39,7 +39,7 @@
  * ==========================================================================*/
 
 import { atPath } from './atlas-working-memory.js';   /* (atlas-working-memory) one value at an address in an original result */
-import { makeRunLedger, runLine, makeRunHistory } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
+import { makeRunLedger, runLine, makeRunHistory, peakConcurrency, lateCostSink } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
 export function makeAtlasAgent() {
@@ -883,6 +883,8 @@ export function makeAtlasAgent() {
       /* (job-cost-ledger) the record has its OWN wall clock: `now` is the turn's budget clock and an injected one advances on every read, so reading it for the record would spend the turn's budget */
       const wallNow = () => Date.now();
       const ledger = makeRunLedger({ now: wallNow });
+      /* (atlas-autonomy) a worker that ends after the answer which left it running still belongs to THIS turn's cost: the record is the same object the caller holds, refreshed in place */
+      lateCostSink.current = (usd) => { try { ledger.late(usd); if (trace.run) Object.assign(trace.run, ledger.summary()); } catch (_) { /* a record never breaks the turn */ } };
       /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
          calls the reader waits through; `modelCalls` said 1 for a turn that made 3. The caller passes what it already measured (opts.preCalls: [{ model, ms }]); the verifier is timed below. Cost is not reported by those two asks, so it is counted as unreported, never as zero. */
       (Array.isArray(opts.preCalls) ? opts.preCalls : []).forEach((c) => { try { ledger.model({ model: c && c.model, ms: c && c.ms }); } catch (_) { /* a ledger that cannot take a row is not the turn's problem */ } });
@@ -1518,8 +1520,7 @@ export function makeAtlasAgent() {
            actually waited — the difference is what running them together saved. A record, never a reason. */
         const wall = spans.length ? (Math.max.apply(null, spans.map((s) => s[1])) - Math.min.apply(null, spans.map((s) => s[0]))) : 0;
         const serial = spans.reduce((a, s) => a + (s[1] - s[0]), 0);
-        let peak = 0;
-        spans.forEach((s) => { const n = spans.filter((o) => o[0] < s[1] && o[1] > s[0]).length; if (n > peak) peak = n; });
+        const peak = peakConcurrency(spans);   /* (atlas-autonomy) the most at ONE instant — the old count of overlaps with each span read A=[0,10] with B=[0,4] and C=[6,10] as 3 when never more than 2 ran */
         trace.stepTiming = trace.stepTiming || [];
         trace.stepTiming.push({ step, ran: spans.length, wallMs: wall, serialMs: serial, concurrent: peak, firstDoneAt: spans.length ? Math.min.apply(null, spans.map((s) => s[1])) : null, lastDoneAt: spans.length ? Math.max.apply(null, spans.map((s) => s[1])) : null });
         /* (atlas-native-tools) the calls past `maxPerStep` — answered as not run, see `allCalls` above */

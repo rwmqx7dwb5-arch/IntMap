@@ -174,6 +174,9 @@ export function makeServerCaps(o) {
   return {
     catalogue: () => Object.keys(SERVER_CAPS).map((id) => ({ id, args: SERVER_CAPS[id].args })),
     has: (id) => Object.prototype.hasOwnProperty.call(SERVER_CAPS, String(id || '')),
+    /* (atlas-autonomy) does this twin share in-process state with another call — the GIS engine and its layers — so that two of it must not run
+       at once? Derived from `needs`, not listed: a twin that only reads over HTTP or the database can overlap with anything. */
+    exclusive: (id) => { const t = SERVER_CAPS[String(id || '')]; return !t || (t.needs || []).includes('gis'); },
     async run(id, args, ctx) {
       const t = SERVER_CAPS[String(id || '')];
       if (!t) return { ok: false, code: 'capability_unsupported_on_server', text: '"' + String(id || '').slice(0, 80) + '" has no server twin.' };

@@ -21,6 +21,22 @@
 const num = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
 const str = (v, n) => String(v == null ? '' : v).slice(0, n || 80);
 
+/* peakConcurrency(spans) — the most intervals [start,end) alive at one instant. Sweep over the ends: a span that ends where another begins does not overlap it. */
+export function peakConcurrency(spans) {
+  const ev = [];
+  (Array.isArray(spans) ? spans : []).forEach((s) => { if (s && Number.isFinite(s[0]) && Number.isFinite(s[1])) { ev.push([s[0], 1]); ev.push([s[1], -1]); } });
+  ev.sort((a, b) => a[0] - b[0] || a[1] - b[1]);   /* at a tie the end (-1) comes first */
+  let cur = 0, peak = 0;
+  ev.forEach((e) => { cur += e[1]; if (cur > peak) peak = cur; });
+  return peak;
+}
+
+/* lateCostSink — where the cost of a worker that ENDS AFTER the answer which left it running is reported. A `wait:"any"` delegation answers with the first
+   arrival and leaves the rest running; the turn's ledger summed only what each answer carried, so a slow worker's cost (it was paid) never reached the turn's
+   record unless the model asked again. The loop sets `current` to its ledger's `late` for the turn it runs; a delegation reads `current` WHEN IT RETURNS EARLY
+   (so a later turn's sink is never handed this turn's cost) and calls it when each still-running worker ends. */
+export const lateCostSink = { current: null };
+
 export function makeRunLedger(opt) {
   const now = (opt && typeof opt.now === 'function') ? opt.now : () => Date.now();
   const startedAt = now();
@@ -52,6 +68,8 @@ export function makeRunLedger(opt) {
       if (d) { delegatedUsd += d; }
       if (Number.isFinite(Number(c.delegatedTasks))) delegatedTasks += Math.max(0, Math.floor(Number(c.delegatedTasks)));
     },
+    /* a worker that ended after the answer which left it running: its cost joins the delegated sum (its task was counted when it was listed) */
+    late(c) { const d = num(c); if (d) delegatedUsd += d; },
     summary() {
       const rows = (o, f) => Object.keys(o).map((k) => Object.assign({ id: k }, o[k])).sort(f);
       return {
