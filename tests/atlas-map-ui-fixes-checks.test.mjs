@@ -78,11 +78,6 @@ test('a finding Atlas answered with a reason is contested, not shown as unfinish
   assert.match(read('js/atlas-live.js'), /narrate\(ai, st, ai\.__atlDraft\); st\.narr = null; st\.sayAt = -1; setDraft\(ai, ''\);/);
 });
 
-test("Isolate cuts the hole's land edge along the map's own frontier from z5, re-derived from the surveyed ring and not from its own output", () => {
-  const m = read('js/map-tools.js');
-  assert.ok(m.includes('function snapRing(ring,ix)'));
-  assert.ok(m.includes('function refitMask()'));
-  assert.ok(m.includes('maskFC(_isoFeat,ix)'), 'the snapped ring is made from the stored feature');
-  assert.ok(m.includes('toTop(); refitMask(); } });'), 'the hole is re-cut on idle while Isolate is active');
-  assert.ok(m.includes('const SNAP_DEG=0.04, SNAP_STEP=0.003'));
-});
+/* (isolate-outline-geometry) the vertex-snapping test that stood here pinned the old mechanism's spelling (snapRing, SNAP_DEG); the
+   claim it carried — the hole's land edge is the map's own frontier, re-derived from the surveyed polygon and never from its own
+   output — is now measured as geometry on real tiles in tests/isolate-outline-geometry-checks.test.mjs. */

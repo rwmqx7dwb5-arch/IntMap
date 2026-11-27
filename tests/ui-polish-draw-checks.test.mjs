@@ -40,14 +40,9 @@ test('draw: a pointer event does O(1) work and the paint is coalesced to one per
   assert.match(codeOnly(body(tools, 'finish')), /flushNow\(\)/, 'a pending frame is cancelled when the stroke commits');
 });
 
-test('outline: the country line is the ofm boundary the map already draws, filtered by adm0', () => {
-  const s = codeOnly(tools);
-  assert.match(s, /'source-layer':'boundary'/, 'the outline line reads the same vector layer as borders-only-line');
-  assert.match(s, /\['get','adm0_l'\]/);
-  assert.match(s, /\['get','adm0_r'\]/);
-  assert.match(s, /function ofmLineCodes\(/, 'the country identity comes from the caller polygon or an iso3, not a name list');
-  assert.match(s, /pl-outline-pline/, 'low zooms (no adm0 in the tiles) keep the polygon edge');
-});
+/* (isolate-outline-geometry) the outline test that stood here required the line to be the ofm `boundary` layer filtered by adm0_l /
+   adm0_r — the tiles omit one or both codes on a third of the frontier pieces, so that line broke off. The outline's fill and line are
+   now one shape fitted to the drawn border, measured in tests/isolate-outline-geometry-checks.test.mjs. */
 
 test('Objects: width and opacity are stored on the item and read by the layer', () => {
   assert.match(extras, /'line-width':\['coalesce',\['get','lw'\]/, 'annot-line reads width from the feature');

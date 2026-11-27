@@ -28,6 +28,7 @@ import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
 import { fillFromAlpha, alphaFromFill, opacityPaint } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
+import { countryShapeOnMap, OFM_FRONTIER_MINZOOM } from './frontier-fit.js';   /* the one shape of a country on the map — mask, edge and highlight are drawn from it */
 
 
 
@@ -471,13 +472,8 @@ export function drawTool(HOST){
   })();
 }
 
-/* The ofm `boundary` tiles name a frontier by ISO 3166-1 alpha-3 (`adm0_l` / `adm0_r`). A bundled country feature carries the same code
-   under several property names; this is the ONE reading of them, shared by the outline (a clicked country) and Isolate (its mask edge). */
-function ofmCountryCodes(f){ try{ const p=(f&&f.properties)||{}, out=[];
-  for(const c of [f&&f.id,p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3]){ const v=c==null?'':String(c).toUpperCase(); if(/^[A-Z]{3}$/.test(v)&&out.indexOf(v)<0) out.push(v); }
-  return out.length?out:null; }catch(_){ return null; } }
-/* ofm carries the country frontier from z5 (measured 2026-11-18); below it the polygon edge stands in. Expires if OpenFreeMap changes its boundary tiles. */
-const OFM_EDGE_MINZOOM=5;
+/* the one shape of a polygon on this map (js/frontier-fit.js countryShapeOnMap), with this map's engine and country collection */
+const mapShapeOf=(geo,iso3)=>countryShapeOnMap(IntMapGeoEngine,window.countryGeo,geo,iso3);
 
 export function isolate(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -494,14 +490,14 @@ export function isolate(HOST){
     function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         GE().layers.add({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
-        /* THE EDGE OF THE HOLE IS THE MAP'S OWN BORDER. The hole is cut from a Natural Earth polygon and the visible frontier is the ofm
-           `boundary` line — two surveys of the same line that differ by up to a kilometre, so the mask edge sat beside the border it
-           frames. The ofm line of the isolated country is drawn again ABOVE the mask (z>=5; the polygon edge below it), so what the
-           reader reads as the border is the one line, whichever survey cut the hole. */
+        /* THE MASK, ITS EDGE AND THE BORDER ARE ONE SHAPE. The hole and the line above it are both drawn from shapeOf() below — the
+           country polygon whose land frontier has been replaced by the frontier line the base map draws (js/frontier-fit.js). The line is
+           drawn again ABOVE the mask so the half of the base border the mask covers is not lost: the frontier pieces from z5 (where the
+           tiles carry the line; coast is the mask's own edge there), every ring of the shape below z5 (where the map has no frontier line
+           and the polygon edge stands for it). One source, so the two can never be two geometries again. */
         GE().layers.addSource('iso-edge-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        GE().layers.add({id:'iso-edge-poly',type:'line',source:'iso-edge-src',maxzoom:OFM_EDGE_MINZOOM,layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
-        if(GE().layers.hasSource('ofm')) GE().layers.add({id:'iso-edge',type:'line',source:'ofm','source-layer':'boundary',minzoom:OFM_EDGE_MINZOOM,
-          filter:['==',['get','admin_level'],-1],layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
+        GE().layers.add({id:'iso-edge-poly',type:'line',source:'iso-edge-src',maxzoom:OFM_FRONTIER_MINZOOM,filter:['==',['get','k'],'ring'],layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
+        GE().layers.add({id:'iso-edge',type:'line',source:'iso-edge-src',minzoom:OFM_FRONTIER_MINZOOM,filter:['==',['get','k'],'frontier'],layout:{...BORDER_LAYOUT(),visibility:'none'},paint:BORDER_PAINT()});
         return true;
       }catch(_){ return false; } }
     function findFeature(id){ const cg=window.countryGeo; if(!cg||!cg.features) return null;
@@ -519,39 +515,17 @@ export function isolate(HOST){
     function pointInGeom(x,y,g){ if(!g) return false; const polys=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);
       for(const poly of polys){ if(!poly||!poly.length) continue; if(pointInRing(x,y,poly[0])){ let hole=false; for(let h=1;h<poly.length;h++){ if(pointInRing(x,y,poly[h])){ hole=true; break; } } if(!hole) return true; } } return false; }
     function findByLngLat(lng,lat){ const cg=window.countryGeo; if(!cg||!cg.features) return null; for(const f of cg.features){ if(pointInGeom(lng,lat,f.geometry)) return f; } return null; }
-    /* ══ THE HOLE'S LAND EDGE IS THE MAP'S OWN FRONTIER. The hole is cut from a Natural Earth polygon and the frontier on screen is the ofm
-       `boundary` line — two surveys that differ by up to a few kilometres (measured: median 1.5 km, max 4.1 km on Germany at z6.5, i.e. tens of
-       pixels once zoomed in), so redrawing the line above the mask left the mask's own edge standing beside it. From z5 (where ofm carries
-       the frontier) the ring's vertices that lie within SNAP_DEG of the frontier of THIS country's codes are moved onto it, and the ring is
-       densified where it runs along it so the chords stay on the line. Coast (no ofm frontier — maritime is excluded) and every vertex farther than
-       SNAP_DEG from a line stay as surveyed. Re-derived from the unmodified ring on every idle that changes the loaded tiles, never from its own
-       output. SNAP_DEG: 0.04° ≈ 4.4 km, the largest deviation measured; it expires if the two surveys come to differ by more (a vertex farther
-       from the line than this is left alone, which is the safe side). SNAP_STEP: 0.003° ≈ 330 m between points along a snapped run. */
-    const SNAP_DEG=0.04, SNAP_STEP=0.003, SNAP_CELL=0.05;
-    function frontierIndex(codes){ try{ if(!GE().layers.hasSource('ofm')) return null;
-        const fs=GE().coords.querySourceFeatures('ofm',{sourceLayer:'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1],['any',['in',['get','adm0_l'],['literal',codes]],['in',['get','adm0_r'],['literal',codes]]]]})||[];
-        const cells=new Map(); let nseg=0;
-        const put=(a,b)=>{ const x0=Math.floor(Math.min(a[0],b[0])/SNAP_CELL), x1=Math.floor(Math.max(a[0],b[0])/SNAP_CELL), y0=Math.floor(Math.min(a[1],b[1])/SNAP_CELL), y1=Math.floor(Math.max(a[1],b[1])/SNAP_CELL);
-          for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+','+y; let c=cells.get(k); if(!c) cells.set(k,c=[]); c.push(a[0],a[1],b[0],b[1]); } nseg++; };
-        for(const ft of fs){ const g=ft&&ft.geometry; const ls=!g?[]:g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]; for(const l of ls) for(let i=0;i+1<l.length;i++) put(l[i],l[i+1]); }
-        return nseg?{cells,nseg}:null; }catch(_){ return null; } }
-    /* the nearest point on the frontier within SNAP_DEG of p (distance measured with longitude scaled by cos(lat)), or null */
-    function nearOnFrontier(ix,p){ const kx=Math.cos(p[1]*Math.PI/180)||1, cx=Math.floor(p[0]/SNAP_CELL), cy=Math.floor(p[1]/SNAP_CELL), r=Math.ceil(SNAP_DEG/SNAP_CELL/Math.max(kx,.2)); let best=SNAP_DEG, hit=null;
-      for(let x=cx-r;x<=cx+r;x++) for(let y=cy-1;y<=cy+1;y++){ const c=ix.cells.get(x+','+y); if(!c) continue;
-        for(let i=0;i<c.length;i+=4){ const ax=c[i],ay=c[i+1],dx=c[i+2]-ax,dy=c[i+3]-ay; const ex=dx*kx,ey=dy; const l=ex*ex+ey*ey; let t=l?(((p[0]-ax)*kx*ex)+((p[1]-ay)*ey))/l:0; t=Math.max(0,Math.min(1,t));
-          const qx=ax+t*dx, qy=ay+t*dy, d=Math.hypot((qx-p[0])*kx,qy-p[1]); if(d<best){ best=d; hit=[qx,qy]; } } }
-      return hit; }
-    function snapRing(ring,ix){ const out=[]; const push=q=>{ const l=out[out.length-1]; if(!l||l[0]!==q[0]||l[1]!==q[1]) out.push(q); };
-      for(let i=0;i<ring.length;i++){ const a=ring[i]; const sa=nearOnFrontier(ix,a); push(sa||a);
-        const b=ring[i+1]; if(!b) break; const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy); if(len<=SNAP_STEP) continue;
-        /* a long segment is densified only where it runs near the frontier (either end, or its middle) */
-        if(!sa&&!nearOnFrontier(ix,b)&&!nearOnFrontier(ix,[a[0]+dx/2,a[1]+dy/2])) continue;
-        const n=Math.min(2000,Math.ceil(len/SNAP_STEP)); for(let k=1;k<n;k++){ const q=[a[0]+dx*k/n,a[1]+dy*k/n]; push(nearOnFrontier(ix,q)||q); } }
-      if(out.length&&(out[0][0]!==out[out.length-1][0]||out[0][1]!==out[out.length-1][1])) out.push(out[0].slice());
-      return out; }
-    function maskFC(feat,ix){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry; const hole=r=>ix?snapRing(r,ix):r;
-      if(g.type==='Polygon') holes.push(hole(g.coordinates[0])); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(hole(poly[0])));
-      return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
+    const shapeOf=(feat)=>mapShapeOf(feat&&feat.geometry);   /* the country as the map draws it — see mapShapeOf */
+    /* the mask: the world with the shape's outer rings cut out, and the shape's own holes (an enclave such as Lesotho in South Africa)
+       masked again — so what stays visible is exactly the shape */
+    function maskFC(shape){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const g=shape.geometry; const polys=!g?[]:g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+      const outer=[world], inner=[]; for(const poly of polys){ if(poly&&poly[0]) outer.push(poly[0]); for(let h=1;h<(poly||[]).length;h++) inner.push([poly[h]]); }
+      return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'MultiPolygon',coordinates:[outer,...inner]},properties:{}}]}; }
+    /* the line above the mask, from the same shape: its rings (k:'ring', drawn below z5) and, when fitted, its frontier pieces (k:'frontier') */
+    function edgeFC(shape){ const g=shape.geometry, out=[]; const polys=!g?[]:g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+      for(const poly of polys) for(const r of poly) out.push({type:'Feature',geometry:{type:'LineString',coordinates:r},properties:{k:'ring'}});
+      if(shape.fitted) for(const run of shape.frontier) out.push({type:'Feature',geometry:{type:'LineString',coordinates:run},properties:{k:'frontier'}});
+      return {type:'FeatureCollection',features:out}; }
     /* THE FRAME IS WHERE THE COUNTRY IS, NOT EVERYTHING IT OWNS. Min/max over every coordinate framed Norway on Bouvet Island
        and Svalbard (lng -9..34, lat -54..81 — the whole globe at z2) and France / the Netherlands / Chile the same way. The
        piece the country is labelled on plus what reads as the same place is js/country-extent.js homeExtent — the frame the
@@ -573,20 +547,13 @@ export function isolate(HOST){
        very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
     function toTop(){ try{ if(!GE().layers.has('iso-mask')) return; const ls=GE().scene.getStyle().layers; const top=['iso-mask','iso-edge-poly','iso-edge'].filter(id=>GE().layers.has(id));
       if(ls&&ls.length&&ls[ls.length-1].id!==top[top.length-1]) for(const id of top) GE().layers.move(id); }catch(_){} }
-    /* show / hide the border line above the mask: the ofm frontier of this country's codes, and its polygon edge for the zooms ofm does not carry */
-    function setEdge(feat){ try{ const codes=ofmCountryCodes(feat), g=feat&&feat.geometry; const lines=[];
-        const polys=g?(g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[])):[]; for(const poly of polys) for(const r of poly) lines.push({type:'Feature',geometry:{type:'LineString',coordinates:r},properties:{}});
-        GE().layers.setSourceData('iso-edge-src',{type:'FeatureCollection',features:lines});
-        if(GE().layers.has('iso-edge-poly')) GE().layers.setLayout('iso-edge-poly','visibility','visible');
-        if(GE().layers.has('iso-edge')){ if(codes){ GE().layers.setFilter('iso-edge',['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1],['any',['in',['get','adm0_l'],['literal',codes]],['in',['get','adm0_r'],['literal',codes]]]]); GE().layers.setLayout('iso-edge','visibility','visible'); }
-          else GE().layers.setLayout('iso-edge','visibility','none'); } }catch(_){} }
-    function hideEdge(){ for(const id of ['iso-edge-poly','iso-edge']){ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} } }
-    let _isoFeat=null, _snapKey='orig';
-    /* re-cut the hole against the frontier now in the loaded tiles (and back to the surveyed polygon below z5) — only when what is loaded changed */
-    function refitMask(){ try{ if(!active||!_isoFeat||!GE().layers.hasSource('iso-src')) return;
-        const codes=ofmCountryCodes(_isoFeat); const z=GE().camera.getZoom(); let ix=null, key='orig';
-        if(codes&&z>=OFM_EDGE_MINZOOM){ ix=frontierIndex(codes); key=ix?(ix.nseg+':'+ix.cells.size):'orig'; if(!ix) return; }
-        if(key===_snapKey) return; _snapKey=key; GE().layers.setSourceData('iso-src',maskFC(_isoFeat,ix)); }catch(_){} }
+    function showEdge(v){ for(const id of ['iso-edge-poly','iso-edge']){ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v); }catch(_){} } }
+    function hideEdge(){ showEdge('none'); }
+    let _isoFeat=null, _shapeKey=null;
+    /* re-draw the mask and its edge from the shape — only when what the tiles have loaded changed (shapeOnMap's key), always when forced */
+    function refit(force){ try{ if((!active&&!force)||!_isoFeat||!GE().layers.hasSource('iso-src')) return;
+        const sh=shapeOf(_isoFeat); if(!force&&sh.key===_shapeKey) return; _shapeKey=sh.key;
+        GE().layers.setSourceData('iso-src',maskFC(sh)); GE().layers.setSourceData('iso-edge-src',edgeFC(sh)); }catch(_){} }
     function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
@@ -595,7 +562,7 @@ export function isolate(HOST){
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
-        try{ _isoFeat=feat; _snapKey='orig'; GE().layers.setSourceData('iso-src',maskFC(feat,null)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); setEdge(feat); toTop(); }catch(_){}
+        try{ _isoFeat=feat; refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
@@ -639,9 +606,9 @@ export function isolate(HOST){
     function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
       applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
     function exit(){ active=false; _isoFeat=null; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
-    GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
+    GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){} } },80); } });   /* a style swap re-creates the sources empty: the shape is drawn into them again */
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
-    GE().events.on('idle',()=>{ if(active){ toTop(); refitMask(); } });
+    GE().events.on('idle',()=>{ if(active){ toTop(); refit(); } });
     return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
   })();
 }
@@ -900,43 +867,24 @@ export function outline(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, clear(){} };
     const L=IntMapLang.pick(()=>HOST.lang);
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
-    /* THE OUTLINE LINE IS THE MAP'S OWN BORDER, NOT A SECOND ACCOUNT OF IT. The visible national
-       border (`borders-only-line`, js/app-body.js) is the `boundary` layer of the `ofm` vector
-       tiles. A country clicked by name used to be outlined from window.countryGeo (generalised
-       Natural Earth) - a different survey of the same frontier, so the highlight sat beside the
-       line it was meant to light up. When the caller's polygon IS a countryGeo feature (or the
-       caller passes `iso3`), the LINE is drawn from the ofm `boundary` lines whose `adm0_l` or
-       `adm0_r` is that country (OpenMapTiles ISO 3166-1 alpha-3; measured on the planet tiles of
-       2026-11-18: present from z5, absent at z<=4, so the polygon edge keeps those zooms). The
-       translucent fill (and Isolate / Move, which read `current().geo`) keep the polygon.
-       Anything else (cities, regions, era borders) has no ofm identity and is drawn as before.
-       Expires if OpenFreeMap stops carrying adm0_l/adm0_r: the line then draws nothing at z>=5;
-       ofmLineCodes() returning null is the single off switch. */
-    const OFM_LINE_MINZOOM=5;
-    function ofmLineCodes(geo,ctx){ try{
-      if(ctx&&ctx.iso3) return [String(ctx.iso3).toUpperCase()];
-      const cg=window.countryGeo; if(!geo||!cg||!cg.features) return null;
-      const f=cg.features.find(x=>x&&x.geometry===geo); if(!f) return null;
-      return ofmCountryCodes(f); }catch(_){ return null; } }
-    let _codes=null;   /* ofm country codes of the active outline, or null = polygon-edge line */
-    function setVis(v){ try{ for(const id of ['pl-outline-fill','pl-outline-line','pl-outline-pline']) if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v); }catch(_){} }
-    function _rmLine(){ for(const id of ['pl-outline-line','pl-outline-pline']){ try{ if(GE().layers.has(id)) GE().layers.remove(id); }catch(_){} } }
+    /* THE OUTLINE IS THE MAP'S OWN SHAPE, FILL AND LINE. The fill was the Natural Earth polygon and the line the ofm `boundary` lines
+       chosen by country code — two surveys, and the code is missing on a third of the tiles' frontier pieces (js/frontier-fit.js), so
+       the line broke off and the fill sat kilometres beside it. Both are now drawn from mapShapeOf(): one source, one geometry, whose
+       land frontier IS the visible border. `_last.geo` (read by Isolate / Move through current()) stays the polygon the caller gave,
+       so those readers find the same country. */
+    let _iso3=null, _shapeKey=null;
+    function setVis(v){ try{ for(const id of ['pl-outline-fill','pl-outline-line']) if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v); }catch(_){} }
+    function _rmLine(){ for(const id of ['pl-outline-line']){ try{ if(GE().layers.has(id)) GE().layers.remove(id); }catch(_){} } }
     function ensureLayers(){ try{
       if(!GE().layers.hasSource('pl-outline-src')) GE().layers.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       if(!GE().layers.has('pl-outline-fill')) GE().layers.add({id:'pl-outline-fill',type:'fill',source:'pl-outline-src',paint:{'fill-color':_col,'fill-opacity':0.15}},before);
-      const polyPaint=()=>({'line-color':_col,'line-width':2.4,'line-opacity':0.95});
-      const useOfm=!!(_codes&&GE().layers.hasSource('ofm'));
-      /* the line layers must match the mode: stale ones of the other kind are replaced */
-      if(GE().layers.has('pl-outline-line')&&(!!GE().layers.has('pl-outline-pline')!==useOfm)) _rmLine();
-      if(useOfm){
-        if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'ofm','source-layer':'boundary',minzoom:OFM_LINE_MINZOOM,
-          filter:['all',['==',['get','admin_level'],2],['any',['in',['get','adm0_l'],['literal',_codes]],['in',['get','adm0_r'],['literal',_codes]]]],
-          layout:{'line-join':'round','line-cap':'round'},paint:polyPaint()},before);
-        if(!GE().layers.has('pl-outline-pline')) GE().layers.add({id:'pl-outline-pline',type:'line',source:'pl-outline-src',maxzoom:OFM_LINE_MINZOOM,paint:polyPaint()},before);
-      } else if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:polyPaint()},before);
+      if(!GE().layers.has('pl-outline-line')) GE().layers.add({id:'pl-outline-line',type:'line',source:'pl-outline-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_col,'line-width':2.4,'line-opacity':0.95}},before);
       return true; }catch(_){ return false; } }
-    function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); for(const id of ['pl-outline-line','pl-outline-pline']) if(GE().layers.has(id)) GE().layers.setPaint(id,'line-color',c); }catch(_){} }
+    /* draw the active outline's shape (re-fitted to what the tiles have loaded now); only when that changed, unless forced */
+    function paintShape(force){ try{ if(!_active||!_last) return; const sh=mapShapeOf(_last.geo,_iso3); if(!force&&sh.key===_shapeKey) return; _shapeKey=sh.key;
+      setData({type:'FeatureCollection',features:[{type:'Feature',geometry:sh.geometry,properties:{}}]}); }catch(_){} }
+    function setColor(c){ if(!c) return; _col=c; try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setPaint('pl-outline-fill','fill-color',c); if(GE().layers.has('pl-outline-line')) GE().layers.setPaint('pl-outline-line','line-color',c); }catch(_){} }
     function setData(geo){ try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',geo); }catch(_){} }
     /* (#R55) Bulletproof clear. The user re-reported the polygon staying after ×. The REAL hole (R54 missed it):
        a show() whose Nominatim fetch was STILL IN FLIGHT would resolve AFTER clear() and repaint the outline. So
@@ -951,7 +899,7 @@ export function outline(HOST){
        click + the × and drives show()/clear() — so there is ONE popup, ONE boundary, and ONE × that clears both
        (the user reported the line staying after the popup's ×, which only closed the popup). clear() is nuclear:
        removes the layers + source so nothing can paint, then forces a repaint. */
-    function clear(){ _seq++; _active=false; _last=null; _codes=null;
+    function clear(){ _seq++; _active=false; _last=null; _iso3=null; _shapeKey=null;
       _rmLine();
       try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
       try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){}
@@ -1047,8 +995,7 @@ export function outline(HOST){
         if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; } }
         if(myseq!==_seq) return false;
         if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
-        _codes=ofmLineCodes(geo,ctx); _rmLine();   /* the filter names this country: rebuilt per show */
-        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible');
+        _iso3=ctx.iso3||null; _last={name:disp,geo}; _active=true; paintShape(true); setVis('visible');
         /* ══ (#R669) A SHARPER SHAPE MAY ARRIVE AFTER THE OUTLINE IS ALREADY UP ═══════════════════
            「クリックしたときのハイライト線が線に比べて解像度が低い。」 The era subdivision layer has
            TWO accounts of the same unit: a bundled ring simplified to ~2.2 km so that a planet fits
@@ -1062,18 +1009,18 @@ export function outline(HOST){
         if(ctx.refine&&typeof ctx.refine.then==='function'){ try{ ctx.refine.then(better=>{
           if(myseq!==_seq||!_active) return;
           if(!better||!/Polygon/.test(better.type||'')) return;
-          _last={name:disp,geo:better};
-          setData({type:'FeatureCollection',features:[{type:'Feature',geometry:better,properties:{}}]});
+          _last={name:disp,geo:better}; paintShape(true);
         }).catch(()=>{}); }catch(_){} }
         if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=GE().render.container&&GE().render.container(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); GE().camera.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
       }catch(_){ return false; } }
-    GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); GE().layers.setSourceData('pl-outline-src',{type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
+    GE().events.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); paintShape(true); setVis('visible'); }catch(_){} },120); }
       else { /* (#R57) REAPER — while no outline is active, NO pl-outline layer/source may survive a style event, so a
                 cleared outline can never linger. Only ever removes. */
         _rmLine();
         try{ if(GE().layers.has('pl-outline-fill')) GE().layers.remove('pl-outline-fill'); }catch(_){}
         try{ if(GE().layers.hasSource('pl-outline-src')) GE().layers.removeSource('pl-outline-src'); }catch(_){} } });
+    GE().events.on('idle',()=>{ if(_active&&_last) paintShape(false); });   /* the tiles loaded changed: fit the shape to them */
     /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
     return { show, clear, setColor, active:()=>_active,
       current:()=>(_active&&_last)?{name:_last.name, geo:_last.geo}:null,   /* (#R122) expose the geometry (Move/Isolate) */

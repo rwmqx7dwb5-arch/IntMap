@@ -712,7 +712,10 @@ mem-budget.js                     **この端末が復号済み DEM タイルを
                                   （合計約 600 MB を携帯に許可）。1 枚の値段・端末・取り分を 1 か所で持ち、
                                   `deviceIsPhone()` が「携帯か」の唯一の答え。⚠ DOM も window も使わない——
                                   src/photo-geo-worker.js も import するため
-border-style.js                   国境線を1本にまとめるスタイル層
+border-style.js                   国境線を1本にまとめるスタイル層（どの線を国境とみなすかの条件 `NATIONAL_BORDER_FILTER` も）
+frontier-fit.js                   地図上の国の形を 1 つにする。Natural Earth の国の多角形の陸の国境の辺（隣国と共有する辺）を、
+                                  描かれている国境線（OpenFreeMap `boundary`）そのものに置き換える。Isolate のマスクと縁、
+                                  場所のハイライト、Atlas の国ハイライトが全部この形を描く（`countryShapeOnMap`）
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 esri-imagery.js                   Esri World Imagery の取得先（鍵があれば ArcGIS Location Platform、無ければ鍵なしの窓口）・タイル URL・拒否時の戻り・帰属表示の文
 imagery-registry.js               衛星・航空画像の供給元を 1 件 1 オブジェクトで宣言する台帳（範囲・ズーム・時間軸・撮影日の分かり方・解像度・利用条件）。SAT_PROVIDERS・パネルの撮影日行・Chronos の時刻合わせ・Atlas `imageryInfo` が全部ここを読む

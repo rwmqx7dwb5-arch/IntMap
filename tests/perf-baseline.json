@@ -1,10 +1,10 @@
 {
   "eager": {
-    "raw": 4891491,
+    "raw": 4919321,
     "gzip": 1614545,
     "brotli": 1231597,
     "requests": 12,
-    "modules": 928,
+    "modules": 929,
     "cssRaw": 394673,
     "cssGzip": 65461
   },
@@ -27,7 +27,7 @@
       "atlas-caps": 7364,
       "atlas-caps-modules": 65,
       "atlas-chart": 10472,
-      "atlas-console": 1516832,
+      "atlas-console": 1524898,
       "atlas-delegate": 471,
       "atlas-executor": 64612,
       "atlas-file-make": 60133,

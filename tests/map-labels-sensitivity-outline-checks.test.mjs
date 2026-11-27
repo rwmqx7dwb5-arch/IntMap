@@ -45,9 +45,11 @@ test('③ 感度スライダー 100% は従来の 170/170/110 と同じ実効値
   assert.match(src, /s\.navVer>=2\|\|v===1\)\?v:/, 'a pre-rebase value of 1 follows the new default; others keep their raw feel');
 });
 
-test('④ Isolate は国の ofm 国境線をマスクの上に引き直す', () => {
+test('④ Isolate は国境線をマスクの上に引き直す（線はマスクの穴と同じ形から）', () => {
   const src = read('js/map-tools.js');
-  assert.match(src, /id:'iso-edge'[^]*'source-layer':'boundary'|'source-layer':'boundary'[^]*id:'iso-edge'|GE\(\)\.layers\.add\(\{id:'iso-edge',type:'line',source:'ofm','source-layer':'boundary'/);
+  /* the line above the mask is drawn from the same source as the hole's shape; that shape is measured as geometry in
+     tests/isolate-outline-geometry-checks.test.mjs (isolate-outline-geometry) */
+  assert.match(src, /id:'iso-edge',type:'line',source:'iso-edge-src'/);
   assert.match(src, /for\(const id of top\) GE\(\)\.layers\.move\(id\)/, 'the edge stays above the mask');
   assert.match(src, /function exit\(\)\{[^}]*\} hideEdge\(\);|hideEdge\(\);/);
 });
