@@ -19,7 +19,7 @@
 //  ⚠ NO TYPE ANNOTATIONS — scripts/static-checks.mjs parses committed .js/.ts as plain JavaScript.
 // ============================================================================
 
-import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, digestOf, stable, s, priorStands, failureWhy, jobGeometryTypes } from "./atlas-job-core.js";
+import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, refsOf, digestOf, stable, s, priorStands, failureWhy, jobGeometryTypes } from "./atlas-job-core.js";
 import { capClass } from "./atlas-cap-classes.js";
 
 /* ══ WHAT ONE TASK HANDS THE NEXT  (gis-result-handoff) ═══════════════════════════════════════════════════════════════════════════════
@@ -309,7 +309,7 @@ function toolsSection(catalogue, mustAnswer) {
     catalogue.map((c) => "- " + c.id + " " + (c.args || "")).join("\n");
   p += mustAnswer
     ? "\n\nYOU HAVE ALL THE ANSWERS THESE TOOLS CAN GIVE. Return the final JSON object now; call nothing more."
-    : "\n\nTO CALL THEM, return ONLY {\"calls\":[{\"capability\":ID,\"args\":{…}}]} (up to " + TOOL_CALLS_PER_ROUND + " at once) INSTEAD of the final answer; you will be given each answer and asked again. When you have what you need, return the final JSON object described above. A call you already made is answered below — do not repeat it.";
+    : "\n\nTO CALL THEM, return ONLY {\"calls\":[{\"capability\":ID,\"args\":{…}}]} (up to " + TOOL_CALLS_PER_ROUND + " at once) INSTEAD of the final answer; you will be given each answer and asked again. When you have what you need, return the final JSON object described above. A call you already made is answered below — do not repeat it. TO HAND A RESULT ON, write \"@<n>:data.result\" as an argument (n = the number [n] of an earlier call below; for data.gis that is its whole FeatureCollection, not the clipped text you see) or \"@<task id>:data.result\" for an input you were given — do not fetch or filter again what you already have.";
   return p;
 }
 const rangeText = (off, end, total) => "characters " + off + "-" + end + " of " + total;
@@ -376,6 +376,30 @@ async function runToolWorker(ctx, task, inputs) {
   const sources = Array.isArray(P.sources) ? P.sources : [];
   const addSource = (c) => { if (c && c.url && !sources.some((x) => x.url === c.url)) sources.push({ url: s(c.url, 500), title: s(c.title, 200) }); };
   const save = (y) => rpc(db, "atlas_job_task_progress", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_progress: { v: 1, ...st, sources }, p_yield: y });
+  /* (gis-worker-chain) ONE CALL'S RESULT IS THE NEXT CALL'S ARGUMENT, inside a worker too. The worker read 177 countries and filtered them to 51,
+     then "@3:data.result" was refused (production 2026-11-28), and it re-read and re-filtered the file for 40 calls until the cost cap ended the job.
+     An argument "@<n>:data.result" now names the data of the worker's own call [n], and "@<task>:data.result" what it was handed. The call's data is
+     not kept a second time: it is read back from the one place every tool answer is already kept whole (the entry's preview and its parts in
+     atlas_job_artifacts — storeToolBody), as the JSON after "DATA: " in that body. Only the calls an argument names are read. → { list } | { why } */
+  const DATA_MARK = "\nDATA: ";
+  const handedOn = async (args) => {
+    const list = (inputs || []).map((i) => ({ from: String(i.from), summary: i.summary, sources: i.sources, data: i.data, version: (i.data && i.data.output && i.data.output.version) || "" }));
+    for (const from of refsOf(args)) {
+      const e = st.entries.find((x) => String(x.n) === from);
+      if (!e) continue;   /* not a call of this worker: an input, or a name resolveArgs refuses */
+      if (!e.ok) return { why: 'Call [' + from + '] failed, so it has no result to hand on.' };
+      if (!(e.chars > 0)) return { why: 'The whole answer of call [' + from + '] is not kept (it was made before answers were kept whole); make that call again and hand on the new one.' };
+      let body = null;
+      try { body = e.chars <= ENTRY_CHARS ? JSON.parse(e.preview) : await readToolBody(ctx, task, e, 0, e.chars); } catch (_) { body = null; }
+      if (body == null) return { why: 'The whole answer of call [' + from + '] could not be read back.' };
+      const at = body.lastIndexOf(DATA_MARK);   /* the data is JSON, which never holds a raw newline: the last mark is the data's */
+      let data;
+      try { data = at >= 0 ? JSON.parse(body.slice(at + DATA_MARK.length)) : undefined; } catch (_) { data = undefined; }
+      if (data === undefined) return { why: 'Call [' + from + '] returned no data to hand on (only text).' };
+      list.push({ from, summary: body.slice(0, Math.max(0, at)), sources: [], data, version: e.version || digestOf(body) });
+    }
+    return { list };
+  };
   let seen = Number(ctx.requestVersion) || 0;   /* the request version the answer was written under: the amendments of the last round's checkpoint */
   const finish = async (status, code, result) => {
     await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: status, p_code: code || "", p_result: stamped(ctx, result, seen, inputs), p_cost: st.cost, p_calls: st.calls });
@@ -444,10 +468,14 @@ async function runToolWorker(ctx, task, inputs) {
         planned.push({ n, id, args, key });
       }
       let exclusiveTail = Promise.resolve();
-      const runPlanned = (p) => {
+      const runPlanned = async (p) => {
         if (p.id === READ_STEP && wholes.size) return readStep(wholes, p.args, ctx, task);
-        if (!granted.has(p.id) || !lane || !lane.has(p.id)) return Promise.resolve({ ok: false, code: "not_granted", text: '"' + p.id + '" is not one of your tools.' });
-        const run = () => lane.run(p.id, p.args, { signal: ctx.signal });
+        if (!granted.has(p.id) || !lane || !lane.has(p.id)) return { ok: false, code: "not_granted", text: '"' + p.id + '" is not one of your tools.' };
+        const handed = await handedOn(p.args);
+        if (handed.why) return { ok: false, code: "input_ref_unresolved", text: handed.why };
+        const ra = resolveArgs(p.args, handed.list, { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: src.version || "", sources: Array.isArray(src.sources) ? src.sources : [] } }) : v) });
+        if (!ra.ok) return { ok: false, code: "input_ref_unresolved", text: ra.why };
+        const run = () => lane.run(p.id, ra.args, { signal: ctx.signal });
         const excl = typeof lane.exclusive === "function" ? lane.exclusive(p.id) !== false : true;
         if (!excl) return run();
         const mine = exclusiveTail.then(run, run);
