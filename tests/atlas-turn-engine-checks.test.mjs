@@ -371,7 +371,8 @@ test('atlas-turn-engine ④ the ceiling on declared functions is the proxy\'s, a
   const room = Object.keys(base).length + 2;
   let found = null;
   const { seen } = await turn([
-    calls({ name: 'find_capability', args: { query: '東京から大阪までの鉄道経路' } }),
+    /* (atlas-child-loop-reuse) a query that NAMES its capabilities (two strong matches): a search that names none spells nothing out and promotes nothing, so it could not show where promotion stops */
+    calls({ name: 'find_capability', args: { query: 'route from Tokyo to Osaka by rail' } }),
     (req) => { found = req.messages[req.messages.length - 1].content[0]; return answer('ok'); },
   ], async () => ok(), { limits: { maxOfferedTools: room } });
   assert.equal(seen[1].tools.filter((t) => t.promoted).length, 1);
