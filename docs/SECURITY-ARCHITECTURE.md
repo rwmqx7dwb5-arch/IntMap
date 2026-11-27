@@ -96,10 +96,9 @@ flowchart LR
    working context's topic. `js/atlas-agent.js` `composeInput` answers `outside` for what it actually
    kept (a line the budget left out does not count) and the loop reads it as `reply.contextOutside`.
    The reader's approval is a **press**, read by code: the result carries Run / Don't buttons bound to
-   its operation, and `js/atlas-console.js` `_confirmPress` runs the held call with `confirmed:true`
-   (source `atlas-confirm`); nothing on the model's path sets `confirmed`, so making the same call
-   again is not an approval. A UI press, or a request whose input carries no outside content, is
-   unchanged. `system.control` presses any button, so the rule is carried by the
+   its operation. The console accepts a trusted browser click and resumes the held call
+   with `confirmed:true` (source `atlas-confirm`) on Run. A synthetic click from `system.control`
+   and a reissued model call both leave the reader's decision pending. For other controls the rule is carried by the
    **button**, not by a list: `tests/atlas-outward-effects-checks.test.mjs` refuses any
    click/change/Enter handler that reaches a Supabase write, an rpc, an auth change or a POSTed Edge
    Function while its element declares nothing. The control catalogue the model reads never names a

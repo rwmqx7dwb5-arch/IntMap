@@ -2365,7 +2365,7 @@ export function atlasConsole(HOST){
       function _choiceAnswered(el){ try{ const w=el&&el.closest&&el.closest('.atl-choice-ui'); if(w) w.remove(); }catch(_){} }
       panel.addEventListener('click',e=>{ try{
         const cfb=e.target.closest&&e.target.closest('.atl-confirm-btn');   /* (atlas-outside-mark) the reader's answer to a confirmation — before every other branch, so no other handler reads the press */
-        if(cfb){ _confirmPress(cfb); return; }
+        if(cfb){ if(e.isTrusted) _confirmPress(cfb); return; }
         const cgo=e.target.closest&&e.target.closest('.atl-cut-go');   /* (atlas-unbounded-execution) «Continue» under a turn that stopped short — one press, one follow-up */
         if(cgo){ cgo.remove(); run(L('Continue from where you stopped.','止まったところから続けてください。','Mach dort weiter, wo du aufgehört hast.','Продолжи с того места, где остановился.','Continúa desde donde te detuviste.')); return; }
         /* (#R85b) BUGFIX "Atlasの返答内のオンオフボタンが機能していない": the map-overlay toggle ALSO carries the
@@ -2800,7 +2800,7 @@ export function atlasConsole(HOST){
     function _patchRegions(ai,parts){
       let reg=ai.__atlRegions; const alive=reg&&_REGIONS.every(k=>reg.el[k]&&reg.el[k].parentNode===ai);
       if(!alive){ reg={el:{},html:{}}; _REGIONS.forEach(k=>{ const d=document.createElement('div'); d.className='atl-r atl-r-'+k; d.dataset.atlRegion=k; reg.el[k]=d; reg.html[k]=''; });
-        ai.replaceChildren.apply(ai,_REGIONS.map(k=>reg.el[k])); ai.__atlRegions=reg; }
+        ai.replaceChildren(..._REGIONS.map(k=>reg.el[k]),...(ai.__atlConfirmations?[ai.__atlConfirmations]:[])); ai.__atlRegions=reg; }
       /* the live draft paints itself at the bubble's top when it finds no element of its own (js/atlas-live.js paintDraft) — one that is not in the head region would stand twice once the head writes it */
       try{ Array.prototype.forEach.call(ai.children,c=>{ if(c.classList&&c.classList.contains('atl-draft')) c.remove(); }); }catch(_){}
       _REGIONS.forEach(k=>{ const h=String(parts[k]||''); if(reg.html[k]===h) return; reg.html[k]=h; reg.el[k].innerHTML=h; });
@@ -2827,8 +2827,8 @@ export function atlasConsole(HOST){
          the map-toggle row, so the reader sees «names · toggle» once. Only while that row exists — without a toggle the note stays. */
       const _shownRes=keep.filter(r=>r&&r.ok!==false&&r.exec&&r.exec.shown&&Array.isArray(r.exec.shown.names)&&r.exec.shown.names.length);
       let _chip=''; try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length){ const nms=[]; _shownRes.forEach(r=>r.exec.shown.names.forEach(n=>{ if(nms.indexOf(n)<0) nms.push(n); })); _chip=mapToggleChip(ks,nms); } }catch(_){}
-      const _interim=say?_pres.filter(p=>{ const r=p.res; if(!r||!r.act) return false; if(r.ok===false) return true; if(r.meta&&r.meta.working===true) return true; /* (atlas-result-delivery) a result that says it is working material (a run's record, a list of what could be asked) */ return !!TRES.ANSWER_TYPES[r.act.type] && !(r.meta&&r.meta.subject&&r.meta.brief); }).map(p=>p.res):[];
-      _pres.forEach(({res,fold})=>{ const h=_done?TRES.forReader(res,TOOLS.RESULT_TEXT_MAX):((res&&res.html)||''); if(!h||seen[h]||_interim.indexOf(res)>=0||(_chip&&_shownRes.indexOf(res)>=0)) return; seen[h]=1; body+=fold?('<details class="atl-fold" style="margin:4px 0;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+res.meta.brief+'</summary>'+h+'</details>'):h; });
+      const _interim=say?_pres.filter(p=>{ const r=p.res; if(!r||!r.act||r.meta?.confirmation) return false; if(r.ok===false) return true; if(r.meta&&r.meta.working===true) return true; /* (atlas-result-delivery) a result that says it is working material (a run's record, a list of what could be asked) */ return !!TRES.ANSWER_TYPES[r.act.type] && !(r.meta&&r.meta.subject&&r.meta.brief); }).map(p=>p.res):[];
+      _pres.forEach(({res,fold})=>{ const h=_done?TRES.forReader(res,TOOLS.RESULT_TEXT_MAX):((res&&res.html)||''); if(res?.meta?.confirmation||!h||seen[h]||_interim.indexOf(res)>=0||(_chip&&_shownRes.indexOf(res)>=0)) return; seen[h]=1; body+=fold?('<details class="atl-fold" style="margin:4px 0;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+res.meta.brief+'</summary>'+h+'</details>'):h; });
       if(_interim.length){ const _f=_done?[]:_interim.filter(r=>r.ok===false).reduce((a,r)=>a.concat(TRES.unfinished(r)),[]);   /* (atlas-answer-surface) what the failed step SAID, not `earthquake` */
         /* ⚠ A FAILED STEP'S OWN WARNING IS NOT FOR THE READER. «サイトがエラーを返しました» / «ページまたはファイルが大きすぎて…» are a tool talking to the model that called it, which has the same text in its result (exec) and decides what to do next; the reader gets it in Atlas's answer, in words, when it changed the answer. The developer view (aiDev) still lists them raw. */
         const _devView=_isDevView();
@@ -2861,8 +2861,9 @@ export function atlasConsole(HOST){
       _patchRegions(ai,{ head:(head||body||ops||srcs)?head:esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.')), body:body, ops:ops, srcs:srcs }); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
       try{ SRCS.bind(ai, ai.__atlQ||''); }catch(_){} try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc(L('The answer could not be displayed.','回答を表示できませんでした。','Die Antwort konnte nicht angezeigt werden.','Не удалось показать ответ.','No se pudo mostrar la respuesta.'))+'</span><details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+esc(L('Details','詳細','Details','Подробности','Detalles'))+'</summary><div style="font-size:11.5px;color:var(--text-muted);">'+esc((e&&e.message)||'error')+'</div></details>'; }catch(_){} } }
-    async function runActions(ai, say, acts, gen){
+    async function runActions(ai, say, acts, gen, awaitInput){
       const results=[]; const fails=[]; let cancelled=false;
+      const turnId=_curTurn, turnKey=_curTurnKey, turnSignal=_abortCtl?.signal;
       const _turnMark=_surfaceMark();   /* (atlas-controls-receipts) the map as this run found it: whose drawing was still on it */
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         try{ a.__paintRun="run"+(gen!=null?gen:_runGen); }catch(_){}   /* ⚠ (#R489) WHICH RUN THIS ACTION BELONGS TO, stamped on the action rather than held as a flag. The painting paths accumulate within ONE run and replace between runs, and this is what tells them apart with no lifecycle to get wrong: an action reached through IntMapOS.dispatch (the diagnostics door, and the door tests/r157.spec.js uses) carries no stamp, so it REPLACES — which is right, because a bare dispatch is its own request. */
@@ -2874,9 +2875,16 @@ export function atlasConsole(HOST){
            before and after, and a postcondition). `toLegacy` puts the verdict back into the shape
            `_atlCompose` and the repair loop already read, so nothing downstream had to change —
            except that `ok` is now something the app watched happen. */
-        let r, _ar=null; const _mark0=_surfaceMark();
+        let r, _ar=null, confirmation=null; let _mark0=_surfaceMark();
+        const signal=_linkSignals(turnSignal,a.__callSignal);
         try{ const _cap=CAPS.resolve(a.type); const _args={}; Object.keys(a).forEach(k=>{ if(k!=='type'&&k.slice(0,2)!=='__') _args[k]=a[k]; });
-          _ar=await EXEC.execute(_cap?_cap.id:a.type, _args, {source:'atlas', turnId:_curTurn, externalContent:a.__externalContent===true, signal:_linkSignals(_abortCtl?_abortCtl.signal:undefined,a.__callSignal)});   /* (#R801) a fact as execution context, never an argument: whether outside content has been in front of the model this turn (`_runOne` stamps it from js/atlas-agent.js's turn record; a chip or a replay carries no stamp and reads false). js/atlas-executor.js 4b reads it. ⚠ (atlas-outside-mark) NO `confirmed` ON THIS PATH: a call the model makes is never the reader's approval, however the conversation went — the approval is a press (`_confirmPress`) */
+          _ar=await EXEC.execute(_cap?_cap.id:a.type, _args, {source:'atlas', turnId, turnKey, externalContent:a.__externalContent===true, signal});
+          if(_ar?.status==='needs_input'&&_ar.code==='needs_confirm'){
+            confirmation=_requestConfirmation(ai,_ar,signal);
+            const decision=await (awaitInput?awaitInput(confirmation.decision):confirmation.decision);
+            _mark0=_surfaceMark();
+            _ar=await _resolveConfirmation(_ar,decision,{turnId,turnKey,signal});
+          }
           r=RESULTS.toLegacy(_ar); }
         catch(e){ r=R(false, warn(esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); }
         if(!r||typeof r!=='object') r=R(true, String(r||''));
@@ -2886,8 +2894,9 @@ export function atlasConsole(HOST){
            user has not answered yet it would do exactly what #R115 did — substitute something the
            model has been shown for the thing that was actually asked for. So it is rendered, it is
            REMEMBERED (askHere() resumes it when the map is clicked), and it stays out of `fails`. */
-        if(_ar&&(_ar.status==='needs_input'||_ar.status==='running')){ r.html=(r.html||'')+RESULTS.render(_ar,{L,esc,note,warn}); }
-        if(_ar&&_ar.status==='needs_input'&&_ar.inputRequest){ if(_ar.code==='needs_confirm') _confirmWait.set(_ar.operationId,{ id:_ar.capabilityId, args:_ar.inputRequest.pendingArgs||{}, at:Date.now(), label:actLabel(a)||_ar.capabilityId }); else _pendingInput={ result:_ar, bubble:ai, at:Date.now() }; }   /* (atlas-outside-mark) a confirmation waits for the reader's press on ITS buttons (`_confirmPress`); every other needs_input waits in the resume slot as before */
+        if(_ar&&(confirmation||_ar.status==='needs_input'||_ar.status==='running')){ r.html=(r.html||'')+RESULTS.render(_ar,{L,esc,note,warn}); }
+        if(_ar?.status==='needs_input'&&_ar.inputRequest) _pendingInput={ result:_ar, bubble:ai, at:Date.now() };
+        if(confirmation) r.meta=Object.assign({},r.meta,{confirmation:confirmation.choice});
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
         const _drew=(r.ok!==false)?_drewSince(_mark0):[];
         /* ⚠ A NEW DRAWING IS NOT HIDDEN BY AN OLD SWITCH. The kind's layers are shared (nlq-*), and an earlier reply's chip turned them OFF; this run then painted into
@@ -2897,6 +2906,7 @@ export function atlasConsole(HOST){
           if(_sn){ r.meta=Object.assign({},r.meta||{},{ seen:_sn });
             if(_sn.bad.length){ const _rs=[]; _sn.bad.forEach(b=>{ const t=_whyText(b.reason); if(_rs.indexOf(t)<0) _rs.push(t); });
               r.html=(r.html||'')+warn(L('Drawn, but not visible on screen: ','描きましたが、画面には見えていません: ')+esc(_rs.join(' / '))+(_sn.bad.some(b=>b.errors&&b.errors.length)?' ('+esc(_sn.bad.map(b=>(b.errors||[])[0]).filter(Boolean)[0]||'')+')':'')); } } }
+        if(confirmation) _paintHeld(confirmation.host,_ar,r.html||'');
         results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, drew:_drew.map(d=>Object.assign({what:actLabel(a)},d))}); try{ reportShown(results[results.length-1]); }catch(_){}   /* (atlas-verify-metrics) the first operation that shows something usable ends «the wait for the first useful result» */   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
@@ -3097,7 +3107,7 @@ export function atlasConsole(HOST){
            call was filed under (js/atlas-agent.js passes `turn.planStep`): within one turn and one step, a later answer replaces the earlier. */
         try{ if(!action.__goalKey&&TRES.ANSWER_TYPES[action.type]&&turn&&turn.planStep>=0){ const _ps=PLAN.snapshot(); if(_ps) action.__goalKey='goal:'+_turnKey+':'+_ps.id+':'+turn.planStep; } }catch(_){}
         _ranActions.push(action);
-        await runActions(ai,'',[action],gen);
+        await runActions(ai,'',[action],gen,turn?.awaitInput);
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
         let rec=null; for(let i=list.length-1;i>=before&&!rec;i--){ if(list[i]&&list[i].act===action) rec=list[i]; }   /* ⚠ (atlas-turn-engine) THIS action's record, found by identity. It was `list[list.length-1]` — the last record filed, which is this action's only while one call runs at a time; js/atlas-agent.js now runs the calls of one reply together when their conflict keys do not overlap, and another call may file its record between this one's and this line */
         if(!rec) return {ok:false,error:'not_run',message:'the turn was superseded'};
@@ -3162,7 +3172,7 @@ export function atlasConsole(HOST){
            for the plan's states); an action with no observation, or one the observation calls anything but completed, is not done. */
         const _obsFails=_ranActions.filter(a=>{ const ex=a&&a.__exec; if(ex&&typeof ex==='object'){ const st=opState(ex); return st!=='completed'&&st!=='waiting'; } const rec=(ai.__atlResults||[]).find(r=>r&&r.act===a); return !rec||rec.ok===false; });
         try{ WM.recordTurn(wmTurnRecord(turn,q,out,_wctx,PLAN.snapshot(),ASTATE.turn(turn))); }catch(_){}   /* (atlas-working-memory) what the finished turn leaves: question and reply whole, what is owed, the conditions in force, the plan's steps */
-        recordTurn(q,out.text||'',_ranActions,_obsFails,{ outside:out.externalContentSeen===true, completion:ai.__atlCompletion, unmet:ai.__atlUnmet, stopped:String(out.stopped||''), incomplete:!!out.outputIncomplete }); try{ const _et=ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), completion:ai.__atlCompletion||undefined, unmet:ai.__atlUnmet.length?ai.__atlUnmet.slice():undefined, request:q, failed:_obsFails.map(actLabel).filter(Boolean), aiCalls:((out.trace&&out.trace.steps)||[]).length, cites:(_curPlanCites||[]).map(c=>({url:c.url,title:c.title||''})) }); if(_et) Object.defineProperty(_et,'answerSources',{ value:SRCS.ready(ai), configurable:true, enumerable:false }); }catch(_){}   /* (atlas-cited-answers) the reply's source list, for the notebook — not enumerable, so a turn record that is serialised stays plain data */   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
+        recordTurn(q,out.text||'',_ranActions,_obsFails,{ outside:out.externalContentSeen===true, completion:ai.__atlCompletion, unmet:ai.__atlUnmet, stopped:String(out.stopped||''), incomplete:!!out.outputIncomplete, results:out.results }); try{ const _et=ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), completion:ai.__atlCompletion||undefined, unmet:ai.__atlUnmet.length?ai.__atlUnmet.slice():undefined, request:q, failed:_obsFails.map(actLabel).filter(Boolean), aiCalls:((out.trace&&out.trace.steps)||[]).length, cites:(_curPlanCites||[]).map(c=>({url:c.url,title:c.title||''})) }); if(_et) Object.defineProperty(_et,'answerSources',{ value:SRCS.ready(ai), configurable:true, enumerable:false }); }catch(_){}   /* (atlas-cited-answers) the reply's source list, for the notebook — not enumerable, so a turn record that is serialised stays plain data */   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
         try{ const _rl0=_isDevView()&&AGENT.runLine&&AGENT.runLine(out.run,{ sec:L(' s',' 秒'), notReported:L('cost not reported','費用は未取得'), unreported:L(' + unreported',' + 未取得分'), workers:L('workers ','子 '), unpriced:L('some calls priced at the highest rate','価格表に無いモデルは最高単価で換算') }); if(_rl0) PROG.devNote(ai,_rl0); }catch(_){}   /* (2026-11-26) 「$0.311 + 未取得分 · 147 秒 · モデル ×8, ツール ×4」 is a developer's number: it goes to the console and the trace's expanded detail, never under the reply */
         try{ PROG.done(ai); }catch(_){} msgTools(ai,q);
 
@@ -3183,7 +3193,17 @@ export function atlasConsole(HOST){
     function recordTurn(q, say, acts, fails, st){ const _o=!!(st&&st.outside===true);   /* (atlas-outside-mark) the turn record's fact, never the text: what Atlas wrote in a turn that had outside content in front of it keeps the mark for as long as it is in the history */ try{ updateWctx(acts,fails,_o); }catch(_){} try{ _parseExclusions(q); }catch(_){}
       try{ const kept=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0); const did=kept.filter(a=>!TCONT.isAsk(a)).map(actLabel).filter(Boolean);   /* ⚠ (#R419) A QUESTION IS THE TURN'S OUTPUT, NOT ONE OF ITS SIDE EFFECTS — it gets its OWN history line below, never a slot in this `did:` list, which is cut at 260 characters (js/atlas-turn-continuity.js) */
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
-      _hist.push({t:_curTurn,s:'User: '+q.slice(0,4000)}); TCONT.askRecords(kept).forEach(s=>_hist.push({t:_curTurn,s:s,o:_o})); _hist.push({t:_curTurn,s:a,o:_o}); const _um=_unmetLine(q,st); if(_um) _hist.push({t:_curTurn,s:_um,o:_o}); if(_hist.length>56) _hist=_hist.slice(-48);   /* (atlas-mainloop-reliability) trimmed in steps of eight, never below 48: a window cut by one entry every turn moves the first byte of the history every turn, and the provider's prefix cache can reuse nothing after it */ }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
+      _hist.push({t:_curTurn,s:'User: '+q.slice(0,4000)}); TCONT.askRecords(kept).forEach(s=>_hist.push({t:_curTurn,s:s,o:_o})); _hist.push({t:_curTurn,s:a,o:_o}); const _um=_unmetLine(q,st); if(_um) _hist.push({t:_curTurn,s:_um,o:_o});
+      for(const rec of st?.results||[]){
+        if(!rec?.details?.confirmation||rec.reusedFromEarlierCallThisTurn) continue;
+        const {capability,status,code,details}=rec;
+        // The answer excerpt can omit the receipt. The full result is also available via read_result.
+        const limit=TOOLS.RESULT_TEXT_MAX;
+        const data=JSON.stringify({capability,status,code,details});
+        const receipt=data.length<=limit?data:JSON.stringify({capability,status,code,confirmation:details.confirmation,callId:rec.id});
+        _hist.push({t:_curTurn,s:'IntMap confirmation receipt: '+receipt,o:_o});
+      }
+      if(_hist.length>56) _hist=_hist.slice(-48);   /* (atlas-mainloop-reliability) trimmed in steps of eight, never below 48: a window cut by one entry every turn moves the first byte of the history every turn, and the provider's prefix cache can reuse nothing after it */ }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
     /* (#R112) Atlas is a REAL sidebar TAB in normal + mobile mode — the console mounts, IN NORMAL FLOW, into its own
        content area (#atlas-feed) BELOW the sidebar tab bar, exactly like the News / Information / Countries tabs. The
        header + tabs stay visible; there is NO popup overlay (the old "popup forcibly pasted onto the sidebar"
@@ -3237,26 +3257,47 @@ export function atlasConsole(HOST){
        scratch. `_pendingInput` is the one slot that makes that possible; it expires, because a
        point clicked twenty minutes later is a new thought, not an answer. */
     let _pendingInput=null;
-    /* ══ (atlas-outside-mark) THE READER'S CONFIRMATION IS A PRESS, READ BY CODE ═══════════════════════════════════════
-       js/atlas-executor.js 4b answers `needs_confirm` for an 'explicit' row, or a control declaring an outward /
-       destructive effect, when the model asks for it with outside content in front of it. What used to approve it was
-       `_confirmedBy`: the model making the same call again in a later turn — so the approval was the model's output,
-       and an instruction carried forward in Atlas's own summary could both ask and answer. Now the result carries two
-       buttons (js/atlas-results.js), the pending call waits HERE under its operation id, and only a press of Run on
-       that operation runs it, with `confirmed:true` and source 'atlas-confirm'. Nothing the model writes reaches
-       `confirmed`. The press is recorded in the history as IntMap's own line, so the next turn knows. */
-    const _confirmWait=new Map();
-    async function _confirmPress(btn){ const box=btn.closest&&btn.closest('[data-atl-confirm]'); if(!box) return; const opId=box.getAttribute('data-atl-confirm'); const w=_confirmWait.get(opId); _confirmWait.delete(opId);
-      const said=(k)=>{ const d=document.createElement('div'); d.className='atl-confirm-said'; d.textContent=RESULTS.text(k,null,L); box.replaceWith(d); };
-      if(!w||(Date.now()-w.at)>_RESUME_TTL_MS){ said('atlas.confirm.expired'); return; }
-      if(btn.getAttribute('data-confirm')!=='run'){ said('atlas.confirm.declined'); _hist.push({t:_curTurn,s:'IntMap: the reader pressed "Don\'t" on the confirmation for '+w.label+' — it was not run.'}); return; }
-      box.querySelectorAll('button').forEach(b=>{ b.disabled=true; });
-      let ar=null; try{ ar=await EXEC.execute(w.id, w.args, {source:'atlas-confirm', turnId:_curTurn, confirmed:true}); }catch(e){ const d=document.createElement('div'); d.innerHTML=warn(esc(w.label+': '+((e&&e.message)||'error'))); box.replaceWith(d); return; }
-      const host=document.createElement('div'); _paintHeld(host,ar); box.replaceWith(host);
-      _hist.push({t:_curTurn,s:'IntMap: the reader pressed Run on the confirmation for '+w.label+' — '+String((ar&&ar.status)||'')+((ar&&ar.code&&ar.code!=='ok')?(' ('+ar.code+')'):'')}); }
+    // Each confirmation belongs to its original tool call. Its slot survives answer composition,
+    // and the verdict returns through that call's ordinary result path.
+    const _confirmWait=new WeakMap();
+    function _requestConfirmation(ai,ar,signal){
+      const region=ai.__atlConfirmations||(ai.__atlConfirmations=document.createElement('div'));
+      const host=document.createElement('div');
+      _paintHeld(host,ar);
+      region.appendChild(host);
+      if(region.parentNode!==ai) ai.appendChild(region);
+      try{ PROG.setLive(ai,RESULTS.text('atlas.code.needs_confirm',null,L)); }catch(_){}
+      const held={host,choice:null};
+      const box=host.querySelector('[data-atl-confirm]');
+      held.decision=new Promise(resolve=>{
+        const abort=()=>settle('cancelled');
+        const settle=choice=>{
+          _confirmWait.delete(box);
+          signal?.removeEventListener('abort',abort);
+          box.querySelectorAll('button').forEach(button=>{ button.disabled=true; });
+          held.choice=choice;
+          resolve(choice);
+        };
+        if(signal?.aborted) abort();
+        else{
+          _confirmWait.set(box,settle);
+          signal?.addEventListener('abort',abort,{once:true});
+        }
+      });
+      return held;
+    }
+    function _confirmPress(btn){
+      const settle=_confirmWait.get(btn.closest('[data-atl-confirm]'));
+      if(settle) settle(btn.getAttribute('data-confirm')==='run'?'run':'declined');
+    }
+    function _resolveConfirmation(ar,decision,{turnId,turnKey,signal}){
+      if(decision==='run') return EXEC.execute(ar.capabilityId,ar.inputRequest.pendingArgs||{}, {source:'atlas-confirm',turnId,turnKey,signal,confirmed:true});
+      return RESULTS.cancelled({operationId:ar.operationId,capabilityId:ar.capabilityId,
+        ...(decision==='declined'?{code:'confirmation_declined',messageKey:'atlas.confirm.declined'}:{})});
+    }
     const _RESUME_TTL_MS=5*60*1000;
-    /* the result of an operation that waited for the reader (a map click, a confirmation press), painted where it waited — one renderer for both */
-    function _paintHeld(host,ar){ host.innerHTML=(RESULTS.toLegacy(ar).html||'')+RESULTS.render(ar,{L,esc,note,warn}); }
+    /* An operation waiting for the reader or resumed by a map click is painted where it waited. */
+    function _paintHeld(host,ar,html=(RESULTS.toLegacy(ar).html||'')+RESULTS.render(ar,{L,esc,note,warn})){ host.innerHTML=html; }
     async function _resumeWithPoint(lng,lat){
       const p=_pendingInput; if(!p||!p.result||!p.result.inputRequest) return false;
       if(Date.now()-p.at>_RESUME_TTL_MS){ _pendingInput=null; return false; }
