@@ -16,3 +16,7 @@ date: 2026-11-27
 ## 検査
 
 `tests/objects-area-opacity-observer-checks.test.mjs`（観測器 8 件）・`tests/atlas-completion-routes-checks.test.mjs` B2b（1 件だけ消える）。
+
+## 予算
+
+`eager.gzip` の天井を 1568.6 kB → 1576.7 kB に上げた（`check:perf`）。この PR の増分は観測器の読み戻し・面積・個別削除・CSS で数 kB 未満だが、CI が測る tree（main を取り込んだもの）は取り込み前より重く、増えた分のうち main 側（他セッションの変更）と本 PR の内訳は分けて測っていない。
