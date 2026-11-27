@@ -261,3 +261,40 @@ test('the page vocabulary reaches the hand-over: "url:https://…" reads the fil
   assert.doesNotMatch(r.text, /world graph/);
   assert.match(r.text, /@<task id>:data\.result/);
 });
+
+/* ── (gis-read-step) the job Atlas built in production on 2026-11-28, as it built it: a read step with inputs and NO op, then a filter that names it ──
+   The read step answered with the list of operations (ok:true, no data), so the filter had nothing; its refusal then said the name meant nothing. */
+test('a data.gis step with inputs and no op READS them (as on the page); a step that names an input which made no features is told so', async () => {
+  const PP = 'https://data.example.org/open/populated_places.geojson';
+  const places = { type: 'FeatureCollection', features: ['Japan', 'Japan', 'France', 'Japan', 'Peru'].map((c, i) => ({ type: 'Feature', properties: { NAME: 'p' + i, ADM0NAME: c, POP_MAX: 1000 * (i + 1) }, geometry: { type: 'Point', coordinates: [i, i] } })) };
+  const db = fakeDb(plan([
+    { id: 'read', kind: 'capability', capability: 'data.gis', args: { inputs: ['url:' + PP] } },
+    { id: 'filter', kind: 'capability', capability: 'data.gis', inputs: [{ from: 'read' }], args: { op: 'filter', inputs: ['read'], params: { where: [{ field: 'ADM0NAME', op: '==', value: 'Japan' }] } } },
+  ]));
+  await run(db, null, files({ [PP]: places }));
+  const read = db.st.tasks.get('read'), filter = db.st.tasks.get('filter');
+  assert.equal(read.status, 'done');
+  assert.equal(read.result.data.count, 5, 'the read step holds the file, not the list of operations');
+  assert.deepEqual(read.result.sources.map((x) => x.url), [PP]);
+  assert.equal(read.result.data.output.count, 5);
+  assert.equal(filter.status, 'done', JSON.stringify(filter.result && filter.result.gaps));
+  assert.equal(filter.result.data.count, 3);
+  assert.equal(filter.result.data.result.features.reduce((s, f) => s + f.properties.POP_MAX, 0), 1000 + 2000 + 4000);
+  assert.deepEqual(filter.result.sources.map((x) => x.url), [PP], 'the file is still the source after the filter');
+  assert.equal(db.st.job.finished.status, 'done');
+  /* {"describe":true} and a call with neither op nor inputs still list the operations */
+  const lane = makeServerCaps({ gis });
+  assert.ok(Array.isArray((await lane.run('data.gis', { describe: true }, {})).data.ops));
+  assert.ok(Array.isArray((await lane.run('data.gis', {}, {})).data.ops));
+  /* an input task that answered without features: the refusal names that, not «none of these» */
+  const db2 = fakeDb(plan([
+    { id: 'list', kind: 'capability', capability: 'data.gis', args: { describe: true } },
+    { id: 'use', kind: 'capability', capability: 'data.gis', inputs: [{ from: 'list' }], args: { op: 'centroid', inputs: ['list'] } },
+  ]));
+  await run(db2, null, files({}));
+  const use = db2.st.tasks.get('use');
+  assert.equal(use.status, 'failed');
+  assert.equal(use.code, 'input_has_no_features');
+  assert.match(use.result.gaps[0], /"list" is one of the inputs, but its result holds no features/);
+  assert.equal(db2.st.job.finished.status, 'partial');
+});

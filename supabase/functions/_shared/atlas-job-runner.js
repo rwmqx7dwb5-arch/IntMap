@@ -211,7 +211,8 @@ async function runCapabilityTask(ctx, task, inputs) {
   const outputs = new Map();
   for (const i of inputs || []) {
     const d = i && i.data;
-    if (!d || !isFC(d.result)) continue;
+    /* an input that holds no features is named too — so a step that reads it is told THAT, not that the name means nothing */
+    if (!d || !isFC(d.result)) { outputs.set(String(i.from), { noFeatures: true, summary: i.summary || "" }); continue; }
     const fc = Object.assign({}, d.result, { intmap: { from: i.from, version: (d.output && d.output.version) || "", sources: Array.isArray(i.sources) ? i.sources : [] } });
     outputs.set(String(i.from), fc);
     if (d.output && d.output.id) outputs.set(String(d.output.id), fc);
