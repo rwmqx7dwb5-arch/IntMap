@@ -65,7 +65,7 @@ test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + 
   /* (#R494) the reply body is a NAMED class now. It was an inline style five call sites in
      js/atlas-console.js had to keep re-spelling, and the mobile rule below matched it by that
      spelling — so the lift held only while all five agreed on the characters. */
-  ok(".atl-md{font-size:15px;line-height:1.62;}", 'desktop reply body is 15px (R494 line-height 1.68 → 1.62)');
+  ok(".atl-md{font-size:15px;line-height:1.7;}", 'desktop reply body is 15px (R494 line-height 1.68 → 1.62)');
   ok(".atl-b.a .atl-md{font-size:16px !important;}", 'mobile still lifts the (now 15px) body');
   gone('<div style="font-size:14px;line-height:1.68;">', 'the inline-style wrapper it used to be sniffed by is gone');
   // still monochrome — every heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight

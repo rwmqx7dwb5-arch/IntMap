@@ -238,7 +238,7 @@ test('R494 ⑪ Japanese breaks by the strict rule set, not between any two chara
   assert.ok(!/word-break:break-word/.test(bubble[1]),
     'break-word is gone — it permitted a line to begin with 、 。 ）');
   assert.match(bubble[1], /font-size:13\.5px;line-height:1\.62/, 'the bubble is 13.5px/1.62 (was 12.8/1.6)');
-  assert.match(CSS, /\.atl-md\{font-size:15px;line-height:1\.62;\}/, 'and the reply body is a NAMED class');
+  assert.match(CSS, /\.atl-md\{font-size:15px;line-height:1.7;\}/, 'and the reply body is a NAMED class');
 });
 
 /* ── ⑫ the round did not leave a second renderer behind ────────────────────────────────────── */

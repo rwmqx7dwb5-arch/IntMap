@@ -155,8 +155,8 @@ export function makeMsgTools(CTX){
       if(aiEl.__viewSnap){
         const vSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><circle cx="12" cy="12" r="2.6"/></svg>';
         const vb=document.createElement('button'); vb.type='button';
-        vb.innerHTML=vSvg+'<span>'+L('Map as it was','当時の地図','Karte wie damals','Карта как тогда','Mapa de entonces')+'</span>';
-        vb.title=L('Put the map back the way it was when this answer was written','この回答を書いたときの地図に戻す','Die Karte in den Zustand zurückversetzen, in dem diese Antwort entstand','Вернуть карту в состояние на момент этого ответа','Devolver el mapa al estado en que se escribió esta respuesta');
+        vb.innerHTML=vSvg+'<span>'+L('Restore map view','この回答の表示に戻す')+'</span>';
+        vb.title=L('Put the camera, the year and the shapes back the way they were when this answer was written','カメラ・年代・重ねた図形を、この回答を書いたときの状態に戻す');
         vb.onclick=async()=>{ const sp=vb.querySelector('span'); const was=sp?sp.textContent:'';
           const say=(t)=>{ if(!sp) return; sp.textContent=t; setTimeout(()=>{ try{ sp.textContent=was; }catch(_){} },2600); };
           try{
