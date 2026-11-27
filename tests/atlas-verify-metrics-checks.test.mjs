@@ -63,10 +63,10 @@ test('verifyOutcome: a program verdict and a model verdict are told apart; a rew
   const K = await kernels();
   const of = mk('a', { findings: [{ claim: 'bad place', lat: 200, lon: 0 }, { claim: 'Suez opened in 1869' }, { claim: 'never repeated' }] });
   const det = decideClaims(of, K);
-  const by = mk('verify-a', { findings: [{ id: 'a#2', claim: 'The Suez Canal opened 1869', verdict: 'supported', source: 'https://x.org' }] });
+  const by = mk('verify-a', { findings: [{ id: 'a#2', claim: 'The Suez Canal opened 1869', verdict: 'supported', source: 'https://x.org', excerpt: 'The canal opened in 1869' }] });
   const o = verifyOutcome([{ of, by, det }]);
-  assert.deepEqual(o.counts, { supported: 1, unsupported: 0, contradicted: 1, unchecked: 1 });
-  assert.deepEqual(o.basis, { program: 1, model: 1 });
+  assert.deepEqual(o.counts, { supported: 1, asserted: 0, unsupported: 0, contradicted: 1, unchecked: 1 });
+  assert.deepEqual(o.basis, { program: 1, model: 1, model_unsourced: 0 });
   assert.equal(o.checked[0].basis, 'program');
   const only = mk('b', { findings: [{ claim: 'bad', lat: 91, lon: 0 }] });
   const o2 = verifyOutcome([{ of: only, by: null, det: decideClaims(only, K) }]);

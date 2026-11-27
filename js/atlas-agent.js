@@ -941,6 +941,25 @@ export function makeAtlasAgent() {
       let goalRounds = 0;
       let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
       let goalUnmet = [];        /* …and what it found, when the bounce was not taken or ran out: carried into `unmet` */
+      /* (atlas-completion-verdict) EACH FINDING HAS AN IDENTITY, AND IS PUT TO ATLAS ONCE. A finding is named by an id the first time it is read
+         (g1, g2 …); a later reading that finds the same need says so by that id ("prev", js/atlas-goal-verify.js) or by the same words. A finding
+         already put to Atlas has had its answer — Atlas did the work, or answered as it stands — and is not sent back again: sending it back
+         re-streams an answer and withdraws it each round with nothing new to act on. Measured before this: a reader that reworded one need each
+         round («all prefectures» → «every prefecture») bounced the same finished turn twenty times (one-pass-or-a-reason §2 ③: the operation
+         «put this finding to Atlas» was not idempotent). Only a need no reading has named before is put to Atlas. NOT A CAP: no count of rounds. */
+      const goalIds = [];        /* [{ id, key }] every finding named so far this turn */
+      const goalPut = Object.create(null);   /* id → true once that finding has been put to Atlas */
+      const goalKey = (need) => String(need || '').toLowerCase().split(' ').filter(Boolean).join(' ');   /* no pattern: this loop reads no reply by regex (tests/atlas-agent-loop-checks R663 ⑥) */
+      const goalIdOf = (u) => {
+        const prev = String((u && u.prev) || '').trim();
+        if (prev && goalIds.some((g) => g.id === prev)) return prev;
+        const k = goalKey(u && u.need);
+        const hit = goalIds.find((g) => g.key === k);
+        if (hit) return hit.id;
+        const id = 'g' + (goalIds.length + 1);
+        goalIds.push({ id, key: k });
+        return id;
+      };
       trace.goalCheck = '';
 
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
@@ -1160,7 +1179,6 @@ export function makeAtlasAgent() {
           let goalNote = '';
           if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
             goalVerifiedAt = results.length; goalRounds++;
-            const prevNeeds = (goalPrev && goalPrev.unmet && goalPrev.unmet.length) ? goalPrev.unmet.map((u) => String(u.need).trim().toLowerCase()).sort().join('|') : '';
             let v = null;
             const verifyT0 = wallNow();
             try {
@@ -1168,29 +1186,37 @@ export function makeAtlasAgent() {
                 plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
             } catch (_) { v = null; }
             try { ledger.model({ model: 'atlas_verify', ms: wallNow() - verifyT0 }); } catch (_) { /* see preCalls */ }
-            const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
+            const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', id: goalIdOf(u), need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
+            /* what the reader said it could NOT SEE is not a finding about the turn (not observed is not unmet): kept for the evaluation, never bounced, never listed as «not done» */
+            if (v && Array.isArray(v.unconfirmed) && v.unconfirmed.length) trace.goalUnconfirmed = v.unconfirmed.filter((u) => u && String(u.need || '').trim()).map((u) => ({ need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) }));
             const metList = (v && Array.isArray(v.met)) ? v.met.filter((m) => m && String(m.need || '').trim()).map((m) => ({ need: String(m.need).slice(0, 300), how: String(m.how || '').slice(0, 300) })) : [];
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
             /* the ledger of the LAST observed read: what the request asked, what the record covers, what it does not, and how many reads it took (observed-only: an unobserved read leaves the previous ledger) */
-            if (list !== null) { goalPrev = { met: metList, unmet: list.map((u) => ({ need: u.need, why: u.why })) }; trace.goalLedger = { rounds: goalRounds, met: metList, unmet: goalPrev.unmet }; }
+            if (list !== null) { goalPrev = { met: metList, unmet: list.map((u) => ({ id: u.id, need: u.need, why: u.why })) }; trace.goalLedger = { rounds: goalRounds, met: metList, unmet: goalPrev.unmet }; }
             /* ⚠ NOT OBSERVED IS NOT RESOLVED. A shortfall an earlier reading CONFIRMED («12 of the 20 rows are missing») is closed only by a reading that
                observed it closed, or by a record that it was met — never by the next reader failing to answer. This line used to be `list || []`: with
                the second check silent, the 12 missing rows were dropped, `unmet` came out empty and the turn was reported complete over 8 rows of 20
                (measured 2026-11-27). The held finding stays on the record, and goalAt returns to «not put to Atlas» so it is carried into `unmet`. */
             if (list === null && goalPrev && goalPrev.unmet.length) {
-              goalUnmet = goalPrev.unmet.map((u) => ({ kind: 'goal', need: u.need, why: u.why }));
+              goalUnmet = goalPrev.unmet.map((u) => ({ kind: 'goal', id: u.id, need: u.need, why: u.why }));
               goalAt = -1; trace.goalHeld = goalUnmet.length;
             } else goalUnmet = list || [];
             /* THE SAME FINDING TWICE IS THE LOOP LEARNING NOTHING (the same rule as the output gate's `moved`, below): the reader found these needs unmet,
                Atlas did something, and the reader found the SAME needs. Sending them back again re-streams an answer and withdraws it each round, with
                nothing new to act on. The finding stands on the record (it is still shown as it was); the turn is not bounced for it again. */
-            const needKey = (xs) => (xs || []).map((u) => String(u.need).trim().toLowerCase()).sort().join('|');
-            const repeated = !!(list && list.length && prevNeeds && needKey(list) === prevNeeds);
+            /* …and the identity is the finding's id, not its spelling (see goalIds above): only the needs not yet put to Atlas are sent */
+            const fresh = (list || []).filter((u) => !goalPut[u.id]);
+            const repeated = !!(list && list.length && !fresh.length);
             if (repeated) trace.goalRepeated = (trace.goalRepeated || 0) + 1;
-            if (list && list.length && !repeated) {
+            /* a reading that is NOT put to Atlas was taken on the record as it now stands, so what it found is the turn's finding: `goalAt` returns to
+               «not put» and the end of the turn carries it. (It used to keep the index of the EARLIER bounce, and the work Atlas did since made the
+               end of the turn drop a finding the latest reading had just confirmed — the turn was called complete over it.) */
+            if (list !== null && !fresh.length) goalAt = -1;
+            if (fresh.length) {
               if ((step + 1) < lim.maxSteps && !outOfTime()) {
+                fresh.forEach((u) => { goalPut[u.id] = true; });
                 goalNote = 'An independent reader checked the request against what this turn produced and found these not met: '
-                  + list.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
+                  + fresh.map((u) => '"' + u.need + '"' + (u.why ? ' (' + u.why + ')' : '')).join('; ')
                   + (metList.length ? '. Already covered: ' + metList.map((m) => '"' + m.need + '"').join('; ') : '')
                   + '. Do them now with function calls and then answer; or, if the request does not actually need them, '
                   + 'reply again with the answer as it stands, and put the reason in note_to_intmap (never shown) — final_text is read by the reader alone and must not mention this check.';

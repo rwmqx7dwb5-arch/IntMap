@@ -161,7 +161,7 @@ export function makeAtlasLive(HOST, deps) {
     if (current && current !== ai) { try { end(current, 'superseded'); } catch (_) { } }
     current = ai;
     const st = { t0: now(), lat: { streamed: false, steps: 0 }, reader: null, call: 0, thought: '', narr: null, said: [], sayAt: -1,
-      draftShown: false, painted: false, seenOps: Object.create(null), ended: false };
+      draftShown: false, painted: false, candidate: false, seenOps: Object.create(null), ended: false };
     turns.set(ai, st);
     history.push(st.lat);
     if (history.length > 20) history.shift();
@@ -216,6 +216,8 @@ export function makeAtlasLive(HOST, deps) {
     /* …but it is KEPT, as a note in the trace, not erased: what the reader watched being written does not vanish (the failure wording of a bounced final
        used to be streamed and then simply cut away, round after round) */
     if (ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); st.narr = null; st.sayAt = -1; setDraft(ai, ''); }
+    /* (atlas-completion-verdict) a CANDIDATE the turn handed back (output gate / independent reader) stays where it was written, as a note */
+    if (st.candidate) { st.candidate = false; st.narr = null; st.sayAt = -1; }
     return {
       onEvent(name, data) {
         try {
@@ -232,13 +234,19 @@ export function makeAtlasLive(HOST, deps) {
             /* «this reply is a note on the way» — said by Atlas itself, first, before the words */
             if (r.turn === 'continuing' || st.callNames.length) { narrate(ai, st, r.text); return; }
             mark(st, 'firstAnswer');
-            setDraft(ai, r.text);
+            /* ⚠⚠ (atlas-completion-verdict) A REPLY THAT WOULD END THE TURN IS A CANDIDATE UNTIL THE TURN ACCEPTS IT. It used to stream into the
+               answer's place, and js/atlas-agent.js then held it against what the turn produced and against the independent reader — and handed it
+               back when either disagreed. The reader watched an answer (often 「〜できませんでした」) appear in the answer slot and vanish, round after
+               round. It is now written where everything said on the way is written (the trace), while the gates can still change it; the answer
+               slot receives it once, when the turn ends answered (end() below takes the trace row out — the same words are then the answer). */
+            narrate(ai, st, r.text); st.candidate = true;
           } else if (name === 'call') {
             mark(st, 'firstCall');
             const nm = String((data && data.name) || '');
             if (nm) st.callNames.push(nm);
             /* a call in the same reply makes whatever it wrote a note, not the answer */
             if (ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); setDraft(ai, ''); }
+            st.candidate = false;   /* …and a candidate whose reply then made a call is a note on the way */
             if (PROG) {
               /* ⚠ ONLY WORDS THAT NAME SOMETHING. A call whose tool has no word of its own (the generic run/find door, whose subject is in
                  arguments that have not streamed yet) is left out rather than written as a placeholder; the row of the operation that
@@ -253,6 +261,8 @@ export function makeAtlasLive(HOST, deps) {
           } else if (name === 'reset') {
             /* the provider is being asked again: what was shown came from an attempt that will not answer */
             st.reader = makeDraftReader(); st.thought = ''; st.callNames = [];
+            if (st.candidate && st.narr && PROG && PROG.unsay) { try { PROG.unsay(ai, st.narr); } catch (_) { } }
+            st.candidate = false;
             if (st.narr) { st.narr = null; }
             if (st.sayAt >= 0) { st.said.splice(st.sayAt, 1); st.sayAt = -1; }   /* that attempt will not answer — its note is not kept either */
             setDraft(ai, '');
@@ -288,7 +298,7 @@ export function makeAtlasLive(HOST, deps) {
     const st = stateOf(ai); if (!st) return;
     const n = (info && Array.isArray(info.calls)) ? info.calls.filter(Boolean).length : 0;
     if (n && ai.__atlDraft) { narrate(ai, st, ai.__atlDraft); setDraft(ai, ''); }
-    st.narr = null; st.sayAt = -1;
+    st.narr = null; st.sayAt = -1; st.candidate = false;
   }
 
   /* end(ai, how) — 'answered' | 'cancelled' | 'error' | 'superseded'. */
@@ -298,6 +308,21 @@ export function makeAtlasLive(HOST, deps) {
     mark(st, 'end');
     st.lat.how = String(how || '');
     if (current === ai) current = null;
+    /* (atlas-completion-verdict) the candidate the turn accepted becomes the answer: its trace row and its entry among the notes go (no word twice) */
+    if (st.candidate && how === 'answered') {
+      if (st.narr && PROG && PROG.unsay) { try { PROG.unsay(ai, st.narr); } catch (_) { } }
+      if (st.sayAt >= 0) st.said.splice(st.sayAt, 1);
+      st.narr = null; st.sayAt = -1;
+    }
+    /* …and a candidate the reader STOPPED stays readable where it was being written for them, marked unfinished (never as an answer): the trace folds
+       when the turn ends, and the words the reader stopped would otherwise be out of sight */
+    if (st.candidate && (how === 'cancelled' || how === 'superseded') && st.sayAt >= 0 && st.said[st.sayAt]) {
+      ai.__atlDraft = st.said[st.sayAt]; ai.__atlDraftStopped = true;
+      if (st.narr && PROG && PROG.unsay) { try { PROG.unsay(ai, st.narr); } catch (_) { } }
+      st.said.splice(st.sayAt, 1); st.narr = null; st.sayAt = -1;
+      paintDraft(ai);   /* the one painter of the draft — it marks it stopped (draftHtml reads __atlDraftStopped) */
+    }
+    st.candidate = false;
     if (how === 'cancelled' || how === 'superseded') {
       /* what was written stays, said to be unfinished — the answer it was going to be never arrived */
       if (ai.__atlDraft) { ai.__atlDraftStopped = true; try { const el = ai.querySelector('.atl-draft'); if (el) { el.classList.remove('live'); el.classList.add('stopped'); } } catch (_) { } }

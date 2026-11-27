@@ -151,7 +151,8 @@ export const KERNELS = {
   /* (data-facts) ops-14 HASH ONLY: a multi-input op also states `provenance.timeMismatch` (js/data-governance.js temporalMismatch) when its inputs' stated periods do not overlap — a record that states more; no cell, geometry or refusal changes. */
   /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
   /* (duckdb-equivalence) ops-14 HASH ONLY: the API also exposes `engineDomain` (js/gis-engine-domain.js) for a registered engine's `accepts` to ask; nothing is registered by default, so every run, row and refusal is unchanged. */
-  'js/gis-ops.js': { version: 'ops-14', sha256: '3e739b0be9e843c42a76dabde94ea424989d4d0c62cd9e28f9dbb94d9b36f26f' },
+  /* (atlas-completion-verdict) ops-14 HASH ONLY: run() states the inputs it read (`datasetsRead`: id, version, op, ok) beside the result it already returned — no value of the result changes */
+  'js/gis-ops.js': { version: 'ops-14', sha256: '8d43f5ab9ba6db7c302a98efe1d163c3c3b3affc7f4f125ef748791dd7976849' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

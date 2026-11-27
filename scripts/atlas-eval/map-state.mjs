@@ -29,7 +29,14 @@
  *                LIKE. Every item of that kind must satisfy every stated style bound, so a second line drawn beside the old one (count) or the
  *                old one left blue (colour) is a mismatch, where `drawn` only counts «a line exists». A style field the object does not carry
  *                is unobserved, never a pass.
- *    era         { year, in:[w,s,e,n], includes:[name], excludes:{pattern,why}, source, why }
+ *    restyle     { kind, ends:[{name,lng,lat,source}×2], withinKm, style:{…as objects}, why } — a CHANGE, graded against the map an
+ *                EARLIER turn of the same conversation left (`ctx.before`, the question's `earlier` turns): the one object of that kind
+ *                whose course ended at both `ends` (within the key's own `withinKm`) must still be there under the SAME id with the SAME
+ *                course (`shape`), and take the style; every other object that map held must be unchanged (id, course, look); and no
+ *                object may appear that it did not hold. So 「delete it and draw a red one」, 「redraw it elsewhere」 and 「recolour every
+ *                line」 are each a mismatch, where `objects` alone (one map) cannot tell a restyle from a replacement. Without the
+ *                earlier map, or without the courses, it is unobserved.
+ *    era        { year, in:[w,s,e,n], includes:[name], excludes:{pattern,why}, source, why }
  *                                                            the historical units in force that year, there
  *
  *  ⚠ THE VOCABULARY IS DISCOVERED, NOT LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2-4). A layer id is
@@ -170,7 +177,7 @@ export function eraReference(root = ROOT) {
 
 /* ── the key's own schema ─────────────────────────────────────────────────────────────────────── */
 
-const KNOWN = new Set(['view', 'layers', 'clock', 'comparison', 'drawn', 'objects', 'era', 'why']);
+const KNOWN = new Set(['view', 'layers', 'clock', 'comparison', 'drawn', 'objects', 'restyle', 'era', 'why']);
 const isBox = (b) => Array.isArray(b) && b.length === 4 && b.every(Number.isFinite) && b[0] < b[2] && b[1] < b[3];
 
 /** the problems with one path of a `drawn` criterion against the discovered sections */
@@ -220,6 +227,22 @@ export function validateMapState(ms, vocab, id = '(question)') {
       for (const k of Object.keys(st)) if (!['color', 'width', 'opacity'].includes(k)) say('objects style has an unknown field «' + k + '» (the snapshot carries colour, width, opacity)');
       if (st.color && !(parseColour(st.color.near))) say('objects style.color.near is a #rrggbb or rgb(r,g,b) colour');
     }
+  }
+  if (ms.restyle) {
+    const r = ms.restyle;
+    needWhy('restyle', r);
+    if (!vocab.objectKinds.has(str(r && r.kind))) say('restyle names kind «' + str(r && r.kind) + '», which js/map-tools.js puts no object of on the map');
+    const ends = r && r.ends;
+    if (!Array.isArray(ends) || ends.length !== 2) say('restyle.ends is the two points the object\'s course ends at');
+    for (const p of Array.isArray(ends) ? ends : []) {
+      if (!str(p && p.name).trim() || !Number.isFinite(p && p.lng) || !Number.isFinite(p && p.lat) || Math.abs(p.lat) > 90 || Math.abs(p.lng) > 180) say('restyle.ends has a point without a name and a lng/lat: ' + JSON.stringify(p));
+      else if (!/^https?:\/\//.test(str(p.source))) say('restyle.ends «' + p.name + '» names no source url for its coordinate');
+    }
+    if (!(Number.isFinite(r && r.withinKm) && r.withinKm > 0)) say('restyle.withinKm — how far from each end the course may stop, stated by the key (no default: it is the key\'s claim about its own points)');
+    const st = (r && r.style) || {};
+    if (!Object.keys(st).length) say('restyle states no style to change to');
+    for (const k of Object.keys(st)) if (!['color', 'width', 'opacity'].includes(k)) say('restyle style has an unknown field «' + k + '» (the snapshot carries colour, width, opacity)');
+    if (st.color && !(parseColour(st.color.near))) say('restyle style.color.near is a #rrggbb or rgb(r,g,b) colour');
   }
   if (ms.layers) {
     needWhy('layers', ms.layers);
@@ -371,11 +394,92 @@ function frameBoxes(vp, box) {
 }
 const round = (b) => b.map((x) => Math.round(x * 1e4) / 1e4);
 
+/** one object's look against stated bounds — misses and unseen fields are pushed onto the caller's lists */
+function styleAgainst(it, st, miss, unseen) {
+  if (st.color) {
+    const want = parseColour(st.color.near), have = parseColour(it.color);
+    if (it.color == null) unseen.push(it.id + ' carries no colour');
+    else if (!have) unseen.push(it.id + ' colour «' + it.color + '» is not a hex/rgb value');
+    else { const de = deltaE00(have, want); if (de > (st.color.deltaE != null ? st.color.deltaE : SAME_COLOUR_DE)) miss.push(it.id + ' is ' + it.color + ', ΔE00 ' + de.toFixed(1) + ' from ' + st.color.near); }
+  }
+  for (const k of ['width', 'opacity']) {
+    if (!st[k]) continue;
+    const v = it[k];
+    if (v == null || !Number.isFinite(+v)) { unseen.push(it.id + ' carries no ' + k); continue; }
+    if (st[k].min != null && +v < st[k].min) miss.push(it.id + ' ' + k + ' ' + v + ' < ' + st[k].min);
+    if (st[k].max != null && +v > st[k].max) miss.push(it.id + ' ' + k + ' ' + v + ' > ' + st[k].max);
+  }
+}
+
+/** great-circle distance in km (mean Earth radius 6371.0088 km, IUGG) */
+function kmBetween(a, b) {
+  const r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLng = (b[0] - a[0]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371.0088 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+const isPt = (p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(+p[0]) && Number.isFinite(+p[1]);
+/** an object's course as the `objects` section states it (`shape`: vertex count, first/last vertex, bbox, a key over every
+ *  vertex); null when the item does not carry one — then its course is not observed, never assumed unchanged */
+const shapeOf = (it) => (it && isObj(it.shape) && isPt(it.shape.first) && isPt(it.shape.last) ? it.shape : null);
+const sameShape = (a, b) => JSON.stringify([a.n, a.first, a.last, a.bbox, a.key]) === JSON.stringify([b.n, b.first, b.last, b.bbox, b.key]);
+/* the look a reader can see change; `name` is not a look (renaming is not restyling, and it is not graded here) */
+const LOOK = ['color', 'width', 'opacity', 'hidden'];
+
+/**
+ * gradeRestyle(r, after, before) → { verdict, detail } — the `restyle` criterion (see the header). `before` is the snapshot an
+ * earlier turn of the same conversation left; `after` the one this turn left.
+ */
+export function gradeRestyle(r, after, before) {
+  const bSec = sectionOf(isObj(before) ? before : {}, 'objects'), aSec = sectionOf(after, 'objects');
+  if (!isObj(before)) return { verdict: 'unobserved', detail: 'the map an earlier turn left was not read (no earlier turn, or it was not measured)' };
+  if (!bSec || !Array.isArray(bSec.items)) return { verdict: 'unobserved', detail: 'the earlier map\'s `objects` section was not read' };
+  if (!aSec || !Array.isArray(aSec.items)) return { verdict: 'unobserved', detail: 'the final map\'s `objects` section was not read' };
+  const was = bSec.items.filter(Boolean), now = aSec.items.filter(Boolean);
+  /* which object of the earlier map the request is about: identified by its COURSE, never by a name or id the model chose */
+  const kin = was.filter((x) => x.kind === r.kind);
+  if (kin.some((x) => !shapeOf(x))) return { verdict: 'unobserved', detail: 'the earlier map\'s ' + r.kind + ' objects carry no course (`shape`) — which one the request is about cannot be read' };
+  const ends = r.ends.map((p) => [p.lng, p.lat]);
+  const fits = (x) => { const s = shapeOf(x); const d = (i, j) => Math.max(kmBetween(s.first, ends[i]), kmBetween(s.last, ends[j])); return Math.min(d(0, 1), d(1, 0)) <= r.withinKm; };
+  const cands = kin.filter(fits);
+  const names = r.ends.map((p) => p.name).join('–');
+  if (cands.length !== 1) return { verdict: 'unobserved', detail: 'the earlier map holds ' + cands.length + ' ' + r.kind + '(s) running ' + names + ' within ' + r.withinKm + ' km (' + (kin.map((x) => x.id).join(', ') || 'none of that kind') + ') — the change has nothing single to be graded against' };
+  const target = cands[0];
+  const miss = [], unseen = [];
+  const byId = new Map(now.map((x) => [String(x.id), x]));
+  const t = byId.get(String(target.id));
+  if (!t) miss.push(target.id + ' (the ' + names + ' ' + r.kind + ') is gone from the map');
+  else {
+    const s0 = shapeOf(target), s1 = shapeOf(t);
+    if (!s1) unseen.push(target.id + ' carries no course now');
+    else if (!sameShape(s0, s1)) miss.push(target.id + '\'s course changed (' + JSON.stringify([s0.first, s0.last, s0.n]) + ' → ' + JSON.stringify([s1.first, s1.last, s1.n]) + ')');
+    styleAgainst(t, r.style || {}, miss, unseen);
+  }
+  /* everything else the earlier map held is left as it was */
+  for (const x of was) {
+    if (String(x.id) === String(target.id)) continue;
+    const y = byId.get(String(x.id));
+    if (!y) { miss.push(x.id + ' (not the one asked about) is gone'); continue; }
+    const changed = LOOK.filter((k) => JSON.stringify(x[k] == null ? null : x[k]) !== JSON.stringify(y[k] == null ? null : y[k]));
+    if (changed.length) miss.push(x.id + ' (not the one asked about) changed ' + changed.map((k) => k + ' ' + JSON.stringify(x[k]) + ' → ' + JSON.stringify(y[k])).join(', '));
+    const sx = shapeOf(x), sy = shapeOf(y);
+    if (sx && sy) { if (!sameShape(sx, sy)) miss.push(x.id + ' (not the one asked about) changed course'); }
+    else if (sx || x.kind === r.kind) unseen.push(x.id + '\'s course was not read on both maps');
+  }
+  /* …and nothing was added: a new object is a drawing, not a change */
+  const known = new Set(was.map((x) => String(x.id)));
+  const added = now.filter((x) => !known.has(String(x.id)));
+  if (added.length) miss.push('new object(s) appeared: ' + added.map((x) => x.id + ' (' + x.kind + ')').join(', '));
+  if (miss.length) return { verdict: 'mismatch', detail: miss.join('; ') };
+  if (unseen.length) return { verdict: 'unobserved', detail: unseen.join('; ') };
+  return { verdict: 'match', detail: target.id + ' (' + names + ') restyled in place; ' + (was.length - 1) + ' other object(s) unchanged' };
+}
+
 /**
  * gradeMap(ms, snapshot, ctx) → { verdict:'match'|'mismatch'|'unobserved', criteria:[{criterion, verdict, detail}], match, mismatch, unobserved }
  *   ms        a question's `mapState`
  *   snapshot  the final map, as IntMapAtlasState.snapshot() publishes it (a section absent = not read)
- *   ctx       { eraReference?: (year, box) → [unit] } — handed in; without it the era's units are unobserved
+ *   ctx       { eraReference?: (year, box) → [unit], before?: snapshot } — handed in; without eraReference the era's units are
+ *             unobserved; `before` is the map an earlier turn of the same conversation left (a `restyle` reads it)
  * The turn's verdict: any mismatch → mismatch; else any unobserved → unobserved; else match.
  */
 export function gradeMap(ms, snapshot, ctx = {}) {
@@ -436,26 +540,12 @@ export function gradeMap(ms, snapshot, ctx = {}) {
       if (o.count.min != null && items.length < o.count.min) miss.push(items.length + ' ' + o.kind + '(s), expected at least ' + o.count.min);
       if (o.count.max != null && items.length > o.count.max) miss.push(items.length + ' ' + o.kind + '(s), expected at most ' + o.count.max + ' (' + items.map((x) => x.id).join(', ') + ')');
     }
-    const st = o.style || {};
-    for (const it of items) {
-      if (st.color) {
-        const want = parseColour(st.color.near), have = parseColour(it.color);
-        if (it.color == null) unseen.push(it.id + ' carries no colour');
-        else if (!have) unseen.push(it.id + ' colour «' + it.color + '» is not a hex/rgb value');
-        else { const de = deltaE00(have, want); if (de > (st.color.deltaE != null ? st.color.deltaE : SAME_COLOUR_DE)) miss.push(it.id + ' is ' + it.color + ', ΔE00 ' + de.toFixed(1) + ' from ' + st.color.near); }
-      }
-      for (const k of ['width', 'opacity']) {
-        if (!st[k]) continue;
-        const v = it[k];
-        if (v == null || !Number.isFinite(+v)) { unseen.push(it.id + ' carries no ' + k); continue; }
-        if (st[k].min != null && +v < st[k].min) miss.push(it.id + ' ' + k + ' ' + v + ' < ' + st[k].min);
-        if (st[k].max != null && +v > st[k].max) miss.push(it.id + ' ' + k + ' ' + v + ' > ' + st[k].max);
-      }
-    }
+    for (const it of items) styleAgainst(it, o.style || {}, miss, unseen);
     if (miss.length) put(label, 'mismatch', miss.join('; '));
     else if (unseen.length) put(label, 'unobserved', unseen.join('; '));
     else put(label, 'match', items.length + ' ' + o.kind + '(s)' + (items.length ? ': ' + items.map((x) => x.id).join(', ') : ''));
   });
+  if (ms.restyle) { const g = gradeRestyle(ms.restyle, snap, ctx.before); put('restyle:' + ms.restyle.kind, g.verdict, g.detail); }
   (ms.drawn || []).forEach((d, i) => {
     const alts = Array.isArray(d.anyOf) ? d.anyOf : [d];
     const seen = alts.map((a) => ({ a, n: countAt(snap, a.path) }));
@@ -522,6 +612,7 @@ export function sectionsRead(questions) {
     if (ms.comparison) s.add('comparison');
     if (ms.era) { s.add('time'); s.add('viewport'); }
     if (Array.isArray(ms.objects) && ms.objects.length) s.add('objects');
+    if (ms.restyle) s.add('objects');
     for (const d of ms.drawn || []) for (const a of (Array.isArray(d.anyOf) ? d.anyOf : [d])) s.add(str(a && a.path).split('.')[0]);
   }
   return [...s].filter(Boolean).sort();

@@ -340,14 +340,14 @@ test('㉙ verifyOutcome: a verdict is found by the claim ID, not its wording; ev
   const { verifyOutcome } = await import('../js/atlas-orchestrate.js');
   const of = ok('s', { id: 'a', findings: [{ claim: 'Hormuz carries 21 mb/d' }, { claim: 'Malacca is 2.8 km wide' }, { claim: 'Suez opened in 1869' }] });
   /* the checker rewords claim 1 (it would have been «unchecked» when matched by text), and answers an id nobody asked about */
-  const by = ok('s', { id: 'verify-a', findings: [{ id: 'a#1', claim: 'about 21 million barrels a day pass Hormuz', verdict: 'supported', source: 'https://x.org' }, { id: 'a#3', claim: 'Suez opened in 1869', verdict: 'contradicted' }, { id: 'zzz#9', claim: 'unrelated', verdict: 'supported' }] });
+  const by = ok('s', { id: 'verify-a', findings: [{ id: 'a#1', claim: 'about 21 million barrels a day pass Hormuz', verdict: 'supported', source: 'https://x.org', excerpt: 'about 21 million barrels a day' }, { id: 'a#3', claim: 'Suez opened in 1869', verdict: 'contradicted' }, { id: 'zzz#9', claim: 'unrelated', verdict: 'supported' }] });
   const o = verifyOutcome([{ of, by }]);
-  assert.deepEqual(o.counts, { supported: 1, unsupported: 0, contradicted: 1, unchecked: 1 });
+  assert.deepEqual(o.counts, { supported: 1, asserted: 0, unsupported: 0, contradicted: 1, unchecked: 1 });
   assert.equal(o.checked.find((c) => c.id === 'a#2').verdict, 'unchecked');
   assert.equal(o.checked.find((c) => c.id === 'a#1').verdict, 'supported');
   assert.equal(o.checked.find((c) => c.id === 'a#1').basis, 'model');
   const dead = verifyOutcome([{ of, by: { id: 'verify-a', state: 'refused', code: 'delegation_children', findings: [] } }]);
-  assert.deepEqual(dead.counts, { supported: 0, unsupported: 0, contradicted: 0, unchecked: 3 });
+  assert.deepEqual(dead.counts, { supported: 0, asserted: 0, unsupported: 0, contradicted: 0, unchecked: 3 });
   assert.equal(dead.verifiers[0].state, 'refused');
   assert.equal(verifyOutcome([{ of, by: null }]).verifiers[0].state, 'not_started');
   const odd = verifyOutcome([{ of, by: ok('s', { id: 'verify-a', findings: [{ id: 'a#1', verdict: 'probably' }] }) }]);

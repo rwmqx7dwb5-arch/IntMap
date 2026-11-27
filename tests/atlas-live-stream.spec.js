@@ -13,10 +13,11 @@
  *
  *  It holds, in the page:
  *    ① a note on the way («まず…», `turn:"continuing"`) goes to the trace, never the reply bubble;
- *    ② the answer is visible WHILE it is written, and is replaced — not appended to — by the answer
- *       the loop returns; the operation's row is ticked in the trace, and while the trace can be seen
- *       the map carries no progress of its own (atlas-progress-one);
- *    ③ a stop mid-sentence keeps the draft, marked unfinished, and records no answer;
+ *    ② the reply that would end the turn is visible WHILE it is written — in the trace, as a candidate, never in the answer's
+ *       place while the turn can still hand it back (atlas-completion-verdict) — and the answer the loop returns takes its place
+ *       once: the candidate's row goes and the sentence is in the reply exactly once; the operation's row is ticked in the trace,
+ *       and while the trace can be seen the map carries no progress of its own (atlas-progress-one);
+ *    ③ a stop mid-sentence keeps what was written, readable and marked unfinished, and records no answer;
  *    ④ a stream that breaks before `done` is asked again once, plainly, and the turn still answers;
  *    ⑤ (atlas-plan-on-map) a plan Atlas declared stands in the work trace with each step's OBSERVED
  *       state, stays when the turn ends, goes back to what its step drew, and is put in front of the model;
@@ -128,17 +129,19 @@ test('①② the note goes to the trace, the answer is shown while written and t
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
   /* (2026-11-26) the statement of intent (「次: …」) stands in the head beside the live word while the call is being decided and goes when the operation starts —
      it is not a history row any more, so it is not asserted here (tests/atlas-progress-display-checks.test.mjs ① covers that the wait leaves no row) */
-  /* ② step 2 holds before `done`: the draft is on screen, live, before any answer exists */
-  const draft = lastReply().locator('.atl-draft.live');
-  await expect(draft).toContainText('関東平野', { timeout: 20_000 });
+  /* ② step 2 holds before `done`: the candidate is on screen, live, in the trace — and NOT in the answer's place */
+  const cand = page.locator('#atlas-panel .atl-trace-row.say').last();
+  await expect(cand).toContainText('関東平野', { timeout: 20_000 });
+  await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
   /* the trace ticked the operation — and, the trace being on screen, nothing on the map said it again
      (atlas-progress-one: four indicators for one turn was the defect) */
   await expect(page.locator('#atlas-panel .atl-trace').last().locator('.atl-trace-rows .atl-trace-row.ok')).not.toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator('.atl-hud.on')).toHaveCount(0);
   await page.evaluate(() => { window.__live.released = true; });
-  /* the answer replaces the draft: one copy of the sentence, no draft, no caret */
-  await expect(lastReply().locator('.atl-draft')).toHaveCount(0, { timeout: 20_000 });
-  await expect(lastReply()).toContainText('関東平野の南部');
+  /* the answer takes the candidate's place: one copy of the sentence, the candidate's row gone, no draft */
+  await expect(lastReply()).toContainText('関東平野の南部', { timeout: 20_000 });
+  await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
+  await expect(page.locator('#atlas-panel .atl-trace-row.say', { hasText: '関東平野の南部' })).toHaveCount(0);
   expect(await lastReply().evaluate((el) => el.textContent.split('関東平野の南部').length - 1)).toBe(1);
   const lat = await page.evaluate(() => window.IntMapAtlasDebug.latency().slice(-1)[0]);
   expect(lat.how).toBe('answered');
@@ -148,12 +151,13 @@ test('①② the note goes to the trace, the answer is shown while written and t
   expect(await page.evaluate(() => window.__live.bodies.every((b) => b.stream))).toBe(true);
 });
 
-test('③ a stop mid-sentence keeps the draft, marked unfinished, and records no answer', async () => {
+test('③ a stop mid-sentence keeps what was written, marked unfinished, and records no answer', async () => {
   await ask('もう一度');
-  const draft = lastReply().locator('.atl-draft');
-  await expect(draft).toContainText('関東平野', { timeout: 20_000 });
+  const cand = page.locator('#atlas-panel .atl-trace-row.say', { hasText: '関東平野' }).last();
+  await expect(cand).toContainText('関東平野', { timeout: 20_000 });
   await page.click('#atlas-panel .atl-go');   /* the busy send button is Stop */
-  await expect(lastReply().locator('.atl-draft.stopped')).toHaveCount(1, { timeout: 10_000 });
+  /* stopped: what was written stays readable, marked unfinished — it never became an answer */
+  await expect(lastReply().locator('.atl-draft.stopped')).toContainText('関東平野', { timeout: 10_000 });
   await expect(lastReply().locator('.atl-cancelled')).toHaveCount(1);
   await expect(lastReply().locator('.atl-caret')).toHaveCount(0);
   const lat = await page.evaluate(() => window.IntMapAtlasDebug.latency().slice(-1)[0]);

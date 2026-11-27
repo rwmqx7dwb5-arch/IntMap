@@ -132,8 +132,35 @@ export async function productModules(importer) {
  *   P    productModules(...)
  * `obs` is in the shape scripts/atlas-eval.mjs observeTurn hands judgeTurn, so a replayed turn is
  * judged by exactly the rules a live one is.
+ *
+ * (atlas-completion-verdict) A CONVERSATION. A cassette of a question with `earlier` turns carries one side per earlier
+ * turn (`cas.earlier[i]` = { text, model, world, golden }), replayed first and in order, each with the conversation so
+ * far as its messages. The last earlier turn's map is the final turn's `obs.before` — what a `restyle` criterion is
+ * graded against — and every earlier turn's own record is `obs.earlier`. A divergence in an earlier turn is reported
+ * under its index; the map it would have left is then not this run's, so `before` is withheld (unobserved).
  */
 export async function replayCassette(cas, P) {
+  const history = [], earlier = [], divergences = [];
+  let dispatched = 0;
+  for (const [i, e] of (Array.isArray(cas.earlier) ? cas.earlier : []).entries()) {
+    const r = await replayOne(e, P, history);
+    for (const d of r.divergences) divergences.push({ kind: d.kind, detail: 'earlier[' + i + ']: ' + d.detail });
+    earlier.push(r.obs);
+    dispatched += r.dispatched;
+    history.push({ role: 'user', content: str(e.text) }, { role: 'assistant', content: str(r.text) });
+  }
+  const r = await replayOne(cas, P, history);
+  if (!earlier.length) return r;
+  const last = earlier[earlier.length - 1];
+  r.obs.earlier = earlier;
+  r.obs.before = divergences.length ? null : last.snapshot;
+  r.divergences = divergences.concat(r.divergences);
+  r.dispatched += dispatched;
+  return r;
+}
+
+/** replayOne(turn, P, history) — one turn of a cassette (the whole of a single-turn one) after `history` (the conversation so far) */
+export async function replayOne(cas, P, history = []) {
   const divergences = [];
   const diverge = (kind, detail) => divergences.push({ kind, detail });
   const world = cas.world || {};
@@ -221,7 +248,7 @@ export async function replayCassette(cas, P) {
 
   const out = await AGENT.runTurn({
     model, tools, execute, footprint: (c) => surface.footprintOf(c, tools), promote: surface.promotionsOf,
-    system: 'replay', messages: [{ role: 'user', content: str(cas.text) }], limits: cas.limits || undefined,
+    system: 'replay', messages: history.concat([{ role: 'user', content: str(cas.text) }]), limits: cas.limits || undefined,
     onStep: (s) => steps.push({ step: s.step, calls: s.calls || [] }),
   });
 
@@ -254,6 +281,7 @@ export async function replayCassette(cas, P) {
     measured: true, replayed: true,
     ms: Number.isFinite(+cas.recordedMs) ? +cas.recordedMs : null,
     stopped: str(out.stopped), reply: str(out.text), operations, calls, steps,
+    completion: out.completion || null, unmet: Array.isArray(out.unmet) ? out.unmet : null,   /* (atlas-completion-verdict) the turn's own declaration, as a live turn's record carries it */
     snapshot: divergences.length ? {} : (world.snapshot || {}),   /* the recorded map is only the map of THIS run while nothing diverged */
   };
   return { obs, divergences, notes, calls, stopped: out.stopped, text: out.text, reused: (out.trace && out.trace.reused) || 0, dispatched: dispatched.length };
@@ -289,6 +317,15 @@ export function validateCassette(cas) {
   if (cas && cas.expect && cas.expect.verdict === 'fail' && !(Array.isArray(cas.expect.failures) && cas.expect.failures.length)) bad.push(id + ': a defect cassette names the failure kinds the judge must find');
   if (cas && cas.arm != null && cas.arm !== 'delegate' && cas.arm !== 'direct') bad.push(id + ': arm is delegate or direct (the two sides of scripts/atlas-delegation-bench.mjs)');
   if (cas && cas.question && !(cas.question.set === 'answers' || cas.question.set === 'records')) bad.push(id + ': question.set is answers or records');
+  /* (atlas-completion-verdict) the earlier turns of a conversation: each a side of its own */
+  if (cas && cas.earlier != null) {
+    if (!Array.isArray(cas.earlier) || !cas.earlier.length) bad.push(id + ': earlier is a non-empty list of { text, model, world, golden }');
+    for (const [i, e] of (Array.isArray(cas.earlier) ? cas.earlier : []).entries()) {
+      if (!str(e && e.text).trim()) bad.push(id + ': earlier[' + i + '] has no question text');
+      if (!Array.isArray(e && e.model) || !e.model.length) bad.push(id + ': earlier[' + i + '] has no model script');
+      if (!e || !e.golden || e.golden.stopped == null) bad.push(id + ': earlier[' + i + '].golden.stopped — what that turn ended on');
+    }
+  }
   /* (atlas-eval-map-state) the map axis's verdict, when the cassette declares one */
   if (cas && cas.expect && cas.expect.map != null && ['match', 'mismatch', 'unobserved'].indexOf(cas.expect.map) < 0) bad.push(id + ': expect.map is match, mismatch or unobserved');
   return bad;
@@ -309,6 +346,24 @@ function stable(r) {
  * a cassette recorded in production comes from scripts/atlas-eval.mjs --record instead.
  */
 export async function recordScripted(scn, P) {
+  /* (atlas-completion-verdict) the earlier turns of a conversation are recorded first, each through its own respond(), and the
+     final turn runs after them with the conversation as its messages — the same order replayCassette replays them in */
+  const history = [], earlier = [];
+  for (const [i, e] of (Array.isArray(scn.earlier) ? scn.earlier : []).entries()) {
+    const side = await recordSide(Object.assign({ id: scn.id + ' earlier[' + i + ']', lang: scn.lang, limits: scn.limits }, e), P, history);
+    earlier.push({ text: e.text, model: e.model, world: side.world, golden: side.golden });
+    history.push({ role: 'user', content: str(e.text) }, { role: 'assistant', content: str(side.text) });
+  }
+  const side = await recordSide(scn, P, history);
+  return {
+    id: scn.id, text: scn.text, lang: scn.lang, origin: scn.origin, question: scn.question || undefined, arm: scn.arm || undefined,
+    limits: scn.limits || undefined, recordedMs: scn.recordedMs, earlier: earlier.length ? earlier : undefined, model: scn.model, world: side.world,
+    golden: side.golden, expect: scn.expect,
+  };
+}
+
+/** recordSide(scn, P, history) → { world, golden, text } — one scripted turn run once through the real loop */
+async function recordSide(scn, P, history) {
   const world = { dispatch: [], find: [], snapshot: scn.snapshot || {} };
   const probe = { id: scn.id, text: scn.text, lang: scn.lang, model: scn.model, limits: scn.limits, world: { dispatch: [] }, golden: {} };
   /* run once with a world that answers through respond(), recording what it was asked */
@@ -323,14 +378,10 @@ export async function recordScripted(scn, P) {
       },
     })),
   });
-  const r = await replayCassette(probe, P2);
+  const r = await replayOne(probe, P2, history);
   /* a script that does not fit its own turn (too few replies, a final where a step was) is a broken
      scenario, not a recording — refuse it rather than freeze the mismatch into the golden record */
   if (r.divergences.length) throw new Error(scn.id + ': the script does not fit the turn — ' + r.divergences.map((d) => d.kind + ': ' + d.detail).join(' | '));
   for (const c of r.calls) if (c.name === 'find_capability') { try { world.find.push({ query: String(c.args.query || ''), result: compactFind(stable(JSON.parse(c.resultText)), surface) }); } catch (_) { } }
-  return {
-    id: scn.id, text: scn.text, lang: scn.lang, origin: scn.origin, question: scn.question || undefined, arm: scn.arm || undefined,
-    limits: scn.limits || undefined, recordedMs: scn.recordedMs, model: scn.model, world,
-    golden: goldenOf(r), expect: scn.expect,
-  };
+  return { world, golden: goldenOf(r), text: r.text };
 }

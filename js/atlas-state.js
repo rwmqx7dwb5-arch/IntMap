@@ -240,6 +240,7 @@ export function makeAtlasState(HOST) {
           if (o.opacity != null) it.opacity = o.opacity;
           if (o.geom) it.geom = o.geom;
           if (o.areaKm2 != null) it.areaKm2 = o.areaKm2;
+          if (o.shape) it.shape = o.shape;   /* (atlas-completion-verdict) where it is, so «the same object, restyled» can be told from «another object» */
           if (o.hidden) it.hidden = true;
           if (o.editable && o.editable.length) it.editable = o.editable;
           return it; }) };

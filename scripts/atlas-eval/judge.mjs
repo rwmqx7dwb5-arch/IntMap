@@ -300,7 +300,14 @@ export function judgeTurn(q, obs, ctx) {
   /* (atlas-eval-map-state) IS THE MAP RIGHT — a SEPARATE AXIS. The final map against the question's
      `mapState` (scripts/atlas-eval/map-state.mjs). It adds no failure: the words and the map are graded
      apart and reported apart, and a criterion the snapshot could not show is `unobserved`, never a miss. */
-  metrics.map = q.mapState ? gradeMap(q.mapState, obs.snapshot, { eraReference: ctx.eraReference }) : null;
+  metrics.map = q.mapState ? gradeMap(q.mapState, obs.snapshot, { eraReference: ctx.eraReference, before: obs.before }) : null;
+  /* (atlas-completion-verdict) the EARLIER turns of a conversation question (`q.earlier`): each one's own map, graded on the same
+     separate axis — so a restyle that is unobserved because the line was never drawn says which turn did not draw it */
+  metrics.earlier = Array.isArray(q.earlier) && q.earlier.length ? q.earlier.map((e, i) => {
+    const o = Array.isArray(obs.earlier) ? obs.earlier[i] : null;
+    const seen = !!(o && o.measured !== false);
+    return { text: e.text, measured: seen, stopped: seen ? str(o.stopped) : null, map: e.mapState ? (seen ? gradeMap(e.mapState, o.snapshot, { eraReference: ctx.eraReference }) : { verdict: 'unobserved', criteria: [], match: 0, mismatch: 0, unobserved: 1 }) : null };
+  }) : null;
   if (contradictions) fail('observer', contradictions + ' result(s) said rendered:true and code:not_rendered at once (R802 §3)');
   if (centre) fail('resolution', centre + ' call(s) named a place and were answered about the map centre (R802 §5)');
 
@@ -567,6 +574,16 @@ export function validateQuestionSet(set, capabilityExists, mapVocab) {
       ...((q.expect && q.expect.resultMustNotMatch) || []).map((p) => p.capability)].filter(Boolean);
     for (const c of caps) if (capabilityExists && !capabilityExists(c)) bad.push(q.id + ': names capability «' + c + '», which the registry does not have');
     if (q.mapState != null) bad.push(...validateMapState(q.mapState, mapVocab || mapVocabulary(), q.id));
+    /* (atlas-completion-verdict) a conversation: the turns asked first, on the same page, in order — each its own text and why */
+    if (q.earlier != null) {
+      if (!Array.isArray(q.earlier) || !q.earlier.length) bad.push(q.id + ': earlier is a non-empty list of { text, why, mapState? } (the turns asked before this one)');
+      for (const [i, e] of (Array.isArray(q.earlier) ? q.earlier : []).entries()) {
+        if (!str(e && e.text).trim()) bad.push(q.id + ': earlier[' + i + '] has no text');
+        if (!str(e && e.why).trim()) bad.push(q.id + ': earlier[' + i + '] carries no «why» — what this turn sets up');
+        if (e && e.mapState != null) bad.push(...validateMapState(e.mapState, mapVocab || mapVocabulary(), q.id + ' earlier[' + i + ']'));
+      }
+    }
+    if (q.mapState && q.mapState.restyle && !(Array.isArray(q.earlier) && q.earlier.length)) bad.push(q.id + ': mapState.restyle grades a change against the map an earlier turn left — the question names no earlier turn');
     for (const p of [...(q.expect && q.expect.replyMustNotMatch) || [], ...(q.expect && q.expect.replyMustMatch) || [], ...(q.expect && q.expect.resultMustNotMatch) || [], ...(q.expect && q.expect.codeMustNotOccur) || [], ...(q.expect && q.expect.map) || []]) {
       if (!str(p.why).trim()) bad.push(q.id + ': an expectation without «why» — every criterion must say which record it came from');
       if (p.pattern != null) { try { re(p); } catch (e) { bad.push(q.id + ': bad pattern ' + p.pattern); } }

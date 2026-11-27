@@ -7142,7 +7142,24 @@ export function makeGisOps() {
       return { engine: e };
     }
 
+    /* ══ (atlas-completion-verdict) WHAT THIS RUN READ, STATED BY THE RUN ════════════════════════════
+       Every op reaches its inputs here and nowhere else, so this is where 「この操作はどのデータセットを
+       入力として読んだか、そして成功したか」 is a fact rather than a guess about the result's text: each
+       input id, the version the registry holds of it, the op, and whether the run that took it as an
+       input completed. A run refused before or after its inputs were opened (unknown op, a stale input,
+       a cancelled loop) is `ok:false` with the refusal's own code — 「読もうとして失敗した」, never 「読んだ」.
+       The record's shape is the registry's (js/gis-datasets.js readRecord); js/atlas-held-data.js reads it. */
     async function run(step, opts) {
+      const res = await runStep(step, opts);
+      const R = registry();
+      if (res && typeof res === 'object' && R && typeof R.readRecord === 'function') {
+        const ids = (step && Array.isArray(step.inputs)) ? step.inputs : [];
+        res.datasetsRead = ids.map((id) => R.readRecord(id, step && step.op, !!res.ok, res.ok ? null : res.why));
+      }
+      return res;
+    }
+
+    async function runStep(step, opts) {
       const R = registry();
       if (!R) return fail('registry-missing');
       const decl = DECL[step && step.op];

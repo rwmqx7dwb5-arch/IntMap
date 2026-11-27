@@ -266,13 +266,13 @@ test('㉒ research.delegate verify:true — a second worker checks the first one
   const K = makeK({
     askAIJSONEnvelope: async (prompt) => {
       prompts.push(prompt);
-      if (/Independently check/.test(prompt)) return { data: { summary: 'checked', findings: [{ id: (prompt.match(/\[(a#1)\]/) || [])[1], claim: 'about 33 km across at the narrowest point', verdict: 'supported', source: 'https://ex.org/a' }], gaps: [] }, meta: { costUsd: 0.02 } };   /* the checker answers under the claim's ID, in its own words */
+      if (/Independently check/.test(prompt)) return { data: { summary: 'checked', findings: [{ id: (prompt.match(/\[(a#1)\]/) || [])[1], claim: 'about 33 km across at the narrowest point', verdict: 'supported', source: 'https://ex.org/a', excerpt: 'the strait is about 33 km wide at its narrowest' }], gaps: [] }, meta: { costUsd: 0.02 } };   /* the checker answers under the claim's ID, in its own words */
       return { data: { summary: 'found', findings: [{ claim: 'The strait is 33 km wide at its narrowest' }, { claim: 'It carries a fifth of the world’s oil' }], gaps: [] }, meta: { costUsd: 0.03 } };
     },
   });
   const res = await entry.run({ tasks: [{ id: 'a', goal: 'research the strait', verify: true }, { id: 'b', goal: 'research another' }] }, {}, K);
   const v = res.meta.integrated.verification;
-  assert.deepEqual(v.counts, { supported: 1, unsupported: 0, contradicted: 0, unchecked: 1 });
+  assert.deepEqual(v.counts, { supported: 1, asserted: 0, unsupported: 0, contradicted: 0, unchecked: 1 });
   assert.equal(v.verifiers[0].of, 'a');
   assert.ok(Math.abs(v.costUsd - 0.02) < 1e-9);
   assert.equal(prompts.filter((p) => /Independently check/.test(p)).length, 1, 'only the task that asked was checked');
@@ -289,7 +289,7 @@ test('㉓ a checker the server refuses leaves every claim unchecked and says why
   });
   const res = await entry.run({ tasks: [{ id: 'a', goal: 'g', verify: true }] }, {}, K);
   const v = res.meta.integrated.verification;
-  assert.deepEqual(v.counts, { supported: 0, unsupported: 0, contradicted: 0, unchecked: 1 });
+  assert.deepEqual(v.counts, { supported: 0, asserted: 0, unsupported: 0, contradicted: 0, unchecked: 1 });
   assert.equal(v.verifiers[0].state, 'refused');
   assert.equal(v.verifiers[0].code, 'delegation_children');
 });

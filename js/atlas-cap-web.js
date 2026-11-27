@@ -25,6 +25,9 @@ import { webBrowseDoor, handoffText, HANDOFF_NEXT, sayFor, WEB_BROWSE_NOTICE } f
 const door = webBrowseDoor;   /* the one instance lives in js/web-browse.js (a capability module holds no `let`: scripts/atlas-caps-split.mjs) */
 const safeUrl = (u) => window.IntMapSafe.url(u);   /* the one read of the global in this file (one edge, not one per capability) */
 const host = (u) => { try { return new URL(u).host; } catch (_) { return ''; } };
+/* (atlas-completion-verdict) which turn a read is for, and whether it is the parent's own or a delegated worker's (js/atlas-console.js runReadCapability,
+   source 'atlas-worker'): the evidence store records the turn as one that USED the record, and only the parent's use is the turn's evidence_used */
+const readFor = (dctx, K) => ({ turn: String((K && K._curTurnKey) || ''), worker: !!(dctx && dctx.source === 'atlas-worker') });
 
 /* (atlas-delegation-efficiency) A FILE THAT DOWNLOADED BUT IS NOT A DATASET IS STILL READ. The door's bytes were in hand and were dropped the moment
    the dataset reader said no, so Atlas was told 'unreadable' about a file it had in its hands (measured 2026-11-25: a downloaded JSON, then five more
@@ -52,7 +55,7 @@ export default [
     schema: () => ({ type: 'object', properties: { action: one('open', 'click', 'submit', 'read'), url: str(), ref: str(), form: str(), values: obj(), button: str(), textChars: int(500, 24000), refresh: bool() }, required: ['action'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, note = K.note;
       const D = door(K.HOST);
-      const r = await D.browse(a, dctx && dctx.signal);
+      const r = await D.browse(a, dctx && dctx.signal, readFor(dctx, K));
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE };
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
@@ -87,7 +90,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, note = K.note;
       const D = door(K.HOST);
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE, tier: 'real-browser' };
-      const r = await D.render(a, dctx && dctx.signal);
+      const r = await D.render(a, dctx && dctx.signal, readFor(dctx, K));
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
         return R(false, warn(esc(say) + (r.handoff.url ? ' <a href="' + esc(safeUrl(r.handoff.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(host(r.handoff.url)) + '</a>' : '')),
@@ -242,10 +245,10 @@ export default [
           const text = String((env && env.text) || '').trim(), meta = (env && env.meta) || {};
           const ran = meta.webUsed === true;
           return { ok: !!text && ran, notRun: !!text && !ran, query: x.q, turn: K._curTurnKey, text, sources: env && env.citations, value: { webSearches: meta.webSearches || 0, webSources: meta.webSources == null ? undefined : meta.webSources }, why: meta.webFailure };
-        }, { refresh: a.refresh === true });
+        }, Object.assign({ refresh: a.refresh === true }, readFor(dctx, K)));
         if (got.entry) {
           const e = got.entry;
-          webEvidence.note(e.sources, { via: 'web.search', query: x.q });
+          webEvidence.note(e.sources, Object.assign({ via: 'web.search', query: x.q }, readFor(dctx, K)));
           return Object.assign(out, { state: 'ok', evidenceId: e.id, how: got.how, ageSec: Math.round((Date.now() - e.fetchedAt) / 1000), searches: (e.value && e.value.webSearches) || undefined, text: e.text, sources: e.sources });
         }
         const r = got.result || {};
@@ -285,7 +288,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, note = K.note;
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE };
       if (a.ref) {
-        const r = webEvidence.read(a.ref, a.chars);
+        const r = webEvidence.read(a.ref, a.chars, readFor(dctx, K));
         if (!r) return R(false, warn(esc(L('Nothing is held under that reference (it may have expired). List what is held with no ref, or fetch it again.', 'その参照の記録はありません(期限切れの可能性があります)。ref なしで一覧を見るか、取り直してください。'))), { meta: { code: 'no_such_evidence' }, exec: { web: Object.assign(web, { held: webEvidence.list({ limit: 20 }) }) } });
         return R(true, note(esc(L('Re-read ', '読み直しました: ')) + '<b>' + esc(r.id) + '</b> · ' + esc(r.title || r.query || r.url || '')), { exec: { web: { untrusted: true, evidence: r, notice: WEB_BROWSE_NOTICE } } });
       }

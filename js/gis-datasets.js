@@ -94,6 +94,44 @@ export function makeGisDatasets() {
     let seq = 0;
     const subs = [];
 
+    /* ══ (atlas-completion-verdict) WHO OPENED THE CONTENTS, AND WHEN ═══════════════════════════════
+       id → the last moment one of a record's payload doors (features / read / chunks / chunksAsync /
+       attributeRows) was called. js/atlas-held-data.js read 「did this turn use the data it held?」 off
+       the turn's results by searching their JSON for the id — so `ds-1` was «used» whenever `ds-10`
+       was, a read that FAILED with the id in its error was «used», and a real read behind 400 000
+       characters of earlier results was «unused». Two facts replace the search, both stated here:
+         · readRecord() — the one shape an operation reports a read in ({id, version, op, ok}), filled
+           with the version THIS registry holds. js/gis-ops.js run(), js/gis-atlas.js and
+           js/compute-sandbox.js put it on their results; nothing else spells the shape.
+         · lastOpened() — whether ANY door of the record has been opened since a moment. It does not
+           say by whom (a panel reads too), so it is only ever used for the one claim it can prove:
+           a record whose doors were never opened was read by nobody.
+       `raster()` is not a door: it answers the record itself (metadata), and `read(band)` is where
+       the samples are. */
+    const OPENED = new Map();
+    function doors(rec) {
+      for (const k of ['features', 'read', 'chunks', 'chunksAsync', 'attributeRows']) {
+        const fn = rec[k];
+        if (typeof fn !== 'function') continue;
+        rec[k] = function () { OPENED.set(rec.id, Date.now()); return fn.apply(this, arguments); };
+      }
+      return rec;
+    }
+    /* The version a read is of: the record is born once (a rebuild is a new record with a new
+       createdAt — see invalidate), and a reader's edit is counted on its provenance (noteEdit). */
+    function versionOf(rec) {
+      if (!rec) return null;
+      const e = rec.provenance && rec.provenance.edits;
+      const n = e && typeof e.count === 'number' && isFinite(e.count) ? e.count : 0;
+      return String(+rec.createdAt || 0) + (n ? '+e' + n : '');
+    }
+    function readRecord(id, op, ok, why) {
+      const rec = id == null ? null : DS.get(String(id));
+      const out = { id: rec ? rec.id : String(id), version: versionOf(rec), op: String(op == null ? '' : op), ok: !!ok };
+      if (!ok && why != null && why !== '') out.why = String(why);
+      return out;
+    }
+
     function emit(what, ds) {
       for (const fn of subs.slice()) { try { fn(what, ds); } catch (_) { } }
     }
@@ -597,7 +635,7 @@ export function makeGisDatasets() {
       }
       if (chunked) features = null; /* the stubs measured the record and are not kept: a million of them are the heap this path exists to spare */
       applyInherited(rec, spec && spec.fieldStatements);
-      DS.set(id, rec);
+      DS.set(id, doors(rec));
       emit('add', rec);
       return rec;
     }
@@ -761,7 +799,7 @@ export function makeGisDatasets() {
         read: src.read,
         raster: () => rec,
       };
-      DS.set(id, rec);
+      DS.set(id, doors(rec));
       emit('add', rec);
       return rec;
     }
@@ -776,6 +814,7 @@ export function makeGisDatasets() {
          it — an id is never reissued (claimId), so nothing can inherit them. */
       EDITS.delete(id);
       DECL.delete(id);
+      OPENED.delete(id);
       emit('remove', rec);
       return true;
     }
@@ -1500,6 +1539,9 @@ export function makeGisDatasets() {
       list: () => Array.from(DS.values()),
       ids: () => Array.from(DS.keys()),
       has: (id) => DS.has(id),
+      /* (atlas-completion-verdict) see OPENED above */
+      readRecord, versionOf: (id) => versionOf(DS.get(id)),
+      lastOpened: (id) => (OPENED.has(id) ? OPENED.get(id) : null),
       /* ⚠ THE COUNTER IS NOT RESET (#R735). It used to be, one line under the comment in claimId that
          says it never goes down — and for the same reason that comment gives: clear() is what
          js/gis-project.js calls before restoring a saved project, so the very next thing that happens

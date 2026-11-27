@@ -20,7 +20,9 @@
  *    task_key                       the same request asked again after an unfinished try keeps the first try's key, so the cost of every attempt at one
  *                                   task is summed against its one success (the question itself is never stored)
  *    evidence_arrived_ms / evidence_used_ms   when a gathered source reached the page · when the parent began using it (markTurn)
- *    verify_*                       claims a program decided · a model decided · nobody decided (js/atlas-claim-check.js)
+ *    verify_*                       claims a program decided · a model decided against a source · nobody decided (js/atlas-claim-check.js). A checker's
+ *                                   "supported" with no source and excerpt (js/atlas-orchestrate.js verifyOutcome `asserted`) is the model's agreement,
+ *                                   not a check: it is counted in verify_unchecked, never in verify_model
  *    critical                       the one tool that took most of the turn's operation time, and its share of the wall clock
  *    model_ms / tool_ms             the wall clock split into waiting for the model and running operations
  *
@@ -31,6 +33,7 @@
  *  Pure: no DOM, no network, no globals.
  * ==========================================================================*/
 import { findingBasis } from './atlas-job-core.js';
+import { makeAtlasEvidence } from './atlas-evidence.js';   /* the ONE identity of an address (canonicalizeUrl): the one the answer registry and the web evidence store compare by */
 
 const n0 = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? Math.round(x) : 0; };
 
@@ -48,18 +51,32 @@ function verificationOf(results) {
     const m = rec && (rec.meta || rec);
     const ver = m && m.integrated && m.integrated.verification;
     if (!ver) return;
-    v.program += n0(ver.basis && ver.basis.program); v.model += n0(ver.basis && ver.basis.model); v.unchecked += n0(ver.counts && ver.counts.unchecked);
+    v.program += n0(ver.basis && ver.basis.program); v.model += n0(ver.basis && ver.basis.model); v.unchecked += n0(ver.counts && ver.counts.unchecked) + n0(ver.counts && ver.counts.asserted);
   });
   return v;
 }
 
-const urlKey = (u) => String(u == null ? '' : u).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[#?].*$/, '').replace(/\/+$/, '');
+/* (atlas-completion-verdict) an address is ONE source by the key js/atlas-evidence.js canonicalizeUrl gives it: lower-case host, no fragment, no
+   campaign parameters, no trailing slash, and THE REST OF THE QUERY KEPT, so /series?id=dem and /series?id=landcover are two sources. The rule this
+   replaced dropped the whole query and accepted a prefix either way (a citation of a site's front page «backed» every page under it).
+   One step is added to that key, as the rule it replaced already did: the scheme and a leading «www.» are not part of it, because the question
+   here is whether the answer NAMES the same document, and a model writes https://www.x/ for a page a worker found at http://x/ (the registry and
+   the store keep them apart, which is right for opening a page and harmless there). A source that is not an address (an outlet's name, a
+   capability id) is its own lower-cased words, named when the answer's text holds them or a citation is exactly them — as before. */
+const canon = makeAtlasEvidence().canonicalizeUrl;
+const urlKey = (u) => { const c = canon(u); return c && c.ok ? c.key.replace(/^https?:\/\//, '').replace(/^www\./, '') : ''; };
+const wordsKey = (u) => String(u == null ? '' : u).trim().toLowerCase();
+const URL_IN_TEXT = /https?:\/\/[^\s<>"'`()[\]{}　-〿（）]+/gi;   /* an address written in the prose: up to a space, a bracket, a quote or CJK punctuation */
 /* does the final answer name this source - by address in its text or among the sources it cited? */
 function namesSource(source, text, cites) {
   const k = urlKey(source);
-  if (!k) return false;
-  if (urlKey(text).includes(k)) return true;
-  return (Array.isArray(cites) ? cites : []).some((c) => { const u = urlKey(c && typeof c === 'object' ? c.url : c); return !!u && (u === k || u.startsWith(k) || k.startsWith(u)); });
+  const cited = (Array.isArray(cites) ? cites : []).map((c) => (c && typeof c === 'object' ? c.url : c));
+  if (!k) {   /* not an address */
+    const w = wordsKey(source);
+    return !!w && (wordsKey(text).includes(w) || cited.some((c) => wordsKey(c) === w));
+  }
+  if ((String(text == null ? '' : text).match(URL_IN_TEXT) || []).some((u) => urlKey(u.replace(/[.,;:!?]+$/, '')) === k)) return true;
+  return cited.some((c) => urlKey(c) === k);
 }
 const optMs = (v) => (v != null && Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.round(Number(v)) : null);
 

@@ -28,6 +28,7 @@ export const mergeFacts = factMerge.mergeFacts, normalizeFacts = factMerge.norma
 
 
 import * as verify from './atlas-claim-check.js';   /* (atlas-claim-check) what a program decides about a claim, and the id a claim is checked under */
+import { findingBasis } from './atlas-job-core.js';   /* (atlas-completion-verdict) THE ONE judgement of whether a finding carries evidence — a checker's verdict is held to it too */
 const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
 const USABLE = (st) => st === 'done' || st === 'partial';
 
@@ -153,8 +154,8 @@ export function verifyContract(taskId, opts) {
   const claims = Array.isArray(o.claims) ? o.claims : null;
   return {
     id: s(o.id, 64) || ('verify-' + s(taskId, 56)),
-    goal: s(o.goal, 3000) || (claims && claims.length ? verify.checkerGoal(taskId, claims) : ('Independently check the claims worker "' + s(taskId, 64) + '" returned, using different sources from the ones it cited where you can. For each claim say whether you found it supported, unsupported or contradicted, and give a source URL for what you found.')),
-    returns: s(o.returns, 500) || 'One finding per checked claim: "id" (the id of the claim, as given), "claim", "verdict" ("supported" / "unsupported" / "contradicted") and "source". List in "gaps" every claim you could not check.',
+    goal: s(o.goal, 3000) || (claims && claims.length ? verify.checkerGoal(taskId, claims) : ('Independently check the claims worker "' + s(taskId, 64) + '" returned, using different sources from the ones it cited where you can. For each claim say whether you found it supported, unsupported or contradicted, and give the source URL and the excerpt (its own words) you checked it against.')),
+    returns: s(o.returns, 500) || 'One finding per checked claim: "id" (the id of the claim, as given), "claim", "verdict" ("supported" / "unsupported" / "contradicted"), "source" (the URL, or the capability id you ran) and "excerpt" (the source\'s own words verbatim, or the raw values the capability returned). A "supported" without a source and an excerpt is counted as your agreement, not as a check. List in "gaps" every claim you could not check.',
     inputs: [{ from: s(taskId, 64) }],
   };
 }
@@ -162,17 +163,26 @@ export function verifyContract(taskId, opts) {
 /* verifyOutcome(pairs) — what checking said about the claims of the task it checked.
      pairs: [{ of: <the checked task's result>, by: <the checking worker's result, or absent>, det?: <verify.decideClaims(of) > }]
    Each claim has an ID (js/atlas-claim-check.js claimId: task + position), and the verdict is found by that id — a paraphrase of the
-   claim no longer reads as «not checked». Two sources of verdict, kept apart in `basis`:
-     'program'  a check found a defect in the value the claim carries (a latitude out of range, a ring that does not close …)
-     'model'    the checking worker said so under the claim's id
+   claim no longer reads as «not checked». The sources of verdict, kept apart in `basis`:
+     'program'          a check found a defect in the value the claim carries (a latitude out of range, a ring that does not close …)
+     'model'            the checking worker said so under the claim's id — and a "supported" carries what it was checked AGAINST: a source
+                        together with that source's words or the raw values a capability returned (js/atlas-job-core.js findingBasis, the
+                        one judgement of evidence the worker's own tally uses)
+     'model_unsourced'  the checker said "supported" with nothing behind it. That is the model's AGREEMENT, not a check: it is counted
+                        as `asserted` — never as supported — and the turn's measurement counts it with the unchecked (js/atlas-turn-metrics.js)
+   opts.heldText(source) → the full text this session read at that address (js/atlas-web-evidence.js), or null when it holds none or only
+   a cut copy. When there is one, a "supported" excerpt must be IN it (compared by fold: case, spacing and punctuation aside); one that is
+   not is `asserted` with excerpt:'not_in_source'. When there is none the excerpt could not be looked up — that is not observed, and it is
+   not called a failure: the verdict stands as supported and says excerpt:'not_looked_up'.
    A claim neither decided — or a checker that did not return, or a verdict that is not one of the three words — is `unchecked`,
    never guessed to be supported. The outcome is a report for Atlas to read, not a ruling. */
-export function verifyOutcome(pairs) {
+export function verifyOutcome(pairs, opts) {
+  const heldText = opts && typeof opts.heldText === 'function' ? opts.heldText : null;
   const checked = [];
-  const counts = { supported: 0, unsupported: 0, contradicted: 0, unchecked: 0 };
+  const counts = { supported: 0, asserted: 0, unsupported: 0, contradicted: 0, unchecked: 0 };
   const verifiers = [];
   const resultDefects = [];
-  const basis = { program: 0, model: 0 };
+  const basis = { program: 0, model: 0, model_unsourced: 0 };
   (Array.isArray(pairs) ? pairs : []).forEach((p) => {
     const of = p && p.of, by = p && p.by;
     if (!of) return;
@@ -185,10 +195,22 @@ export function verifyOutcome(pairs) {
       const d = det.byClaim[c.id];
       if (d && d.verdict) { counts.contradicted += 1; basis.program += 1; checked.push({ id: c.id, task: of.id, claim: c.claim, verdict: 'contradicted', basis: 'program', defects: d.defects.slice(0, 5) }); return; }
       const hit = said.get(c.id);
-      const verdict = hit && verify.VERDICTS.indexOf(hit.verdict) >= 0 ? hit.verdict : 'unchecked';
+      const said3 = hit && verify.VERDICTS.indexOf(hit.verdict) >= 0 ? hit.verdict : 'unchecked';
+      const ev = said3 === 'unchecked' ? null : findingBasis(hit);
+      let verdict = said3, b = said3 === 'unchecked' ? undefined : 'model', excerpt;
+      if (said3 === 'supported') {
+        if (!ev.evidenced || (typeof hit.excerpt === 'string' && !fold(hit.excerpt))) { verdict = 'asserted'; b = 'model_unsourced'; }   /* punctuation alone is no words of a source */
+        else if (typeof hit.excerpt === 'string') {
+          const body = heldText ? heldText(ev.source) : null;
+          if (typeof body === 'string' && body) {
+            excerpt = fold(body).includes(fold(hit.excerpt)) ? 'in_source' : 'not_in_source';
+            if (excerpt === 'not_in_source') { verdict = 'asserted'; b = 'model_unsourced'; }
+          } else excerpt = 'not_looked_up';
+        }
+      }
       counts[verdict] += 1;
-      if (verdict !== 'unchecked') basis.model += 1;
-      checked.push({ id: c.id, task: of.id, claim: c.claim, verdict, basis: verdict === 'unchecked' ? undefined : 'model', source: (hit && verdict !== 'unchecked' && hit.source) || undefined, structure: d && d.passed ? 'passed' : undefined });
+      if (b) basis[b] += 1;
+      checked.push({ id: c.id, task: of.id, claim: c.claim, verdict, said: verdict === 'asserted' ? said3 : undefined, basis: b, source: (ev && ev.source) || undefined, excerpt, structure: d && d.passed ? 'passed' : undefined });
     });
     det.resultDefects.forEach((x) => resultDefects.push(Object.assign({ task: of.id }, x)));
   });

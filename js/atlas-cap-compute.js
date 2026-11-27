@@ -61,9 +61,12 @@ export default [
       const grants = worker ? asked.filter((g) => g === 'read') : asked;
       const workerForbid = (cap) => (worker && typeof K.classifyCapability === 'function' && K.classifyCapability(cap && cap.id) !== 'read') ? "a worker's program calls only what the worker may run (it changes nothing the reader sees)" : null;
       let h = null;
+      /* (atlas-completion-verdict) a dataset the program asks for through the bridge mid-run is a read of THIS call — the closure is
+         per call, so the record cannot be another call's. Whether it was handed over is what readDataset answered. */
+      const bridgeReads = [];
       if (grants.length) {
         if (typeof K.programBridge !== 'function') return R(false, warn(esc(L('The capability bridge is not available here.', '能力ブリッジはここでは使えません。'))));
-        const readDataset = (id) => C.readDataset(id);
+        const readDataset = (id) => { const p = C.readDataset(id); bridgeReads.push({ id: id, handed: p != null }); return p; };
         h = K.programBridge({ turn: dctx || {}, grants: grants, readDataset: readDataset,
           forbid: (cap) => (cap && cap.id === 'compute.run') ? 'a program does not start another program (one interpreter per run)' : workerForbid(cap) });
       }
@@ -85,6 +88,12 @@ export default [
         packages: r.packages || [], runtime: r.runtime, python: r.python || null, timings: r.timings || null, elapsedMs: r.elapsedMs, codeSha256: r.codeSha256 || null,
         bridge: r.bridge || null, reused: r.reused === true } };
       if (worker && asked.length !== grants.length) meta.compute.grantsDropped = asked.filter((g) => grants.indexOf(g) < 0);
+      /* (atlas-completion-verdict) what the run read: its inputs (js/compute-sandbox.js run) and what the bridge handed over, in the registry's
+         one shape. Absent when the sandbox stated nothing — «not observed», which js/atlas-held-data.js keeps apart from «read nothing». */
+      if (Array.isArray(r.datasetsRead)) {
+        const viaBridge = typeof C.readRecord === 'function' ? bridgeReads.map((b) => C.readRecord(b.id, b.handed && !!r.ok, b.handed ? (r.ok ? null : r.why) : 'not-handed-over')).filter(Boolean) : [];
+        meta.datasetsRead = r.datasetsRead.concat(viaBridge);
+      }
       if (!r.ok) {
         const detail = r.detail == null ? '' : (typeof r.detail === 'string' ? r.detail : JSON.stringify(r.detail));
         const head = r.observed === false

@@ -141,7 +141,7 @@ async function runModel(a, env) {
   const D = env.D, t = a.target || {}, tds = D.get(t.dataset);
   if (!tds || tds.kind !== 'vector' || !t.field) return fail('NEEDS_INPUT', 'target.dataset (a vector dataset) and target.field');
   const { points, skipped } = pointsOf(tds);
-  const rows = points.map((p, k) => ({ id: k, lat: p.lat, lng: p.lng, y: num(p.props[t.field]), t: t.timeField ? (/^d{4}$/.test(String(p.props[t.timeField])) ? +p.props[t.timeField] : G.toYear(p.props[t.timeField])) : null }));
+  const rows = points.map((p, k) => ({ id: k, lat: p.lat, lng: p.lng, y: num(p.props[t.field]), t: t.timeField ? (/^\d{4}$/.test(String(p.props[t.timeField])) ? +p.props[t.timeField] : G.toYear(p.props[t.timeField])) : null }));
   const F = await featureFnsFor(Array.isArray(a.features) ? a.features : [], D);
   if (!F.fns.length && !a.coords) return fail('NEEDS_INPUT', { features: F.problems });
   const table = G.assembleTable(rows, F.fns, { coords: !!a.coords });

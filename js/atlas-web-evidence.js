@@ -24,12 +24,21 @@
  *  and each is stated where it is used (TTL below); a record past it is fetched again; an expired one is never served as current
  *  (list() leaves it out unless asked, find()/acquire() do not see it).
  *
+ *  WHO FETCHED IT AND WHO USED IT ARE TWO FACTS (atlas-completion-verdict). A record keeps the turn that fetched it (`fetchedTurn`, with
+ *  `fetchedAt`) apart from every turn that was handed it (`usedBy`): a search run in turn 1 and asked again in turn 2 is answered from
+ *  here, and turn 2's answer cites it, because turnSources() lists what a turn USED, not only what it fetched. A turn is named by its
+ *  caller (opts / ctx `turn`); a caller that names none adds no use.
+ *  WHEN THE TURN USED IT. `evidence_used` (js/atlas-turn-metrics.js markTurn, first time only) is the moment a record is handed to the
+ *  turn's OWN reader: an operation Atlas ran (fetched, joined, answered from here, re-read with web.evidence) or the turn's answer
+ *  call taking the turn's sources (turnSources(turn, { use:true })). A delegated worker's read (ctx `worker:true`) is the worker's use,
+ *  not the parent's: it is recorded in usedBy, and the parent's moment is marked when the parent itself takes the record.
+ *
  *  IDENTITY. An address is compared by the ONE canonicaliser the answer registry already owns (js/atlas-evidence.js canonicalizeUrl:
  *  lower-case host, no fragment, no campaign parameters, no trailing slash). A query is compared by its words, not its spelling
  *  (case, width, spacing, edge punctuation).
  * ==========================================================================*/
 import { makeAtlasEvidence } from './atlas-evidence.js';
-import { markTurn } from './atlas-turn-metrics.js';   /* the moment a fetched source reaches the page: the turn's `evidence_arrived` (the parent's use of it is marked by whoever reads it first) */
+import { markTurn } from './atlas-turn-metrics.js';   /* the moment a fetched source reaches the page (`evidence_arrived`) and the moment the turn itself first takes one in hand (`evidence_used`): acquire() and use() below */
 
 /* Time to live, per kind — an OBSERVATION-FREE CHOICE, not a measured number: a portal page and a rendered page do not change inside
    ten minutes of one conversation, while a search's answer can (news) and so lives shorter. Expires: when the journal's per-call
@@ -61,6 +70,14 @@ export function makeWebEvidence(opt) {
   const age = (e) => Math.max(0, now() - e.fetchedAt);
   const fresh = (e) => now() < e.expiresAt;
   function touch(e) { e.usedAt = now(); e.hits += 1; }
+  /* use(e, ctx) — the turn ctx.turn was handed this record. Recorded once per turn; the parent's first use of any record marks evidence_used. */
+  function use(e, ctx) {
+    const c = ctx || {};
+    const turn = String(c.turn || '');
+    if (!e || !turn) return;
+    if (!e.usedBy.includes(turn)) e.usedBy.push(turn);
+    if (!c.worker) markTurn('evidence_used');
+  }
   function evict() {
     while (byId.size > MAX_ENTRIES) {
       let oldest = null;
@@ -73,7 +90,8 @@ export function makeWebEvidence(opt) {
   function put(kind, key, fields, ttlMs) {
     const t = now();
     const prev = byId.get(byKey.get(slot(kind, key)));
-    const e = Object.assign({ id: prev ? prev.id : 'ev' + (++seq), kind, key, fetchedAt: t, expiresAt: t + (ttlMs == null ? ttl[kind] : ttlMs), usedAt: t, hits: 0 }, fields);
+    /* a refresh keeps the turns that used the earlier copy: they used THIS address, and a turn's list of sources does not lose one because a later turn read it again */
+    const e = Object.assign({ id: prev ? prev.id : 'ev' + (++seq), kind, key, fetchedAt: t, expiresAt: t + (ttlMs == null ? ttl[kind] : ttlMs), usedAt: t, hits: 0, fetchedTurn: '', usedBy: prev ? prev.usedBy.slice() : [] }, fields);
     byId.set(e.id, e);
     byKey.set(slot(kind, key), e.id);
     evict();
@@ -92,23 +110,28 @@ export function makeWebEvidence(opt) {
        otherwise                                → fetcher() runs once; an `ok` result is stored, how:'fetched'
      `fetcher` returns { ok, value, title?, url?, text?, sources? }; only ok:true is kept (a failure is shared with the callers that
      were waiting on it and with no one after — the next call tries again, which is the retry after a REAL failure the rule allows).
-     opts: refresh (skip the store), fits(entry) (is the stored one enough for THIS request), ttlMs. */
+     opts: refresh (skip the store), fits(entry) (is the stored one enough for THIS request), ttlMs, turn (the turn this read is for: the
+     record's `usedBy` gains it whichever way it was answered, and a fetch records it as `fetchedTurn`), worker (the reader is a delegated
+     worker, not the parent: see use()). A fetcher's own `result.turn` names the turn when opts does not. */
   async function acquire(kind, key, fetcher, opts) {
     const p = opts || {};
     const k = slot(kind, key);
     if (!p.refresh) {
       const hit = find(kind, key);
-      if (hit && (typeof p.fits !== 'function' || p.fits(hit))) { touch(hit); return { entry: hit, how: 'stored', result: null }; }
+      if (hit && (typeof p.fits !== 'function' || p.fits(hit))) { touch(hit); use(hit, p); return { entry: hit, how: 'stored', result: null }; }
       if (inflight.has(k)) {
         const r = await inflight.get(k);
+        use(r.entry, p);
         return { entry: r.entry, how: 'joined', result: r.result };
       }
     }
     const run = (async () => {
       const result = await fetcher();
       if (!result || !result.ok) return { entry: null, result };
-      const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', turn: result.turn || '', text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
+      const turn = String(p.turn || result.turn || '');
+      const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', fetchedTurn: turn, text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
       markTurn('evidence_arrived');
+      use(entry, { turn, worker: p.worker });
       return { entry, result };
     })();
     inflight.set(k, run);
@@ -132,7 +155,7 @@ export function makeWebEvidence(opt) {
     return out;
   }
 
-  /** note(list, {via, query}) — sources a hosted search CITED. No page body: they say "this address was found, by this search",
+  /** note(list, {via, query, turn?, worker?}) — sources a hosted search CITED. No page body: they say "this address was found, by this search",
       so the next asker can open it (and the open will be recorded as a page) instead of searching for it again. Titles and
       addresses are kept exactly as cited; a source seen twice keeps its first title and gains the later query. */
   function note(list, ctx) {
@@ -141,14 +164,14 @@ export function makeWebEvidence(opt) {
     normSources(list).forEach((s) => {
       const key = urlKey(s.url);
       const have = byId.get(byKey.get(slot('cited', key)));
-      if (have) { if (c.query && !have.queries.includes(c.query)) have.queries.push(String(c.query).slice(0, 200)); have.expiresAt = now() + ttl.cited; return; }
-      put('cited', key, { url: s.url, title: s.title, via: String(c.via || 'search').slice(0, 40), queries: c.query ? [String(c.query).slice(0, 200)] : [], text: '', value: null, sources: [] });
+      if (have) { if (c.query && !have.queries.includes(c.query)) have.queries.push(String(c.query).slice(0, 200)); have.expiresAt = now() + ttl.cited; use(have, c); return; }
+      use(put('cited', key, { url: s.url, title: s.title, via: String(c.via || 'search').slice(0, 40), queries: c.query ? [String(c.query).slice(0, 200)] : [], text: '', value: null, sources: [], fetchedTurn: String(c.turn || '') }), c);
       added += 1;
     });
     return added;
   }
 
-  const brief = (e) => ({ id: e.id, kind: e.kind, url: e.url || undefined, title: e.title || undefined, query: e.query || undefined, fetchedAt: new Date(e.fetchedAt).toISOString(), ageSec: Math.round(age(e) / 1000), fresh: fresh(e), sources: e.sources.length || undefined });
+  const brief = (e) => ({ id: e.id, kind: e.kind, url: e.url || undefined, title: e.title || undefined, query: e.query || undefined, fetchedAt: new Date(e.fetchedAt).toISOString(), fetchedTurn: e.fetchedTurn || undefined, usedBy: e.usedBy.length ? e.usedBy.slice() : undefined, ageSec: Math.round(age(e) / 1000), fresh: fresh(e), sources: e.sources.length || undefined });
 
   /** lookup by reference id, address or query words */
   function lookup(ref) {
@@ -162,11 +185,12 @@ export function makeWebEvidence(opt) {
     return id ? byId.get(id) : null;
   }
 
-  /** read(ref, chars) — what the record holds, as the model may re-read it; the sources are never dropped */
-  function read(ref, chars) {
+  /** read(ref, chars, ctx?) — what the record holds, as the model may re-read it; the sources are never dropped. ctx {turn, worker}: that turn re-read it, so used it */
+  function read(ref, chars, ctx) {
     const e = lookup(ref);
     if (!e) return null;
     touch(e);
+    use(e, ctx);
     const n = Math.max(200, Math.min(MAX_TEXT_CHARS, Number(chars) || 6000));
     const body = String(e.text || '');
     return Object.assign(brief(e), {
@@ -176,13 +200,15 @@ export function makeWebEvidence(opt) {
     });
   }
 
-  /** turnSources(turn) — the pages and cited sources THIS turn's readers retrieved, in the shape the answer call takes as `webSources`
-      (js/atlas-answer-pipeline.js), so a page opened or a search run through here has an id in the answer that follows — as one run through
-      research.brief already did */
-  function turnSources(turn) {
+  /** turnSources(turn, opts?) — the pages and cited sources THIS turn's readers USED (fetched, joined, were answered from the store, re-read),
+      in the shape the answer call takes as `webSources` (js/atlas-answer-pipeline.js), so a page opened or a search run through here has an id
+      in the answer that follows — as one run through research.brief already did. `retrievedAt` is when the record was FETCHED (an earlier
+      turn's fetch keeps its own time). opts.use: the caller hands these to the turn's answer, which is the turn using them (evidence_used). */
+  function turnSources(turn, opts) {
     const out = [], seen = new Set();
     const add = (url, title, e) => { const k = urlKey(url); if (!k || seen.has(k)) return; seen.add(k); out.push({ url, title: title || '', publisher: '', retrievedAt: new Date(e.fetchedAt).toISOString() }); };
-    byId.forEach((e) => { if (!turn || e.turn !== turn) return; if (e.kind === 'page' || e.kind === 'render') add(e.url, e.title, e); e.sources.forEach((x) => add(x.url, x.title, e)); });
+    byId.forEach((e) => { if (!turn || !e.usedBy.includes(turn)) return; if (e.kind === 'page' || e.kind === 'render' || e.kind === 'cited') add(e.url, e.title, e); e.sources.forEach((x) => add(x.url, x.title, e)); });
+    if (out.length && opts && opts.use) markTurn('evidence_used');
     return out;
   }
 

@@ -293,43 +293,44 @@
     {
       "id": "restyle-drawn-line-across-turns",
       "lang": "jp",
-      "text": "ロンドンからパリまで線を引いて。次に、さっきの線を赤くして、太くして、少し透かして。",
+      "earlier": [
+        {
+          "text": "ロンドンからパリまでと、ベルリンからローマまで、線を2本引いて。",
+          "why": "the first turn of the conversation: the line the next turn changes, and one it must leave alone. The map it leaves is the reference the restyle is graded against (its ids and courses).",
+          "mapState": {
+            "objects": [
+              { "kind": "line", "count": { "min": 2, "max": 2 }, "why": "「線を2本引いて」: two lines exist as map-objects, one per course" }
+            ]
+          }
+        }
+      ],
+      "text": "さっきのロンドンからパリの線を赤くして、太くして、少し透かして。",
       "sendable": true,
       "source": {
         "round": "atlas-objects-unify",
         "where": "the order sheet (IntMap発注書, 2026-11-26): 「Atlas が自分で描いた線の色を変えられなかった」",
-        "text": "paraphrased from the reported case; the two instructions are one request here so the whole path — draw, keep the id, restyle that object — is one scripted turn"
+        "text": "paraphrased from the reported case, asked as the conversation it was: a turn that draws, then a LATER turn that changes what was drawn (atlas-completion-verdict). Asked as one turn, deleting the line and drawing a red one under a new id was indistinguishable from a restyle; a second, unrelated line is drawn first so that 「recolour every line」 is also visible."
       },
       "expect": {
         "reach": [
           "map.object"
         ],
-        "minOperations": 2
+        "minOperations": 1
       },
       "unset": {
-        "replyMustNotMatch": "the report names no sentence the reply must or must not carry.",
-        "map": "the report does not name coordinates; only that a line exists as a map-object."
+        "replyMustNotMatch": "the report names no sentence the reply must or must not carry."
       },
       "mapState": {
-        "drawn": [
-          {
-            "anyOf": [
-              {
-                "path": "objects.kind:line",
-                "min": 1
-              }
-            ],
-            "why": "「ロンドンからパリまで線を引いて」"
-          }
-        ],
-        "objects": [
-          {
-            "kind": "line",
-            "count": { "min": 1, "max": 1 },
-            "style": { "color": { "near": "#ff0000" }, "width": { "min": 4 }, "opacity": { "max": 0.95 } },
-            "why": "「さっきの線を赤くして、太くして、少し透かして」: the SAME line (exactly one line on the map — a second one drawn beside it is not a restyle) is red, wider than the 2.6 a new line is drawn with (js/map-extras.js ANNOT_LINE_W), and not fully opaque"
-          }
-        ]
+        "restyle": {
+          "kind": "line",
+          "ends": [
+            { "name": "London", "lng": -0.1275, "lat": 51.507222, "source": "https://www.wikidata.org/wiki/Q84 (P625, read 2026-11-27)" },
+            { "name": "Paris", "lng": 2.352222, "lat": 48.856667, "source": "https://www.wikidata.org/wiki/Q90 (P625, read 2026-11-27)" }
+          ],
+          "withinKm": 50,
+          "style": { "color": { "near": "#ff0000" }, "width": { "min": 4 }, "opacity": { "max": 0.95 } },
+          "why": "「さっきのロンドンからパリの線を赤くして、太くして、少し透かして」: the SAME object (the id and course the first turn left) is red, wider than the 3 a drawn line starts with (js/atlas-cap-map.js drawLine), and not fully opaque; the Berlin–Rome line and everything else is unchanged, and nothing new is drawn. withinKm 50: a geocoded city centre lies a few km from the Wikidata point, and 50 km is still far from every other end the conversation names (Berlin, Rome: over 900 km)."
+        }
       }
     }
   ],

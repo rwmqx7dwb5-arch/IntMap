@@ -161,7 +161,8 @@ export function checkerGoal(taskId, claims, extra) {
   return 'Independently check the claims worker "' + s(taskId, 64) + '" returned, using different sources from the ones it cited where you can. '
     + 'Spend your effort on what a program cannot decide: whether a source really says it, why something happened, how far a publisher can be trusted, an argument that needs several steps.\n'
     + 'The claims, each with its id:\n' + lines.join('\n') + '\n'
-    + 'For each claim return ONE finding with "id" set to the claim\'s id exactly as written above, "claim" the claim, "verdict" "supported" / "unsupported" / "contradicted", and "source" the URL you found it at. '
+    + 'For each claim return ONE finding with "id" set to the claim\'s id exactly as written above, "claim" the claim, "verdict" "supported" / "unsupported" / "contradicted", "source" the URL you found it at (or the capability id you ran), and "excerpt" what you checked it against: the source\'s own words verbatim, or the raw values the capability returned. '
+    + 'A "supported" with no source and excerpt is counted as your agreement, not as a check. '
     + 'List in "gaps" every id you could not check.' + (extra ? '\n' + s(extra, 600) : '');
 }
 
