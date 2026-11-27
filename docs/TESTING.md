@@ -1066,6 +1066,10 @@ engine, regenerate the mirror — `npm run check:static` fails if the two drift:
 node scripts/sync-newsgeo.mjs
 ```
 
+## Durable job worker tool results
+
+`tests/atlas-job-tool-result-recall-checks.test.mjs` runs the Edge job runner with a JSON-round-tripped checkpoint and the server GIS. It checks that a new lease can read the end of a 51-row answer without repeating the filter. It also checks omitted previews, ranges crossing stored parts, missing parts, and progress saved by the previous runner.
+
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
