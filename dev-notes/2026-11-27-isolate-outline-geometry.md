@@ -83,3 +83,4 @@ Natural Earth の多角形がそれとは別の線（実効支配）に沿って
 - **IM_HOST member countryShape**（`check:surface`）: Atlas の国ハイライトは遅延チャンク（`js/atlas-console.js`）にあり、本体側の `js/frontier-fit.js` を直接 import すると共有部品がチャンクに分かれる（起動時リクエストが増えた実測がある）。`loadNECountries` と同じ理由で host 表から渡す。
 - **window.IntMapTimeBorders の読み取りが 1 つ増えた**（`js/frontier-fit.js` の `eraShapeOnMap`）: Chronos が描いている政体の集合と、それが今描いているかを訊く。`js/time-borders.js` は import できる形でなく（古典スクリプトの公開窓口）、既存の読み手（`js/atlas-era-highlight.js` ほか）と同じ窓口を使う。
 - **perf: eager.modules +1・eager.raw +25.8 kB**（gzip +3.8 kB・リクエスト数は変わらない）: 新しいモジュール `js/frontier-fit.js`（当てはめの本体）が Isolate / ハイライトと同じ本体の束に入るため。Isolate とハイライトは本体にあるので、その形を作る関数も本体に要る。
+- **perf: async chunk atlas-console 1481.3 → 1489.2 kB**: 国ハイライトを形のソース（`nlq-hl-src`）へ描く処理と、過去の年の政体を同じ入口に通す処理。測定は origin/main を取り込んだ木（この PR が足した分以外に、天井の幅の中で動いていた main の差も含む）。
