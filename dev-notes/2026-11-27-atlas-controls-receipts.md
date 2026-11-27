@@ -57,4 +57,4 @@ newsjp: Atlas の回答の下のオンオフが、その回答が描いたもの
 
 - claim の持ち主は能力が書く効果キーでなければならない（`tests/atlas-one-declaration-checks.test.mjs` ④b）。`isolate`・`upload:…` という私的な名前をやめ、`map.isolate`・`map.object` にした。同じ kind の中の区別は受領証のソース id が持つ。
 - 解決関数を `done` と名づけたら、名前で呼び出しを結ぶ外向き効果の解析（D①）が `apply → done → post` を作り、無関係な 3 ファイルの押下が書き込みに届くと判定された。`landed` に改名。
-- `check:perf`: `atlas-console` の非同期チャンクが天井 +帯を 0.2 kB 超えた（main は #1493 で天井を実測まで下げたばかり）。増分は機能そのもの（受領証・扉・押下の観測）なので、理由をここに書いて天井を上げる。
+- `check:perf`: `atlas-console` の非同期チャンクが天井 +帯を 0.2 kB 超えた（main は #1493 で天井を実測まで下げたばかり）。増分は機能そのもの（受領証・扉・押下の観測）なので、理由をここに書いて天井を上げた（`atlas-console` 1,484.8 → 1,493.3 kB、その行だけ）。
