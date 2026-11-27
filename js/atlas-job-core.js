@@ -351,6 +351,26 @@ export function planJob(contracts, o) {
     ids.add(id); byKey.set(key, id);
     tasks.push({ id, key, contract: Object.assign({}, c, { id }), deps: c.inputs.map((i) => i.from) });
   }
+  /* (gis-dataset-slots) A TASK NAMED WHERE A CAPABILITY TAKES ITS DATA IS A DEPENDENCY. A capability that takes datasets says which of its arguments hold
+     them (`o.datasetSlots(id)` — the server twin declares it: data.gis → ["inputs"]); a string there that is the id of another task of THIS list names that
+     task's output, exactly as a dataset id names a dataset on the page. Measured in production 2026-11-28: Atlas wrote "inputs":["africa"] in data.gis and
+     left the contract's inputs empty — no dependency, all four steps started at once, the three that needed "africa" were refused. Only the declared slots
+     are read: a filter value that happens to equal a task id is not a reference. */
+  if (o && typeof o.datasetSlots === 'function') {
+    for (const t of tasks) {
+      const c = t.contract;
+      if (c.kind !== 'capability') continue;
+      const slots = o.datasetSlots(c.capability) || [];
+      for (const k of slots) {
+        const v = c.args && c.args[k];
+        for (const x of (Array.isArray(v) ? v : [v])) {
+          if (typeof x !== 'string' || x === t.id || !ids.has(x) || t.deps.indexOf(x) >= 0) continue;
+          t.deps.push(x);
+          t.contract = Object.assign({}, t.contract, { inputs: t.contract.inputs.concat([{ from: x }]) });
+        }
+      }
+    }
+  }
   for (let i = 0; i < tasks.length; i++) for (const d of tasks[i].deps) if (!ids.has(d)) return { ok: false, error: 'input_unknown', at: i };
   const cyc = cycleMembers(tasks.map((t) => t.contract));
   if (cyc.size) return { ok: false, error: 'input_cycle', at: Array.from(cyc)[0] };

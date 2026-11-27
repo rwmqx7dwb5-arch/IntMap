@@ -115,7 +115,11 @@ export function jobFacts(job, tasks) {
       id: t.task_id, kind: c.kind || 'worker', title: s(c.capability ? (c.capability + (c.args && Object.keys(c.args).length ? ' ' + stable(c.args) : '')) : c.goal, 160),
       state: t.status, code: t.code || '', ended: TASK_ENDED.has(t.status),
       deps: Array.isArray(t.deps) ? t.deps.map((d) => String(d)) : [], endedAt: t.ended_at || null,
-      summary: s(r.summary, 1500), findings: Array.isArray(r.findings) ? r.findings.length : 0, gaps: Array.isArray(r.gaps) ? r.gaps.map((g) => s(g, 300)) : [],
+      summary: s(r.summary, 1500),
+      /* (gis-dataset-slots) THE FINDINGS THEMSELVES, not their count. A worker's figures (the claim, the source, the words or raw values it rests on) were reduced
+         to a number here, so Atlas, reading the ended job, said the result held no figures and recomputed them on the page (production 2026-11-28). */
+      findings: Array.isArray(r.findings) ? r.findings.filter((x) => x && x.claim).map((x) => ({ claim: s(x.claim, 800), source: s(x.source, 400), excerpt: s(x.excerpt, 800) })) : [],
+      gaps: Array.isArray(r.gaps) ? r.gaps.map((g) => s(g, 300)) : [],
       sources: Array.isArray(r.sources) ? r.sources.slice(0, 8).map((x) => ({ url: s(x && x.url, 400), title: s(x && x.title, 160) })) : [],
       costUsd: micros(t.cost_micros),
       /* (server-capability-lane) a map-changing capability the job SAVED for the page — applyParked runs it when the reader is back */
@@ -209,7 +213,7 @@ export function jobText(f) {
   /* (gis-result-handoff) what each piece MADE is stated as data — the output's id, version, count, columns and sources — so the next step (a further
      filter, a join, the map) can name it: "@<piece>:data.result" in a later job, or the dataset the page filed it as (work.job restore) */
   const out = (o) => o ? ' | output ' + o.id + ' v' + o.version + ': ' + o.count + ' feature(s)' + (o.columns.length ? ', columns ' + o.columns.slice(0, 20).join(',') : '') + (o.sources.length ? ', from ' + o.sources.join(' ') : '') + (o.stored === 'artifact' ? ' (kept whole beside the row, ' + o.parts + ' part(s))' : '') : '';
-  const rows = f.tasks.map((t) => '- ' + t.id + ' [' + t.state + (t.code ? ' / ' + t.code : '') + ']' + (t.stale ? ' [computed under an earlier version of the request: ' + t.conditionsVersion + ' of ' + (f.requestVersion || 0) + ' — redo it with jobs.amend revise, or keep it]' : '') + (t.summary ? ': ' + t.summary.slice(0, 600) : (t.ended ? '' : ' (not finished)')) + out(t.output) + (t.gaps.length ? ' | not established: ' + t.gaps.join('; ').slice(0, 300) : ''));
+  const rows = f.tasks.map((t) => '- ' + t.id + ' [' + t.state + (t.code ? ' / ' + t.code : '') + ']' + (t.stale ? ' [computed under an earlier version of the request: ' + t.conditionsVersion + ' of ' + (f.requestVersion || 0) + ' — redo it with jobs.amend revise, or keep it]' : '') + (t.summary ? ': ' + t.summary : (t.ended ? '' : ' (not finished)')) + out(t.output) + (t.findings.length ? '\n  findings: ' + t.findings.map((x, i) => '[' + (i + 1) + '] ' + x.claim + (x.source ? ' (' + x.source + ')' : '') + (x.excerpt ? ' — "' + x.excerpt + '"' : '')).join('\n  ') : '') + (t.gaps.length ? ' | not established: ' + t.gaps.join('; ').slice(0, 300) : ''));
   const inc = (f.incomplete || []).length ? ['', 'NOT FINISHED (the job is ' + f.status + ', not done): ' + f.incomplete.map((x) => x.id + ' ' + x.state + (x.code ? ' (' + x.code + ')' : '')).join('; ')] : [];
   return [head].concat(rows, inc, f.result ? ['', 'Combined: ' + f.result.slice(0, 2000)] : []).join('\n');
 }

@@ -250,7 +250,7 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
+  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
 
@@ -337,7 +337,7 @@ async function revise(req: Request, body: Record<string, unknown>): Promise<Resp
   for (const c of revised) { const id = String(c && c.id || ""); if (!id) return json({ error: "bad_plan", code: "revise_needs_id" }, 400); byId.set(id, Object.assign({}, c, { id })); }
   for (const k of keep) if (!ids.has(k)) return json({ error: "bad_plan", code: "keep_unknown", at: k }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(Array.from(byId.values()), { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
+  const plan = planJob(Array.from(byId.values()), { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
   const want = new Set(revised.map((c) => String(c.id)));
   const send = (plan.tasks as Array<{ id: string; key: string; contract: unknown; deps: string[] }>).filter((t) => want.has(t.id));
