@@ -240,8 +240,9 @@ npm run check:docs       # 文書どうしの事実の突き合わせ
 node --test tests/process-agent-context-checks.test.mjs
 ```
 
-`check:agents` が落ちる典型は 3 つ——天井に当たった（§1）、生成物を直接編集した（`--write` で戻る）、
-`CLAUDE.md` の `@AGENTS.md` を消した（Claude Code のセッションが恒久指示ごと無くなる）。
+`check:agents` が落ちる典型は 4 つ——天井に当たった（§1）、生成物を直接編集した（`--write` で戻る）、
+`CLAUDE.md` の `@AGENTS.md` を消した（Claude Code のセッションが恒久指示ごと無くなる）、手書きの付則
+（`.codex/config.toml` など）が規則や役を一部だけ並べた（`addendum-sets`。並べずにディレクトリを指す）。
 
 ## 9. Edge Function の deploy に `--use-api` が要る理由（実測）
 
