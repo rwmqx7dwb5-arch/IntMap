@@ -20,8 +20,11 @@ import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, apply
    when it is needed — a page that never ends a job never loads it. Returns the line Atlas reads, or ''. */
 async function fileEnded(K, f) {
   try { const P = await import('./atlas-job-products.js'); P.noteJobEnded(K.workingMemory, f);
-    const W = await import('./atlas-cap-work.js'); const r = await P.saveJobAsWork(f, W.workStore());
-    return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged) — open it with work.job.' : '';
+    const W = await import('./atlas-cap-work.js'); /* (gis-result-handoff) a piece's output is read whole from the server and filed as a dataset product (js/atlas-job-products.js datasetsOfJob) */
+    const client = pageJobsClient();
+    const r = await P.saveJobAsWork(f, W.workStore(), { readOutput: client ? (taskId) => client.output(f.id, taskId) : null });
+    const ds = r.ok ? r.saved.filter((n) => /^dataset — /.test(n)) : [];
+    return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged' + (ds.length ? '; datasets: ' + ds.join(', ') + ' — put one on the map or into the next step with work.job restore' : '') + ') — open it with work.job.' : '';
   } catch (_) { return ''; }
 }
 
@@ -173,15 +176,22 @@ export default [
     row: ['jobs.amend',                 'jobAmend',       'amendJob,changeJob,tellJob,addInstruction',                   'research','none',    '',                       'explanation',         'session', 'none',   '',         ''],
     ui: { none: '2026-11-20' },
     doc: [
-      { in: 'research.analyze', at: 39, text: '{"type":"jobAmend","id":job id,"note":str} = CHANGE A RUNNING JOB: the note is read before the NEXT provider request of every piece still to run and outranks the original goal wherever they differ. 「それは日本の分だけにして」「その結論は出典を厳しめに」. Pieces that already ended are not redone.' },
+      { in: 'research.analyze', at: 39, text: '{"type":"jobAmend","id":job id,"note":str,"revise"?:[{"id":piece id, …its new contract}],"keep"?:[piece ids]} = CHANGE A JOB: the note is read before the NEXT provider request of every piece still to run and outranks the original goal wherever they differ. 「それは日本の分だけにして」「その結論は出典を厳しめに」. The arguments of a capability piece were fixed when it was planned, and a piece that already ended is what it was: jobStatus marks each piece computed under an earlier version of the request. To redo what the change affects, give "revise" (the new contracts of those pieces, with the same ids; an argument "@A:data.result" hands the whole result of piece A on) and "keep" (the finished pieces that still hold, such as the national data when only the city changed). Revised pieces and everything built on them run again; kept pieces are not run or paid for again; a job that had ended runs again.' },
     ],
-    schema: () => ({ type: 'object', required: ['id', 'note'], properties: { id: str(), note: str() } }),
+    schema: () => ({ type: 'object', required: ['id', 'note'], properties: { id: str(), note: str(), revise: list(obj()), keep: list(str()) } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const client = pageJobsClient();
       if (!client) return R(false, warn(esc(refusal(L, 'no_session'))), { meta: { status: 'failed', code: 'no_session' } });
       const note = String((a && a.note) || '').trim();
       if (!note) return R(false, warn(esc(L('An instruction is needed.', '追加する指示が必要です。'))), { meta: { status: 'failed', code: 'note_missing' } });
+      const revise = Array.isArray(a && a.revise) ? a.revise : [], keep = Array.isArray(a && a.keep) ? a.keep.map(String) : [];
+      if (revise.length || keep.length) {
+        const v = await client.revise(String((a && a.id) || ''), note, { tasks: revise, keep });
+        if (!v.ok) return R(false, warn(esc((refusal(L, v.code) || L('The change could not be applied (' + v.code + ').', '変更を適用できませんでした (' + v.code + ')。')) + (v.at ? ' [' + v.at + ']' : ''))), { meta: { status: 'failed', code: v.code, at: v.at } });
+        mountJobCards(() => pageJobsClient(), { L, esc, apply: parkedApplier(K, dctx), onEnded: (g) => fileEnded(K, g) });
+        return R(true, '<div style="font-size:12px;">' + esc(L('Changed (request version ' + v.version + '): redone — ' + (v.revised.join(', ') || 'none') + '; kept as they are — ' + (v.kept.join(', ') || 'none') + '. What was built on a redone piece runs again.', '変更しました（依頼の版 ' + v.version + '）。やり直す分: ' + (v.revised.join(', ') || 'なし') + '／そのまま使う分: ' + (v.kept.join(', ') || 'なし') + '。やり直す分に依存する分も再実行します。')) + '</div>', { meta: { status: 'completed', produced: ['explanation'], job: { id: String(a.id), amended: true, version: v.version, revised: v.revised, kept: v.kept } } });
+      }
       const r = await client.amend(String((a && a.id) || ''), note);
       if (!r.ok) return R(false, warn(esc(L('The instruction could not be added (' + r.code + ').', '指示を追加できませんでした (' + r.code + ')。'))), { meta: { status: 'failed', code: r.code } });
       return R(true, '<div style="font-size:12px;">' + esc(L('Added — the job reads it before its next request.', '追加しました。次のリクエストの前に仕事が読みます。')) + '</div>', { meta: { status: 'completed', produced: ['explanation'], job: { id: String(a.id), amended: true } } });

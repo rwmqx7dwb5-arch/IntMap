@@ -39,12 +39,16 @@ export function makeHeadlessGis(deps) {
   async function catalogue() {
     const g = await gis();
     const cat = g.flow.find();
-    /* declared as working from inline vectors: no raster output, no degree-grid-only surface */
-    return arr(cat.ops).filter((o) => o.output !== "raster" && !(arr(o.surface).length && arr(o.surface).every((s) => s === "degree-grid")));
+    /* declared as working from inline vectors (no raster output, no degree-grid-only surface) — the GIS's own predicate, the one the
+       page's planner asks too (js/gis-core.js flow.runsWithoutScreen), so «what the server can run» is not written twice */
+    return arr(cat.ops).filter((o) => g.flow.runsWithoutScreen(o));
   }
 
   return {
     ops: () => gate(async () => (await catalogue()).map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, output: o.output, params: o.params }))),
+    /* run({ op, inputs, params, names? }) — `names[i]` is where input i came from (a file's address, the task that made it): it is written into
+       the provenance the GIS keeps for that input, so the manifest names the real source (it said `headless-input` for every file, measured
+       2026-11-27). An input with no name is said to be unnamed, not given a made-up one. */
     run: (a) => gate(async () => {
       const g = await gis();
       const op = (await catalogue()).find((o) => o.id === a.op);
@@ -55,7 +59,8 @@ export function makeHeadlessGis(deps) {
       try {
         const ids = sets.map((features, i) => {
           const id = "in" + (i + 1);
-          const added = g.data.add({ id, title: id, features, provenance: { kind: "import", file: "headless-input", format: "geojson", readAt: deps.now() } });
+          const name = arr(a.names)[i] ? String(arr(a.names)[i]).slice(0, 500) : "";
+          const added = g.data.add({ id, title: name || id, features, provenance: { kind: "import", file: name || "(unnamed input " + (i + 1) + ")", format: "geojson", readAt: deps.now() } });
           if (added && added.ok === false) throw new HeadlessError("bad_input", String(added.why || "input refused"));
           return id;
         });

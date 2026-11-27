@@ -24,7 +24,7 @@ test('② a whole table is answered by one operation: 500 points against 40 site
   const r = await lane.run('data.gis', { op: 'nearestJoin', inputs: [cities, ports], params: {} });
   assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
   assert.equal(r.data.count, 500);
-  assert.equal(r.data.truncated, false);
+  assert.equal(r.data.result.features.length, 500, 'the whole answer: where it is kept is decided by the runner (keepOutput), not by the twin');
   const keys = Object.keys(r.data.result.features[0].properties);
   assert.ok(keys.some((k) => /dist|km|nearest/i.test(k)), 'a distance column came back: ' + keys.join(','));
 });

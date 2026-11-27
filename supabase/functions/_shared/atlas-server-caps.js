@@ -109,18 +109,26 @@ const worldRelated = {
 };
 
 /* data.gis — the page's GIS run on GeoJSON it is handed, with no page. The page's capability resolves a REF against the datasets and layers
-   the page holds; the server holds none, so an input here is the data itself: inline GeoJSON, or the https address of a GeoJSON file (read under
-   gis-fetch's rule — _shared/gis-input-fetch.js). A "layer:…" / "ogc:" / "stac:" ref, `acquire`, and a raster op need the page and are
+   the page holds; the server holds none, so an input here is the data itself: inline GeoJSON, the https address of a GeoJSON file (read under
+   gis-fetch's rule — _shared/gis-input-fetch.js), or what an earlier task of the same job produced (`"@A:data.result"` — the job runner resolves
+   it before this runs, js/atlas-job-core.js resolveArgs). A "layer:…" / "ogc:" / "stac:" ref, `acquire`, and a raster op need the page and are
    `part_unsupported_on_server` by name. The operations are the ones the GIS DECLARES (_shared/gis-headless.js, the same runner the MCP server uses): none is
    listed here, and `{"describe":true}` (or no `op`) returns them. The work is the program's, not a model's: ONE call answers a whole table.
-   Bounds are the isolate's own (CPU/memory, not a number written here); what is STORED of the answer is bounded in bytes and says so (`truncated`).
-   Observation 2026-11-26: the stored answer is read by a worker/planner that must not receive a table as prose, so `text` is a summary and the rows are `data`.
-   Expires if jobs gain a place for large results (then `data.result` becomes a reference). */
-const GIS_STORED_BYTES = 1500000; /* ESTIMATE: well under an Edge response and a jsonb row; expires when a real job's answer is refused at it */
+   (gis-result-handoff) THE ANSWER IS WHOLE AND SAYS WHERE IT CAME FROM. It used to be cut at a byte bound here and to name no source (`sources:[]`,
+   every input `headless-input`); a step that read it could not tell the file it came from, and a step after it could not have the rows that did not fit.
+   Now every feature is returned — WHERE it is kept (in the task's row, or beside it when it is large) is the job runner's, not this twin's — and
+   `sources` / `data.inputs` name each input: the address of a file, or the task (and the version of its output) an input was handed from, with
+   that task's own sources carried through. */
+const sourceOfUrl = (u) => ({ url: String(u).slice(0, 500), title: 'GeoJSON file ' + (String(u).split('?')[0].split('/').filter(Boolean).pop() || String(u)).slice(0, 160) });
+export function columnsOf(features) {
+  const seen = new Set();
+  for (const f of features) { const pr = f && f.properties; if (pr && typeof pr === 'object') for (const k of Object.keys(pr)) if (seen.size < 200) seen.add(k); }
+  return Array.from(seen);
+}
 const gisJob = {
   id: 'data.gis',
   needs: ['gis'],
-  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure…) run on GeoJSON you give or point at; {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
+  args: '{"op":str,"inputs":[GeoJSON|"https://…geojson"|"@<task>:data.result"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
   async run(args, ctx) {
     const a = args || {};
     if (a.acquire || a.kind === 'raster' || a.semantics) return needPage(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
@@ -128,32 +136,38 @@ const gisJob = {
       const ops = await ctx.gis.ops();
       return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '.', data: { ops }, sources: [] };
     }
-    const inputs = [];
+    const inputs = [], names = [], read = [], sources = [];
+    const addSource = (x) => { if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: String(x.url).slice(0, 500), title: String(x.title || '').slice(0, 200) }); };
     for (const x of Array.isArray(a.inputs) ? a.inputs : []) {
-      let v = x;
+      let v = x, name = '', srcs = [], from = null;
       if (typeof x === 'string') {
+        if (/^@[A-Za-z0-9._-]+:/.test(x)) return { ok: false, code: 'input_ref_unresolved', text: 'The input "' + x.slice(0, 80) + '" refers to another task, and nothing resolved it (it must be a task of the same job).' };
         if (!/^https:\/\//i.test(x)) return needPage('ref ' + x.slice(0, 40));
         if (typeof ctx.fetchGeoJson !== 'function') return { ok: false, code: 'no_file_reader', text: 'This runtime cannot read a file by address.' };
         const f = await ctx.fetchGeoJson(x, { signal: ctx.signal });
         if (!f.ok) return { ok: false, code: f.code, text: f.text };
-        v = f.json;
+        v = f.json; name = x.slice(0, 500); srcs = [sourceOfUrl(x)];
+      } else if (v && typeof v === 'object' && v.intmap && typeof v.intmap === 'object') {
+        /* handed on from an earlier task (the runner marked it): its task, the version of its output, and the sources IT named */
+        from = { task: String(v.intmap.from || '').slice(0, 64), version: String(v.intmap.version || '').slice(0, 40) };
+        name = 'task ' + from.task + (from.version ? ' (output version ' + from.version + ')' : '');
+        srcs = Array.isArray(v.intmap.sources) ? v.intmap.sources : [];
       }
       const feats = Array.isArray(v) ? v : (v && v.type === 'FeatureCollection' && Array.isArray(v.features) ? v.features : (v && v.type === 'Feature' ? [v] : null));
-      if (!feats) return { ok: false, code: 'bad_input', text: 'Each input must be a FeatureCollection, a Feature, an array of Features, or the https address of a GeoJSON file.' };
-      inputs.push(feats);
+      if (!feats) return { ok: false, code: 'bad_input', text: 'Each input must be a FeatureCollection, a Feature, an array of Features, the https address of a GeoJSON file, or "@<task>:data.result".' };
+      inputs.push(feats); names.push(name);
+      srcs.forEach(addSource);
+      read.push(Object.assign({ name: name || '(inline GeoJSON)', count: feats.length, sources: srcs.map((y) => y && y.url).filter(Boolean) }, from ? { from: from.task, version: from.version } : null));
     }
     let r;
-    try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params }); }
+    try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params, names }); }
     catch (e) { return { ok: false, code: String((e && e.code) || 'op_failed'), text: String((e && e.detail) || (e && e.message) || e).slice(0, 300) }; }
-    let bytes = 0, keep = 0;
-    for (const f of r.features) { bytes += JSON.stringify(f).length; if (bytes > GIS_STORED_BYTES) break; keep++; }
-    const truncated = keep < r.features.length;
     const head = r.features.slice(0, 5).map((f) => (f && f.properties ? f.properties : {}));
     return {
       ok: true,
-      text: r.op + ' -> ' + r.features.length + ' feature(s)' + (truncated ? ' (' + keep + ' stored; the rest did not fit the stored answer)' : '') + '. First rows: ' + JSON.stringify(head).slice(0, 600),
-      data: { op: r.op, count: r.features.length, truncated, result: { type: 'FeatureCollection', features: r.features.slice(0, keep) }, manifest: r.manifest },
-      sources: [],
+      text: r.op + ' -> ' + r.features.length + ' feature(s) from ' + read.map((x) => x.count + ' (' + x.name + ')').join(' + ') + '. First rows: ' + JSON.stringify(head).slice(0, 600),
+      data: { op: r.op, count: r.features.length, columns: columnsOf(r.features), result: { type: 'FeatureCollection', features: r.features }, inputs: read, manifest: r.manifest },
+      sources,
     };
   },
 };

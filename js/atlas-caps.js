@@ -332,3 +332,14 @@ export function loose() { return {}; }
    capability's case. With the enum, an accepted `type` can only be the value that was going to
    be there anyway, and anything else is refused before the dispatch is reached. */
 export function noArgs(legacy) { return { type: 'object', properties: { type: { type: 'string', enum: [legacy] } } }; }
+
+/* ══ CUTTING AN INPUT LIST — AND SAYING SO ══════════════════════════════════════════════════════
+   A capability that keeps only the first `max` of what it was given must leave the fact that it cut,
+   and the ORIGINAL count, in its result — the denominator is what was received, never what was kept
+   (a count taken after the cut reads "2,000 of 2,000" for 2,001 asked). `max` absent or not a
+   positive number means no cut. Returns { kept, received, used, dropped }; a non-array is empty. */
+export function counted(list, max) {
+  const src = Array.isArray(list) ? list : [];
+  const kept = (typeof max === 'number' && max > 0 && src.length > max) ? src.slice(0, max) : src.slice();
+  return { kept, received: src.length, used: kept.length, dropped: src.length - kept.length };
+}

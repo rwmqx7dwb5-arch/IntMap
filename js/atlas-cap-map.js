@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int, one, list, obj, loose, noArgs } from './atlas-caps.js';
+import { str, bool, num, int, one, list, obj, loose, noArgs, counted } from './atlas-caps.js';
 import { volcanoFilterRun, heritageFilterRun, radiationNearRun } from './atlas-cap-data.js';
 import { droneRun } from './atlas-cap-routing.js';
 import { icon } from './icons.js';
@@ -902,7 +902,7 @@ export default [
       { /* (#R75) vision §13 — a NEW evaluation layer composed
           from weighted real indicators (bundled metrics and/or World-Bank codes), not a canned choropleth. */
           await ensureData();
-          const comps=Array.isArray(a.components)?a.components.slice(0,8):[];
+          const compCut=counted(a.components,8), comps=compCut.kept;   /* the 8 is the schema's own ceiling; what was cut is said below */
           if(comps.length<2) return R(false, warn(L('A custom score needs at least two indicators (components)','カスタム評価には指標が2つ以上必要です','Mindestens zwei Indikatoren nötig','Нужно минимум два показателя','Se necesitan al menos dos indicadores')));
           const resolved=[],missingC=[];
           for(const c of comps){ const w=(c&&c.weight!=null&&isFinite(+c.weight))?Math.max(0.1,Math.min(10,+c.weight)):1;
@@ -939,7 +939,9 @@ export default [
             +' · '+codes.length+' '+L('countries scored','か国を評価','Länder bewertet','стран оценено','países evaluados')+(excl?(' · '+excl+' '+L('excluded for missing data','か国はデータ不足で除外','wegen Datenlücken ausgeschlossen','исключено из-за пропусков','excluidos por falta de datos')):'')
             +(missingC.length?('<br>'+icon('warning')+' '+L('Unavailable components skipped','取得できず除外した指標','Nicht verfügbare Komponenten übersprungen','Недоступные компоненты пропущены','Componentes no disponibles omitidos')+': '+esc(missingC.join(', '))):'')+'</div>';
           /* (#R104) the "会話で調整できます: 「家賃を重視して」…" hint line was REMOVED per request ("この説明はいらない"). */
-          return R(true, note(html)+cW); }
+          const cCut={ received: compCut.received, used: compCut.used, dropped: compCut.dropped };
+          const cutW=compCut.dropped?warn(esc(L('Only the first '+compCut.used+' of '+compCut.received+' components were scored; '+compCut.dropped+' were left out.','指標 '+compCut.received+' 件のうち先頭 '+compCut.used+' 件だけで評価しました。残り '+compCut.dropped+' 件は使っていません。'))):'';
+          return R(true, note(html)+cW+cutW, compCut.dropped ? { meta: { counted: cCut, userGoalSatisfied: false } } : undefined); }   /* said only when something was cut: an uncut call answers as it always did */
     },
   },
   {
@@ -1021,7 +1023,8 @@ export default [
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, esc = K.esc, note = K.note;
       let pts = [];
       if (Array.isArray(a.points)) pts = a.points.filter((p) => Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1])).map((p) => [+p[0], +p[1]]);
-      const names = Array.isArray(a.places) && a.places.length ? a.places.slice(0, 12) : (a.from && a.to ? [a.from, a.to] : []);
+      const placeCut = counted(a.places, 12);
+      const names = placeCut.received ? placeCut.kept : (a.from && a.to ? [a.from, a.to] : []);
       if (!pts.length) for (const n of names) { const g = await geocode(String(n)); if (g) pts.push([g.lng, g.lat]); }
       if (pts.length < 2) return R(false, warn(esc(L('Need at least two points for a profile.', '標高断面には2点以上が必要です。'))), { meta: { code: 'NEEDS_INPUT' } });
       if (typeof window._profileFromCoords !== 'function') return R(false, warn(esc(L('The elevation profile is not available here.', 'この環境では標高断面を使えません。'))));
@@ -1037,7 +1040,8 @@ export default [
       const facts = L('Elevation profile', '標高断面') + ' — ' + (km >= 10 ? Math.round(km) : km.toFixed(1)) + ' km · '
         + L('lowest', '最低') + ' ' + m(mn) + ' · ' + L('highest', '最高') + ' ' + m(mx) + ' · ' + L('climb', '登り') + ' ' + m(up) + ' · ' + L('descent', '下り') + ' ' + m(down)
         + ' (' + known.length + ' ' + L('samples', '標本') + ')';
-      return R(true, note(icon('chart') + ' ' + esc(facts)), { meta: { provenance: [{ kind: 'number', what: L('Elevation profile', '標高断面'), of: names.length ? names.join(' → ') : '', unit: 'm', source: 'Mapzen / AWS Terrain Tiles — elevation model (DEM)', licence: '', url: 'https://registry.opendata.aws/terrain-tiles/', date: '', origin: 'raw', values: [mn, mx, up, down].concat([mn, mx, up, down].map((v) => Math.round(v))) }] } });
+      const placeW = placeCut.dropped && !(Array.isArray(a.points) && a.points.length) ? warn(esc(L('Only the first ' + placeCut.used + ' of ' + placeCut.received + ' places form the line; ' + placeCut.dropped + ' were left out.', '地点 ' + placeCut.received + ' 件のうち先頭 ' + placeCut.used + ' 件だけで線を作りました。残り ' + placeCut.dropped + ' 件は使っていません。'))) : '';
+      return R(true, note(icon('chart') + ' ' + esc(facts)) + placeW, { meta: { ...(placeCut.dropped && !(Array.isArray(a.points) && a.points.length) ? { counted: { received: placeCut.received, used: placeCut.used, dropped: placeCut.dropped }, userGoalSatisfied: false } : null), provenance: [{ kind: 'number', what: L('Elevation profile', '標高断面'), of: names.length ? names.join(' → ') : '', unit: 'm', source: 'Mapzen / AWS Terrain Tiles — elevation model (DEM)', licence: '', url: 'https://registry.opendata.aws/terrain-tiles/', date: '', origin: 'raw', values: [mn, mx, up, down].concat([mn, mx, up, down].map((v) => Math.round(v))) }] } });
     },
   },
 ];

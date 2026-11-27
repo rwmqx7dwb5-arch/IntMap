@@ -120,7 +120,7 @@ test('what the reader changes while the work runs reaches the next request, and 
 
   const db2 = fakeDb(plan);
   const calls = [];
-  await runJob(base(db2, async (sys, prompt) => { calls.push(prompt); db2.st.tasks.get('b').status = 'cancelled'; return goodAnswer('only a'); }));
+  await runJob(base(db2, async (sys, prompt) => { calls.push(prompt); const b = db2.st.tasks.get('b'); b.status = 'cancelled'; b.code = 'dropped'; return goodAnswer('only a'); }));
   assert.equal(calls.length, 1, 'a task the reader dropped does not run');
   assert.equal(db2.st.job.finished.status, 'done');
 });

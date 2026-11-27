@@ -14,7 +14,7 @@
  *
  *  Pure ES module: the store and the memory are passed in, so tests/exec-platform-checks.test.mjs runs this file.
  * ==========================================================================*/
-import { withProduct, currentProducts, normalizeWork } from './atlas-work-store.js';
+import { withProduct, currentProducts, normalizeWork, PRODUCT_KINDS } from './atlas-work-store.js';
 
 /* the work's id for a job — `wk-` + a name no notebook turn can have (normalizeWork: /^wk-[a-z0-9-]{4,64}$/) */
 export function jobWorkId(jobId) { return 'wk-job-' + String(jobId || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 52); }
@@ -37,6 +37,28 @@ export function productsOfJob(f) {
 
 const same = (a, b) => { try { return JSON.stringify(a) === JSON.stringify(b); } catch (_) { return false; } };
 
+/* (gis-result-handoff) WHAT A PIECE MADE IS FILED AS DATA, NOT ONLY AS ITS SUMMARY. A piece whose result states an `output` (a data.gis answer: its
+   features, kept whole on the server) becomes a `dataset` product — the features themselves when they fit the store (PRODUCT_KINDS.dataset.maxBytes),
+   otherwise a reference to where the server keeps them whole — with where it came from (`from`: the job, the piece, the source files' addresses) and the
+   version of its bytes. `readOutput(taskId)` is the jobs client's output() (js/atlas-jobs-client.js). Measured 2026-11-27: the job's 500-point
+   dataset was not among the products at all (answer 2, document 1). */
+const DATASET_INLINE_BYTES = PRODUCT_KINDS.dataset.maxBytes - 4096;   /* the store's own ceiling, less the product's few fields around the features */
+async function datasetsOfJob(f, readOutput) {
+  const out = [];
+  for (const t of (f && f.tasks) || []) {
+    if (!(t.state === 'done' || t.state === 'partial') || !t.output) continue;
+    const o = t.output;
+    const from = { job: f.id, task: t.id, url: o.sources[0] || undefined, urls: o.sources, output: o.id, version: o.version };
+    const note = 'background job ' + f.id + ' · piece ' + t.id + ' · output ' + o.id + ' v' + o.version + (o.sources.length ? ' · from ' + o.sources.join(' ') : '') + (t.stale ? ' · computed under an earlier version of the request' : '');
+    const name = clip('dataset — ' + t.id + (t.title ? ' — ' + t.title : ''), 100);
+    let got = null;
+    if (o.bytes && o.bytes <= DATASET_INLINE_BYTES && typeof readOutput === 'function') { try { got = await readOutput(t.id); } catch (_) { got = null; } }
+    if (got && got.ok && Array.isArray(got.features)) out.push({ kind: 'dataset', name, content: { format: 'geojson', features: got.features }, note, from });
+    else out.push({ kind: 'dataset', name, content: { format: 'geojson', ref: { job: f.id, task: t.id, version: o.version }, count: o.count, columns: o.columns }, note: note + (got && !got.ok ? ' · read back later (' + got.code + ')' : ' · kept whole on the server, read back with restore'), from });
+  }
+  return out;
+}
+
 /* saveJobAsWork(facts, store, { now? }) → { ok, workId, saved:[names], unchanged:n, refused:[{name,problem}] } | { ok:false, why }
    Only an ENDED job is filed (a running job has pieces still to come); `store` is a work store (get/put). */
 export async function saveJobAsWork(f, store, o) {
@@ -45,7 +67,7 @@ export async function saveJobAsWork(f, store, o) {
   if (!store || typeof store.get !== 'function' || typeof store.put !== 'function') return { ok: false, why: 'no-store' };
   const now = (o && +o.now) || Date.now();
   const id = jobWorkId(f.id);
-  const list = productsOfJob(f);
+  const list = productsOfJob(f).concat(await datasetsOfJob(f, o && o.readOutput));
   if (!list.length) return { ok: false, why: 'nothing-to-file' };
   let work = await store.get(id);
   if (!work) {

@@ -302,6 +302,9 @@ function mount(scope, HOST, CONTEXT) {
     /* 「根拠・制約・再取得用の参照」 — js/gis-project.js manifest(), whose `gaps` are the 制約 part. */
     account: project.manifest,
     verify: project.verify,
+    /* THE one statement of which declared ops run with no screen (inline vectors in, vectors out): not a raster output and not a
+       degree-grid-only surface. Single source — a caller that must know what the server twin can run asks this, it does not rewrite it. */
+    runsWithoutScreen: (o) => !!o && o.output !== 'raster' && !(Array.isArray(o.surface) && o.surface.length && o.surface.every((s) => s === 'degree-grid')),
   });
 
   const API = { data, geometry, crs, raster, warp, index, voronoi, network, expr, units, semantics, worker, sources, layers, ops, project, pipeline, forecast, compute, panel, draw, atlas, flow,

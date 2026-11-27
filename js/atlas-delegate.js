@@ -45,8 +45,8 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, priorStands, failureWhy } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
-export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey };
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, priorStands, failureWhy, resolveArgs } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, resolveArgs };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
 
@@ -72,37 +72,8 @@ function makeEventLog(now) {
 }
 
 
-/* resolveArgs(args, inputs) → { ok, args } | { ok:false, why }
-   An argument that is a string of exactly the form  @<task id>:<path>  is replaced by what that task's result holds at
-   <path> (dot-separated keys and array positions; the result's `data` and `summary` are the roots: `@acq:data.gis.dataset`).
-   Only a task named in `inputs` can be referred to — a reference is a dependency, and a dependency is declared. A string
-   beginning `@@` is the literal string without its first `@`. A reference that leads nowhere refuses the whole step. */
-const REF_RE = /^@([A-Za-z0-9._-]{1,64}):([A-Za-z0-9_.\-\[\]]+)$/;
-export function resolveArgs(args, inputs) {
-  const byFrom = new Map((Array.isArray(inputs) ? inputs : []).map((i) => [i.from, i]));
-  let why = '';
-  const walk = (v) => {
-    if (why) return v;
-    if (typeof v === 'string') {
-      if (v.startsWith('@@')) return v.slice(1);
-      const m = REF_RE.exec(v);
-      if (!m) return v;
-      const src = byFrom.get(m[1]);
-      if (!src) { why = 'The argument "' + v + '" refers to task "' + m[1] + '", which is not one of its inputs (name it in "inputs").'; return v; }
-      let cur = { data: src.data, summary: src.summary };
-      for (const k of m[2].split('.').filter(Boolean)) {
-        if (cur == null || typeof cur !== 'object' || !(k in Object(cur))) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
-        cur = cur[k];
-      }
-      return cur;
-    }
-    if (Array.isArray(v)) return v.map(walk);
-    if (v && typeof v === 'object') { const o = {}; Object.keys(v).forEach((k) => { o[k] = walk(v[k]); }); return o; }
-    return v;
-  };
-  const out = walk(args == null ? {} : args);
-  return why ? { ok: false, why } : { ok: true, args: out };
-}
+/* resolveArgs(args, inputs) — the @<task>:<path> reference, resolved from the inputs a task was given. ONE implementation, shared with the
+   server job runner: js/atlas-job-core.js (re-exported here for the callers that import it from this file). */
 
 /* The result fields that may ride along as raw data (a capability's own answer). Bounded because a result is held in
    memory, written to the event log's snapshot and handed to the model: observation 2026-11-19 — a read capability's
