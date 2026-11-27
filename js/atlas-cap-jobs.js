@@ -20,9 +20,9 @@ import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, apply
    when it is needed — a page that never ends a job never loads it. Returns the line Atlas reads, or ''. */
 async function fileEnded(K, f) {
   try { const P = await import('./atlas-job-products.js'); P.noteJobEnded(K.workingMemory, f);
-    const W = await import('./atlas-cap-work.js'); /* (gis-result-handoff) a piece's output is read whole from the server and filed as a dataset product (js/atlas-job-products.js datasetsOfJob) */
-    const client = pageJobsClient();
-    const r = await P.saveJobAsWork(f, W.workStore(), { readOutput: client ? (taskId) => client.output(f.id, taskId) : null });
+    /* (gis-result-handoff) a piece's output is read whole from the server and filed as a dataset product (js/atlas-job-products.js datasetsOfJob) */
+    const client = pageJobsClient(), readOutput = client ? (taskId) => client.output(f.id, taskId) : null;
+    const W = await import('./atlas-cap-work.js'); const r = await P.saveJobAsWork(f, W.workStore(), { readOutput });
     const ds = r.ok ? r.saved.filter((n) => /^dataset — /.test(n)) : [];
     return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged' + (ds.length ? '; datasets: ' + ds.join(', ') + ' — put one on the map or into the next step with work.job restore' : '') + ') — open it with work.job.' : '';
   } catch (_) { return ''; }
