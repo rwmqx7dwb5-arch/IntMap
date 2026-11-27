@@ -3511,9 +3511,9 @@ export function geojsonUpload(HOST){
       /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
          attributes, and a second copy of a 200,000-feature import would double what the tab costs. */
       items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:null,legend:null}); renderList(); fit(fc);
-      /* (atlas-controls-receipts) CLAIMED, under an owner of its own: a layer added here — by the reader's file or by an Atlas operation (geo.shadeAreas, a GIS result) — is a
-         surface the renderer can report, so the turn that added it records it and its reply's switch turns exactly this layer off (one upload is not another's). */
-      try{ GE().render.claim(sid,'upload:'+sid,{ clear:()=>removeItem(n) }); }catch(_){}
+      /* (atlas-controls-receipts) CLAIMED under the effect key the operations that add it write ('map.object' — geo.shadeAreas, a GIS result): a layer added here is a surface
+         the renderer can report, so the turn that added it records it (by source id), and that reply's switch turns exactly this layer off — one upload is not another's. */
+      try{ GE().render.claim(sid,'map.object',{ clear:()=>removeItem(n) }); }catch(_){}
       /* ⚠ (#R749) THIS IS THE ONE SUPPLIER THAT CAN HONESTLY SAY 「全部です」. js/gis-sources.js will
          not infer completeness — a renderer holding 400 aircraft looks exactly like a renderer that
          fetched 400 for the current viewport, so it answers 'partial' and names why. An upload is

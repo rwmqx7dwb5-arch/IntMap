@@ -2383,12 +2383,14 @@ export function atlasConsole(HOST){
              this message's own clone layers instead of stealing (the other chip stays ON, untouched). The shared
              canvas is only (re)claimed when it is free or already ours. */
           kinds.forEach(k=>{ try{ if(show){
+              if(_ownCanvas(bEl,k)&&_ovlOwn[k]!==bEl){ overlayToggle(k,true,bEl); return; }   /* (atlas-controls-receipts) its own surfaces, nobody else's canvas: just show them */
               const owner=_ovlOwn[k]; const ownedElsewhere=owner&&owner!==bEl&&document.body.contains(owner)&&_ovlVisible(k);
               if(ownedElsewhere&&snap&&snap[k]&&_ovlCloneShow(bEl,k,snap[k])) return;
-              if(snap&&snap[k]) _ovlAdopt(k,snap[k]); _ovlOwn[k]=bEl; overlayToggle(k,true);
+              if(snap&&snap[k]) _ovlAdopt(k,snap[k]); _ovlOwn[k]=bEl; overlayToggle(k,true,bEl);
             } else {
               _ovlCloneHide(bEl,k);
-              if(_ovlOwn[k]===bEl){ overlayToggle(k,false); _ovlOwn[k]=null; }
+              if(_ovlOwn[k]===bEl){ overlayToggle(k,false,bEl); _ovlOwn[k]=null; }
+              else if(_ownCanvas(bEl,k)) overlayToggle(k,false,bEl);
             } }catch(_){} });
           _refreshMapChips(); return; }
         const ftg=e.target.closest&&e.target.closest('.atl-feat-tog');   /* (#R145) on/off view-feature switch — flips the real control directly */
@@ -2551,7 +2553,7 @@ export function atlasConsole(HOST){
          keep-out and the invisible pick target `imroute-hit` (js/routing.js claims those). */
       'map.route':['imroute-diff','imroute-hist'],
       /* (#R85) close the "できないものもある" gap — isolate mask, pins and street-view marker were painted but had no in-message on/off. */
-      pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'] };   /* (atlas-controls-receipts) isolate went: js/map-tools.js claims iso-src / iso-edge-src under 'isolate' with its own show door */
+      pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'] };   /* (atlas-controls-receipts) isolate went: js/map-tools.js claims iso-src / iso-edge-src under 'map.isolate' with its own show door */
     function _ovlIds(kind){ if(kind==='arc') return []; const own=_OVL[kind]||[];
       let src=[]; try{ const r=GE().render.drawn({owners:[kind]}); src=Object.keys((r&&r.surfaces)||{}); }catch(_){} if(!src.length) return own;
       let ls=[]; try{ ls=(GE().scene.getStyle()||{}).layers||[]; }catch(_){}
@@ -2599,14 +2601,19 @@ export function atlasConsole(HOST){
     const _ovlOwn={};
     function _refreshMapChips(){ try{ const pnl=document.getElementById('atlas-panel'); if(!pnl) return;
       pnl.querySelectorAll('.atl-mapctl').forEach(row=>{ const b=row.closest('.atl-b'); const kinds=(row.getAttribute('data-ovls')||'').split(',').filter(Boolean);
-        const on=kinds.length&&kinds.every(k=>(_ovlOwn[k]===b&&_ovlVisible(k))||_ovlCloneVisible(b,k));   /* (#R125) a clone counts as ON */
+        const on=kinds.length&&kinds.every(k=>(_ovlOwn[k]===b&&(_ownSurf(b,k)?_ownDrawn(b,k):_ovlVisible(k)))||(_ownCanvas(b,k)&&_ownDrawn(b,k))||_ovlCloneVisible(b,k));   /* (#R125) a clone counts as ON; (atlas-controls-receipts) so does a reply's own surfaces, drawn */
         const t=row.querySelector('.atl-map-toggle'); if(t){ t.classList.toggle('on',!!on); t.setAttribute('aria-checked',on?'true':'false'); } }); }catch(_){} }
     /* ⚠ (atlas-controls-receipts) A CLAIMED SURFACE IS SWITCHED THROUGH ITS PAINTER (GE().render.showSurface → the claim's own `show` when it declared one). Flipping the
        layers behind a painter that holds their visibility was undone at its next style event (measured: Isolate's mask and edge stayed on after the chip went OFF). Only the
        layers this file still lists for a kind (_OVL, a painter that claims nothing) are flipped here. */
     function _ovlClaimed(kind){ try{ const r=GE().render.drawn({owners:[kind]}); return Object.keys((r&&r.surfaces)||{}); }catch(_){ return []; } }
-    function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
-      if(show===undefined) show=!_ovlVisible(kind); const srcs=_ovlClaimed(kind); srcs.forEach(s=>{ try{ GE().render.showSurface(s,show); }catch(_){} });
+    /* the surfaces a reply's own turn drew under a kind (runActions __atlDrewSurf), or null for a reply from before they were recorded */
+    function _ownSurf(b,k){ const S=b&&b.__atlDrewSurf&&b.__atlDrewSurf[k]; return S&&S.length?S:null; }
+    /* a reply whose surfaces under k are not the current owner's holds its own canvas: it is on when they are drawn, whoever owns the kind */
+    function _ownCanvas(b,k){ const S=_ownSurf(b,k); if(!S) return false; const o=_ovlOwn[k]; if(o===b) return true; const oS=o&&_ownSurf(o,k); return !(oS&&S.some(s=>oS.indexOf(s)>=0)); }
+    function _ownDrawn(b,k){ const S=_ownSurf(b,k); if(!S) return false; try{ const r=GE().render.drawn({sources:S}); return S.some(s=>r.surfaces[s]&&r.surfaces[s].state==='drawn'); }catch(_){ return false; } }
+    function overlayToggle(kind,show,bEl){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
+      if(show===undefined) show=!_ovlVisible(kind); const srcs=_ownSurf(bEl,kind)||_ovlClaimed(kind); srcs.forEach(s=>{ try{ GE().render.showSurface(s,show); }catch(_){} });
       let ls=[]; try{ ls=GE().scene.getStyle().layers||[]; }catch(_){} const viaClaim=new Set(ls.filter(l=>l&&srcs.indexOf(l.source)>=0).map(l=>l.id));
       _ovlIds(kind).forEach(id=>{ if(viaClaim.has(id)) return; try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
     /* (#R118) PER-MESSAGE overlay snapshots — the reported bug: every "Shown on the map" switch flipped the SHARED
@@ -2894,6 +2901,7 @@ export function atlasConsole(HOST){
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
+      try{ results.forEach(rr=>(rr.drew||[]).forEach(d=>{ if(!d.visible||!d.kind) return; const reg=ai.__atlDrewSurf||(ai.__atlDrewSurf=Object.create(null)); const S=reg[d.kind]||(reg[d.kind]=[]); (d.surfaces||[]).forEach(s=>{ if(S.indexOf(s)<0) S.push(s); }); })); }catch(_){}   /* (atlas-controls-receipts) the turn's receipt, by source id: what its chip switches */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=_ovlOf(a&&a.type); if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
         results.forEach(rr=>{ (rr.drew||[]).forEach(d=>{ if(d.visible&&mapped.indexOf(d.kind)<0) mapped.push(d.kind); }); });   /* (atlas-drew-record) what the map says this turn drew, whether or not the capability declared a chip */
         if(mapped.length){ try{ ai.__ovlSnap=Object.assign(ai.__ovlSnap||{}, _ovlSnapshot(mapped)); try{ ai.__viewSnap=ASTATE.snapshot({only:['camera','time','activeLayers']}); }catch(_){}   /* ⚠ (#R543) THE VIEW THE SHAPES WERE DRAWN IN, alongside the shapes. The overlay snapshot has existed since #R118 and the chip repaints it, but it never carried where the camera was or WHAT THE CLOCK WAS SET TO — so a reply about 1950 was repainted over whatever year the reader had since moved to, which is a different claim, not that reply's map. `ASTATE.snapshot` is the observer that already reads these three sections, so capture cannot drift from what the state block reports. js/atlas-msg-tools.js puts it back. */ mapped.forEach(k=>{
@@ -2910,7 +2918,8 @@ export function atlasConsole(HOST){
                clear, or with the earlier reply's switch OFF, evacuating it brought a drawing back that the reader had removed (measured: clear, then a line, and the
                cleared highlight reappeared as a clone no switch of the new reply could turn off). A kind whose painter claims nothing keeps the old hand-off. */
             const _ps=prev&&prev.__ovlSnap&&prev.__ovlSnap[k]; const _stillThere=!(_ps&&_ps.revs)||Object.keys(_ps.revs).every(sid=>_turnMark&&_turnMark[sid]&&_turnMark[sid].rev===_ps.revs[sid]&&_turnMark[sid].state==='drawn');
-            if(prev&&prev!==ai&&document.body.contains(prev)&&_ps&&_stillThere&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,_ps); } }catch(_){}
+            const _mineS=_ownSurf(ai,k), _prevS=prev&&_ownSurf(prev,k); const _apart=!!(_mineS&&_prevS&&_prevS.every(s=>_mineS.indexOf(s)<0));   /* drew on other surfaces: the previous reply's are untouched, nothing to move */
+            if(prev&&prev!==ai&&document.body.contains(prev)&&_ps&&_stillThere&&!_apart&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,_ps); } }catch(_){}
           _ovlOwn[k]=ai; }); }catch(_){}
           ai.__atlMappedKinds=ai.__atlMappedKinds||Object.create(null); mapped.forEach(k=>{ ai.__atlMappedKinds[k]=1; }); } }catch(_){}   /* (#R118/#R159) collect owned overlay kinds → one deduped chip in _atlCompose */
       /* (#R159) accumulate this pass's results on the bubble so the repair pass merges into ONE goal-validated answer */

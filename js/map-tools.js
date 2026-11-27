@@ -489,7 +489,7 @@ export function isolate(HOST){
     function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
     function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        try{ GE().render.claim(['iso-src','iso-edge-src'],'isolate',{ clear:()=>exit(), show:(on)=>show(on) }); }catch(_){}   /* (atlas-controls-receipts) the chip and Objects hide it through show(), which this file's styledata re-assert respects */
+        try{ GE().render.claim(['iso-src','iso-edge-src'],'map.isolate',{ clear:()=>exit(), show:(on)=>show(on) }); }catch(_){}   /* (atlas-controls-receipts) the chip and Objects hide it through show(), which this file's styledata re-assert respects */
         GE().layers.add({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
         /* THE MASK, ITS EDGE AND THE BORDER ARE ONE SHAPE. The hole and the line above it are both drawn from shapeOf() below — the
            country polygon whose land frontier has been replaced by the frontier line the base map draws (js/frontier-fit.js). The line is
@@ -558,14 +558,14 @@ export function isolate(HOST){
     /* (atlas-controls-receipts) applyFeature settles a Promise with whether the mask was put on the map (false: no border to cut), so a caller that reports it —
        the Atlas capability — reports what happened, after it happened. It used to say 「✓」 at once while the mask landed later, or never; the turn's record of
        what it drew was then taken before anything was there and its reply had no switch. */
-    function applyFeature(feat){ let tries=0, done=null; const settled=new Promise(r=>{ done=r; }); const apply=()=>{ if(!ensure()){
+    function applyFeature(feat){ let tries=0, landed=null; const settled=new Promise(r=>{ landed=r; }); const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
              already be sitting idle (nothing re-triggers a render), so that idle never fires and the mask never
              applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
-        if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} done(false); return; }
+        if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} landed(false); return; }
         try{ _isoFeat=feat; shown=true; refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
@@ -584,7 +584,7 @@ export function isolate(HOST){
           const padX=(ub[1][0]-ub[0][0])*0.18+0.6, padY=(ub[1][1]-ub[0][1])*0.18+0.6;
           GE().camera.setMaxBounds([[ub[0][0]-padX,Math.max(-85,ub[0][1]-padY)],[ub[1][0]+padX,Math.min(85,ub[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
-        done(true);
+        landed(true);
       }; apply(); return settled; }
     /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
        border GeoJSON first if it isn't in memory yet so isolate works even before Countries(info) is used. */

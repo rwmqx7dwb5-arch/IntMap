@@ -98,8 +98,9 @@ test('the switch under a reply takes a claimed surface through its painter, and 
   const eng = fs.readFileSync(new URL('../js/geo-engine.js', import.meta.url), 'utf8');
   assert.match(eng, /showSurface:\(id,on\)=>/);
   assert.match(con, /function overlayToggle[\s\S]{0,400}render\.showSurface\(s,show\)/);
-  assert.match(tools, /render\.claim\(\['iso-src','iso-edge-src'\],'isolate',\{[^}]*show:/);
+  assert.match(tools, /render\.claim\(\['iso-src','iso-edge-src'\],'map\.isolate',\{[^}]*show:/);
   assert.match(tools, /'styledata',\(\)=>\{ if\(active&&shown\)/, 'the re-assert respects a hidden isolate');
-  assert.match(ui, /render\.claim\(sid,'upload:'\+sid/);
+  assert.match(ui, /render\.claim\(sid,'map\.object'/);
+  assert.match(con, /function overlayToggle\(kind,show,bEl\)[\s\S]{0,500}_ownSurf\(bEl,kind\)\|\|_ovlClaimed\(kind\)/, 'a reply\'s switch takes the surfaces its own turn drew');
   assert.ok(!/isolate:\['iso-mask'\]/.test(con), 'the typed layer list went when its painter claimed');
 });
