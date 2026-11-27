@@ -65,6 +65,60 @@ export const CONTRACT_KINDS = Object.freeze(['worker', 'capability']);
    as an argument — then pass it by reference (an input task) instead of raising this. Canonical: here only. */
 const ARGS_MAX_CHARS = 4000;
 
+/* ══ ONE TASK'S OUTPUT AS ANOTHER TASK'S ARGUMENT  (gis-result-handoff) ═════════════════════════════════════════════════════════════
+   An argument that is a string of exactly the form  @<task id>:<path>  is replaced by what that task's result holds at <path> (dot-separated
+   keys and array positions; the result's `data` and `summary` are the roots: `@A:data.result` is the FeatureCollection a data.gis task made).
+   A string beginning `@@` is the literal string without its first `@`. A reference that leads nowhere refuses the whole step BY NAME — a step
+   run with a guessed argument is not the step asked for. ONE implementation for both runners: the page's delegation (js/atlas-delegate.js) and
+   the server's job runner (supabase/functions/_shared/atlas-job-runner.js) — the page had this and the server did not.
+   `o.annotate(value, src, from)` lets a runner say where a resolved object came from (the server marks a FeatureCollection with the task, its
+   sources and its version, so the step that reads it can name its provenance). */
+const REF_RE = /^@([A-Za-z0-9._-]{1,64}):([A-Za-z0-9_.\-\[\]]+)$/;
+export function refsOf(args) {
+  const out = [];
+  const walk = (v) => {
+    if (typeof v === 'string') { if (v.startsWith('@@')) return; const m = REF_RE.exec(v); if (m && out.indexOf(m[1]) < 0) out.push(m[1]); return; }
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (v && typeof v === 'object') Object.keys(v).forEach((k) => walk(v[k]));
+  };
+  walk(args);
+  return out;
+}
+export function resolveArgs(args, inputs, o) {
+  const byFrom = new Map((Array.isArray(inputs) ? inputs : []).map((i) => [i.from, i]));
+  const annotate = o && typeof o.annotate === 'function' ? o.annotate : null;
+  let why = '';
+  const walk = (v) => {
+    if (why) return v;
+    if (typeof v === 'string') {
+      if (v.startsWith('@@')) return v.slice(1);
+      const m = REF_RE.exec(v);
+      if (!m) return v;
+      const src = byFrom.get(m[1]);
+      if (!src) { why = 'The argument "' + v + '" refers to task "' + m[1] + '", which is not one of its inputs (name it in "inputs").'; return v; }
+      let cur = { data: src.data, summary: src.summary };
+      for (const k of m[2].split('.').filter(Boolean)) {
+        if (cur == null || typeof cur !== 'object' || !(k in Object(cur))) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
+        cur = cur[k];
+      }
+      return annotate ? annotate(cur, src, m[1]) : cur;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') { const r = {}; Object.keys(v).forEach((k) => { r[k] = walk(v[k]); }); return r; }
+    return v;
+  };
+  const out = walk(args == null ? {} : args);
+  return why ? { ok: false, why } : { ok: true, args: out };
+}
+
+/* digestOf(text) — a short version of exact bytes (djb2-xor, base 36): two outputs with the same digest are the same bytes for every
+   practical purpose here; it names WHICH version of a task's output a later step read, it is not a security hash. */
+export function digestOf(text) {
+  const t = String(text == null ? '' : text);
+  let h = 5381; for (let k = 0; k < t.length; k++) h = ((h * 33) ^ t.charCodeAt(k)) >>> 0;
+  return h.toString(36);
+}
+
 /* normaliseContract(c) → { ok, contract } | { ok:false, error } */
 export function normaliseContract(c) {
   if (!c || typeof c !== 'object') return { ok: false, error: 'contract_not_object' };
@@ -76,6 +130,11 @@ export function normaliseContract(c) {
     if (!capability) return { ok: false, error: 'capability_missing' };
     const args = (c.args && typeof c.args === 'object' && !Array.isArray(c.args)) ? c.args : {};
     if (stable(args).length > ARGS_MAX_CHARS) return { ok: false, error: 'args_too_large' };
+    /* (gis-result-handoff) A REFERENCE IS THE DEPENDENCY. «Wait for A» and «give B what A produced» were two mechanisms: the dependency
+       was `inputs`, the hand-over an argument a runner might or might not resolve (the page resolved `@A:path`, the server never did, so a
+       job's B ran with the arguments it was planned with and failed `wrong_input_count`, measured 2026-11-27). The task an argument refers
+       to is now an input whether or not it was also listed, so the one that is waited for is always the one that is read. */
+    refsOf(args).forEach((from) => { if (!inputs.some((i) => i.from === from)) inputs.push({ from }); });
     return { ok: true, contract: { id: s(c.id, 64), kind, goal: s(c.goal, 2000) || ('capability ' + capability), returns: s(c.returns, 600), inputs, capability, args } };
   }
   const goal = s(c.goal, 2000);
@@ -168,6 +227,8 @@ export function workerSystem(persona) {
 const INPUT_SHOW_CHARS = 12000;
 function tableOf(data) {
   if (Array.isArray(data)) return data;
+  if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) return data.features;
+  if (data && data.result && data.result.type === 'FeatureCollection' && Array.isArray(data.result.features)) return data.result.features;   /* a data.gis answer: its rows are the features */
   if (data && typeof data === 'object') {
     let best = null;
     Object.keys(data).forEach((k) => { const v = data[k]; if (Array.isArray(v) && v.length && v[0] && typeof v[0] === 'object' && (!best || v.length > best.length)) best = v; });
@@ -179,9 +240,8 @@ export function inputView(i, o) {
   const whole = JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data });
   if (whole.length <= INPUT_SHOW_CHARS) return { text: whole, ref: '', whole: null };
   const ref = 'input:' + String(i.from);
-  let h = 5381; for (let k = 0; k < whole.length; k++) h = ((h * 33) ^ whole.charCodeAt(k)) >>> 0;
   const rows = tableOf(i.data);
-  const manifest = { task: String(i.from), version: h.toString(36), chars: whole.length, findings: Array.isArray(i.findings) ? i.findings.length : 0,
+  const manifest = { task: String(i.from), version: digestOf(whole), chars: whole.length, findings: Array.isArray(i.findings) ? i.findings.length : 0,
     rows: rows ? rows.length : undefined, columns: (rows && rows[0] && typeof rows[0] === 'object') ? Object.keys(rows[0]).slice(0, 40) : undefined };
   const room = INPUT_SHOW_CHARS - 600;
   const tail = (o && o.read)

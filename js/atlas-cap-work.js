@@ -186,8 +186,19 @@ export default [
           if (p.kind !== 'dataset') return refuse('not_a_dataset', L('Only a dataset product can be put back into the session; read this one with "get".', 'セッションに戻せるのはデータセットだけです。これは "get" で読んでください。'));
           await window.IntMapLazy.need('gisCore');
           const D = window.IntMapData; if (!D || typeof D.add !== 'function') return refuse('registry_missing', L('The dataset registry could not be loaded.', 'データセットの登録先を読み込めませんでした。'));
-          const c = p.content, feats = c.format === 'geojson' ? c.features : c.rows.map((r) => ({ type: 'Feature', geometry: null, properties: Object.fromEntries(c.columns.map((n, i) => [n, r[i]])) }));
-          const ds = D.add({ title: p.name + (p.version > 1 ? ' (v' + p.version + ')' : ''), features: feats, provenance: { kind: 'work-product', work: w.id, product: p.id, licence: c.licence || undefined } });
+          const c = p.content;
+          let feats = null;
+          /* (gis-result-handoff) a dataset kept as a REFERENCE (too large for this device's store) is read back whole from the background job that made it;
+             a different version of its bytes than the one filed is refused by name, not given as if it were the same */
+          if (c.format === 'geojson' && c.ref && !Array.isArray(c.features)) {
+            const J = await import('./atlas-jobs-client.js'); const client = J.pageJobsClient();
+            if (!client) return refuse('no_session', L('Sign in to read this dataset back from its background job.', 'このデータセットをバックグラウンドの仕事から読み戻すにはログインが必要です。'));
+            const got = await client.output(c.ref.job, c.ref.task);
+            if (!got.ok) return refuse(got.code, L('The dataset could not be read back from its job (' + got.code + ').', 'データセットを仕事から読み戻せませんでした (' + got.code + ')。'));
+            if (c.ref.version && got.output && got.output.version !== c.ref.version) return refuse('version_changed', L('The job now holds another version of this dataset; ask for its status to file the new one.', '仕事はこのデータセットの別の版を持っています。状況を確認して新しい版を保存してください。'));
+            feats = got.features;
+          } else feats = c.format === 'geojson' ? c.features : c.rows.map((r) => ({ type: 'Feature', geometry: null, properties: Object.fromEntries(c.columns.map((n, i) => [n, r[i]])) }));
+          const ds = D.add({ title: p.name + (p.version > 1 ? ' (v' + p.version + ')' : ''), features: feats, provenance: { kind: 'work-product', work: w.id, product: p.id, licence: c.licence || undefined, file: (p.from && (p.from.url || p.from.dataset)) || undefined, from: p.from || undefined } });
           return say('<div><b>' + esc(L('Put back as a new dataset', '新しいデータセットとして戻しました')) + '</b>: <code>' + esc(ds.id) + '</code> · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>' + note(esc(L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。'))), { id: w.id, product: p.id, dataset: ds.id, count: ds.count });
         }
         /* export as one file */

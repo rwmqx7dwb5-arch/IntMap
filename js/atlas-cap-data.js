@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, obj, lat, lng, loose, bool } from './atlas-caps.js';
+import { str, num, int, one, list, obj, lat, lng, loose, bool, counted } from './atlas-caps.js';
 import { toSpec } from './atlas-table.js';   /* data.table — rows → a dataset */
 import { weatherFacts, weatherProvenance } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -535,14 +535,15 @@ export default [
           const rawM=Array.isArray(a.metrics)?a.metrics.map(x=>String(x)):(a.metrics?[String(a.metrics)]:[]);
           const mkeys=[],missM=[];
           rawM.forEach(mm=>{ const mr=_cmpMetricKeys(mm); mr.keys.forEach(k=>{ if(mkeys.indexOf(k)<0) mkeys.push(k); }); mr.miss.forEach(x=>missM.push(x)); });
-          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,10),mkeys.length?mkeys:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM,a.order||null);   /* (news-type-polish) the bar order — the same one button the reader has */ okC=true; } }catch(_){}
+          const cmpCut=counted(cds,10);
+          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cmpCut.kept,mkeys.length?mkeys:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM,a.order||null);   /* (news-type-polish) the bar order — the same one button the reader has */ okC=true; } }catch(_){}
           /* (#R108/#R115) plain text, NO emoji in Atlas replies; name the indicators actually selected. */
           let mlbl=''; try{ if(okC&&mkeys.length&&window.IntMapStatsCompare.indLabel) mlbl=' — '+mkeys.map(k=>window.IntMapStatsCompare.indLabel(k)).join(', '); }catch(_){}
-          let h2=okC?note(L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(10,cds.length)+')'+esc(mlbl)):warn('');
-          if(cds.length>10) h2+=warn(L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países'));
+          let h2=okC?note(L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+cmpCut.used+')'+esc(mlbl)):warn('');
+          if(cmpCut.dropped) h2+=warn(L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países')+' — '+L(cmpCut.dropped+' left out: ',cmpCut.dropped+' か国を省きました: ')+esc(cmpCut.received>cmpCut.used?cds.slice(cmpCut.used).join(', '):''));
           if(missC.length) h2+=warn(L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
           if(missM.length) h2+=warn(L('Not an available indicator','比較指標にない項目','Kein verfügbarer Indikator','Нет такого показателя','Indicador no disponible')+': '+esc(missM.join(', ')));
-          return R(okC,h2); }
+          return R(okC,h2,cmpCut.dropped?{ meta: { counted: { received: cmpCut.received, used: cmpCut.used, dropped: cmpCut.dropped }, userGoalSatisfied: false } }:undefined); }
     },
   },
   {

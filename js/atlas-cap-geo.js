@@ -175,7 +175,10 @@ export default [
       const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
       const fail = (msg, code) => R(false, warn(esc(msg)), { meta: { code, category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
       if (dctx && dctx.source === 'atlas-worker') return fail(L('A delegated worker cannot change the reader\'s map; hand the table back to the turn that delegated.', '委譲された作業者は地図を変えられません。表を委譲元のターンに返してください。'), 'draws_on_reader_map');
-      const rows = (Array.isArray(a.rows) ? a.rows : []).slice(0, 2000).filter((r) => r && typeof r === 'object');
+      /* No cap on the row count: every row the caller gave is joined. `received` is the denominator of every count below — what was asked, not what survived a filter. */
+      const received = Array.isArray(a.rows) ? a.rows.length : 0;
+      const rows = (Array.isArray(a.rows) ? a.rows : []).filter((r) => r && typeof r === 'object');
+      const notObject = received - rows.length;
       if (!rows.length) return fail(L('No rows to join.', '結ぶ行がありません。'), 'NO_ROWS');
       if (!String(a.source || '').trim()) return fail(L('Say where the numbers came from ("source").', '数値の出典（"source"）を述べてください。'), 'NO_SOURCE');
       const areaOf = (r) => String(r.area != null ? r.area : (r.name != null ? r.name : (r.code != null ? r.code : ''))).trim();
@@ -209,27 +212,28 @@ export default [
         if (!hasHint && hit.ambiguousCountries && hit.ambiguousCountries.length > 1) { ambiguous.push(nm + ' (' + hit.ambiguousCountries.join('/') + ')'); return; }
         const v = numeric ? String(Number(r.value)) : String(r.group);
         const prev = byUnit.get(hit.stableId);
-        if (prev) { if (prev.v !== v && !prev.conflict) { prev.conflict = true; conflicting.push(hit.canonicalName); } return; }   /* two rows, one unit: equal values are one fact; different values are a conflict, never "first wins" */
+        if (prev) { prev.n++; if (prev.v !== v && !prev.conflict) { prev.conflict = true; conflicting.push(hit.canonicalName); } return; }   /* two rows, one unit: equal values are one fact; different values are a conflict, never "first wins" */
         const props = { name: hit.canonicalName, code: hit.stableId, asked: nm };
         Object.keys(r).forEach((k) => { if (!(k in props) && k !== 'area' && k !== 'country' && (typeof r[k] === 'string' || typeof r[k] === 'number' || typeof r[k] === 'boolean')) props[k] = r[k]; });
         if (numeric) props.value = Number(r.value); else props.group = String(r.group);
         const feat = { type: 'Feature', geometry: hit.geo, properties: props };
-        byUnit.set(hit.stableId, { v, feat, conflict: false });
+        byUnit.set(hit.stableId, { v, feat, conflict: false, n: 1 });
       });
-      byUnit.forEach((u) => { if (!u.conflict) feats.push(u.feat); });
+      let rowsJoined = 0;   /* rows that landed on a painted unit: a duplicate of the same value counts, a row on a conflicting unit does not */
+      byUnit.forEach((u) => { if (!u.conflict) { feats.push(u.feat); rowsJoined += u.n; } });
       unplaced.push(...wrongCountry.map((w) => w + ' [country mismatch]'));
-      if (!feats.length) return R(false, warn(esc(L('None of the ' + rows.length + ' rows could be joined to a first-level outline: ', '行 ' + rows.length + ' 件のどれも第1級行政区分の輪郭に結べませんでした: ') + unplaced.concat(ambiguous, conflicting).slice(0, 12).join(', '))), { meta: { code: 'NO_MATCH', category: 'data', retryable: false, produced: [], userGoalSatisfied: false, unplaced: unplaced.slice(0, 50) } });
+      if (!feats.length) return R(false, warn(esc(L('None of the ' + received + ' rows could be joined to a first-level outline: ', '行 ' + received + ' 件のどれも第1級行政区分の輪郭に結べませんでした: ') + unplaced.concat(ambiguous, conflicting).slice(0, 12).join(', '))), { meta: { code: 'NO_MATCH', category: 'data', retryable: false, produced: [], userGoalSatisfied: false, unplaced: unplaced.slice(0, 50) } });
       const title = String(a.title || L('Shaded areas', '色分けした地域')).slice(0, 120) + (a.unit ? ' (' + String(a.unit).slice(0, 24) + ')' : '');
       const put = GU.add({ type: 'FeatureCollection', features: feats }, title, null, {});
       if (!put) return R(false, warn(esc(L('The layer was not drawn.', 'レイヤーを描けませんでした。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: true, produced: [], userGoalSatisfied: false } });
       const st = await GU.style(put.n, numeric ? { field: 'value', mode: 'graduated', method: a.method === 'equal' ? 'equal' : 'quantile', classes: Number(a.classes) || 5, compare: String(a.compare || '').trim() || undefined, cuts: Array.isArray(a.cuts) ? a.cuts : undefined } : { field: 'group', mode: 'categorical', compare: String(a.compare || '').trim() || 'shadeAreas' });
       if (!st || !st.ok) return R(false, warn(esc(L('The layer was added but could not be coloured (' + String(st && st.why || 'unknown') + ').', 'レイヤーは追加しましたが色を付けられませんでした（' + String(st && st.why || '不明') + '）。'))), { meta: { code: 'NOT_RENDERED', category: 'system', retryable: false, produced: [], userGoalSatisfied: false } });
       let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(title) + '</div>';
-      h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L(feats.length + ' of ' + rows.length + ' rows joined to real first-level outlines', rows.length + ' 行中 ' + feats.length + ' 行を第1級行政区分の輪郭に結びました') + ' · ' + L('source: ', '出典: ') + String(a.source).slice(0, 200)) + '</div>';
+      h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L(rowsJoined + ' of ' + received + ' rows joined to real first-level outlines' + (notObject ? ' (' + notObject + ' not a row object)' : ''), received + ' 行中 ' + rowsJoined + ' 行を第1級行政区分の輪郭に結びました' + (notObject ? '（行の形でないもの ' + notObject + ' 件）' : '')) + ' · ' + L('source: ', '出典: ') + String(a.source).slice(0, 200)) + '</div>';
       if (unplaced.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Not placed (no such unit in the index): ', '特定できず塗っていません: ') + unplaced.slice(0, 20).join(', ')) + '</div>';
       if (ambiguous.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Ambiguous between countries, not painted (give "country"): ', '複数の国で同名のため塗っていません（"country" を指定）: ') + ambiguous.slice(0, 20).join(', ')) + '</div>';
       if (conflicting.length) h += '<div style="font-size:11px;color:#ff9f0a;">' + esc(L('Rows gave different values for the same unit, not painted: ', '同じ行政区に異なる値の行があり塗っていません: ') + conflicting.slice(0, 20).join(', ')) + '</div>';
-      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['map', 'explanation'], userGoalSatisfied: true, shadeAreas: { rows: rows.length, joined: feats.length, unplaced: unplaced.length, ambiguous: ambiguous.length, conflicting: conflicting.length, wrongCountry: wrongCountry.length, unplacedNames: unplaced.slice(0, 50), mode: numeric ? 'graduated' : 'categorical', layer: put.n } } });
+      return R(true, h, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['map', 'explanation'], userGoalSatisfied: rowsJoined === received, partial: rowsJoined !== received, shadeAreas: { received, processed: rows.length, rowsJoined, unjoined: received - rowsJoined, rows: rows.length, joined: feats.length, unplaced: unplaced.length, ambiguous: ambiguous.length, conflicting: conflicting.length, wrongCountry: wrongCountry.length, unplacedNames: unplaced.slice(0, 50), mode: numeric ? 'graduated' : 'categorical', layer: put.n } } });
     },
   },
   {

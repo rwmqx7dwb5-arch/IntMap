@@ -37,3 +37,26 @@ test('a grouped table is categorical; a mixture, or no source, or a name two cou
   assert.equal(amb.ok, false, 'an ambiguous name with no country is not guessed');
   assert.equal(calls.add.length, before, 'and nothing is drawn for it');
 });
+
+/* (gis-result-handoff) THE DENOMINATOR IS WHAT WAS GIVEN. 2,001 uniquely resolvable rows were painted 2,000, said «2,000 of 2,000» and
+   userGoalSatisfied:true — the rows were cut to the first 2,000 and every count was taken after the cut (measured 2026-11-27). */
+test('2,001 uniquely resolvable rows: every row is joined and counted against the 2,001 given; a partial join is not «satisfied»', async () => {
+  const keep = window.IntMapAtlasAdmin1;
+  window.IntMapAtlasAdmin1 = { resolveMany: async (names) => ({ hits: names.filter((n) => /^U\d+$/.test(n.name)).map((n) => ({ asked: n.name, geo, aliases: [], ambiguousCountries: [], countryCode: 'JP', iso3: 'JPN', stableId: 'X-' + n.name, canonicalName: n.name })), misses: [], requests: 0 }) };
+  try {
+    const rows = Array.from({ length: 2001 }, (_, i) => ({ area: 'U' + i, value: i }));
+    const r = await run({ source: 's', country: 'Japan', rows });
+    assert.equal(r.ok, true);
+    assert.equal(calls.add.at(-1).fc.features.length, 2001, 'all 2,001 are drawn (2,000 were)');
+    assert.equal(r.meta.shadeAreas.received, 2001);
+    assert.equal(r.meta.shadeAreas.rowsJoined, 2001);
+    assert.match(r.html, /2001 of 2001 rows joined/);
+    assert.equal(r.meta.userGoalSatisfied, true);
+    const half = await run({ source: 's', country: 'Japan', rows: rows.slice(0, 3).concat([{ area: 'Nowhere', value: 1 }]) });
+    assert.equal(half.ok, true, 'what could be joined is drawn');
+    assert.equal(half.meta.shadeAreas.received, 4);
+    assert.equal(half.meta.shadeAreas.unjoined, 1);
+    assert.equal(half.meta.userGoalSatisfied, false, 'a row that was not joined means the table was not shaded as asked');
+    assert.match(half.html, /3 of 4 rows joined/);
+  } finally { window.IntMapAtlasAdmin1 = keep; }
+});

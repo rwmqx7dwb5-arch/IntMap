@@ -8,6 +8,8 @@
 //         plans the contracts (js/atlas-job-core.js planJob, the rules research.delegate applies), creates the job
 //         idempotently on (reader, idem), charges ONE of the reader's daily AI uses when it was newly created (a refused
 //         creation charges nothing and ends the job it made), and starts the first lease in the background.
+//    op "revise"  (a signed-in reader)  { jobId, note, tasks?, keep? } → { version } — a change of request that redoes the pieces it affects
+//         and keeps the ones it does not (planned as a whole, then public.atlas_job_revise; see revise() below).
 //    op "tick"    (the shared secret)   takes one job whose lease lapsed (or that nobody started) and runs it. Called by
 //         pg_cron every minute while such a job exists, and by this function itself to continue after a time slice.
 //    A reader cancels / amends a running job with the RPCs atlas_job_cancel / atlas_job_amend and reads it with a
@@ -308,6 +310,46 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   return json({ jobId: row.job_id, created: true, status: "queued" }, 202);
 }
 
+/* (gis-result-handoff) op "revise" (a signed-in reader) { jobId, note, tasks?:[contract], keep?:[task id] } → { version } — the reader changed the
+   request and the planner (Atlas, jobs.amend) says which pieces it affects: `tasks` are the new contracts of those pieces (an id of the job replaces
+   that piece; a new id adds one), `keep` the finished pieces that still hold as they are. The MERGED list is planned exactly as a new job is (planJob:
+   every contract normalises, ids and inputs resolve, nothing in a circle) before anything changes; the SQL then redoes the named pieces and what was
+   built on them and marks the kept ones (public.atlas_job_revise). Nothing is decided here about which pieces hold. */
+const REVISE_REFUSALS: Record<string, string> = { "-1": "not_found", "-2": "too_many_changes", "-3": "task_running", "-4": "keep_not_finished", "-5": "disabled" };
+async function revise(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const authHeader = req.headers.get("Authorization") || "";
+  const userClient = createClient(env("SUPABASE_URL"), publishableKey(denoEnv), { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } });
+  const { data: ud } = await userClient.auth.getUser();
+  const user = ud?.user;
+  if (!user) return json({ error: "auth", message: "Login required." }, 401);
+  const jobId = String(body.jobId || "");
+  const note = String(body.note || "").trim().slice(0, 1000);
+  if (!/^[0-9a-f-]{36}$/i.test(jobId) || !note) return json({ error: "bad_request", message: "jobId and note are required." }, 400);
+  const revised = Array.isArray(body.tasks) ? body.tasks as Array<Record<string, unknown>> : [];
+  const keep = Array.isArray(body.keep) ? (body.keep as unknown[]).map((x) => String(x).slice(0, 64)).filter(Boolean) : [];
+  if (!revised.length && !keep.length) return json({ error: "bad_request", message: "Name the pieces to redo (tasks) or to keep (keep)." }, 400);
+  const db = adminClient();
+  const { data: rows, error } = await db.from("atlas_job_tasks").select("task_id,contract").eq("job_id", jobId).eq("user_id", user.id);
+  if (error) return json({ error: "unavailable" }, 503);
+  if (!rows || !rows.length) return json({ error: "not_found" }, 404);
+  const ids = new Set(rows.map((r: { task_id: string }) => r.task_id));
+  const byId = new Map(rows.map((r: { task_id: string; contract: Record<string, unknown> }) => [r.task_id, Object.assign({}, r.contract, { id: r.task_id })]));
+  for (const c of revised) { const id = String(c && c.id || ""); if (!id) return json({ error: "bad_plan", code: "revise_needs_id" }, 400); byId.set(id, Object.assign({}, c, { id })); }
+  for (const k of keep) if (!ids.has(k)) return json({ error: "bad_plan", code: "keep_unknown", at: k }, 400);
+  const caps = makeServerCaps();
+  const plan = planJob(Array.from(byId.values()), { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), parkable: (id: string) => capClass(id) === "parkable" });
+  if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
+  const want = new Set(revised.map((c) => String(c.id)));
+  const send = (plan.tasks as Array<{ id: string; key: string; contract: unknown; deps: string[] }>).filter((t) => want.has(t.id));
+  if (send.length !== want.size) return json({ error: "bad_plan", code: "duplicate_work", message: "A revised piece is the same work as another piece of the job." }, 400);
+  const { data: v, error: e2 } = await db.rpc("atlas_job_revise", { p_user: user.id, p_job: jobId, p_note: note, p_tasks: send.map((t) => ({ id: t.id, key: t.key, contract: t.contract, deps: t.deps })), p_keep: keep });
+  if (e2) return json({ error: "unavailable" }, 503);
+  const n = Number(v);
+  if (!(n >= 1)) return json({ error: REVISE_REFUSALS[String(n)] || "refused" }, n === -1 ? 404 : 409);
+  waitUntil(runSlice(jobId));
+  return json({ version: n, revised: send.map((t) => t.id), kept: keep }, 202);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -316,6 +358,7 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch (_) { body = {}; }
     const op = String(body.op || "");
     if (op === "create") return await create(req, body);
+    if (op === "revise") return await revise(req, body);
     if (op === "tick") {
       const secret = env("ATLAS_JOBS_SECRET");
       if (!secret) return json({ error: "not_configured" }, 503);

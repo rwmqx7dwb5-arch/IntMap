@@ -206,6 +206,6 @@ test('⑩ 12,000 文字を超える入力は版・件数・列を添え、残り
 test('⑦ 依頼変更の前に作られた結果は、報告で「変更前」と印され、変更内容が添えられる', async () => {
   const src = await import('node:fs').then((f) => f.readFileSync(join(ROOT, 'supabase/functions/_shared/atlas-job-runner.js'), 'utf8'));
   assert.match(src, /requestVersion/);
-  assert.equal((src.match(/p_result: stamped\(ctx, result\)/g) || []).length, 3, '3 つの完了経路すべてが版を書く');
-  assert.match(src, /made before the reader changed the request/);
+  assert.equal((src.match(/p_result: stamped\(ctx, result, /g) || []).length, 3, '3 つの完了経路すべてが版（開始時と条件を書いた時点）を書く');
+  assert.match(src, /computed under the request as it was before the reader's change/);   /* 振る舞いは tests/gis-result-handoff-checks.test.mjs が実際に走らせて確かめる */
 });

@@ -69,7 +69,12 @@ function cleanContent(kind, c) {
     out = { columns, rows: rows.map((r) => columns.map((_, i) => (r[i] === undefined ? null : r[i]))) };
   } else if (kind === 'dataset') {
     const format = x.format === 'geojson' ? 'geojson' : 'table';
-    if (format === 'geojson') { if (!Array.isArray(x.features)) return { problem: 'no-features' }; out = { format, features: x.features, fields: arr(x.fields).filter(obj), count: x.features.length }; }
+    /* (gis-result-handoff) A DATASET TOO LARGE TO KEEP INLINE IS KEPT AS A REFERENCE, NOT CUT: what a background job made and the server keeps whole
+       (atlas_job_artifacts) — the job, the piece, the version of its bytes, how many features and which columns. `restore` reads it back whole from
+       there (js/atlas-cap-work.js); while the server keeps the job (30 days) it is the same dataset. */
+    if (format === 'geojson' && !Array.isArray(x.features) && obj(x.ref) && x.ref.job && x.ref.task) {
+      out = { format, ref: { job: str(x.ref.job, 80), task: str(x.ref.task, 64), version: str(x.ref.version, 40) }, count: Number(x.count) || 0, columns: arr(x.columns).map((c) => str(c, 80)).slice(0, 200), fields: arr(x.fields).filter(obj) };
+    } else if (format === 'geojson') { if (!Array.isArray(x.features)) return { problem: 'no-features' }; out = { format, features: x.features, fields: arr(x.fields).filter(obj), count: x.features.length }; }
     else { const t = cleanContent('table', x); if (t.problem) return t; out = Object.assign({ format, fields: arr(x.fields).filter(obj) }, t.content); }
     if (x.licence != null) out.licence = str(x.licence, 400);
   } else if (kind === 'code') {

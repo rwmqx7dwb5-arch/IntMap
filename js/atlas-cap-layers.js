@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int, loose } from './atlas-caps.js';
+import { str, bool, num, int, loose, counted } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';   /* (map-layer-system) an indicator asked for in a year moves the one clock */
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
@@ -159,9 +159,11 @@ export default [
       const B = await WB.indicatorBrowser();
       const q = String(a.q || a.name || a.code || '').trim();
       if (a.list || !q) {
-        const hits = B.search(q).slice(0, 40);
-        return R(true, '<div>' + esc(L('Country indicators', '国別指標')) + (q ? ' — «' + esc(q) + '»' : '') + ' (' + hits.length + ')</div><ul>'
-          + hits.map((h) => '<li><b>' + esc(h.name) + '</b> · ' + esc(h.code) + ' · ' + esc(h.subject) + '</li>').join('') + '</ul>', { indicators: hits });
+        const cut = counted(B.search(q), 40), hits = cut.kept;   /* the heading's denominator is every match, not the 40 listed */
+        return R(true, '<div>' + esc(L('Country indicators', '国別指標')) + (q ? ' — «' + esc(q) + '»' : '') + ' (' + (cut.dropped ? hits.length + ' / ' + cut.received : hits.length) + ')</div><ul>'
+          + hits.map((h) => '<li><b>' + esc(h.name) + '</b> · ' + esc(h.code) + ' · ' + esc(h.subject) + '</li>').join('') + '</ul>'
+          + (cut.dropped ? warn(esc(L('Showing the first ' + cut.used + ' of ' + cut.received + ' matches; ' + cut.dropped + ' not listed — narrow the query.', '一致 ' + cut.received + ' 件のうち先頭 ' + cut.used + ' 件を表示しています。残り ' + cut.dropped + ' 件は表示していません。検索語を絞ってください。'))) : ''),
+          { indicators: hits, total: cut.received, counted: { received: cut.received, used: cut.used, dropped: cut.dropped }, ...(cut.dropped ? { meta: { counted: { received: cut.received, used: cut.used, dropped: cut.dropped }, userGoalSatisfied: false } } : null) });
       }
       const hit = B.search(q)[0];
       if (!hit) return R(false, warn(L('No country indicator matches ', '一致する国別指標がありません: ') + '«' + esc(q) + '»'), { indicators: [] });

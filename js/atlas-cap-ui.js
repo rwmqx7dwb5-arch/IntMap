@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { list, obj } from './atlas-caps.js';
+import { list, obj, counted } from './atlas-caps.js';
 import { checkView, viewSchema, SWITCH, switchCallProblem, blockShapes, BLOCKS, LIMITS, tableMarkdown, metricsHtml, placesHtml, boardHtml, sourceHtml } from './atlas-ui-spec.js';   /* (declarative-workspace) the view's kinds, schema and check */
 import { plainText, proseMark } from './atlas-turn-results.js';
 import { icon } from './icons.js';
@@ -97,11 +97,12 @@ export default [
     schema: () => ({ type: 'object', properties: { items: list(obj(), 1) }, required: ['items'] }), /* `controls` */
     async run(a, dctx, K) { const R = K.R, warn = K.warn;
       { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") — the rows are drawn by controlRows above */
-          const items=Array.isArray(a.items)?a.items.slice(0,8):[];
+          const itemCut=counted(a.items,8), items=itemCut.kept, cutMeta={ received: itemCut.received, used: itemCut.used, dropped: itemCut.dropped };
           if(!items.length) return R(false, warn(''));
           const c=controlRows(items, K);
           if (!c.html && c.problems.length) return R(false, refusal(c.problems, K), { meta: { code: 'invalid_controls', problems: c.problems.map((p) => ({ at: p.at, code: p.code })) } });
-          return R(!!c.html, c.html||warn(''), c.problems.length ? { meta: { problems: c.problems.map((p) => ({ at: p.at, code: p.code })) } } : undefined); }
+          const cutW=itemCut.dropped?K.warn(K.L('Only the first '+itemCut.used+' of '+itemCut.received+' controls were drawn; '+itemCut.dropped+' were left out.','コントロール '+itemCut.received+' 件のうち先頭 '+itemCut.used+' 件だけを描きました。残り '+itemCut.dropped+' 件は描いていません。')):'';
+          return R(!!c.html, (c.html||warn(''))+cutW, (c.problems.length||itemCut.dropped) ? { meta: Object.assign({ counted: cutMeta }, c.problems.length ? { problems: c.problems.map((p) => ({ at: p.at, code: p.code })) } : {}, itemCut.dropped ? { userGoalSatisfied: false } : {}) } : undefined); }
     },
   },
   /* ⚠⚠ (declarative-workspace) A VIEW — the third thing an answer may BE, after the map (map.compose) and the chart

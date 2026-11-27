@@ -23,7 +23,7 @@
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every card text and href below goes through */
 import { s, stable } from './atlas-job-core.js';
 
-const TERMINAL = new Set(['done', 'failed', 'cancelled']);
+const TERMINAL = new Set(['done', 'partial', 'failed', 'cancelled']);   /* partial: some pieces finished and some did not (gis-result-handoff) */
 const TASK_ENDED = new Set(['done', 'partial', 'failed', 'refused', 'cancelled']);
 const micros = (n) => (Number(n) || 0) / 1e6;
 
@@ -71,6 +71,37 @@ export function makeJobsClient(o) {
     /* resume(id, only?) — put back in the queue what did not finish (failed, refused, cancelled); done pieces are never run again (RPC atlas_job_resume) → { ok, state } where state is the RPC's word: queued | running | nothing_to_resume | disabled | not_found */
     async resume(id, only) { const r = await need().rpc('atlas_job_resume', { p_job: id, p_only: Array.isArray(only) && only.length ? only.map((x) => s(x, 64)).slice(0, 8) : null }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: r.data === 'queued', state: r.data }; },
     async amend(id, note) { const r = await need().rpc('atlas_job_amend', { p_job: id, p_note: s(note, 1000) }); if (r.error) return { ok: false, code: s(r.error.message, 80) }; return { ok: true, state: r.data }; },
+    /* (gis-result-handoff) revise(id, note, { tasks?, keep? }) — a change of request that names the pieces it affects: `tasks` are their new contracts
+       (an existing id replaces that piece), `keep` the finished pieces that still hold. Planned as a whole on the server (atlas-jobs op "revise") →
+       { ok, version?, revised?, kept?, code?, at? } */
+    async revise(id, note, o) {
+      if (!fetchFn || !endpoint) return { ok: false, code: 'not_configured' };
+      const headers = typeof authHeaders === 'function' ? await authHeaders() : { 'Content-Type': 'application/json' };
+      let r;
+      try { r = await fetchFn(endpoint, { method: 'POST', headers, body: JSON.stringify({ op: 'revise', jobId: id, note: s(note, 1000), tasks: (o && Array.isArray(o.tasks)) ? o.tasks : [], keep: (o && Array.isArray(o.keep)) ? o.keep.map((x) => s(x, 64)) : [] }) }); }
+      catch (e) { return { ok: false, code: 'unreachable' }; }
+      let j = null; try { j = await r.json(); } catch (_) { j = null; }
+      if (!r.ok || !j || !(Number(j.version) >= 1)) return { ok: false, code: (j && (j.code || j.error)) || ('http_' + r.status), at: j && j.at };
+      return { ok: true, version: Number(j.version), revised: j.revised || [], kept: j.kept || [] };
+    },
+    /* (gis-result-handoff) output(jobId, taskId) — the WHOLE output a piece made (its FeatureCollection), read from its row or, when it was kept beside
+       the row, from its parts in order → { ok, features, output, sources } | { ok:false, code } — a part that is missing is said, never a shorter answer */
+    async output(jobId, taskId) {
+      const db = need();
+      const t = await db.from('atlas_job_tasks').select('task_id,result').eq('job_id', jobId).eq('task_id', taskId).maybeSingle();
+      if (t.error || !t.data) return { ok: false, code: 'not_found' };
+      const r = t.data.result || {};
+      const d = r.data || {};
+      const o = d.output || null;
+      if (!o) return { ok: false, code: 'no_output' };
+      const sources = Array.isArray(r.sources) ? r.sources : [];
+      if (o.stored !== 'artifact') return d.result && Array.isArray(d.result.features) ? { ok: true, features: d.result.features, output: o, sources } : { ok: false, code: 'no_output' };
+      const a = await db.from('atlas_job_artifacts').select('part,body').eq('job_id', jobId).eq('task_id', taskId).order('part');
+      if (a.error || !Array.isArray(a.data) || a.data.length !== o.parts) return { ok: false, code: 'output_incomplete', have: Array.isArray(a.data) ? a.data.length : 0, parts: o.parts };
+      const features = [];
+      a.data.forEach((x) => { for (const f of ((x.body && x.body.features) || [])) features.push(f); });
+      return { ok: true, features, output: o, sources };
+    },
   };
 }
 
@@ -89,8 +120,16 @@ export function jobFacts(job, tasks) {
       costUsd: micros(t.cost_micros),
       /* (server-capability-lane) a map-changing capability the job SAVED for the page — applyParked runs it when the reader is back */
       parked: r.parked && typeof r.parked.capability === 'string' ? { capability: s(r.parked.capability, 80), args: (r.parked.args && typeof r.parked.args === 'object') ? r.parked.args : {} } : null,
+      /* (gis-result-handoff) what the piece MADE (its output's id, version, count, columns, sources, where it is kept) and which outputs it READ —
+         the structured result, not only its summary; the features themselves are read with client.output when they are wanted */
+      output: outputOf(r),
+      reads: Array.isArray(r.reads) ? r.reads.slice(0, 20).map((x) => ({ id: s(x && x.id, 120), version: s(x && x.version, 40), count: Number(x && x.count) || 0, ok: !!(x && x.ok) })) : [],
+      requestVersion: Number(r.requestVersion) || 0, conditionsVersion: r.conditionsVersion == null ? Number(r.requestVersion) || 0 : Number(r.conditionsVersion) || 0,
     };
   });
+  const jr = job.result && typeof job.result === 'object' ? job.result : {};
+  const staleIds = new Set((Array.isArray(jr.stale) ? jr.stale : []).map((x) => x && x.id));
+  list.forEach((t) => { t.stale = staleIds.has(t.id); });
   const ended = list.filter((t) => t.ended).length;
   return {
     id: job.id, title: s(job.title, 200), status: job.status, stopReason: job.stop_reason || '', running: !TERMINAL.has(job.status),
@@ -98,8 +137,16 @@ export function jobFacts(job, tasks) {
     amends: Number(job.amend_count) || 0, spentUsd: micros(job.spent_micros), capUsd: micros(job.cost_cap_micros),
     createdAt: job.created_at, endedAt: job.ended_at || null, error: s(job.error, 300),
     result: job.result && typeof job.result.summary === 'string' ? s(job.result.summary, 6000) : '',
+    incomplete: Array.isArray(jr.incomplete) ? jr.incomplete.slice(0, 20).map((x) => ({ id: s(x && x.id, 64), state: s(x && x.state, 20), code: s(x && x.code, 60) })) : [],
+    requestVersion: Number(jr.requestVersion) || 0,
     tasks: list,
   };
+}
+function outputOf(r) {
+  const o = r && r.data && r.data.output;
+  if (!o || typeof o !== 'object') return null;
+  return { id: s(o.id, 120), version: s(o.version, 40), count: Number(o.count) || 0, columns: Array.isArray(o.columns) ? o.columns.slice(0, 60).map((c) => s(c, 80)) : [],
+    sources: Array.isArray(o.sources) ? o.sources.slice(0, 10).map((u) => s(u, 400)) : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
 }
 
 /* ══ APPLYING WHAT A JOB SAVED FOR THE PAGE  (server-capability-lane) ═══════════════════════════════════
@@ -159,8 +206,12 @@ export function deviceParkedMemory(w) {
 /* jobText(facts) — plain text, the facts first (Atlas reads the top of a card's text) */
 export function jobText(f) {
   const head = 'Job ' + f.id + (f.title ? ' "' + f.title + '"' : '') + ': ' + f.status + (f.stopReason ? ' (' + f.stopReason + ')' : '') + ' — ' + f.tasksEnded + ' of ' + f.tasksTotal + ' pieces ended, $' + f.spentUsd.toFixed(3) + ' of $' + f.capUsd.toFixed(2) + (f.amends ? ', ' + f.amends + ' instruction change(s)' : '') + '.';
-  const rows = f.tasks.map((t) => '- ' + t.id + ' [' + t.state + (t.code ? ' / ' + t.code : '') + ']' + (t.summary ? ': ' + t.summary.slice(0, 600) : (t.ended ? '' : ' (not finished)')) + (t.gaps.length ? ' | not established: ' + t.gaps.join('; ').slice(0, 300) : ''));
-  return [head].concat(rows, f.result ? ['', 'Combined: ' + f.result.slice(0, 2000)] : []).join('\n');
+  /* (gis-result-handoff) what each piece MADE is stated as data — the output's id, version, count, columns and sources — so the next step (a further
+     filter, a join, the map) can name it: "@<piece>:data.result" in a later job, or the dataset the page filed it as (work.job restore) */
+  const out = (o) => o ? ' | output ' + o.id + ' v' + o.version + ': ' + o.count + ' feature(s)' + (o.columns.length ? ', columns ' + o.columns.slice(0, 20).join(',') : '') + (o.sources.length ? ', from ' + o.sources.join(' ') : '') + (o.stored === 'artifact' ? ' (kept whole beside the row, ' + o.parts + ' part(s))' : '') : '';
+  const rows = f.tasks.map((t) => '- ' + t.id + ' [' + t.state + (t.code ? ' / ' + t.code : '') + ']' + (t.stale ? ' [computed under an earlier version of the request: ' + t.conditionsVersion + ' of ' + (f.requestVersion || 0) + ' — redo it with jobs.amend revise, or keep it]' : '') + (t.summary ? ': ' + t.summary.slice(0, 600) : (t.ended ? '' : ' (not finished)')) + out(t.output) + (t.gaps.length ? ' | not established: ' + t.gaps.join('; ').slice(0, 300) : ''));
+  const inc = (f.incomplete || []).length ? ['', 'NOT FINISHED (the job is ' + f.status + ', not done): ' + f.incomplete.map((x) => x.id + ' ' + x.state + (x.code ? ' (' + x.code + ')' : '')).join('; ')] : [];
+  return [head].concat(rows, inc, f.result ? ['', 'Combined: ' + f.result.slice(0, 2000)] : []).join('\n');
 }
 
 const URL_OK = /^https?:\/\//i;

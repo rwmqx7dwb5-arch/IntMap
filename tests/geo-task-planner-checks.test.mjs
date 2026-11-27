@@ -41,11 +41,13 @@ const FULL = {
   environment: 'browser-gis',
   outputs: ['map', 'table'],
 };
-const collection = (spatial, temporal = 'overlaps') => ({ ref: 'earth-search/flood', title: 'Flood', match: { spatial, temporal }, rights: { license: 'CC-BY-4.0' } });
+const collection = (spatial, temporal = 'overlaps', resolution = 'meets') => ({ ref: 'earth-search/flood', title: 'Flood', match: { spatial, temporal, resolution }, rights: { license: 'CC-BY-4.0' } });
 const doors = (o = {}) => Object.assign({
   describe: async (ref) => (ref === 'layer:population' ? { ref, undeclared: [{ slot: 'time.axis' }] } : null),
   discover: async () => ({ ok: true, entries: [collection('covers')], catalogs: [{ id: 'es', answered: true, complete: true }] }),
-  hasCapability: (id) => id === 'data.gis' || id === 'compute.run',
+  /* what the GIS declares: 'buffer' and 'zonal' run anywhere; 'rasterSlope' needs a screen, so no server lists it. python declares none (null). */
+  opsOf: async (env) => (env === 'python' ? null : env === 'browser-gis' ? ['buffer', 'zonal', 'rasterSlope'] : ['buffer', 'zonal']),
+  hasCapability: (id) => id === 'data.gis' || id === 'compute.run' || id === 'jobs.start',
 }, o);
 
 /* ── ① ───────────────────────────────────────────────────────────────────────────────────────── */
@@ -128,10 +130,16 @@ test('geo-task-planner ② overture and uploads are not asked of any catalogue: 
 /* ── ③ ───────────────────────────────────────────────────────────────────────────────────────── */
 test('geo-task-planner ③ an environment with no capability is said to have none', async () => {
   const sample = G.normalizeGeo(Object.assign({}, FULL, { needs: [{ id: 'p', what: 'p', source: { kind: 'layer', ref: 'layer:population' }, completeness: 'sample' }] }));
-  for (const [env, expectRunnable] of [['browser-gis', true], ['python', true], ['server', false], ['job', false]]) {
+  for (const env of ['browser-gis', 'server', 'job']) {
     const r = await G.preflight(Object.assign({}, sample.spec, { environment: env }), doors());
-    assert.equal(r.runnable, expectRunnable, env);
+    assert.equal(r.runnable, true, env);
+    assert.equal(r.environment.available, true, env);
   }
+  /* python declares no operations, so FULL's method.ops cannot be checked there: unknown, not true */
+  assert.equal((await G.preflight(Object.assign({}, sample.spec, { environment: 'python' }), doors())).runnable, null);
+  const noJobs = await G.preflight(Object.assign({}, sample.spec, { environment: 'server' }), doors({ hasCapability: (id) => id !== 'jobs.start' }));
+  assert.equal(noJobs.runnable, false);
+  assert.ok(noJobs.reasons.some((x) => /jobs\.start/.test(x)));
   const r2 = await G.preflight(Object.assign({}, sample.spec, { environment: 'python' }), doors({ hasCapability: () => false }));
   assert.equal(r2.runnable, false);
   assert.ok(r2.reasons.some((x) => /compute\.run/.test(x)));
@@ -209,4 +217,67 @@ test('geo-task-planner ⑤ nothing is blocked: the module and its wiring decide 
   const src = readFileSync(join(ROOT, 'js/atlas-geoplan.js'), 'utf8');
   assert.doesNotMatch(codeOnly(src), /maxSteps|TURN_MAX_CALLS|throw new Error\('refus/);
   assert.match(readFileSync(join(ROOT, 'js/atlas-agent.js'), 'utf8'), /PLAN\.geoPending/);
+});
+
+/* ── ⑥ the verdict is wrong in neither direction ─────────────────────────────────────────────── */
+test('geo-task-planner ⑥ a plan whose period, resolution and operation are all unstated or unknown is not runnable, and says each', async () => {
+  const spec = G.normalizeGeo({ time: { at: '1880' }, region: { bounds: [102, 20, 108, 24] }, environment: 'browser-gis',
+    needs: [{ id: 'x', what: 'x', source: { kind: 'stac', ref: 'x' }, completeness: 'sample', resolution: { value: 1, unit: 'm' } }], method: { ops: ['noSuchOp'] } }).spec;
+  const seen = [];
+  const r = await G.preflight(spec, doors({ discover: async (q) => { seen.push(q); return { ok: true, entries: [collection('covers', 'unstated', 'unstated')], catalogs: [{ id: 'es', answered: true }] }; } }));
+  assert.notEqual(r.runnable, true);
+  assert.equal(r.runnable, false);
+  assert.equal(seen[0].maxGsd, 1, 'the resolution is passed as maxGsd in metres');
+  const need = r.needs[0];
+  assert.equal(need.state, 'partial');
+  assert.match(need.detail, /no-period/); assert.match(need.detail, /resolution/);
+  assert.equal(need.candidates[0].coversPeriod, false); assert.equal(need.candidates[0].meetsResolution, false);
+  const text = r.reasons.join('\n');
+  assert.match(text, /x: partial.*no-period/); assert.match(text, /resolution/); assert.match(text, /method\.ops: "noSuchOp" is not an operation of browser-gis/);
+  assert.deepEqual(r.method.ops, [{ id: 'noSuchOp', known: false, environment: 'browser-gis' }]);
+});
+
+test('geo-task-planner ⑥ a km resolution converts; one that cannot become metres is said so, not counted as met', async () => {
+  const mk = (resolution) => G.normalizeGeo({ time: { at: '2020' }, region: { bounds: [102, 20, 108, 24] }, needs: [{ id: 'x', what: 'x', source: { kind: 'stac', ref: 'x' }, completeness: 'sample', resolution }] }).spec;
+  const seen = [];
+  const d = doors({ discover: async (q) => { seen.push(q); return { ok: true, entries: [collection('covers')], catalogs: [{ id: 'es', answered: true }] }; } });
+  assert.equal((await G.preflight(mk({ value: 2, unit: 'km' }), d)).needs[0].state, 'available');
+  assert.equal(seen[0].maxGsd, 2000);
+  const deg = await G.preflight(mk({ value: 0.01, unit: 'deg' }), d);
+  assert.equal(seen[1].maxGsd, undefined);
+  assert.equal(deg.needs[0].state, 'partial');
+  assert.match(deg.needs[0].detail, /resolution-not-convertible-to-metres/);
+});
+
+test('geo-task-planner ⑥ server/job environments are judged by the operations the server twin runs', async () => {
+  const mk = (env, ops) => G.normalizeGeo({ environment: env, method: { ops }, needs: [{ id: 'p', what: 'p', source: { kind: 'layer', ref: 'layer:population' }, completeness: 'sample' }] }).spec;
+  const ok = await G.preflight(mk('server', ['buffer']), doors());
+  assert.equal(ok.environment.available, true); assert.equal(ok.runnable, true);
+  const ras = await G.preflight(mk('server', ['rasterSlope']), doors());
+  assert.equal(ras.runnable, false);
+  assert.ok(ras.reasons.some((x) => /"rasterSlope" is not an operation of server/.test(x)));
+  assert.equal((await G.preflight(mk('browser-gis', ['rasterSlope']), doors())).runnable, true);
+  const py = await G.preflight(mk('python', ['buffer']), doors());
+  assert.equal(py.runnable, null); assert.equal(py.method.ops[0].known, null);
+  const any = await G.preflight(mk(null, ['rasterSlope']), doors());
+  assert.equal(any.method.ops[0].known, true); assert.equal(any.method.ops[0].environment, 'browser-gis');
+});
+
+test('geo-task-planner ⑥ with the real js/gis-core.js: the server list is flow.runsWithoutScreen over flow.find().ops', async () => {
+  const { loadGis } = await import('../supabase/functions/_shared/gis-loader.js');
+  const gis = await loadGis();
+  const cat = await gis.flow.find();
+  const all = cat.ops.map((o) => o.id);
+  const server = cat.ops.filter(gis.flow.runsWithoutScreen).map((o) => o.id);
+  assert.ok(all.length > 0 && server.length > 0 && server.length < all.length, 'some declared ops need a screen, some do not');
+  assert.ok(cat.ops.filter((o) => !gis.flow.runsWithoutScreen(o)).every((o) => o.output === 'raster' || (o.surface || []).every((x) => x === 'degree-grid')));
+  const probe = G.defaultProbe({ IntMapGis: gis, IntMapCapabilities: { has: () => true } });
+  assert.deepEqual(await probe.opsOf('browser-gis'), all);
+  assert.deepEqual(await probe.opsOf('server'), server);
+  assert.deepEqual(await probe.opsOf('job'), server);
+  assert.equal(await probe.opsOf('python'), null);
+  const live = server[0], screenOnly = all.find((id) => !server.includes(id));
+  const spec = (op) => G.normalizeGeo({ environment: 'server', method: { ops: [op] } }).spec;
+  assert.equal((await G.preflight(spec(live), probe)).method.ops[0].known, true);
+  assert.equal((await G.preflight(spec(screenOnly), probe)).method.ops[0].known, false);
 });

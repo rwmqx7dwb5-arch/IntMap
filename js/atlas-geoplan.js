@@ -31,10 +31,11 @@ const OUTPUT_KINDS = ['map', 'table', 'chart', 'file', 'answer'];
 
 /* The capability each environment runs on. This is the registry's own id (js/atlas-cap-*.js), asked
    through `hasCapability` — so an environment with no capability is reported as having none instead of
-   being assumed. server/job have no capability today: they come back `unavailable`, which is the truth
-   a plan that wants them must be told. Observation 2026-11-20; fails when a capability for either is added
-   (then add it here — the check in tests/geo-task-planner-checks.test.mjs lists this table). */
-export const ENVIRONMENT_CAPABILITY = { 'browser-gis': 'data.gis', python: 'compute.run', server: null, job: null };
+   being assumed. server and job both run on `jobs.start` (js/atlas-cap-jobs.js): a persistent job runs the
+   capability task `data.gis` on its server twin (supabase/functions/_shared/atlas-server-caps.js gisJob ->
+   gis-headless.js), which loads the same js/gis-core.js as the page. Which operations that twin can run is
+   asked through deps.opsOf (flow.runsWithoutScreen), not listed here. Observation 2026-11-27. */
+export const ENVIRONMENT_CAPABILITY = { 'browser-gis': 'data.gis', python: 'compute.run', server: 'jobs.start', job: 'jobs.start' };
 
 const str = (v) => (v == null ? '' : String(v).trim());
 const isNum = (v) => typeof v === 'number' && isFinite(v);
@@ -166,6 +167,11 @@ async function probeNeed(need, spec, deps) {
   if (spec.region && spec.region.bounds) req.bounds = spec.region.bounds;
   const t = need.time || (spec.time && (spec.time.at || (spec.time.from && spec.time.to ? spec.time.from + '/' + spec.time.to : spec.time.from || spec.time.to)));
   if (t) req.time = t;
+  /* resolution in metres (js/gis-atlas.js search maxGsd). Only {value, unit m|km} converts; anything else is said so below, not guessed. */
+  if (need.resolution && isNum(need.resolution.value)) {
+    if (need.resolution.unit === 'm') req.maxGsd = need.resolution.value;
+    else if (need.resolution.unit === 'km') req.maxGsd = need.resolution.value * 1000;
+  }
   let r = null;
   try { r = await deps.discover(req); } catch (e) { return { state: 'unknown', completeness: 'unproven', detail: 'discover-threw' }; }
   if (!r || r.ok === false) return { state: 'unknown', completeness: 'unproven', detail: 'discover-refused' + (r && r.why ? ':' + r.why : '') };
@@ -176,11 +182,33 @@ async function probeNeed(need, spec, deps) {
     const allAnswered = (r.catalogs || []).length > 0 && silent.length === 0 && (r.catalogs || []).every((c) => c.complete !== false);
     return { state: allAnswered ? 'unavailable' : 'unknown', completeness: 'unproven', detail: allAnswered ? 'no-collection-states-it-covers-this' : 'catalogues-did-not-all-answer', silent };
   }
-  const covers = entries.filter((e) => e.match && e.match.spatial === 'covers' && e.match.temporal !== 'outside');
-  return { state: covers.length ? 'available' : 'partial', completeness: 'unproven',
-    detail: covers.length ? 'collections-state-they-cover-the-region' : 'collections-overlap-or-state-no-extent',
-    candidates: entries.slice(0, 5).map((e) => ({ ref: e.ref, title: e.title, spatial: e.match && e.match.spatial, temporal: e.match && e.match.temporal,
-      license: e.rights ? (e.rights.license == null ? null : e.rights.license) : null })), silent };
+  /* A source covers the need only for what it STATES. A collection that names no period does not cover a period that was asked
+     for, and one that does not state a resolution does not meet a resolution that was asked for — both are "not stated", reported as such. */
+  const wantsTime = !!t;
+  const res = need.resolution;
+  const maxGsd = req.maxGsd == null ? null : req.maxGsd;
+  const wantsRes = !!res;
+  const resUnreadable = wantsRes && maxGsd == null;
+  const cand = entries.map((e) => {
+    const m = e.match || {};
+    return { ref: e.ref, title: e.title, spatial: m.spatial, temporal: m.temporal, resolution: m.resolution,
+      license: e.rights ? (e.rights.license == null ? null : e.rights.license) : null,
+      coversRegion: m.spatial === 'covers',
+      coversPeriod: wantsTime ? m.temporal === 'overlaps' : null,
+      meetsResolution: wantsRes ? (!resUnreadable && m.resolution === 'meets') : null };
+  });
+  const full = cand.filter((c) => c.coversRegion && c.coversPeriod !== false && c.meetsResolution !== false);
+  const missing = [];
+  if (!cand.some((c) => c.coversRegion)) missing.push('collections-overlap-or-state-no-extent');
+  else {
+    const spatial = cand.filter((c) => c.coversRegion);
+    if (wantsTime && !spatial.some((c) => c.coversPeriod)) missing.push(spatial.some((c) => c.temporal === 'unstated') ? 'collections-state-no-period' : 'collections-state-another-period');
+    if (wantsRes && !spatial.some((c) => c.meetsResolution)) missing.push(resUnreadable ? 'resolution-not-convertible-to-metres' : 'collections-state-no-resolution-that-meets');
+    if (wantsTime && wantsRes && !missing.length && !full.length) missing.push('no-single-collection-states-period-and-resolution');
+  }
+  return { state: full.length ? 'available' : 'partial', completeness: 'unproven',
+    detail: full.length ? 'collections-state-they-cover-the-region' : missing.join(','),
+    candidates: cand.slice(0, 5), silent };
 }
 
 /**
@@ -211,15 +239,49 @@ export async function preflight(spec, deps) {
     env = { name: spec.environment, capability: cap, available: has };
     if (has === false) reasons.push('environment ' + spec.environment + ' has no capability in IntMap' + (cap ? ' (' + cap + ' is not registered)' : ''));
   }
-  const known = needs.length > 0 && needs.every((x) => x.state === 'available') && (!spec.environment || (env && env.available === true));
+  /* method.ops against the operations that exist. Asked of the environment named, else of every environment (an op is known if any has it). */
+  let method = null;
+  const soft = [];
+  const wanted = (spec.method && spec.method.ops) || [];
+  if (wanted.length) {
+    const envs = spec.environment ? [spec.environment] : ENVIRONMENTS;
+    const lists = {};
+    for (const e of envs) {
+      let l = null;
+      try { l = typeof d.opsOf === 'function' ? await d.opsOf(e) : null; } catch (_) { l = null; }
+      lists[e] = Array.isArray(l) ? l : null;
+    }
+    const where = spec.environment || 'any environment';
+    method = { ops: wanted.map((id) => {
+      const home = envs.find((e) => lists[e] && lists[e].indexOf(id) >= 0);
+      if (home) return { id, known: true, environment: home };
+      const unasked = envs.some((e) => lists[e] === null);
+      return { id, known: unasked ? null : false, environment: spec.environment || null };
+    }) };
+    for (const o of method.ops) {
+      if (o.known === false) {
+        const all = [].concat(...envs.map((e) => lists[e] || []));
+        const low = o.id.toLowerCase();
+        const near = Array.from(new Set(all)).filter((x) => { const y = x.toLowerCase(); return y.indexOf(low) >= 0 || low.indexOf(y) >= 0; }).slice(0, 3);
+        reasons.push('method.ops: "' + o.id + '" is not an operation of ' + where + (near.length ? ' (near: ' + near.join(', ') + ')' : ''));
+      } else if (o.known === null) soft.push('method.ops: "' + o.id + '" could not be checked against ' + where + ' (its operations were not asked or are not declared)');
+    }
+  }
+  const opsOk = !method || method.ops.every((o) => o.known === true);
+  const known = needs.length > 0 && needs.every((x) => x.state === 'available') && (!spec.environment || (env && env.available === true)) && opsOk;
   const unproven = needs.some((x) => x.fullCoverage === 'unproven');
   const runnable = reasons.length ? false : (known && !unproven ? true : null);
-  if (runnable === null) {
-    needs.filter((x) => x.state !== 'available').forEach((x) => reasons.push(x.id + ': ' + x.state + ' (' + x.detail + ')'));
+  if (runnable !== true) {
+    /* everything that stopped a true is said, whether or not something else already made it false */
+    needs.filter((x) => x.state !== 'available' && x.state !== 'unavailable').forEach((x) => reasons.push(x.id + ': ' + x.state + ' (' + x.detail + ')'));
+    soft.forEach((x) => reasons.push(x));
     if (unproven) reasons.push('full coverage of the region was asked for and no source states it');
     if (!needs.length) reasons.push('no needs are listed');
+    if (spec.environment && env && env.available === null) reasons.push('environment ' + spec.environment + ': whether ' + env.capability + ' is registered could not be asked');
   }
-  return { needs, environment: env, runnable, reasons };
+  const out = { needs, environment: env, runnable, reasons };
+  if (method) out.method = method;
+  return out;
 }
 
 /** The words that go back to the model. Gaps and availability, as IntMap observed them. */
@@ -241,7 +303,22 @@ export function defaultProbe(g) {
     discover: async (req) => {
       try { if (root.IntMapLazy && !atlas()) await root.IntMapLazy.need('gisCore'); } catch (_) { /* the door below says so */ }
       const a = atlas(); if (!a || typeof a.remote !== 'function') return { ok: false, why: 'no-remote-door' };
-      return a.remote(Object.assign({ action: 'discover' }, req));
+      /* 'search' (not 'discover'): only search carries maxGsd and returns entries[].match.resolution (js/gis-atlas.js remote door) */
+      return a.remote(Object.assign({ action: 'search' }, req));
+    },
+    /* The operations an environment runs, as the GIS declares them (flow.find().ops) — never a list written here.
+       browser-gis: all; server/job: the ones flow.runsWithoutScreen accepts (what the job's data.gis twin runs); python: null — compute.run declares no operations. */
+    opsOf: async (environment) => {
+      if (environment === 'python') return null;
+      try { if (root.IntMapLazy && !(root.IntMapGis && root.IntMapGis.flow)) await root.IntMapLazy.need('gisCore'); } catch (_) { /* absent door = null, below */ }
+      const flow = root.IntMapGis && root.IntMapGis.flow;
+      if (!flow || typeof flow.find !== 'function') return null;
+      const cat = await flow.find();
+      const ops = cat && Array.isArray(cat.ops) ? cat.ops : null;
+      if (!ops) return null;
+      if (environment === 'browser-gis') return ops.map((o) => o.id);
+      if (environment === 'server' || environment === 'job') return typeof flow.runsWithoutScreen === 'function' ? ops.filter(flow.runsWithoutScreen).map((o) => o.id) : null;
+      return null;
     },
     hasCapability: (id) => { const C = root.IntMapCapabilities; if (!C || typeof C.has !== 'function') return null; return C.has(id); },
   };
