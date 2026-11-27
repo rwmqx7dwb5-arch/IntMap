@@ -320,7 +320,7 @@ export function makeAtlasLive(HOST, deps) {
       ai.__atlDraft = st.said[st.sayAt]; ai.__atlDraftStopped = true;
       if (st.narr && PROG && PROG.unsay) { try { PROG.unsay(ai, st.narr); } catch (_) { } }
       st.said.splice(st.sayAt, 1); st.narr = null; st.sayAt = -1;
-      try { if (!ai.querySelector('.atl-draft') && ai.insertAdjacentHTML) ai.insertAdjacentHTML('afterbegin', draftHtml(ai)); } catch (_) { }
+      paintDraft(ai);   /* the one painter of the draft — it marks it stopped (draftHtml reads __atlDraftStopped) */
     }
     st.candidate = false;
     if (how === 'cancelled' || how === 'superseded') {
