@@ -19,7 +19,7 @@
 //  ⚠ NO TYPE ANNOTATIONS — scripts/static-checks.mjs parses committed .js/.ts as plain JavaScript.
 // ============================================================================
 
-import { readyTasks, shapeOf, workerSystem, workerPrompt, stable, s } from "./atlas-job-core.js";
+import { readyTasks, shapeOf, workerSystem, workerPrompt, stable, s, priorStands, failureWhy } from "./atlas-job-core.js";
 import { capClass } from "./atlas-cap-classes.js";
 
 /* How many tasks of one job run at the same time. Observation 2026-11-20: research.delegate hands on 2 workers by default
@@ -251,8 +251,10 @@ async function runToolWorker(ctx, task, inputs) {
         const id = s(c.capability, 80);
         const args = c.args && typeof c.args === "object" && !Array.isArray(c.args) ? c.args : {};
         const key = id + stable(args);
-        const prior = st.entries.find((e) => e.key === key);
-        if (prior) { repeated.push(prior.n); continue; }   /* answered already: the same answer is below, it is not run a second time */
+        /* (atlas-child-loop-reuse) the LATEST answer to this call, and only while its reason still holds (atlas-job-core.js priorStands): a failure of
+           the moment (the twin threw, or said so) is retried; a success and the capability's own answer are not run again */
+        const prior = st.entries.filter((e) => e.key === key).pop();
+        if (prior && priorStands(prior, granted.has(id) && !!lane.has(id))) { repeated.push(prior.n); continue; }   /* answered already: the same answer is below, it is not run a second time */
         if (seenKey.has(key)) { repeated.push(seenKey.get(key)); continue; }   /* the same call twice in ONE round: run once */
         const n = st.entries.length + planned.length + 1;
         seenKey.set(key, n);
@@ -273,7 +275,9 @@ async function runToolWorker(ctx, task, inputs) {
         const { n, id, args, key } = planned[i];
         const out = outs[i];
         (out && Array.isArray(out.sources) ? out.sources : []).forEach(addSource);
-        st.entries.push({ n, key, capability: id, args, ok: !!(out && out.ok === true), code: s(out && out.code, 60), text: s(out && out.text, 600), data: out && out.data !== undefined ? clip(out.data, ENTRY_CHARS) : "" });
+        const failed = !(out && out.ok === true);
+        const why = !failed ? "" : (out && out.code === "twin_threw") ? "transient" : (out && out.code === "not_granted") ? "grant" : failureWhy(Object.assign({}, out, { ok: false }));
+        st.entries.push({ n, key, capability: id, args, ok: !failed, why, code: s(out && out.code, 60), text: s(out && out.text, 600), data: out && out.data !== undefined ? clip(out.data, ENTRY_CHARS) : "" });
         await event(db, job, "task.tool_call", { task: task.task_id, capability: id, ok: !!(out && out.ok === true), code: s(out && out.code, 60) });
         fresh += 1;
       }

@@ -23,7 +23,7 @@ import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `s
 import { personaPrompt } from './atlas-persona.js';
 import { datasetFactsOnPage } from './evidence-graph-record.js';   /* (evidence-graph) a GIS result put in front of the answer carries its lineage node */
 import { settleWithin, lateNote } from './atlas-deadlines.js';
-import { lateCostSink } from './atlas-run-ledger.js';   /* (atlas-autonomy) the cost of a worker that ends after the answer that left it running */
+import { lateCostSink, runMarkSink } from './atlas-run-ledger.js';   /* (atlas-autonomy) the cost of a worker that ends after the answer that left it running */
 import { webEvidence } from './atlas-web-evidence.js';   /* (atlas-search-evidence-store) the pages and searches this turn's web readers retrieved — one store with the parent and the workers */
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
@@ -1257,9 +1257,11 @@ export default [
         const spent = D.spendUsd();
         try { progress({ text: t.map((x) => x.id + ' ' + stateWord(x.state)).join(' · ') + ' — ' + usd(spent), tasks: t, done: ended, total: t.length, costUsd: spent }); } catch (_) { /* a trace that cannot show it is not the work's problem */ }
       });
-      let results, verification = null, pendingIds = [];
+      let results, verification = null, pendingIds = [], checkUsdNew = 0;
       try {
         /* "wait":"any" — answer as soon as one task has brought findings; "all" (the default) — when every task has ended */
+        /* (atlas-child-loop-reuse) the instant the first usable piece arrived, for the turn's record (atlas-run-ledger.js runMarkSink) — read now, so a later turn is never handed it */
+        { const markSink = runMarkSink.current; if (typeof markSink === 'function') entry.run.handles.forEach((h) => h.promise.then((r) => { if (r && (r.state === 'done' || r.state === 'partial')) { try { markSink('firstUsefulData'); } catch (_) { /* a record never breaks the work */ } } }, () => {})); }
         if (a.wait === 'any') await new Promise((resolve) => {
           const hs = entry.run.handles; let left = hs.length;
           if (!left) return resolve();
@@ -1285,6 +1287,9 @@ export default [
             verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
             verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
           }
+          /* (atlas-child-loop-reuse) a checker an EARLIER early answer already handed to the turn's sink is not counted a second time in the ledger */
+          entry.reported = entry.reported || new Set();
+          checkUsdNew = fu.reduce((m, r, i) => { if (!r || entry.reported.has('check:' + i)) return m; entry.reported.add('check:' + i); return m + (Number(r.costUsd) || 0); }, 0);
         }
       } finally {
         unsub();
@@ -1300,6 +1305,17 @@ export default [
           h.promise.then((r) => {
             if (!r || r.reused || entry.reported.has(h.id)) return;
             entry.reported.add(h.id);
+            sink(Number(r.costUsd) || 0);
+          }, () => {});
+        });
+        /* ⚠ (atlas-child-loop-reuse) …AND SO DOES A CHECKER. A `verify:true` task's checker starts the moment its task ends — often the fast task this
+           very answer returned with — and it is a child of THIS turn like the workers. Only the workers still running were handed to the sink, so a
+           fast worker, a slow worker and the fast one's checker at 0.25 each left 0.50 in the ledger (measured 2026-11-27, external audit). Every
+           checker this list starts reports its cost to the sink when it ends, once (`reported`, keyed apart from the tasks). */
+        if (typeof sink === 'function' && Array.isArray(entry.run.followed)) entry.run.followed.forEach((fp, i) => {
+          Promise.resolve(fp).then((r) => {
+            if (!r || r.reused || entry.reported.has('check:' + i)) return;
+            entry.reported.add('check:' + i);
             sink(Number(r.costUsd) || 0);
           }, () => {});
         });
@@ -1350,7 +1366,7 @@ export default [
         pending: pendingIds.length ? pendingIds : undefined,   /* (delegate-streaming) tasks still running: the same list asked again waits for them */
         produced: done ? ['explanation'] : undefined,
         delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, resumed: r.resumed || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, notFound: r.notFound, evidence: r.evidence, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms, arrivedSecAgo: entry.arrivedAt.has(r.id) ? Math.round((Date.now() - entry.arrivedAt.get(r.id)) / 1000) : undefined })),
-        delegatedCostUsd: cost + (verification ? verification.costUsd : 0),   /* the checkers are children too: the ledger the turn reads must hold what the card says */
+        delegatedCostUsd: cost + checkUsdNew,   /* the checkers are children too: the ledger the turn reads must hold what the card says */
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,

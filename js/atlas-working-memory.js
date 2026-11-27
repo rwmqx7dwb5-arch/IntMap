@@ -74,6 +74,11 @@ export function atPath(root, path) {
   }
   return { found: true, value: cur };
 }
+/* one address however it is spelled — `$.a.b[2]`, `a.b.2` and `a.b[2]` are the same — split the way atPath reads it */
+function pathKey(path) {
+  const p = String(path || '$').replace(/^\$\.?/, '');
+  return (p.match(/[^.[\]]+/g) || []).join('\u0000');
+}
 /* the shape of a result in one line: keys and the size of each array/object — what is in it, not what it means */
 function shapeLine(rec) {
   if (!rec || typeof rec !== 'object') return typeof rec;
@@ -239,6 +244,15 @@ export function makeAtlasWorkingMemory(o) {
     if (ref === MEMORY_REF) return { ok: true, text: handoffText() };
     const r = st.results[ref];
     if (!r) return { ok: false, error: 'unknown_ref', message: 'Working memory holds no result "' + s(ref, 80) + '".' };
+    /* (atlas-child-loop-reuse) THE INDEX ANSWERS WHAT IT HOLDS. The body went to stay within memory, but the numbers were indexed by path
+       precisely so they survive it — and a read of `figures[11]` answered `body_evicted` with no value while `figures[11]=1011` sat in the index
+       (measured 2026-11-27, external audit). A path that is in the index EXACTLY (the same address, however it is spelled: a.b[3] = a.b.3) is
+       answered from it; anything else still says the body is gone, and the message carries the indexed values, not only their paths. */
+    if (!r.text && path) {
+      const want = pathKey(path);
+      const hit = (r.numbers || []).find((n) => pathKey(n.path) === want);
+      if (hit) return { ok: true, text: ref + ' ' + path + ' = ' + textOf(hit.value) + ' (from the index of numbers; the rest of the body was dropped to stay within memory)', fromIndex: true };
+    }
     if (!r.text) return { ok: false, error: 'body_evicted', message: 'The body of ' + ref + ' (' + r.name + ', ' + r.size + ' characters) was dropped to stay within memory. Its numbers are still here (read it with a path from: '
       + r.numbers.slice(0, 8).map((n) => n.path + '=' + n.value).join(', ') + '); to read the rest, run ' + r.name + ' again with ' + r.args + '.', numbers: r.numbers };
     if (path) {

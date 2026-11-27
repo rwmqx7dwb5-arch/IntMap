@@ -21,6 +21,35 @@ export function stable(v) {
   return JSON.stringify(v === undefined ? null : v);
 }
 
+/* ══ (atlas-child-loop-reuse) DOES AN EARLIER ANSWER TO THE SAME CALL STILL ANSWER IT? ═══════════════════════════════════════════════════════════
+   A worker's loop answers a repeat of a call (the same capability, the same arguments) from the first answer instead of running it again
+   (one-pass-or-a-reason §1 — «もう済んでいる»). It did so for EVERY first answer, a refusal included, so a worker that asked in ONE request to
+   search for `data.value` and to read Japan's population with it was refused the read (the grant did not hold it yet: «call it in your next
+   request»), and when it did exactly that in the next request it was handed the same refusal — the read never ran (measured 2026-11-27,
+   external audit: 0 real fetches). The reason an answer was given decides whether it still holds:
+     · `ok`         — a success: it holds (the same read, the same answer).
+     · 'grant'      — refused because the grant did not hold the capability: it holds only while the grant still does not.
+     · 'transient'  — the capability or the fetch failed for a reason of the moment (it threw, or it said `category:'transient'`): it does not
+                      hold — the next call is a retry after an OBSERVED failure (one-pass-or-a-reason §5).
+     · otherwise    — the capability's own answer (no such row, a bad argument): it holds; the same call gets the same answer.
+   ONE rule for the page's worker (js/atlas-delegate.js) and the server's (supabase/functions/_shared/atlas-job-runner.js). */
+export function priorStands(prior, grantHasIt) {
+  if (!prior) return false;
+  if (prior.ok) return true;
+  if (prior.why === 'grant') return !grantHasIt;
+  if (prior.why === 'transient') return false;
+  return true;
+}
+/* failureWhy(out) → 'transient' | '' — what a capability's FAILED answer says of itself: a result that declares its failure to be of the moment
+   (`category:'transient'` in its meta or on itself) is one; anything else is the capability's own answer. A thrown call is the caller's to name. */
+export function failureWhy(out) {
+  if (!out || out.ok !== false) return '';
+  const m = out.meta && typeof out.meta === 'object' ? out.meta : {};
+  /* `retryable:true` beside a category other than 'input' says the same (an 'input' failure is retried with OTHER arguments, which is a different call) */
+  const cat = m.category || out.category;
+  return (cat === 'transient' || ((m.retryable === true || out.retryable === true) && cat !== 'input')) ? 'transient' : '';
+}
+
 /* The two kinds of piece of work. `worker`: a model researches it (the default). `capability`: one read-only IntMap
    capability is run with these arguments, no model in between — the cheap, exact way to fan a lookup out (the weather
    in five cities, a figure for each of ten countries). Which capabilities may be named is the executor's call

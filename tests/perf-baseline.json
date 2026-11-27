@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 16001158,
-    "gzip": 5450877,
+    "gzip": 5478465,
     "chunks": {
       "account-data": 7346,
       "aftershock": 54276,

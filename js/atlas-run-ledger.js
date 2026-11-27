@@ -37,6 +37,15 @@ export function peakConcurrency(spans) {
    (so a later turn's sink is never handed this turn's cost) and calls it when each still-running worker ends. */
 export const lateCostSink = { current: null };
 
+/* ══ (atlas-child-loop-reuse) WHEN THE FIRST USABLE DATA ARRIVED, AND WHAT THE PARENT DID WITH IT ═══════════════════════════════════════════════
+   The external audit (2026-11-27) asked whether the parent waits for every call of a reply when the next computation was already decided —
+   and nothing recorded the instants that question is answered by. The ledger now keeps them, each the FIRST time it happens in the turn, in
+   ms from the turn's start: `firstUsefulData` (a delegated task ended done/partial — reported through `runMarkSink`, read by a delegation
+   the way lateCostSink is), `parentReceived` (a tool that delegated returned to the loop), `nextAnalysisStart` (the first model request
+   after that). With `wallMs` (all done) and `costUsd` they are the five figures a change to the waiting is compared by, on the SAME question.
+   It observes and never decides: no call waits, starts or stops because of it. */
+export const runMarkSink = { current: null };
+
 export function makeRunLedger(opt) {
   const now = (opt && typeof opt.now === 'function') ? opt.now : () => Date.now();
   const startedAt = now();
@@ -44,6 +53,7 @@ export function makeRunLedger(opt) {
   const tools = Object.create(null);    /* capability / tool name → { calls, ms, failed } */
   let modelCalls = 0, costUsd = 0, costUnknownCalls = 0, unpricedCalls = 0, modelMs = 0, webCalls = 0;
   let delegatedUsd = 0, delegatedTasks = 0;
+  const marks = Object.create(null);   /* name → ms since the turn started, the first time it happened */
   return {
     /* one provider answer: { model, costUsd, priceKnown, ms, web } — costUsd undefined when the proxy did not say */
     model(c) {
@@ -70,6 +80,9 @@ export function makeRunLedger(opt) {
     },
     /* a worker that ended after the answer which left it running: its cost joins the delegated sum (its task was counted when it was listed) */
     late(c) { const d = num(c); if (d) delegatedUsd += d; },
+    /* one instant of the turn (see runMarkSink); a second report of the same name keeps the first */
+    mark(name) { const k = str(name, 40); if (k && !(k in marks)) marks[k] = Math.max(0, now() - startedAt); return marks[k]; },
+    marked(name) { return Object.prototype.hasOwnProperty.call(marks, String(name)); },
     summary() {
       const rows = (o, f) => Object.keys(o).map((k) => Object.assign({ id: k }, o[k])).sort(f);
       return {
@@ -80,6 +93,7 @@ export function makeRunLedger(opt) {
         costUnknownCalls, unpricedCalls, webCalls,
         models: rows(models, (a, b) => b.costUsd - a.costUsd || b.calls - a.calls),
         tools: rows(tools, (a, b) => b.ms - a.ms || b.calls - a.calls),
+        marks: Object.assign({}, marks),
       };
     },
   };

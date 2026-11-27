@@ -226,7 +226,7 @@ placeholder は使わない。
 
 **何があるかは常に見せ、何ができるかは訊かれたときに返す。** そのターンに渡すのは中核のツールとその schema と、能力 ID だけの索引（`CAPS.index(direct)`。カテゴリ別・撤去済みを
 除く・約 2.5 千文字）。索引は、そのプロンプトが型付きツールとして既に手渡している能力を載せない（`direct` は道具の面が名乗る `capabilityId` の集合＝`js/atlas-console.js` の
-`_directCaps`）。それ以外は `find_capability(query)` が全 295 を検索し、得点したものを全部 schema 付きで返し（説明文のブロックはまとめて 1 回引いて重複を落とす）、
+`_directCaps`）。それ以外は `find_capability(query)` が全 295 を検索し、得点したものを全部返す。要求が名指した（strong の）ものは schema と説明文付き（説明文のブロックはまとめて 1 回引いて重複を落とす）、残りは id・呼び名・1 行の説明。strong が 1 つも無いときは全候補を 1 行で返し、`want`（欲しい出力）・`have`（手元の入力の種類）を渡せば、レジストリの宣言（列 6 produces・列 9 target）がそれに合うものを schema 付きで返す（語彙はレジストリから導く）。どの候補も id で引き直せば schema と説明文が返る。
 `run_capability(id, args)` が起動する。
 
 **1 手の入力は item の列で、道具はモデル標準の関数である（ai-proxy protocol 2）。** `js/atlas-agent.js` の `composeInput` が組む——会話履歴 → 添付の置き場 → 依頼（依頼時の
@@ -238,9 +238,9 @@ placeholder は使わない。
 結果には `promotedTools` と `promotionNote`。定義は `promoted:true` を持ち、ai-proxy はそれを鍵から外し、Anthropic 経路では固定の道具の末尾にも `cache_control` を付ける
 （印は計 3 個まで）。1 回が宣言できる関数は ai-proxy の `MAX_FN_TOOLS` までで、ループの `maxOfferedTools` はそれと等しい（検査が照合）。超える分は `run_capability` で届く。
 Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:"ephemeral"}` を付ける（`_shared/ai-usage.js` の `withPromptCache`。印は最大 4 個。ターンのときだけ会話の最後のブロックにも付ける）。検索の `server_tool_use` / `web_search_tool_result` は `provider_block` 項目として次の手へ持ち越し、`pause_turn` は継続し、検索回数の上限は付けない。キャッシュ書き込みは入力単価の 1.25 倍で計上。命中は台帳の
-`cached_read_tokens` / `cache_write_tokens`。OpenAI 経路のターンは `store:true` で、手の Web 検索は `item_reference`（`turn.ts` の項目の種類）として次の手に送り返す——検索結果を持ち越し、検索し直さない。ターン以外は `store:false`。予算は item 単位で配る（`INPUT_BUDGET`：全体 240,000・1 item 48,000）——超えたら古い会話から丸ごと落とし
-（1 つの item が述べる）、それでも超えたらこのターンの古い結果だけを短くする（最新の手の結果と依頼は落とさない）。1 件の結果が大きすぎるときはその item の中で切り、大きさと
-続きを読む道具 `read_result` を書く。ai-proxy 側の柵（`MAX_INPUT_CHARS`・`MAX_ITEM_CHARS`）はその 2 倍で、切ったら `meta.inputTrimmed`。各手の切り詰めは `trace.inputTrims`。
+`cached_read_tokens` / `cache_write_tokens`。OpenAI 経路のターンは `store:true` で、手の Web 検索は `item_reference`（`turn.ts` の項目の種類）として次の手に送り返す——検索結果を持ち越し、検索し直さない。ターン以外は `store:false`。予算は item 単位で配る（`INPUT_BUDGET`：全体 240,000 字・1 item 48,000 字・**300 item**。数の正本は `supabase/functions/_shared/atlas-input-limits.js` で、ai-proxy の柵も同じ物から読む）——超えたら古い会話から丸ごと落とし
+（1 つの item が述べる）、それでも超えたらこのターンの古い結果を短くし、なお超えたら最新の手の結果も大きい順に短くする（依頼は落とさない。短くした結果は `read_result` で続きを読める）。item 数が超えるときは、このターンの古い手を丸ごと 1 つの文字の item に畳む（各呼び出しはその答えの隣に置き、呼び出しと答えを分けない）。1 件の結果が大きすぎるときはその item の中で切り、大きさと
+続きを読む道具 `read_result` を書く。ai-proxy 側の柵（`MAX_INPUT_CHARS`・`MAX_ITEM_CHARS`・`MAX_INPUT_ITEMS`）はその 2 倍で、item 数が超えたら古い会話から落とし（末尾は落とさない）、切ったら `meta.inputTrimmed`。各手の切り詰めは `trace.inputTrims`。
 1 手で出された呼び出しには全部に結果が返る（`maxPerStep` を超えた分も `step_call_limit`）。**1 手の中の呼び出しは衝突しない組が同時に走る**——衝突は道具の面の
 `footprintOf` が競合キーから述べる足跡で決まる（`pure` は待たない／1 段のキー・`map.all`・`panel.any`・`ui.any`・ターンを終える能力・置けない呼び出しは障壁／何も
 書かない呼び出しは前の書き込みを待つ——`effects.reads` を申告すれば狭まる、今日 0／書き込みどうしは段の単位で重なるときだけ待つ）。モデルが読む順と `results` は呼んだ順の
