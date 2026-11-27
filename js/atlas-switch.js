@@ -18,9 +18,14 @@ import { switchCallProblem } from './atlas-ui-spec.js';
 /**
  * makeAtlasSwitch({ dispatch, CAPS, L }) -> { press(el) }
  *   el: the pressed `.atl-ctl-tab` button or `.atl-ctl-step` range input. Resolves once the option's calls have run.
+ *   deps.execute(call) -> the kernel's result ({status, code}) — when given, a press runs each call through it, so whether the option took effect is what the
+ *   capability's own observer saw after the press (the same verdict an Atlas turn gets), not what the case returned. deps.dispatch is the fallback.
  */
+/* the kernel statuses that say the call did not do what it was asked (js/atlas-results.js). 'unobserved' and 'partial' are not here: an
+   unobserved call ran and could not be looked at, which is not a failure (.agents/rules/one-pass-or-a-reason.md §5). */
+const NOT_DONE = new Set(['failed', 'cancelled', 'superseded', 'needs_input', 'running', 'refused']);
 export function makeAtlasSwitch(deps) {
-  const dispatch = deps.dispatch, CAPS = deps.CAPS, L = deps.L;
+  const dispatch = deps.dispatch, execute = deps.execute, CAPS = deps.CAPS, L = deps.L;
   let chain = Promise.resolve();   /* presses run in the order they were made: a fast second press must not interleave with the first one's calls */
 
   function callsOf(el) {
@@ -75,22 +80,33 @@ export function makeAtlasSwitch(deps) {
     let failed = '';
     for (let i = 0; i < calls.length && !failed; i++) {
       try {
-        const r = await dispatch(Object.assign({}, calls[i]));
-        if (r && r.ok === false) failed = (r.meta && r.meta.code) || L('a step did not run', '実行できなかった操作があります');
+        if (execute) {
+          const r = await execute(Object.assign({}, calls[i]));
+          if (!r || NOT_DONE.has(String(r.status || ''))) failed = (r && r.code) || L('a step did not run', '実行できなかった操作があります');
+        } else {
+          const r = await dispatch(Object.assign({}, calls[i]));
+          if (r && r.ok === false) failed = (r.meta && r.meta.code) || L('a step did not run', '実行できなかった操作があります');
+        }
       } catch (e) { failed = (e && e.message) || L('a step did not run', '実行できなかった操作があります'); }
     }
     return failed;
   }
 
+  /* ⚠ (atlas-controls-receipts) THE STATE TO GO BACK TO IS READ WHEN THIS PRESS'S TURN COMES, NOT WHEN IT WAS QUEUED. Presses run one after another
+     (`chain`), so a second press made while the first was still running used to read 「confirmed」 before the first had confirmed anything: with
+     0 → 1 → 2 pressed quickly and 2 failing, the rollback went to 0 while `data-confirmed` said 1 (measured: row 0, map 0, record 1). The previous
+     press's outcome is only known inside the chain, so that is where it is read; and a successful rollback re-confirms the state it put back, so the
+     row, the record and the map are the same value. */
   function press(el) {
     const idx = el.classList.contains('atl-ctl-step') ? +el.value : +el.getAttribute('data-i');
     const calls = callsOf(el);
-    const before = confirmedOf(el);
-    if (!calls || !calls.length) { say(el, L('This option has nothing to run.', 'このオプションには実行する内容がありません。')); if (before != null) mark(el, before); return Promise.resolve(); }
-    for (let i = 0; i < calls.length; i++) { const why = switchCallProblem(calls[i], CAPS, L); if (why) { say(el, why); if (before != null) mark(el, before); return Promise.resolve(); } }
+    const shown = confirmedOf(el);
+    if (!calls || !calls.length) { say(el, L('This option has nothing to run.', 'このオプションには実行する内容がありません。')); if (shown != null) mark(el, shown); return Promise.resolve(); }
+    for (let i = 0; i < calls.length; i++) { const why = switchCallProblem(calls[i], CAPS, L); if (why) { say(el, why); if (shown != null) mark(el, shown); return Promise.resolve(); } }
     say(el, '');
     el.classList.add('busy');
     chain = chain.then(async () => {
+      const before = confirmedOf(el);   /* the last state the map CONFIRMED, after every earlier press has settled */
       const failed = await runAll(calls);
       el.classList.remove('busy');
       if (!failed) { setConfirmed(el, idx); mark(el, idx); return; }
@@ -98,7 +114,7 @@ export function makeAtlasSwitch(deps) {
       const back = before != null ? callsOfIndex(el, before) : null;
       if (back && back.length && before !== idx) {
         const again = await runAll(back);
-        if (!again) { mark(el, before); say(el, L('Could not switch (' + failed + '); the map is back on the previous option.', '切り替えに失敗しました（' + failed + '）。地図は前の選択に戻しました。')); return; }
+        if (!again) { setConfirmed(el, before); mark(el, before); say(el, L('Could not switch (' + failed + '); the map is back on the previous option.', '切り替えに失敗しました（' + failed + '）。地図は前の選択に戻しました。')); return; }
       }
       setConfirmed(el, null); unmark(el);
       say(el, L('Could not switch (' + failed + '); the map may be showing a mix of two options — pick one again.', '切り替えに失敗しました（' + failed + '）。地図が 2 つの選択の途中の状態かもしれません。もう一度選んでください。'));

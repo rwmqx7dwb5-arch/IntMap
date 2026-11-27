@@ -296,8 +296,11 @@ export function makeAtlasMapCompose(deps) {
         if (!ids) return false;
         const at = ids.findIndex((l) => l.id === 'atl-compose-t');
         if (!ids.some((l, i) => i > at && l.type === 'symbol' && String(l.id).indexOf('atl-') !== 0)) return false;   /* already above every other label */
+        /* (atlas-controls-receipts) the rebuilt layer keeps the visibility the old one had: rebuilding it visible put the names back on a map whose figure a switch had turned off */
+        const vis = (ids[at] && ids[at].layout && ids[at].layout.visibility) || 'visible';
         g.layers.remove('atl-compose-t');
         addNameLayer(g, anchorBefore(g));
+        if (vis === 'none') { try { g.layers.setLayout('atl-compose-t', 'visibility', 'none'); } catch (_) { /* stays visible */ } }
         try { /* the number goes back with it, just under the name: both are placed before any basemap label */
           if (g.layers.has('atl-compose-n')) { const spec = g.scene.getStyle().layers.find((l) => l.id === 'atl-compose-n'); if (spec) { g.layers.remove('atl-compose-n'); g.layers.add(spec, 'atl-compose-t'); } }
         } catch (_) { /* the number stays where it was */ }

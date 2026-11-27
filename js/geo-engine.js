@@ -2717,8 +2717,15 @@ function _redrawLocalGlyphs(m,cover){
      ⚠ `observable:false` (no renderer, or its style not parsed yet) is 「could not look」 and never
      「nothing there」 — .agents/rules/one-pass-or-a-reason.md §5. Claims are per view (a sub-view's
      facade has its own), keyed by id, so a style reload does not lose them. */
-  function claimSurfaces(claims,ids,owner,o){ const own=[].concat(owner||[]).map(String).filter(Boolean), clear=(o&&typeof o.clear==='function')?o.clear:null;
-    [].concat(ids||[]).forEach(id=>{ if(!id) return; const k=String(id), c=claims.get(k)||{owners:[],clear:null}; own.forEach(w=>{ if(c.owners.indexOf(w)<0) c.owners.push(w); }); if(clear) c.clear=clear; claims.set(k,c); }); return true; }
+  /* (atlas-controls-receipts) `o.show(on)` — a painter that HOLDS the visibility of what it drew (it re-asserts it on a style event, or rebuilds its layers) declares how
+     to hide and show it, beside its `clear`. Without it a switch that flips the layers behind the painter's back is undone at the next styledata (measured: Isolate's mask
+     came back the moment the Atlas chip hid it). `showSurface` below takes that door when there is one, and sets the readers' visibility when there is not. */
+  function claimSurfaces(claims,ids,owner,o){ const own=[].concat(owner||[]).map(String).filter(Boolean), clear=(o&&typeof o.clear==='function')?o.clear:null, show=(o&&typeof o.show==='function')?o.show:null;
+    [].concat(ids||[]).forEach(id=>{ if(!id) return; const k=String(id), c=claims.get(k)||{owners:[],clear:null,show:null}; own.forEach(w=>{ if(c.owners.indexOf(w)<0) c.owners.push(w); }); if(clear) c.clear=clear; if(show) c.show=show; claims.set(k,c); }); return true; }
+  /* (atlas-controls-receipts) `rev`: which content the source holds — the identity of the data object the renderer keeps (setData replaces it), numbered here.
+     A feature COUNT was the only fingerprint, so redrawing two other countries over two countries, or drawing into a surface an earlier switch had hidden, read as 「nothing
+     changed」 and the turn's record of what it drew lost it. */
+  const _revOf=new WeakMap(); let _revN=0;
   function surfacesDrawn(A,claims,q){ q=q||{}; const a=A(); let observable=false; try{ observable=!!(a&&a.raw()&&a.canDraw()); }catch(_){ observable=false; }
     const owners=[].concat(q.owners||[]).map(String), named=[].concat(q.sources||[]).map(String), ids=named.slice();
     claims.forEach((c,id)=>{ if(ids.indexOf(id)>=0) return; if(owners.length?c.owners.some(w=>owners.indexOf(w)>=0):!q.sources) ids.push(id); });
@@ -2726,7 +2733,7 @@ function _redrawLocalGlyphs(m,cover){
     const readers=id=>{ if(!byLayer){ byLayer={}; try{ const st=a.getStyle(); ((st&&st.layers)||[]).forEach(l=>{ if(l&&l.source) (byLayer[l.source]||(byLayer[l.source]=[])).push(l.id); }); }catch(_){} } return byLayer[id]||[]; };
     ids.forEach(id=>{ const c=claims.get(id), rec={owners:c?c.owners.slice():[], state:'unknown', features:null};
       if(observable){ try{ if(!a.hasSource(id)) rec.state='absent';
-        else { const d=a.sourceData(id), n=(d&&Array.isArray(d.features))?d.features.length:null; rec.features=n;
+        else { const d=a.sourceData(id), n=(d&&Array.isArray(d.features))?d.features.length:null; rec.features=n; if(d&&typeof d==='object'){ let r=_revOf.get(d); if(!r){ r=++_revN; _revOf.set(d,r); } rec.rev=r; }
           if(n===0) rec.state='empty'; else { const ls=readers(id); rec.state=!ls.length?'unlayered':(ls.some(l=>{ try{ return !!a.isVisible(l); }catch(_){ return false; } })?'drawn':'hidden'); } } }catch(_){ rec.state='unknown'; } }
       out.surfaces[id]=rec; if(rec.state==='drawn') out.drawn.push(id); else if(rec.state!=='unknown') out.gone.push(id); });
     return out; }
@@ -2977,6 +2984,7 @@ function _redrawLocalGlyphs(m,cover){
       /* the one 「is it on the map」 question every verdict asks, and the claims it answers about — see surfacesDrawn above */
       claim:(ids,owner,o)=>{ _hearErrors(); return claimSurfaces(_claims,ids,owner,o); }, drawn:q=>surfacesDrawn(A,_claims,q), witness:q=>_witness(q),
       clearSurface:id=>{ const c=_claims.get(String(id)); if(!c||!c.clear) return false; try{ c.clear(); return true; }catch(_){ return false; } },
+      showSurface:(id,on)=>{ const k=String(id), c=_claims.get(k); if(c&&c.show){ try{ c.show(!!on); return true; }catch(_){ return false; } } let n=0; try{ ((A().getStyle()||{}).layers||[]).forEach(l=>{ if(l&&l.source===k){ try{ _F.layers.setLayout(l.id,'visibility',on?'visible':'none'); n++; }catch(_){} } }); }catch(_){} return n>0; },
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
       getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,

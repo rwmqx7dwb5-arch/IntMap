@@ -54,23 +54,37 @@ export function tookEffect(resultText) {
   return !NO_EFFECT.has(str(o.status));
 }
 
-/** the control kinds a turn's calls drew (tabs / steps / button / layerToggle ...) — a call that failed drew none (atlas-autonomy) */
-function controlKinds(calls) {
-  const kinds = new Set();
-  const walk = (v, d) => {
-    if (!v || d > 6) return;
-    if (Array.isArray(v)) { v.forEach((x) => walk(x, d + 1)); return; }
-    if (typeof v !== 'object') return;
-    if (typeof v.kind === 'string' && (v.options || v.layer || v.run)) kinds.add(v.kind.toLowerCase());
-    Object.keys(v).forEach((k) => walk(v[k], d + 1));
-  };
+/* ⚠ (atlas-controls-receipts) WHAT WAS DRAWN IS READ OFF THE RESULT, NEVER OFF THE ARGUMENTS. This used to walk the call's arguments for anything shaped like a
+   control, so one good button and one tab group the renderer refused was recorded as 「drew tabs」 and the turn earned `interactive` for a switch nobody could
+   see (measured in an external audit). The UI generator now returns the controls it put on the page — `details.drawn` [{id, kind, options?}] — and that list
+   is the only source. A record without it (made before it existed) states no control. */
+function resultOf(c) {
+  let o = c && c.resultText;
+  if (typeof o === 'string') { try { o = JSON.parse(o); } catch (_) { return null; } }
+  return o && typeof o === 'object' ? o : null;
+}
+/** drawnControls(calls) -> [{id, kind, options?}] the controls the calls' results say are on the page */
+export function drawnControls(calls) {
+  const out = [];
   for (const c of calls || []) {
     if (c && c.resultText != null && !tookEffect(c.resultText)) continue;
-    let a = c && c.args;
-    if (typeof a === 'string') { try { a = JSON.parse(a); } catch (_) { a = null; } }
-    walk(a, 0);
+    const o = resultOf(c); const d = o && ((o.details && o.details.drawn) || o.drawn);
+    if (Array.isArray(d)) d.forEach((x) => { if (x && x.id && x.kind) out.push({ id: String(x.id), kind: String(x.kind), options: Number.isFinite(+x.options) ? +x.options : undefined }); });
   }
-  return [...kinds];
+  return out;
+}
+/** drawnSwitches(calls) -> the drawn controls a reader flips between states (tabs / steps): what the harness presses */
+export function drawnSwitches(calls) { return drawnControls(calls).filter((x) => (x.kind === 'tabs' || x.kind === 'steps') && x.options >= 2); }
+function controlKinds(calls) { return [...new Set(drawnControls(calls).map((x) => x.kind.toLowerCase()))]; }
+/**
+ * switchWorked(p) -> true when pressing the switch moved the map: every option was confirmed by its row AND at least two options left the map in different
+ * states (clock, ticked layers or legend). A switch whose options all show the same map is drawn but not a switch.
+ */
+export function switchWorked(p) {
+  if (!p || !p.found || !Array.isArray(p.options) || p.options.length < 2) return false;
+  if (!p.options.every((o) => o && o.confirmed)) return false;
+  const sig = (o) => JSON.stringify(o.after || null);
+  return new Set(p.options.map(sig)).size >= 2;
 }
 
 /**
@@ -90,8 +104,11 @@ export function expressionOf(obs, table = producesTable()) {
     (table[id] || []).forEach((p) => fam.add(p));
   }
   const controls = controlKinds(obs.calls);
-  if (controls.some((k) => k === 'tabs' || k === 'steps')) fam.add('interactive');
-  return { families: [...fam].sort(), capabilities: [...caps].sort(), controls };
+  /* `interactive` is earned by the press, not by the drawing: the harness pressed every option of each drawn switch (scripts/atlas-eval.mjs PAGE.press) */
+  const pressed = Array.isArray(obs.pressed) ? obs.pressed : [];
+  const working = pressed.filter(switchWorked).map((p) => p.id);
+  if (working.length) fam.add('interactive');
+  return { families: [...fam].sort(), capabilities: [...caps].sort(), controls, switches: { drawn: drawnSwitches(obs.calls).length, working: working.length } };
 }
 
 /** factsLine(expr) -> the one line the grader is given beside the reply (what the turn DID, from the record) */
@@ -99,7 +116,8 @@ export function factsLine(expr) {
   if (!expr) return 'the record carries no operations';
   return (expr.capabilities.length ? 'capabilities that ran: ' + expr.capabilities.join(', ') : 'no capability ran (words only)')
     + ' / kinds of output: ' + (expr.families.join(', ') || 'none')
-    + (expr.controls.length ? ' / controls drawn in the reply: ' + expr.controls.join(', ') : '');
+    + (expr.controls.length ? ' / controls drawn in the reply: ' + expr.controls.join(', ') : '')
+    + (expr.switches && expr.switches.drawn ? ' / switches that changed the map when pressed: ' + expr.switches.working + ' of ' + expr.switches.drawn : '');
 }
 
 /** initiativeOf(turns) -> the axis over the turns that were graded: how many, the mean, the distribution; ungraded counted apart */

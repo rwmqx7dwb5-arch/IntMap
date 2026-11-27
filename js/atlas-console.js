@@ -1857,7 +1857,7 @@ export function atlasConsole(HOST){
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
     const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } }, resolveShape: (nm, want, where) => resolveShape(nm, want, { area: (n) => resolveHlTarget(n), countries: (codes) => _codesGeo(codes).geo, extent: (n) => _nomExtent(n), river: (n) => fetchRiverLine(n), isRiver: riverIntent, countryCode: (c) => { const x = resolveCountrySync(c); return x && x.code; }, countryAt: (lng, lat) => codeAtPoint(lng, lat) }, where) });   /* (atlas-real-shapes) `resolveShape`: an item asked as an AREA or a LINE gets its real geometry through the same ladders the highlight uses — js/atlas-shape-resolve.js */   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
-    const SWITCH = makeAtlasSwitch({ dispatch: (x) => dispatch(x), CAPS, L });   /* (atlas-ui-parts) pressing a tabs/steps option runs its calls through this same dispatch */
+    const SWITCH = makeAtlasSwitch({ dispatch: (x) => dispatch(x), execute: EXEC ? (x) => { const c = CAPS.resolve(x.type), a = {}; Object.keys(x).forEach((k) => { if (k !== 'type' && k.slice(0, 2) !== '__') a[k] = x[k]; }); return EXEC.execute(c ? c.id : x.type, a, { source: 'ui' }); } : null, CAPS, L });   /* (atlas-controls-receipts) a press is the reader's own act (source 'ui'), observed like any call */   /* (atlas-ui-parts) pressing a tabs/steps option runs its calls through this same dispatch */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
        2,190-line switch here; it is now the `run` of that capability's entry in js/atlas-cap-<namespace>.js, beside its
@@ -2551,7 +2551,7 @@ export function atlasConsole(HOST){
          keep-out and the invisible pick target `imroute-hit` (js/routing.js claims those). */
       'map.route':['imroute-diff','imroute-hist'],
       /* (#R85) close the "できないものもある" gap — isolate mask, pins and street-view marker were painted but had no in-message on/off. */
-      isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'] };
+      pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'] };   /* (atlas-controls-receipts) isolate went: js/map-tools.js claims iso-src / iso-edge-src under 'isolate' with its own show door */
     function _ovlIds(kind){ if(kind==='arc') return []; const own=_OVL[kind]||[];
       let src=[]; try{ const r=GE().render.drawn({owners:[kind]}); src=Object.keys((r&&r.surfaces)||{}); }catch(_){} if(!src.length) return own;
       let ls=[]; try{ ls=(GE().scene.getStyle()||{}).layers||[]; }catch(_){}
@@ -2571,9 +2571,13 @@ export function atlasConsole(HOST){
        footprint is the surfaces whose state changed across it: [{kind, layerIds, visible}] — kind is the owner key the switch is keyed by, layerIds what
        it switches, visible whether it is on now. `chips` stays as a second witness (a kind whose painter claims nothing); the record is the first. */
     function _surfaceMark(){ try{ const r=GE().render.drawn({}); if(!r||!r.observable) return null; const m=Object.create(null);
-      Object.keys(r.surfaces||{}).forEach(id=>{ const x=r.surfaces[id]; m[id]={ owners:(x.owners||[]).slice(), fp:x.state==='drawn'?(x.features!=null?+x.features:'drawn'):x.state }; }); return m; }catch(_){ return null; } }
+      Object.keys(r.surfaces||{}).forEach(id=>{ const x=r.surfaces[id]; m[id]={ owners:(x.owners||[]).slice(), state:x.state, n:x.features, rev:x.rev }; }); return m; }catch(_){ return null; } }
+    /* ⚠ (atlas-controls-receipts) WHAT CHANGED IS THE CONTENT, AND A HIDDEN SURFACE CAN CHANGE. A surface counts when it holds something now (drawn, or hidden by an earlier
+       switch) and its content is not what it was — another data object (`rev`), another count, or it held nothing before. Measured before: a polygon drawn into the layers an
+       earlier reply's chip had switched off was skipped as 'hidden', so it stayed invisible and its reply had no switch. */
     function _drewSince(before){ try{ const after=_surfaceMark(); if(!before||!after) return []; const kinds=[], ids={};
-      Object.keys(after).forEach(id=>{ const a=after[id]; if(typeof a.fp==='string'&&a.fp!=='drawn') return; const b=before[id]; if(b&&b.fp===a.fp) return; a.owners.forEach(k=>{ if(k&&kinds.indexOf(k)<0) kinds.push(k); if(k) (ids[k]||(ids[k]=[])).push(id); }); });
+      Object.keys(after).forEach(id=>{ const a=after[id]; if(a.state!=='drawn'&&a.state!=='hidden') return; if(a.n===0) return; const b=before[id];
+        if(b&&(b.state==='drawn'||b.state==='hidden')&&b.rev===a.rev&&b.n===a.n) return; a.owners.forEach(k=>{ if(k&&kinds.indexOf(k)<0) kinds.push(k); if(k) (ids[k]||(ids[k]=[])).push(id); }); });
       return kinds.map(k=>({ kind:k, layerIds:_ovlIds(k), visible:_ovlVisible(k), surfaces:(ids[k]||[]).slice() })).filter(d=>d.layerIds.length); }catch(_){ return []; } }
     /* ⚠⚠ (atlas-render-witness) 「描きました」 IS SAID ONLY OF WHAT REACHED THE SCREEN. `_drewSince` knows a surface is in the renderer and its layer is not
        hidden; it cannot know the layer is at opacity 0, outside its zoom range, off the viewport, covered, or erroring — and Atlas then reported a map that
@@ -2597,8 +2601,14 @@ export function atlasConsole(HOST){
       pnl.querySelectorAll('.atl-mapctl').forEach(row=>{ const b=row.closest('.atl-b'); const kinds=(row.getAttribute('data-ovls')||'').split(',').filter(Boolean);
         const on=kinds.length&&kinds.every(k=>(_ovlOwn[k]===b&&_ovlVisible(k))||_ovlCloneVisible(b,k));   /* (#R125) a clone counts as ON */
         const t=row.querySelector('.atl-map-toggle'); if(t){ t.classList.toggle('on',!!on); t.setAttribute('aria-checked',on?'true':'false'); } }); }catch(_){} }
+    /* ⚠ (atlas-controls-receipts) A CLAIMED SURFACE IS SWITCHED THROUGH ITS PAINTER (GE().render.showSurface → the claim's own `show` when it declared one). Flipping the
+       layers behind a painter that holds their visibility was undone at its next style event (measured: Isolate's mask and edge stayed on after the chip went OFF). Only the
+       layers this file still lists for a kind (_OVL, a painter that claims nothing) are flipped here. */
+    function _ovlClaimed(kind){ try{ const r=GE().render.drawn({owners:[kind]}); return Object.keys((r&&r.surfaces)||{}); }catch(_){ return []; } }
     function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
-      const ids=_ovlIds(kind); if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
+      if(show===undefined) show=!_ovlVisible(kind); const srcs=_ovlClaimed(kind); srcs.forEach(s=>{ try{ GE().render.showSurface(s,show); }catch(_){} });
+      let ls=[]; try{ ls=GE().scene.getStyle().layers||[]; }catch(_){} const viaClaim=new Set(ls.filter(l=>l&&srcs.indexOf(l.source)>=0).map(l=>l.id));
+      _ovlIds(kind).forEach(id=>{ if(viaClaim.has(id)) return; try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
     /* (#R118) PER-MESSAGE overlay snapshots — the reported bug: every "Shown on the map" switch flipped the SHARED
        nlq-* layers, i.e. an old message's switch controlled whatever was drawn LAST ("そのメッセージのものではなく
        強制的に最新のもの"). Each reply now stores WHAT IT DREW (geojson source data + layer filter + key paint
@@ -2620,6 +2630,7 @@ export function atlasConsole(HOST){
               try{ const fs=GE().layers.getFeatureState({source:sid,id:fid}); if(fs&&Object.keys(fs).length) st[fid]=JSON.parse(JSON.stringify(fs)); }catch(_){} });
             if(Object.keys(st).length){ S.states=S.states||{}; S.states[sid]=st; } }catch(_){} } }catch(_){} }
       }catch(_){} });
+      try{ const mk=_surfaceMark()||{}; _ovlClaimed(kind).forEach(sid=>{ if(mk[sid]&&mk[sid].rev!=null) (S.revs||(S.revs={}))[sid]=mk[sid].rev; }); }catch(_){}   /* (atlas-controls-receipts) which content this reply put there — see the evacuation in runActions */
       if(Object.keys(S.layers).length||Object.keys(S.sources).length) snap[kind]=S; });
       return snap; }
     function _ovlRestore(kind,S){ if(!S) return false; try{
@@ -2845,6 +2856,7 @@ export function atlasConsole(HOST){
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc(L('The answer could not be displayed.','回答を表示できませんでした。','Die Antwort konnte nicht angezeigt werden.','Не удалось показать ответ.','No se pudo mostrar la respuesta.'))+'</span><details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+esc(L('Details','詳細','Details','Подробности','Detalles'))+'</summary><div style="font-size:11.5px;color:var(--text-muted);">'+esc((e&&e.message)||'error')+'</div></details>'; }catch(_){} } }
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
+      const _turnMark=_surfaceMark();   /* (atlas-controls-receipts) the map as this run found it: whose drawing was still on it */
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         try{ a.__paintRun="run"+(gen!=null?gen:_runGen); }catch(_){}   /* ⚠ (#R489) WHICH RUN THIS ACTION BELONGS TO, stamped on the action rather than held as a flag. The painting paths accumulate within ONE run and replace between runs, and this is what tells them apart with no lifecycle to get wrong: an action reached through IntMapOS.dispatch (the diagnostics door, and the door tests/r157.spec.js uses) carries no stamp, so it REPLACES — which is right, because a bare dispatch is its own request. */
         try{ PROG.step(ai,a); }catch(_){}   /* (#R723) the ARGUMENT for the row the executor is about to open — the row itself is opened by the event, so a capability no call site here has heard of still appears */
@@ -2873,7 +2885,7 @@ export function atlasConsole(HOST){
         const _drew=(r.ok!==false)?_drewSince(_mark0):[];
         /* ⚠ A NEW DRAWING IS NOT HIDDEN BY AN OLD SWITCH. The kind's layers are shared (nlq-*), and an earlier reply's chip turned them OFF; this run then painted into
            layers that stayed hidden — the thing was drawn, listed, and invisible, and its own chip read OFF. What this run just drew is shown (the reader asked for it just now). */
-        _drew.forEach(d=>{ if(d.visible) return; try{ (d.layerIds||[]).forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','visible'); }); d.visible=_ovlVisible(d.kind); }catch(_){} });
+        _drew.forEach(d=>{ if(d.visible) return; try{ (d.surfaces||[]).forEach(s=>{ try{ GE().render.showSurface(s,true); }catch(_){} }); d.visible=_ovlVisible(d.kind); }catch(_){} });   /* (atlas-controls-receipts) through the painter, as the chip does */
         if(_drew.length){ const _sn=await _witnessDrew(_drew);
           if(_sn){ r.meta=Object.assign({},r.meta||{},{ seen:_sn });
             if(_sn.bad.length){ const _rs=[]; _sn.bad.forEach(b=>{ const t=_whyText(b.reason); if(_rs.indexOf(t)<0) _rs.push(t); });
@@ -2894,7 +2906,11 @@ export function atlasConsole(HOST){
              chips stay ON. Falls back to the old ownership hand-off when the previous owner has no clonable snapshot
              (e.g. the arc canvas). */
           try{ const prev=_ovlOwn[k];
-            if(prev&&prev!==ai&&document.body.contains(prev)&&prev.__ovlSnap&&prev.__ovlSnap[k]&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,prev.__ovlSnap[k]); } }catch(_){}
+            /* ⚠ (atlas-controls-receipts) …ONLY IF IT WAS STILL ON THE MAP when this run began: the same content (`revs` against the run's first mark) and shown. After a
+               clear, or with the earlier reply's switch OFF, evacuating it brought a drawing back that the reader had removed (measured: clear, then a line, and the
+               cleared highlight reappeared as a clone no switch of the new reply could turn off). A kind whose painter claims nothing keeps the old hand-off. */
+            const _ps=prev&&prev.__ovlSnap&&prev.__ovlSnap[k]; const _stillThere=!(_ps&&_ps.revs)||Object.keys(_ps.revs).every(sid=>_turnMark&&_turnMark[sid]&&_turnMark[sid].rev===_ps.revs[sid]&&_turnMark[sid].state==='drawn');
+            if(prev&&prev!==ai&&document.body.contains(prev)&&_ps&&_stillThere&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,_ps); } }catch(_){}
           _ovlOwn[k]=ai; }); }catch(_){}
           ai.__atlMappedKinds=ai.__atlMappedKinds||Object.create(null); mapped.forEach(k=>{ ai.__atlMappedKinds[k]=1; }); } }catch(_){}   /* (#R118/#R159) collect owned overlay kinds → one deduped chip in _atlCompose */
       /* (#R159) accumulate this pass's results on the bubble so the repair pass merges into ONE goal-validated answer */

@@ -485,10 +485,11 @@ export function isolate(HOST){
   const imToast=HOST.imToast, loadCountryData=HOST.loadCountryData;
   window.IntMapIsolate=(function(){
     if(!GE().hasRenderer()) return { enter(){}, exit(){}, active:()=>false };
-    const jp=()=>HOST.lang==='jp'; let active=false, btn=null;
+    const jp=()=>HOST.lang==='jp'; let active=false, btn=null, shown=true;   /* (atlas-controls-receipts) shown: false while a switch has it hidden — still isolated, not re-asserted */
     function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
     function ensure(){ if(GE().layers.hasSource('iso-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        try{ GE().render.claim(['iso-src','iso-edge-src'],'isolate',{ clear:()=>exit(), show:(on)=>show(on) }); }catch(_){}   /* (atlas-controls-receipts) the chip and Objects hide it through show(), which this file's styledata re-assert respects */
         GE().layers.add({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
         /* THE MASK, ITS EDGE AND THE BORDER ARE ONE SHAPE. The hole and the line above it are both drawn from shapeOf() below — the
            country polygon whose land frontier has been replaced by the frontier line the base map draws (js/frontier-fit.js). The line is
@@ -554,15 +555,18 @@ export function isolate(HOST){
     function refit(force){ try{ if((!active&&!force)||!_isoFeat||!GE().layers.hasSource('iso-src')) return;
         const sh=shapeOf(_isoFeat); if(!force&&sh.key===_shapeKey) return; _shapeKey=sh.key;
         GE().layers.setSourceData('iso-src',maskFC(sh)); GE().layers.setSourceData('iso-edge-src',edgeFC(sh)); }catch(_){} }
-    function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
+    /* (atlas-controls-receipts) applyFeature settles a Promise with whether the mask was put on the map (false: no border to cut), so a caller that reports it —
+       the Atlas capability — reports what happened, after it happened. It used to say 「✓」 at once while the mask landed later, or never; the turn's record of
+       what it drew was then taken before anything was there and its reply had no switch. */
+    function applyFeature(feat){ let tries=0, done=null; const settled=new Promise(r=>{ done=r; }); const apply=()=>{ if(!ensure()){
           /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
              the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
              already be sitting idle (nothing re-triggers a render), so that idle never fires and the mask never
              applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
-        if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
-        try{ _isoFeat=feat; refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){}
+        if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} done(false); return; }
+        try{ _isoFeat=feat; shown=true; refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
            ("昔の国をisolateしたらハイライトは自動消去するように"). */
@@ -580,7 +584,8 @@ export function isolate(HOST){
           const padX=(ub[1][0]-ub[0][0])*0.18+0.6, padY=(ub[1][1]-ub[0][1])*0.18+0.6;
           GE().camera.setMaxBounds([[ub[0][0]-padX,Math.max(-85,ub[0][1]-padY)],[ub[1][0]+padX,Math.min(85,ub[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
-      }; apply(); }
+        done(true);
+      }; apply(); return settled; }
     /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
        border GeoJSON first if it isn't in memory yet so isolate works even before Countries(info) is used. */
     /* (#R39) ALWAYS route through the data-ready promise (idempotent — resolves instantly if already loaded).
@@ -593,23 +598,26 @@ export function isolate(HOST){
        fine, and on a failed upgrade falls through to what is loaded). */
     function withFine(go){ let p=null; try{ if(typeof window._imRequireFineCountryGeo==='function') p=window._imRequireFineCountryGeo(); }catch(_){}
       if(p&&typeof p.then==='function') p.then(go,go); else go(); }
-    function withGeo(go){ try{ if(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length){ withFine(go); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>withFine(go)); return; } }catch(_){} go(); }
-    function enter(id){ withGeo(()=>applyFeature(findFeature(id))); }
-    function enterByName(name){ withGeo(()=>applyFeature(findByName(name))); }
+    function withGeo(go){ return new Promise(res=>{ const run=()=>{ try{ res(go()); }catch(_){ res(false); } };   /* settles with what go() settles with */
+      try{ if(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length){ withFine(run); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>withFine(run),()=>withFine(run)); return; } }catch(_){} run(); }); }
+    function enter(id){ return withGeo(()=>applyFeature(findFeature(id))); }
+    function enterByName(name){ return withGeo(()=>applyFeature(findByName(name))); }
     /* (#R29.1) enter by the tapped point first (reliable), fall back to the label name. */
-    function enterAt(lng,lat,name){ withGeo(()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); applyFeature(f); }); }
+    function enterAt(lng,lat,name){ return withGeo(()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); return applyFeature(f); }); }
     /* (#R106) ROOT CAUSE of "昔の国をisolateできない": historical / former-state polygons (Tibet, the German Empire,
        the Ottoman Empire…) do not exist in the MODERN countryGeo, so enterAt / enterByName either found nothing
        ("border not found") or the point-in-polygon landed on the modern occupant (Tibet → China) and isolated the
        WRONG country. When a click already carries the correct era polygon (the place popup passes opts.geojson),
        isolate THAT geometry directly — no countryGeo lookup at all. Accepts a bare geometry or a Feature. */
-    function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
-      applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
-    function exit(){ active=false; _isoFeat=null; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
-    GE().events.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){} } },80); } });   /* a style swap re-creates the sources empty: the shape is drawn into them again */
+    function enterGeom(geom,name){ try{ if(!geom) return Promise.resolve(false); const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return Promise.resolve(false);
+      return applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){ return Promise.resolve(false); } }
+    /* (atlas-controls-receipts) the door the Atlas chip and Objects take (render.claim … show): hidden while still isolated, and not re-asserted until shown */
+    function show(on){ shown=!!on; if(!active) return; try{ if(shown){ if(ensure()){ refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); } } else { GE().layers.setLayout('iso-mask','visibility','none'); hideEdge(); } }catch(_){} }
+    function exit(){ active=false; shown=true; _isoFeat=null; try{ GE().layers.setLayout('iso-mask','visibility','none'); }catch(_){} hideEdge(); try{ GE().camera.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
+    GE().events.on('styledata',()=>{ if(active&&shown){ setTimeout(()=>{ if(active&&shown&&ensure()){ try{ refit(true); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); showEdge('visible'); toTop(); }catch(_){} } },80); } });   /* a style swap re-creates the sources empty: the shape is drawn into them again */
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
-    GE().events.on('idle',()=>{ if(active){ toTop(); refit(); } });
-    return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
+    GE().events.on('idle',()=>{ if(active&&shown){ toTop(); refit(); } });
+    return { enter, enterByName, enterAt, enterGeom, exit, show, active:()=>active, shown:()=>active&&shown };
   })();
 }
 
@@ -1357,7 +1365,7 @@ export function objectList(HOST){
     const OL=IntMapLang.pick(()=>HOST.lang);
     /* the paint js/map-ui.js gives an uploaded layer when it creates it (line 2.2 px, fill 0.22): the starting point of the sliders, nothing else reads them */
     const UPLOAD_LINE_W=2.2, UPLOAD_FILL_OP=0.22;
-    const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
+    const labels={};   /* labels: rename side-store for objects with no native name. (atlas-controls-receipts) a hidden object is read off its layers, not kept in a side table */
     let panel=null, fab=null, openState=false;
     const esc=s=>window.IntMapSafe.html(s);
     function srcFeats(id){ try{ const d=GE().layers.sourceData(id); return (d&&d.features)||[]; }catch(_){ return []; } }
@@ -1397,13 +1405,14 @@ export function objectList(HOST){
         width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), geo:()=>it.geom, area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
-      try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
+      try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; const _ul=layersOf([it.sid]); out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', src:[it.sid],
+        hidden:_ul.length>0&&_ul.every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }),   /* (atlas-controls-receipts) read off the layers, so an Atlas switch that hid it is seen here */
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
         width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha:it.alpha!=null?it.alpha:alphaFromFill(UPLOAD_FILL_OP), area:()=>featsKm2(srcFeats(it.sid)), geom:(()=>{ const k=srcFeats(it.sid).map(f=>geomKind(f&&f.geometry)); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':'point'; })(),
         setWidth:w=>{ it.lw=w; try{ if(GE().layers.has(it.sid+'-line')) GE().layers.setPaint(it.sid+'-line','line-width',w); }catch(_){} },
         setOpacity:a=>{ it.alpha=a; [['-fill','fill'],['-line','line'],['-pt','circle']].forEach(([sfx,type])=>{ try{ if(GE().layers.has(it.sid+sfx)) for(const [prop,v] of opacityPaint(type,a)) GE().layers.setPaint(it.sid+sfx,prop,v); }catch(_){} }); },
         setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
-        toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setLayout(L,'visibility',v); }catch(_){} }); },
+        toggleHide:()=>{ const _now=layersOf([it.sid]).every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }); try{ GE().render.showSurface(it.sid,_now); }catch(_){} },   /* (atlas-controls-receipts) the same door the Atlas chip takes */
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
       try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'), src:['imroute-src'],
         focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}
@@ -1467,7 +1476,7 @@ export function objectList(HOST){
             setColor:hasType([sid],'fill')||hasType([sid],'line')||hasType([sid],'circle')?(c=>{ layerStyle([sid]).setColor(c); }):null,
             setWidth:hasType([sid],'line')?(w=>{ layerStyle([sid]).setWidth(w); }):null,
             setOpacity:layersOf([sid]).length?(a=>{ layerStyle([sid]).setOpacity(a); }):null,
-            toggleHide:()=>{ const _ls=layersOf([sid]); const _now=_ls.length&&_ls.every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }); hiddenUp[sid]=!_now; const v=hiddenUp[sid]?'none':'visible'; _ls.forEach(l=>{ try{ GE().layers.setLayout(l.id,'visibility',v); }catch(_){} }); },
+            toggleHide:()=>{ try{ GE().render.showSurface(sid, su.state==='hidden'); }catch(_){} },   /* (atlas-controls-receipts) through the painter's door, as the Atlas chip does */
             focus:()=>fitFeats(srcFeats(sid)), rename:v=>{ labels[oid]=v; }, remove:()=>{ try{ GE().render.clearSurface(sid); }catch(_){} } }); }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
