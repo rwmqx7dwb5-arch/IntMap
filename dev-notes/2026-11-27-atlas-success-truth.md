@@ -49,3 +49,8 @@ GIS 登録が無いときは `not_registered`（描いたが分析用データ�
 ## 検証
 
 `tests/atlas-success-truth-checks.test.mjs` 11 本（旧コードでは全て赤を確認）。関連 16 ファイル 230 本は緑。本番での再現は下の「本番」節。
+
+## perf の天井
+
+`atlas-console` の async チャンクの天井を 1471.8 → 1481.3 kB に上げた（`perf-budget --update`、main 取り込み後の build）。この PR が足したのは、入力マニフェスト（`inputView`）・
+ref のページ名・依存順の適用・版の突き合わせなど数 kB で、同じ merge に入った他セッションの変更も同じチャンクに乗っている。能力（誤判定の除去・取りこぼしの保持）と引き換えの増加。
