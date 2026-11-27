@@ -17,7 +17,7 @@ import { makeServerCaps } from '../supabase/functions/_shared/atlas-server-caps.
 import { peakConcurrency } from '../js/atlas-run-ledger.js';
 import { gradeMap, validateMapState, mapVocabulary, parseColour } from '../scripts/atlas-eval/map-state.mjs';
 import { expressionOf, tookEffect, validateOpenQuestions } from '../scripts/atlas-eval/initiative.mjs';
-import { heldUntouched, makeHeldObserver } from '../js/atlas-held-data.js';
+import { makeHeldObserver } from '../js/atlas-held-data.js';
 import { addCase } from '../scripts/atlas-eval/add-case.mjs';
 import { rubricRequest } from '../scripts/atlas-eval/grade.mjs';
 
@@ -179,7 +179,9 @@ test('⑤ a tabs call that failed is not «the reply drew tabs»; the same call 
 /* ⑥ */
 test('⑥ the held-data line lists what predates the turn and no result names; a dataset the turn used is left out; an unreadable registry says nothing', () => {
   const ds = [{ id: 'dem_1', title: 'Elevation', kind: 'raster', createdAt: 100 }, { id: 'lc_2', title: 'Land cover', count: 40, fields: [{ name: 'cls' }], createdAt: 150 }, { id: 'new_3', title: 'Made now', createdAt: 900 }];
-  assert.deepEqual(heldUntouched(ds, [{ capability: 'data.gis', args: { inputs: ['lc_2'] } }], 500).map((d) => d.id), ['dem_1']);
+  const partly = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [{ capability: 'data.gis', args: { inputs: ['lc_2'] } }] });
+  assert.match(partly[0], /dem_1/);
+  assert.ok(!/lc_2/.test(partly[0]), 'a dataset the turn named is left out');
   const lines = makeHeldObserver(500, { IntMapData: { list: () => ds } })({ results: [] });
   assert.equal(lines.length, 1);
   assert.match(lines[0], /Elevation \[dem_1\]/);

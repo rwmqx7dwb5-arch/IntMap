@@ -1294,13 +1294,13 @@ export default [
          else would — so when it ends, its cost goes to the turn that left it (the sink is read now: a later turn is never handed it). `reported` keeps it
          from being counted twice if a second ask does return it first. */
       if (pendingIds.length) {
-        const sink = lateCostSink.current;
+        const sink = lateCostSink.current;   /* no sink (no loop is counting): the cost stays with whichever answer returns the worker */
         entry.reported = entry.reported || new Set();
-        entry.run.handles.filter((h) => pendingIds.includes(h.id)).forEach((h) => {
+        if (typeof sink === 'function') entry.run.handles.filter((h) => pendingIds.includes(h.id)).forEach((h) => {
           h.promise.then((r) => {
             if (!r || r.reused || entry.reported.has(h.id)) return;
             entry.reported.add(h.id);
-            if (typeof sink === 'function') sink(Number(r.costUsd) || 0);
+            sink(Number(r.costUsd) || 0);
           }, () => {});
         });
       }

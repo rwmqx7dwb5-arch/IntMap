@@ -24,7 +24,7 @@ const SEARCHED_CHARS = 400000;
 const one = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
 
 /** heldUntouched(datasets, results, since) → [dataset] — those created before `since` that no result of the turn names by id */
-export function heldUntouched(datasets, results, since) {
+function heldUntouched(datasets, results, since) {
   const list = Array.isArray(datasets) ? datasets : [];
   let blob = '';
   try { blob = JSON.stringify(results == null ? [] : results).slice(0, SEARCHED_CHARS); } catch (_) { blob = ''; }
@@ -32,7 +32,7 @@ export function heldUntouched(datasets, results, since) {
 }
 
 /** the line one dataset is described by — what the registry holds of it, nothing inferred */
-export function describeHeld(r) {
+function describeHeld(r) {
   const fields = (Array.isArray(r.fields) ? r.fields : []).map((f) => f && f.name ? f.name + (f.unit ? ' (' + f.unit + ')' : '') : '').filter(Boolean).slice(0, 8);
   const what = [r.kind || r.type || '', r.count != null ? r.count + ' rows' : '', fields.length ? 'fields: ' + fields.join(', ') : ''].filter(Boolean).join('; ');
   return one(r.title || r.id, 80) + ' [' + one(r.id, 60) + ']' + (what ? ' — ' + one(what, 220) : '');
