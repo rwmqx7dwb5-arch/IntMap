@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { schemaOk } from "./schema.ts";
+import { INPUT_LIMITS } from "../_shared/atlas-input-limits.js";   // (atlas-input-limits) the page's budget and this fence, from one object
 
 /* ══ ⚠⚠⚠ (atlas-native-tools) PROTOCOL 2 — THE TURN AS ITEMS, THE TOOLS AS THE PROVIDER'S OWN FUNCTIONS ══════════
    MEASURED before this: Atlas sent ONE string per step and this function kept `.slice(0, MAX_PROMPT)`
@@ -30,10 +31,10 @@ import { schemaOk } from "./schema.ts";
    budget item by item (INPUT_BUDGET: 240,000 in total, 48,000 per item) and says what it gave up; the
    bounds below are set at twice those, so a conforming client never reaches them. When something does,
    what was cut is RETURNED (meta.inputTrimmed) and written into the item itself — never done silently.
-   EXPIRES WHEN: the client's INPUT_BUDGET moves (tests/r809 holds these at or above it). */
-export const MAX_INPUT_ITEMS = 600;          // 48 history + 8 steps × (reasoning + message + 8 calls + 8 outputs) + the rest, with room
-export const MAX_INPUT_CHARS = 480_000;
-export const MAX_ITEM_CHARS = 96_000;
+   CANONICAL: supabase/functions/_shared/atlas-input-limits.js (both numbers, side by side). */
+export const MAX_INPUT_ITEMS = INPUT_LIMITS.SERVER.items;   // the page keeps its input under INPUT_LIMITS.CLIENT.items (half of this)
+export const MAX_INPUT_CHARS = INPUT_LIMITS.SERVER.chars;
+export const MAX_ITEM_CHARS = INPUT_LIMITS.SERVER.item;
 export const MAX_FN_TOOLS = 64;
 export const MAX_FN_DESC = 8_000;
 export const FN_NAME_OK = /^[A-Za-z0-9_-]{1,64}$/;          // the name rule all three providers share
@@ -67,7 +68,26 @@ export function normalizeTurn(payload: Record<string, unknown>): TurnReq | { err
   const trim: Record<string, number> = {};
   const bump = (k: string, n = 1) => { trim[k] = (trim[k] || 0) + n; };
   const items: TurnItem[] = [];
-  for (const raw of (payload.input as unknown[]).slice(0, MAX_INPUT_ITEMS)) {
+  /* ⚠ (atlas-input-limits) OVER THE ITEM COUNT, THE OLDEST CONVERSATION GOES — NEVER THE END. This was `.slice(0, MAX_INPUT_ITEMS)`, which kept
+     the FIRST 600 items: the history and the request survived and the turn's latest calls, their answers and the current state were what was
+     dropped (measured 2026-11-27: 4 calls × 75 steps = 604 items). History messages are what stands before the first attachments marker (the
+     composer puts the documents marker right before the request); past that, nothing is dropped and the turn is refused, said, instead. */
+  let rawIn = (payload.input as unknown[]).slice();
+  if (rawIn.length > MAX_INPUT_ITEMS) {
+    const mk = rawIn.findIndex((r) => !!r && typeof r === "object" && (r as Record<string, unknown>).type === "attachments");
+    const histEnd = mk >= 0 ? mk : 0;
+    let over = rawIn.length - MAX_INPUT_ITEMS + 1;   /* + the one item that says what went */
+    const gone = new Set<number>();
+    for (let i = 0; i < histEnd && over > 0; i++) {
+      const r = rawIn[i] as Record<string, unknown> | null;
+      if (r && r.type === "message" && r.role !== "developer") { gone.add(i); over--; }
+    }
+    if (over > 0) return { error: "too_large" };
+    rawIn = [{ type: "message", role: "user", content: "[EARLIER CONVERSATION NOT SHOWN — the server left out the " + gone.size + " oldest messages to fit its item count. They are not in front of you: if the request depends on them, say so rather than guess.]" } as unknown]
+      .concat(rawIn.filter((_, i) => !gone.has(i)));
+    bump("droppedItems", gone.size);
+  }
+  for (const raw of rawIn) {
     if (!raw || typeof raw !== "object") { bump("invalidItems"); continue; }
     const o = raw as Record<string, unknown>;
     const t = String(o.type || "");
@@ -109,7 +129,6 @@ export function normalizeTurn(payload: Record<string, unknown>): TurnReq | { err
       if (ch.length) items.push({ type: "attachments", channels: ch });
     } else bump("invalidItems");
   }
-  if ((payload.input as unknown[]).length > MAX_INPUT_ITEMS) bump("droppedItems", (payload.input as unknown[]).length - MAX_INPUT_ITEMS);
   /* over the total: the oldest conversation messages go — never a call, never an output, never the
      request — and one item says so. Where the history ends: js/atlas-agent.js puts the documents
      marker right before the request, so everything before the FIRST marker is history; a caller

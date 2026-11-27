@@ -34,4 +34,4 @@ export function declaredCapabilityIds() {
  *  Observation (atlas-completion): 12,000 → 13,000 because compose_map gained `basis` / `via`; 13,000 → 14,000 (atlas-table-to-countries, measured 13,464) because highlight now names its `groups` category form and the shape of a group. It is a guard against
  *  the 64,250-character catalogue coming back, NOT a policy on the core tools' length. Expires if the core tool set is
  *  redesigned. Canonical home: here — tests/atlas-agent-loop-checks.test.mjs and the deep spec r318-atlas.spec.js read it. */
-export const CORE_TOOL_BLOCK_MAX = 15_000;   /* 14,000 → 15,000 (delegate-base-tool, measured 14,848): research.delegate joined the core tools as `delegate` — 2026-11-25 */
+export const CORE_TOOL_BLOCK_MAX = 16_000;   /* 14,000 → 15,000 (delegate-base-tool, measured 14,848): research.delegate joined the core tools as `delegate` — 2026-11-25 · 15,000 → 16,000 (atlas-child-loop-reuse, measured 15,265): find_capability gained `want` / `have`, whose vocabulary is the registry's own — 2026-11-27 */

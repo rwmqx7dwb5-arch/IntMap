@@ -193,7 +193,10 @@ export function makeAtlasToolSurface(deps) {
           + 'Answers may list SKILLS (how-to notes, not procedures): read one with query "skill:<id>".',
         parameters: {
           type: 'object', required: ['query'],
-          properties: { query: { type: 'string', minLength: 2 }, section: { type: 'string' }, language: { type: 'string', enum: ['en', 'jp'] } },
+          properties: { query: { type: 'string', minLength: 2 }, section: { type: 'string' }, language: { type: 'string', enum: ['en', 'jp'] },
+            /* (atlas-child-loop-reuse) what decides which weak matches are spelled out — see VOCAB below; the values are the registry's own words */
+            want: { type: 'array', items: { type: 'string' }, description: 'Outputs you need: ' + VOCAB().want.join('|') }, 
+            have: { type: 'array', items: { type: 'string' }, description: 'Inputs you hold: ' + VOCAB().have.join('|') } },
         },
       };
 
@@ -230,7 +233,7 @@ export function makeAtlasToolSurface(deps) {
         if (read.ok) { try { read.readiness = await skillReadiness(skillById(sid), { capabilities: CAPS, probes: deps.probes || {} }); } catch (_) { read.readiness = { error: 'readiness_unobserved' }; } }
         return read;
       }
-      var out = await findCapabilities(query);
+      var out = await findCapabilities(query, args);
       var sk = [];
       try { sk = searchSkills(query, { want: 2 }); } catch (_) { sk = []; }
       if (sk.length) {
@@ -239,7 +242,38 @@ export function makeAtlasToolSurface(deps) {
       }
       return out;
     }
-    async function findCapabilities(query) {
+    /* ══ (atlas-child-loop-reuse) WHICH MATCHES ARE SPELLED OUT WHEN THE RANKER IS SURE OF NONE ═════════════════════════════════════════════════
+       With nothing strong, every match used to arrive whole: 「稜線の両側の植生を比較」 shares only the category word 比較 with the registry, so 58
+       capabilities tied at rank 1 and the answer was 125,868 characters (96,865 of documentation) — nine times the 13,750 of a search that named
+       its capability (measured 2026-11-27, lexical, this registry). The result is replayed on every later call of the turn. Every match is still
+       LISTED (id, callable name, one-line summary — nothing is hidden, and how many there are is not what is being reduced); what decides which
+       ones are spelled out is what the registry DECLARES about each — the input it takes (column 9, target) and what it produces (column 6) —
+       against what the model says it has and wants (`have` / `want`), and whether it can run here (availability). The vocabulary is read off
+       the registry, so a kind added tomorrow is offered without anyone listing it. A strong match is spelled out as before. */
+    var _vocab = null;
+    function VOCAB() {
+      if (_vocab) return _vocab;
+      var have = Object.create(null), want = Object.create(null);
+      try { CAPS.all().forEach(function (c) { if (!c || c.withdrawn) return; if (c.targetPolicy && c.targetPolicy.kind) have[c.targetPolicy.kind] = 1; (c.produces || []).forEach(function (p) { if (p) want[p] = 1; }); }); } catch (_) { /* an unreadable registry offers no vocabulary */ }
+      _vocab = { have: Object.keys(have).sort(), want: Object.keys(want).sort() };
+      return _vocab;
+    }
+    function listOf(v) { return (Array.isArray(v) ? v : (v == null || v === '' ? [] : [v])).map(function (x) { return String(x).trim(); }).filter(Boolean); }
+    function hintsGiven(h) { return !!(h && (listOf(h.have).length || listOf(h.want).length)); }
+    function fits(cap, h) {
+      try { var av = cap.availability ? cap.availability() : { available: true }; if (av && av.available === false && av.reason === 'withdrawn') return false; } catch (_) { /* availability unknown: not held against it */ }
+      var have = listOf(h.have), want = listOf(h.want);
+      var kind = (cap.targetPolicy && cap.targetPolicy.kind) || '';
+      if (have.length && kind && cap.targetPolicy.required && have.indexOf(kind) < 0) return false;   /* it needs an input of a kind the model does not hold */
+      if (want.length && !(cap.produces || []).some(function (p) { return want.indexOf(p) >= 0; })) return false;
+      return true;
+    }
+    function detailFor(rankedIds, strongIds, h) {
+      var out = strongIds.slice();
+      if (hintsGiven(h)) rankedIds.forEach(function (id) { if (out.indexOf(id) >= 0) return; var c = null; try { c = CAPS.resolve(id); } catch (_) { c = null; } if (c && fits(c, h)) out.push(id); });
+      return out;
+    }
+    async function findCapabilities(query, hints) {
       var r = null, q = String(query || '');
       try {
         r = typeof CAPS.searchFused === 'function'
@@ -250,7 +284,13 @@ export function makeAtlasToolSurface(deps) {
          request, or standing out in meaning) arrives whole; the rest arrive as one line each. With nothing strong there is no basis to tell
          them apart, so every one arrives whole. */
       var strongIds = ((r && r.strong) || []).map(function (x) { return x.id; });
-      var res = describe(query, ((r && r.ranked) || []).map(function (x) { return x.id; }), (r && r.basis) || 'lexical', (r && r.semantic) || undefined, strongIds);
+      var rankedIds = ((r && r.ranked) || []).map(function (x) { return x.id; });
+      var res = describe(query, rankedIds, (r && r.basis) || 'lexical', (r && r.semantic) || undefined, detailFor(rankedIds, strongIds, hints), strongIds);   /* prose only for what the request named: a match spelled out for fitting the hints carries its schema, and its documentation is one find_capability away */
+      if (!strongIds.length && rankedIds.length && !hintsGiven(hints)) {
+        res.note = 'None of these ' + rankedIds.length + ' was named by your request (they share only a general word with it), so each is one line. '
+          + 'Call find_capability again with the same query and "want" (the output you need: ' + VOCAB().want.join(', ') + ') and/or "have" (what you hold or will name: '
+          + VOCAB().have.join(', ') + ') to have the ones that fit spelled out, or with one id to read that one. ' + (res.note || '');
+      }
       /* (mcp-client) the reader's registered MCP servers are searched with the same words, and their tools come back beside the registry's
          under their own key, with their real inputSchema and the capability that runs them (mcp.call | mcp.act). Every string in them was written
          by a server's operator: the entries say so (untrusted), and the tool's description is data. A server that could not be asked says why. */
@@ -273,7 +313,7 @@ export function makeAtlasToolSurface(deps) {
        recorded turn (scripts/atlas-eval/replay.mjs) can hand back the RECORDED ranking — the meaning search is a
        network call it cannot repeat — described by the CURRENT declarations, instead of carrying 200 kB of
        catalogue prose that goes stale with the next PR that touches a description. */
-    function describe(query, rankedIds, basis, semantic, detailIds) {
+    function describe(query, rankedIds, basis, semantic, detailIds, docIds) {
       var ranked = (rankedIds || []).map(function (id) { return { id: id }; });
       var r = { basis: basis, semantic: semantic };
       var lexicalOnly = !r || r.basis !== 'lexical+semantic';
@@ -289,7 +329,7 @@ export function makeAtlasToolSurface(deps) {
         var cap = null;
         try { cap = CAPS.resolve(ranked[i].id); } catch (_) { cap = null; }
         if (!cap || cap.withdrawn) continue;
-        var whole = !detailIds || !detailIds.length || detailIds.indexOf(cap.id) >= 0;
+        var whole = !Array.isArray(detailIds) || detailIds.indexOf(cap.id) >= 0;   /* no list (a replay of a recorded ranking): every match whole */
         if (!whole) {
           out.push({ id: cap.id, tool: coreNameOf(cap.id) || toolNameOf(cap.id), summary: summaryOf(cap) || undefined,
             needsConfirmation: cap.confirmation && cap.confirmation !== 'none' ? cap.confirmation : undefined,
@@ -321,8 +361,9 @@ export function makeAtlasToolSurface(deps) {
          asked capability's own fragment and its block's heading; the others are named in `documentedWith`, and `find_capability` with
          one of their ids returns their own words. Nothing is withheld: it is one call away, not gone. */
       var doc = '', sib = [];
-      try { doc = String(CAPS.catalogText(ids, { exact: true }) || '').trim(); } catch (_) { doc = ''; }
-      try { if (typeof CAPS.catalogSiblings === 'function') sib = CAPS.catalogSiblings(ids) || []; } catch (_) { sib = []; }
+      if (Array.isArray(docIds)) ids = ids.filter(function (id) { return docIds.indexOf(id) >= 0; });   /* (atlas-child-loop-reuse) the prose of what the request named — see findCapabilities */
+      try { doc = ids.length ? String(CAPS.catalogText(ids, { exact: true }) || '').trim() : ''; } catch (_) { doc = ''; }
+      try { if (typeof CAPS.catalogSiblings === 'function') sib = ids.length ? (CAPS.catalogSiblings(ids) || []) : []; } catch (_) { sib = []; }
       return { ok: true, query: query, matches: out, documentation: doc || undefined,
         documentedWith: sib.length ? sib : undefined, basis: (r && r.basis) || 'lexical',
         note: out.length ? 'Call run_capability with one of these ids and arguments matching its schema.'

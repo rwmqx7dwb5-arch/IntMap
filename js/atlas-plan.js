@@ -103,14 +103,35 @@ export function makeAtlasPlan(opts) {
 
   function emit(ev) { subs.slice().forEach((f) => { try { f(ev, snapshot()); } catch (_) { /* a viewer never breaks the turn */ } }); }
 
-  function latestPerCapability(ops) {
+  /* ══ (atlas-child-loop-reuse) THE ATTEMPTS THAT ARE ONE PIECE OF WORK, NOT ONE CAPABILITY ═══════════════════════════════════════════════════════════
+     A step's state was read off the LATEST call of each capability, so five `data.value` calls — five countries — were one row: registered
+     4 failed then 1 ok, the step said 「completed」 and the model read `data.value completed`; 4 ok then 1 failed, it said 「failed」 (measured
+     2026-11-27, external audit). The piece of work a call does is the call's own identity — what it asked (the capability and its arguments,
+     js/atlas-turn-results.js callKey, which the loop hands in as `key`): a retry of Japan with the same arguments replaces Japan's failure;
+     Germany's failure stays Germany's. A call that arrives without a key (an older caller) is its capability, as before. */
+  function latestPerWork(ops) {
     const by = Object.create(null), order = [];
-    ops.forEach((o) => { if (!(o.cap in by)) order.push(o.cap); by[o.cap] = o; });
+    ops.forEach((o) => { const k = o.key || ('cap:' + o.cap); if (!(k in by)) order.push(k); by[k] = o; });
     return order.map((k) => by[k]);
+  }
+  /* the operations of one step as the model reads them: one line per capability, and where a capability did several pieces of work, how many of
+     them completed and which did not — «data.value: 1 of 5 completed; not completed: {country:DEU} failed (…)» */
+  function operationLines(ops) {
+    const works = latestPerWork(ops);
+    const byCap = Object.create(null), caps = [];
+    works.forEach((o) => { if (!(o.cap in byCap)) { byCap[o.cap] = []; caps.push(o.cap); } byCap[o.cap].push(o); });
+    const earlier = (o) => (o.turn !== turnNo ? ' [earlier turn]' : '');
+    return caps.map((c) => {
+      const list = byCap[c];
+      if (list.length === 1) { const o = list[0]; return o.cap + ' ' + o.state + (o.code ? ' (' + o.code + ')' : '') + earlier(o); }
+      const done = list.filter((o) => o.state === 'completed');
+      const rest = list.filter((o) => o.state !== 'completed');
+      return c + ': ' + done.length + ' of ' + list.length + ' completed' + (rest.length ? '; not completed: ' + rest.map((o) => (o.work || '(no arguments)') + ' ' + o.state + (o.code ? ' (' + o.code + ')' : '') + earlier(o)).join('; ') : '');
+    });
   }
   function stepState(st, i) {
     if (st.ops.some((o) => o.inflight)) return 'running';
-    const last = latestPerCapability(st.ops);
+    const last = latestPerWork(st.ops);
     if (last.length) {
       let worst = 'completed';
       last.forEach((o) => { if ((RANK[o.state] != null ? RANK[o.state] : 9) < RANK[worst]) worst = o.state; });
@@ -136,7 +157,7 @@ export function makeAtlasPlan(opts) {
       declaredThisTurn: plan.declaredTurn === turnNo,
       steps: plan.steps.map((st, i) => ({
         n: i + 1, title: st.title, state: stepState(st, i),
-        ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null })),
+        ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null, work: o.work || undefined })),
       })),
     };
   }
@@ -223,7 +244,8 @@ export function makeAtlasPlan(opts) {
     if (!plan || !callId) return;
     const i = (info && info.step != null) ? info.step : -1;
     if (!(i >= 0 && i < plan.steps.length)) return;
-    const op = { callId: String(callId), cap: String((info && info.capability) || (info && info.name) || ''), state: 'running', inflight: true, turn: turnNo, planId: plan.id };
+    const op = { callId: String(callId), cap: String((info && info.capability) || (info && info.name) || ''), state: 'running', inflight: true, turn: turnNo, planId: plan.id,
+      key: info && info.key ? String(info.key) : '', work: info && info.work ? String(info.work).slice(0, 160) : '' };   /* (atlas-child-loop-reuse) the piece of work — see latestPerWork */
     plan.steps[i].ops.push(op);
     inflight[op.callId] = op;
     emit({ type: 'op', phase: 'started', callId: op.callId, step: i + 1 });
@@ -274,8 +296,7 @@ export function makeAtlasPlan(opts) {
     const s = snapshot(); if (!s) return null;
     return { goal: s.goal, current: s.current,
       steps: s.steps.map((st) => ({ n: st.n, title: st.title, state: st.state,
-        operations: latestPerCapability(plan.steps[st.n - 1].ops).map((o) => o.cap + ' ' + o.state + (o.code ? ' (' + o.code + ')' : '')
-          + (o.turn !== turnNo ? ' [earlier turn]' : '')) })) };
+        operations: operationLines(plan.steps[st.n - 1].ops) })) };
   }
   function promptBlock() {
     const m = forModel(); if (!m) return '';

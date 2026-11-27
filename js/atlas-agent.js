@@ -38,8 +38,9 @@
  *  round is not a second architecture.
  * ==========================================================================*/
 
+import { INPUT_LIMITS } from '../supabase/functions/_shared/atlas-input-limits.js';   /* (atlas-input-limits) this budget and ai-proxy's fence, from one object */
 import { atPath } from './atlas-working-memory.js';   /* (atlas-working-memory) one value at an address in an original result */
-import { makeRunLedger, runLine, makeRunHistory, peakConcurrency, lateCostSink } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
+import { makeRunLedger, runLine, makeRunHistory, peakConcurrency, lateCostSink, runMarkSink } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
 export function makeAtlasAgent() {
@@ -369,7 +370,9 @@ export function makeAtlasAgent() {
        EXPIRES WHEN: find_capability's documentation grows past `item`, or the model's context window
        changes. CANONICAL: here; ai-proxy's MAX_INPUT_CHARS / MAX_ITEM_CHARS are set ABOVE these so a
        conforming client never reaches them (tests/atlas-native-tools-checks.test.mjs holds both). */
-    const INPUT_BUDGET = { total: 240000, item: 48000, squeezed: 4000 };
+    /* (atlas-input-limits) the numbers live in supabase/functions/_shared/atlas-input-limits.js beside the proxy's, and the budget is now
+       counted in ITEMS as well as characters (`items`): ④ and ⑤ below. */
+    const INPUT_BUDGET = INPUT_LIMITS.CLIENT;
     /* The one tool the LOOP owns rather than the app: reading the rest of a result that was cut. It is
        offered only on a step whose input actually cut something (js/atlas-console.js adds it), so an
        ordinary turn's tool list — the part of the prompt a provider caches — is unchanged by it. */
@@ -434,6 +437,7 @@ export function makeAtlasAgent() {
       const tr = Array.isArray(o.transcript) ? o.transcript : [];
       const turnMsgs = tr.slice((tr.length && tr[0] && tr[0].role === 'user') ? 1 : 0);
       const turnItems = [];
+      const turnStep = [];        /* (atlas-input-limits) the step each turn item belongs to (0 = a note before any step), parallel to turnItems */
       const outs = [];            /* {item, full, callId, stepNo} — the results, in order, for the budget below */
       const issued = Object.create(null);
       let stepNo = 0;
@@ -443,13 +447,13 @@ export function makeAtlasAgent() {
           stepNo++;
           if (Array.isArray(m.items) && m.items.length) {
             /* the provider's own items, replayed as it wrote them (reasoning included) */
-            m.items.forEach(function (it) { if (it && it.type) { turnItems.push(it); if (it.type === 'function_call' && it.call_id) issued[it.call_id] = true; } });
+            m.items.forEach(function (it) { if (it && it.type) { turnItems.push(it); turnStep.push(stepNo); if (it.type === 'function_call' && it.call_id) issued[it.call_id] = true; } });
           } else {
-            if (String(m.content || '').trim()) turnItems.push({ type: 'message', role: 'assistant', content: String(m.content) });
+            if (String(m.content || '').trim()) { turnItems.push({ type: 'message', role: 'assistant', content: String(m.content) }); turnStep.push(stepNo); }
             (Array.isArray(m.toolCalls) ? m.toolCalls : []).forEach(function (c) {
               if (!c || !c.id) return;
               issued[c.id] = true;
-              turnItems.push({ type: 'function_call', call_id: String(c.id), name: String(c.name || ''), arguments: JSON.stringify(c.arguments || {}) });
+              turnItems.push({ type: 'function_call', call_id: String(c.id), name: String(c.name || ''), arguments: JSON.stringify(c.arguments || {}) }); turnStep.push(stepNo);
             });
           }
         } else if (m.role === 'tool') {
@@ -458,18 +462,18 @@ export function makeAtlasAgent() {
             if (r && r.id && issued[r.id]) {
               const it = { type: 'function_call_output', call_id: String(r.id), output: '' };
               outs.push({ item: it, full: resultText(r), callId: String(r.id), stepNo: stepNo });
-              turnItems.push(it);
+              turnItems.push(it); turnStep.push(stepNo);
             } else if (r) orphans.push(r);
           });
           /* a note that answers no call (the output gate's bounce) is IntMap's record of this turn, and
              travels fenced exactly as it did inside [THIS TURN SO FAR] */
-          if (orphans.length) turnItems.push({ type: 'message', role: 'user', content: 'IntMap observed: ' + wrap(resultText(orphans.length === 1 ? orphans[0] : orphans)) });
+          if (orphans.length) { turnItems.push({ type: 'message', role: 'user', content: 'IntMap observed: ' + wrap(resultText(orphans.length === 1 ? orphans[0] : orphans)) }); turnStep.push(stepNo); }
         } else if (String(m.content || '').trim()) {
-          turnItems.push({ type: 'message', role: 'user', content: String(m.content) });
+          turnItems.push({ type: 'message', role: 'user', content: String(m.content) }); turnStep.push(stepNo);
         }
       });
 
-      const trim = { droppedHistory: 0, droppedHistoryChars: 0, truncated: [], squeezed: [] };
+      const trim = { droppedHistory: 0, droppedHistoryChars: 0, truncated: [], squeezed: [], foldedSteps: 0, foldedItems: 0 };
       /* ① one result bigger than an item is cut inside it, and says so after the fence */
       const cut = function (e, keep, list) {
         const full = e.full;
@@ -514,6 +518,66 @@ export function makeAtlasAgent() {
           over -= (before - itemChars(e.item));
         }
       }
+      /* ④ (atlas-input-limits) STILL OVER: THE LATEST STEP'S RESULTS ARE SQUEEZED TOO. They were exempt, so a reply of twelve 45,000-character
+         answers composed to 540,700 characters with `cut:false` and the proxy refused the whole turn (`too_large`) — the reader got nothing and
+         the model never saw any of them. A result squeezed here is cut the way every other one is: its first characters are in front of the
+         model and the note after the fence gives the offset `read_result` reads on from, so nothing is lost, it is one call away. The
+         largest goes first and each keeps at least `squeezed`; what is given up is said in trim.squeezed. */
+      const fixedNow = function () { return (stableItem ? itemChars(stableItem) : 0) + itemChars(reqItem) + sum(turnItems) + (tailItem ? itemChars(tailItem) : 0) + (memItem ? itemChars(memItem) : 0); };   /* ③ changed what the turn's items weigh */
+      if (fixedNow() + sum(kept) > B.total) {
+        let over = fixedNow() + sum(kept) - B.total;
+        const latest = outs.filter(function (e) { return e.stepNo === stepNo; }).sort(function (a, b) { return itemChars(b.item) - itemChars(a.item); });
+        for (let i = 0; i < latest.length && over > 0; i++) {
+          const e = latest[i];
+          const before = itemChars(e.item);
+          if (before <= B.squeezed) continue;
+          const keep = Math.max(B.squeezed, Math.min(e.full.length, before) - over - 400);   /* 400: the cut note's own length */
+          if (keep >= e.full.length) continue;
+          trim.truncated = trim.truncated.filter(function (t) { return t.call_id !== e.callId; });
+          trim.squeezed = trim.squeezed.filter(function (t) { return t.call_id !== e.callId; });
+          cut(e, keep, trim.squeezed);
+          over -= (before - itemChars(e.item));
+        }
+      }
+      /* ⑤ (atlas-input-limits) THE ITEM COUNT. The proxy reads at most INPUT_LIMITS.SERVER.items items, and a long turn reaches that in items
+         long before characters (4 calls × 75 steps = 604 items, ~19,000 characters). Whole EARLIER steps of this turn — oldest first, never the
+         latest — are written as ONE text item: each call (id, name, arguments) beside its result as composed above, so a call is never parted
+         from its answer and every result stays readable whole by its call_id (read_result). The provider's own opaque items of those steps
+         (reasoning, server blocks) are not repeated, and the item says so. Then, if still over, the oldest conversation messages go, as in ②. */
+      const fixedCount = (stableItem ? 1 : 0) + (memItem ? 1 : 0) + 3 + (tailItem ? 1 : 0);   /* + the two attachment markers and the request */
+      const countNow = function () { return fixedCount + (trim.droppedHistory ? 1 : 0) + kept.length + turnItems.length; };
+      if (countNow() > B.items) {
+        let upTo = 0;   /* steps 1..upTo are folded */
+        const foldable = function (k) { return k > 0 && k < stepNo; };
+        const itemsOfSteps = function (k) { let n = 0; for (let j = 0; j < turnStep.length; j++) if (turnStep[j] >= 1 && turnStep[j] <= k) n++; return n; };
+        while (foldable(upTo + 1) && (fixedCount + (trim.droppedHistory ? 1 : 0) + kept.length + turnItems.length - itemsOfSteps(upTo) + (upTo ? 1 : 0)) > B.items) upTo++;
+        if (upTo) {
+          const lines = [];
+          let folded = 0;
+          const keepItems = [], keepSteps = [];
+          let at = -1;
+          turnItems.forEach(function (it, j) {
+            const k = turnStep[j];
+            if (!(k >= 1 && k <= upTo)) { keepItems.push(it); keepSteps.push(k); return; }
+            if (at < 0) at = keepItems.length;
+            folded++;
+            if (it.type === 'function_call') lines.push('step ' + k + ' call ' + it.call_id + ' ' + it.name + ' ' + it.arguments);
+            else if (it.type === 'function_call_output') lines.push('step ' + k + ' result ' + it.call_id + ': ' + it.output);
+            else if (it.type === 'message') lines.push('step ' + k + ' ' + (it.role === 'assistant' ? 'Atlas: ' : '') + it.content);
+          });
+          const foldItem = { type: 'message', role: 'user', content: '[EARLIER STEPS OF THIS TURN, WRITTEN AS TEXT TO FIT — steps 1-' + upTo + ' (' + folded
+            + ' items) are shown here as text so the input stays within the number of items the server reads; each call stands beside its own result, '
+            + 'and read_result {"call_id":"<id>"} reads any of those results whole. The provider\'s own reasoning of those steps is not repeated.]\n' + lines.join('\n') };
+          keepItems.splice(at < 0 ? 0 : at, 0, foldItem); keepSteps.splice(at < 0 ? 0 : at, 0, 0);
+          turnItems.length = 0; keepItems.forEach(function (x) { turnItems.push(x); });
+          turnStep.length = 0; keepSteps.forEach(function (x) { turnStep.push(x); });
+          trim.foldedSteps = upTo; trim.foldedItems = folded;
+        }
+        while (countNow() > B.items && kept.length) {
+          const gone = kept.shift();
+          trim.droppedHistory++; trim.droppedHistoryChars += itemChars(gone);
+        }
+      }
       const input = [];
       if (stableItem) input.push(stableItem);
       if (trim.droppedHistory) {
@@ -544,7 +608,7 @@ export function makeAtlasAgent() {
          `contextOutside`, which runTurn reads exactly as it reads `webUsed`. Nothing here reads a word. */
       const outside = histOutside.slice(trim.droppedHistory).some(Boolean) || o.requestOutside === true || o.tailOutside === true || !!(memItem && o.memoryOutside === true);
       return { input: input, requestIndex: requestIndex, trim: trim, outside: outside,
-        cut: !!(trim.truncated.length || trim.squeezed.length),
+        cut: !!(trim.truncated.length || trim.squeezed.length || trim.foldedSteps),
         recallable: !!memItem };   /* (atlas-working-memory) the input names refs that read_result answers, so the tool is offered */
     }
 
@@ -886,6 +950,7 @@ export function makeAtlasAgent() {
       const wallNow = () => Date.now();
       const ledger = makeRunLedger({ now: wallNow });
       /* (atlas-autonomy) a worker that ends after the answer which left it running still belongs to THIS turn's cost: the record is the same object the caller holds, refreshed in place */
+      runMarkSink.current = (name) => { try { ledger.mark(name); } catch (_) { /* a record never breaks the turn */ } };   /* (atlas-child-loop-reuse) the instants a delegation reports — see atlas-run-ledger.js runMarkSink */
       lateCostSink.current = (usd) => { try { ledger.late(usd); if (trace.run) Object.assign(trace.run, ledger.summary()); } catch (_) { /* a record never breaks the turn */ } };
       /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
          calls the reader waits through; `modelCalls` said 1 for a turn that made 3. The caller passes what it already measured (opts.preCalls: [{ model, ms }]); the verifier is timed below. Cost is not reported by those two asks, so it is counted as unreported, never as zero. */
@@ -945,6 +1010,7 @@ export function makeAtlasAgent() {
         { const pt = trace.stepTiming && trace.stepTiming[trace.stepTiming.length - 1];
           if (pt && pt.usedAt == null) { pt.usedAt = now(); pt.firstResultHeldMs = pt.firstDoneAt != null ? Math.max(0, pt.usedAt - pt.firstDoneAt) : 0; } }
         const modelT0 = wallNow();
+        try { if (ledger.marked('parentReceived') && !ledger.marked('nextAnalysisStart')) ledger.mark('nextAnalysisStart'); } catch (_) { /* a record never breaks the turn */ }
         try {
           /* ⚠ A SNAPSHOT, NOT THE LIVE ARRAY. The loop keeps appending to `transcript`; handing the
              adapter the array itself means the request it was given changes underneath it while it
@@ -1256,6 +1322,8 @@ export function makeAtlasAgent() {
           let idn = null;
           if (identify) { try { idn = identify(routed); } catch (_) { idn = null; } }
           p.ckey = (idn && idn.id) ? TR.callKey('capability:' + idn.id, idn.args) : TR.callKey(routed.name, routed.arguments);
+          /* (atlas-child-loop-reuse) the piece of work this call is, as the plan names it to the model: its arguments, written compactly */
+          try { const wa = (idn && idn.id) ? idn.args : routed.arguments; p.work = (wa && typeof wa === 'object' && Object.keys(wa).length) ? JSON.stringify(wa).slice(0, 160) : ''; } catch (_) { p.work = ''; }
           let fp = null;
           if (call.name === 'read_result') fp = { pure: true };
           else if (footprint) { try { fp = footprint(routed); } catch (_) { fp = null; } }
@@ -1339,7 +1407,7 @@ export function makeAtlasAgent() {
                the opposite of. */
             executedHere++;
             /* (atlas-plan-on-map) the step this call serves holds what that earlier run returned */
-            if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); PLAN.settled(call.id, rec0); } catch (_) { } }
+            if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work }); PLAN.settled(call.id, rec0); } catch (_) { } }
             return rec0;
           }
           /* (atlas-native-tools) the rest of a result the input had to cut. Answered HERE, from this turn's own
@@ -1382,14 +1450,14 @@ export function makeAtlasAgent() {
           const t0 = now();
           const toolW0 = wallNow();
           /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
-          if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); } catch (_) { } }
+          if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work }); } catch (_) { } }
           try {
             out = await runTool(p.routed, p.planStep);   /* (#R452) …with a deadline. See `runTool` above. */
           } catch (e) {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
           spans.push([t0, now()]);
-          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); } catch (_) { /* a record never breaks the turn */ }
+          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); if (out && Array.isArray(out.delegated) && out.delegated.length) ledger.mark('parentReceived'); } catch (_) { /* a record never breaks the turn */ }
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;

@@ -109,7 +109,7 @@ test('atlas-plan-on-map ② the state is the executor\'s verdict: unobserved and
       { id: 'a1', name: 'map_view', args: { place: 'Tokyo' } }),
     calls({ id: 'p2', name: 'plan', args: { current: 2 } }, { id: 'a2', name: 'highlight', args: { country: 'Japan' } }),
     calls({ id: 'p3', name: 'plan', args: { current: 3 } }, { id: 'a3', name: 'highlight', args: { country: 'Korea' } }),
-    calls({ id: 'a4', name: 'highlight', args: { country: 'South Korea' } }),
+    calls({ id: 'a4', name: 'highlight', args: { country: 'Korea' } }),   /* (atlas-child-loop-reuse) a retry is the SAME piece of work: the same arguments (a reworded one is another piece — tests/atlas-child-loop-reuse-checks.test.mjs) */
     calls({ id: 'p4', name: 'plan', args: { current: 4 } }, { id: 'a5', name: 'map_view', args: { place: 'Nowhere' } }),
     answer('done'),
   ], async () => { n++; return [verdict('unobserved', [], false), verdict('partial'), verdict('failed', [], false), verdict('completed'), verdict('failed', [], false)][n - 1]; }, { plan: PLAN });

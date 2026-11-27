@@ -45,7 +45,7 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, priorStands, failureWhy } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
@@ -379,7 +379,8 @@ export function makeDelegation(o) {
       if (after) { const fu = await Promise.all(followed); Object.defineProperty(out, 'followUps', { value: fu.map((r) => (r ? Object.assign({ reused: false, resumed: false }, r) : null)), enumerable: false }); }
       return out;
     })();
-    return { handles, all, firstUsable, settled };
+    /* (atlas-child-loop-reuse) `followed`: each task's checker (or null), as a promise — a caller that answers before the list ends still owes the turn what a checker of THIS list costs */
+    return { handles, all, firstUsable, settled, followed };
   }
 
   return {
@@ -612,11 +613,18 @@ export function resolveTaskImages(names, source) {
    reported with the reason it may not be called. It is the name Atlas already holds the same search under, and no
    capability id has that spelling, so the grant cannot be confused with a capability. */
 const FIND = 'find_capability';
-function toolSection(allowed, describe, steps, remaining, canFind) {   /* remaining: Infinity = the server states no count */
-  let p = '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
+function toolSection(allowed, describe, steps, remaining, canFind, canCall) {   /* remaining: Infinity = the server states no count · canCall false: the worker holds no capability lane, only read_step */
+  let p = '';
+  if (canCall !== false) {
+  p += '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
   p += '\nTo call them, return ONLY {"calls":[{"capability":"<id>","args":{...}}, …]} instead of the findings. Every call in the list runs at the same time and each result comes back in your next request, in the order you listed them — so put ALL the calls that do not need another call\'s answer in ONE request, and wait for a result only when a call\'s arguments depend on it.';
   if (canFind) p += '\nTo look for a capability you do not have, put {"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}} in "calls": IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
+  } else {
+    /* (atlas-child-loop-reuse) A WORKER WITH NO CAPABILITY STILL READS WHAT IT WAS HANDED. A material longer than the prompt shows is kept whole here
+       (inputView with read:true) and read_step reads it by range — the same way, whatever else the worker was granted. */
+    p += '\n\nYOU MAY READ THE REST OF ANY MATERIAL ABOVE THAT WAS CUT: return ONLY {"calls":[{"capability":"' + READ_STEP + '","args":{"ref":"<the ref named where it was cut>","offset":N,"length":L}}]} instead of the findings — several ranges may go in one list, and each comes back in your next request. You may call nothing else.';
+  }
   if (steps.length) p += '\n\nRESULTS OF YOUR CALLS SO FAR:\n' + steps.map((x, i) => (i + 1) + '. ' + x.capability + ' ' + JSON.stringify(x.args).slice(0, 300) + ' → ' + (x.ok ? '' : 'FAILED: ') + x.text).join('\n');
   if (remaining === Infinity) p += '\n\nThere is no fixed number of requests: make the calls you need, then return the findings JSON. A call you already made with the same arguments is answered from its first result, not run again.';
   else p += remaining <= 1 ? '\n\nTHIS IS YOUR LAST REQUEST: make no more calls; return the findings JSON now from what you have, and say in "gaps" what you could not establish.' : '\n\nYou have ' + remaining + ' request(s) left including the one that returns the findings.';
@@ -668,7 +676,16 @@ export function makeWorkerExecutor(o) {
     if (imgs) imgText += '\n\nIMAGES ATTACHED TO EACH OF YOUR REQUESTS, in this order:\n' + shown.seen.map((x, i) => 'image ' + (i + 1) + ' = ' + x.name + ' (' + x.as + ')').join('\n')
       + (shown.frameText ? '\n' + shown.frameText : '') + '\nRead them for what they show; an image is evidence like any source: name it ("image N", or the attachment\'s name) as the source of a finding drawn from it.';
     if (shown && shown.notes.length) imgText += '\n\nIMAGES YOU WERE TO SEE BUT ARE NOT SHOWN:\n' + shown.notes.join('\n') + '\nDo not answer as if you had seen them; say in "gaps" what you could not establish without them.';
-    const base = (done) => workerPrompt(task) + imgText + ((allowed.length || canFind) ? toolSection(allowed, cap.describe, steps, maxCalls - done, canFind) : '');
+    const full = new Map();       /* (delegate-reread) step ref → the whole answer of a call whose answer was cut for the prompt */
+    /* an input too long for the prompt is kept whole under `input:<task>` and read by range, exactly as a cut answer is (js/atlas-job-core.js inputView) */
+    (task.inputs || []).forEach((inp) => { const v = inputView(inp, { read: true }); if (v.whole) full.set(v.ref, v.whole); });
+    /* ⚠ (atlas-child-loop-reuse) WHAT THIS WORKER HOLDS WHOLE IS READABLE BY ITSELF. The prompt used to say of a cut input «the rest was NOT given to
+       you» while `full` held all of it, and a read_step was not read as a call at all unless the parent had also granted some capability — one
+       unrelated `data.value` in the grant made the same read succeed (measured 2026-11-27: a 13,600-character input whose end no worker could
+       reach). The prompt now names the ref and the read whenever `full` holds something, and the reply is read for calls on the same condition. */
+    const canRead = () => full.size > 0;
+    const hasLane = () => !!(allowed.length || canFind);
+    const base = (done) => workerPrompt(task, undefined, { read: true }) + imgText + ((hasLane() || canRead()) ? toolSection(allowed, cap && cap.describe, steps, maxCalls - done, canFind, hasLane()) : '');
     /* what tells this request apart from another beyond its prompt and web mode: the images it carries and the output size asked —
        appended only when present, so a worker without them keeps the key it always had */
     const keyTail = (imgs || task.maxOutput) ? '\n#' + (task.maxOutput || 0) + ':' + (imgs || []).map((u) => u.length + '.' + u.slice(-48)).join(',') : '';
@@ -682,9 +699,6 @@ export function makeWorkerExecutor(o) {
     let degraded = '';   /* what the final answer was made without, after a retry that changed the request */
     const tried = new Set();   /* the retry variants already used ('web_off', 'concise'): a transient failure is retried only with one not yet tried */
     let lastBad = null;        /* the signature of the last malformed output: the same output again is no progress */
-    const full = new Map();       /* (delegate-reread) step ref → the whole answer of a call whose answer was cut for the prompt */
-    /* an input too long for the prompt is kept whole under `input:<task>` and read by range, exactly as a cut answer is (js/atlas-job-core.js inputView) */
-    (task.inputs || []).forEach((inp) => { const v = inputView(inp, { read: true }); if (v.whole) full.set(v.ref, v.whole); });
     const rangesRead = new Set();   /* ref:offset:length already handed out in this worker — a range read for the FIRST time is progress, whatever it is called */
     const answered = new Map();   /* the call's identity → the step its first call produced: the same call with the same arguments is answered from it, not run again */
     let repeatRun = 0;            /* consecutive steps made only of such repeats */
@@ -761,7 +775,7 @@ export function makeWorkerExecutor(o) {
       (Array.isArray(env && env.citations) ? env.citations : []).forEach((x) => {
         if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: s(x.url, 500), title: s(x.title, 200) });
       });
-      const wanted = (allowed.length || canFind) ? toolCallsOf(env && env.data) : null;
+      const wanted = (hasLane() || canRead()) ? toolCallsOf(env && env.data) : null;
       if (wanted && attempt + 1 < maxCalls) {
         /* (worker-reach) THE CALLS OF ONE REQUEST RUN AT THE SAME TIME, and their steps are written in the order they were asked. The
            grant each is held to is the grant as this request found it: a capability a search in the same request finds is callable
@@ -792,9 +806,12 @@ export function makeWorkerExecutor(o) {
           }
           if (!w.capability) return { ok: false, text: 'this entry of "calls" is not a call: give {"capability":"<id>","args":{...}}' };
           const ck = stable([w.capability, w.args]);
+          if (!cap) return { ok: false, why: 'grant', text: 'this worker was given no capabilities: the only call it may make is ' + READ_STEP + ' (to read the rest of a material that was cut)' };
           const had = answered.get(ck);
-          /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward */
-          if (had) return { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
+          /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward.
+             (atlas-child-loop-reuse) …while the REASON of that first answer still holds (js/atlas-job-core.js priorStands): a refusal for want of
+             a grant is not the answer once a search has added the capability, and a failure of the moment is retried. */
+          if (had && priorStands(had, grant.includes(w.capability))) return { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
           if (inRound.has(ck)) { const first = await inRound.get(ck); return { ok: first.ok, text: 'ALREADY ANSWERED (the same call with the same arguments, earlier in this list; not run again): ' + first.text }; }
           fresh += 1;
           const p = (async () => {
@@ -804,9 +821,9 @@ export function makeWorkerExecutor(o) {
             if (!grant.includes(w.capability)) {
               /* the reason, not only the refusal: a capability that changes something is no worker's, whatever the grant says */
               const kind = cap.classify(w.capability);
-              return { ok: false, text: 'not in your grant (' + (grant.join(', ') || 'nothing yet') + ')'
+              return { ok: false, why: kind === 'read' || kind === 'unknown' ? 'grant' : '', text: 'not in your grant (' + (grant.join(', ') || 'nothing yet') + ')'
                 + (kind === 'other' ? ' — and it is not read-only (capability_not_read_only): it changes something IntMap shows or keeps, so no worker may run it; leave it to Atlas and say so in "gaps"'
-                  : (kind === 'unknown' ? ' — and no capability has that id' : (canFind ? (allowed.includes(w.capability) ? ' — it was found in this same request, so call it in your next one' : ' — find it with ' + FIND + ' first') : ''))) };
+                  : (kind === 'unknown' ? ' — and no capability has that id' : (canFind ? ((allowed.includes(w.capability) || wanted.some((x) => x && x.capability === FIND)) ? ' — a search in this same request may grant it: if it does, call it in your next one' : ' — find it with ' + FIND + ' first') : ''))) };
             }
             const ti = ctx.emit('effect.intent', { capability: w.capability, by: 'worker', turn: childKey });
             try {
@@ -821,15 +838,18 @@ export function makeWorkerExecutor(o) {
               /* (atlas-evidence-to-child) THE RESULT THE MODEL READS, NOT ONLY THE NOTICE THE READER SEES. A capability's `exec` is what the parent is given as its observation (a re-read page: its text and every source address). It is shown under its own reference so the cut of the text above never hides it, and it is kept whole for read_step like everything else. */
               let execShown = '';
               if (out && out.exec && ok) { let j = ''; try { j = JSON.stringify(out.exec); } catch (_) { j = ''; } if (j) execShown = '\nRESULT: ' + shownWithRef(j, ref + 'r'); }
-              return { ok, text: shownWithRef(whole, ref) + execShown };
+              const why = failureWhy(out);
+              return { ok, why, text: shownWithRef(whole, ref) + execShown + (why === 'transient' ? '\n[this failure is of the moment (the capability says so): the same call may be made again]' : '') };
             } catch (e) {
               if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
               ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
-              return { ok: false, text: s(e && e.message, 300) };
+              return { ok: false, why: 'transient', text: s(e && e.message, 300) };
             }
           })();
           inRound.set(ck, p);
           const st = await p;
+          /* a retry after a failure of the moment that fails again THE SAME WAY is not a step forward (one-pass-or-a-reason §2: the same answer twice) */
+          if (had && had.why === 'transient' && st.why === 'transient' && st.text === had.text) fresh -= 1;
           answered.set(ck, st);
           return st;
         };
