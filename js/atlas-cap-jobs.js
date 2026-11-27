@@ -17,15 +17,20 @@ import { serverClass } from './atlas-server-class.js';
 import { pageJobsClient, planDigest, jobText, jobCardShell, mountJobCards, applyParked, deviceParkedMemory } from './atlas-jobs-client.js';
 
 /* what an ENDED job leaves: one work in the work store (js/atlas-job-products.js) and the memory told it is no longer owed. The work store is loaded
-   when it is needed — a page that never ends a job never loads it. Returns the line Atlas reads, or ''. */
-async function fileEnded(K, f) {
+   when it is needed — a page that never ends a job never loads it. The card and status can see the same end together. */
+const filing = new Map();
+function fileEnded(K, f) {
+  const key = f.id + ':' + (f.endedAt || '');
+  if (!filing.has(key)) filing.set(key, fileFinishedJob(K, f).finally(() => filing.delete(key)));
+  return filing.get(key);
+}
+async function fileFinishedJob(K, f) {
   try { const P = await import('./atlas-job-products.js'); P.noteJobEnded(K.workingMemory, f);
     /* (gis-result-handoff) a piece's output is read whole from the server and filed as a dataset product (js/atlas-job-products.js datasetsOfJob) */
     const client = pageJobsClient(), readOutput = client ? (taskId) => client.output(f.id, taskId) : null;
     const W = await import('./atlas-cap-work.js'); const r = await P.saveJobAsWork(f, W.workStore(), { readOutput });
-    const ds = r.ok ? r.saved.filter((n) => /^dataset — /.test(n)) : [];
-    return r.ok ? ' Filed on this device as work ' + r.workId + ' (' + r.saved.length + ' new product(s), ' + r.unchanged + ' unchanged' + (ds.length ? '; datasets: ' + ds.join(', ') + ' — put one on the map or into the next step with work.job restore' : '') + ') — open it with work.job.' : '';
-  } catch (_) { return ''; }
+    return r.ok ? r : null;
+  } catch (_) { return null; }
 }
 
 /* the page's side of a parked operation: the SAME gate a turn and a program go through (K.programBridge → makeExecute), granted only 'state' (map and session, no persist, no external) */
@@ -129,7 +134,7 @@ export default [
     ui: { none: '2026-11-20' },
     phrases: () => ['調査の状況', '裏で動いている仕事', '結果はどうなった', '途中経過'].concat(['job status', 'how is the research going', 'what did the background job find', 'my jobs']),
     doc: [
-      { in: 'research.analyze', at: 37, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done; without one, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
+      { in: 'research.analyze', at: 37, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done. Saved GIS outputs carry their GeoJSON geometry types and the work/product IDs for work.job restore; without an id, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
     ],
     schema: () => ({ type: 'object', properties: { id: str(), limit: int(1, 30) } }),
     async run(a, dctx, K) {
@@ -143,9 +148,11 @@ export default [
           const apply = parkedApplier(K, dctx);
           const applied = await applyParked(f, apply, deviceParkedMemory());
           mountJobCards(() => pageJobsClient(), { L, esc, apply, onEnded: (g) => fileEnded(K, g) });
-          const filed = !f.running ? await fileEnded(K, f) : '';
-          const appliedLine = filed + (applied.length ? ' Applied to the map just now: ' + applied.map((x) => x.capability + (x.ok ? ' ok' : ' refused (' + x.why + ')')).join('; ') : '');
-          return R(true, '<div style="display:none">' + esc(jobText(f) + appliedLine) + '</div>' + jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f } });
+          const filed = !f.running ? await fileEnded(K, f) : null;
+          const filedLine = filed ? '\nFiled on this device as work ' + filed.workId + ' (' + filed.saved.length + ' new product(s), ' + filed.unchanged + ' unchanged).' : '';
+          const appliedLine = applied.length ? '\nApplied to the map just now: ' + applied.map((x) => x.capability + (x.ok ? ' ok' : ' refused (' + x.why + ')')).join('; ') : '';
+          const record = jobText(f, filed) + filedLine + appliedLine;
+          return R(true, jobCardShell(f.id, f, { L, esc }), { meta: { status: 'completed', produced: ['explanation'], record, job: { id: f.id, status: f.status, running: f.running, tasksEnded: f.tasksEnded, tasksTotal: f.tasksTotal, spentUsd: f.spentUsd }, jobFacts: f, ...(filed ? { workId: filed.workId, datasets: filed.datasets } : null) } });
         }
         const rows = await client.list(a && a.limit);
         const items = rows.map((j) => '<li><code>' + esc(j.id) + '</code> — ' + esc(j.status) + (j.stop_reason ? ' (' + esc(j.stop_reason) + ')' : '') + ' · ' + esc(L(j.tasks_done + ' of ' + j.tasks_total + ' done', j.tasks_total + ' 件中 ' + j.tasks_done + ' 件完了')) + (j.title ? ' · ' + esc(j.title) : '') + '</li>').join('');

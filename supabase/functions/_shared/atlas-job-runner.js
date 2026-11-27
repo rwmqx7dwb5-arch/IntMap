@@ -19,7 +19,7 @@
 //  ⚠ NO TYPE ANNOTATIONS — scripts/static-checks.mjs parses committed .js/.ts as plain JavaScript.
 // ============================================================================
 
-import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, digestOf, stable, s, priorStands, failureWhy } from "./atlas-job-core.js";
+import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, digestOf, stable, s, priorStands, failureWhy, jobGeometryTypes } from "./atlas-job-core.js";
 import { capClass } from "./atlas-cap-classes.js";
 
 /* ══ WHAT ONE TASK HANDS THE NEXT  (gis-result-handoff) ═══════════════════════════════════════════════════════════════════════════════
@@ -47,7 +47,7 @@ async function keepOutput(ctx, task, data, sources) {
   const feats = data.result.features;
   const whole = JSON.stringify(data.result);
   const columns = Array.isArray(data.columns) ? data.columns : [];
-  const output = { id: outputId(ctx.job.id, task.task_id), version: digestOf(whole), count: feats.length, columns, sources: (sources || []).map((x) => x && x.url).filter(Boolean), bytes: whole.length, stored: "inline" };
+  const output = { id: outputId(ctx.job.id, task.task_id), version: digestOf(whole), count: feats.length, columns, geometryTypes: jobGeometryTypes(feats), sources: (sources || []).map((x) => x && x.url).filter(Boolean), bytes: whole.length, stored: "inline" };
   if (whole.length <= INLINE_OUTPUT_BYTES) return Object.assign({}, data, { output });
   const parts = [];
   let cur = [], size = 0;
