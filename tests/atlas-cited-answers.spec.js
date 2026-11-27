@@ -143,3 +143,89 @@ test('⑤ a cited host is a chip with a card; the basemap credit is not a source
   expect(card.x).toBeGreaterThanOrEqual(0);
   expect(card.x + card.width).toBeLessThanOrEqual(390);
 });
+
+test('⑥ confirmation stays in the answer and hands the receipt to the same and next model requests', async () => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const jobId = '00000000-0000-4000-8000-000000000202';
+  let starts = 0;
+  await page.route('**/functions/v1/atlas-jobs', (route) => {
+    starts++;
+    return route.fulfill({ status: 202, json: { jobId, created: true, status: 'queued' } });
+  });
+  await page.route('**/rest/v1/atlas_jobs?*', (route) => route.fulfill({
+    json: [{ id: jobId, title: 'Confirmation regression', status: 'queued', tasks_total: 1 }],
+  }));
+  await page.route('**/rest/v1/atlas_job_tasks?*', (route) => route.fulfill({ json: [] }));
+
+  const aiEndpoint = '**/functions/v1/ai-proxy';
+  const input = page.locator('#atlas-panel .atl-in');
+  const send = page.locator('#atlas-panel .atl-go');
+  for (const approve of [true, false]) {
+    const beforeStarts = starts;
+    const model = [];
+    const staleAnswer = Promise.withResolvers();
+    const callId = approve ? 'confirm-run' : 'confirm-decline';
+    const serveTurn = async (route) => {
+      const body = route.request().postDataJSON();
+      const output = [], meta = { protocol: 2 };
+      let text = '{}';
+      if (body.task === 'atlas_turn' && body.protocol === 2) {
+        model.push(body);
+        if (model.length === 1) {
+          text = JSON.stringify({ turn: 'continuing', final_text: 'I will ask before starting the background job.' });
+          meta.webUsed = true;
+          output.push({ type: 'function_call', call_id: callId, name: 'run_capability',
+            arguments: JSON.stringify({ id: 'jobs.start', args: { title: 'Confirmation regression', tasks: [{ goal: 'Read one public map source' }] } }) });
+        } else {
+          const raw = body.input.find(it => it.type === 'function_call_output' && it.call_id === callId)?.output;
+          const result = raw && JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+          const job = result?.details?.job;
+          if (approve && result?.code === 'needs_confirm') await staleAnswer.promise;
+          const say = job ? `Job ${job.id} is ${job.status}.`
+            : result?.code === 'confirmation_declined' ? 'You declined the operation.' : 'The job has not started.';
+          text = JSON.stringify({ turn: 'final', final_text: say });
+        }
+      }
+      await route.fulfill({ status: 200, json: { text, used: 1, limit: 100, charged: true, output, meta } });
+    };
+    await page.route(aiEndpoint, serveTurn);
+    try {
+      await input.fill('Start the background job once I confirm.');
+      await send.click();
+      const answer = page.locator('#atlas-panel .atl-b.a').last();
+      const choice = answer.locator('[data-confirm="' + (approve ? 'run' : 'no') + '"]');
+      await expect(choice).toBeVisible({ timeout: 12_000 });
+      expect(starts).toBe(beforeStarts);
+      await choice.evaluate(button => button.click());
+      await expect(choice).toBeEnabled();
+      await choice.click({ timeout: 12_000 });
+
+      if (approve) {
+        const card = answer.locator(`[data-atl-job="${jobId}"]`);
+        await expect(card).toBeVisible();
+        staleAnswer.resolve();
+        await expect(answer.locator('.atl-md')).toContainText(`Job ${jobId} is queued.`);
+        await expect(card).toContainText(/waiting|待機中/);
+        expect(starts).toBe(beforeStarts + 1);
+      } else {
+        await expect(answer.locator('.atl-md')).toContainText('You declined the operation.');
+        expect(starts).toBe(beforeStarts);
+      }
+      await expect(choice).toHaveCount(0);
+      await expect(send).not.toHaveClass(/busy/);
+      await input.fill('What happened to my background job?');
+      await send.click();
+      await expect.poll(() => model.length).toBeGreaterThanOrEqual(3);
+      await expect(send).not.toHaveClass(/busy/);
+      const prefix = 'IntMap confirmation receipt: ';
+      const saved = model[2].input.findLast(it => typeof it.content === 'string' && it.content.startsWith(prefix));
+      expect(saved).toBeDefined();
+      const nextReceipt = JSON.parse(saved.content.slice(prefix.length));
+      if (approve) expect(nextReceipt.details.job).toMatchObject({ id: jobId, status: 'queued' });
+      else expect(nextReceipt.code).toBe('confirmation_declined');
+    } finally {
+      staleAnswer.resolve();
+      await page.unroute(aiEndpoint, serveTurn);
+    }
+  }
+});
