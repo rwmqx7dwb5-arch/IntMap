@@ -27,7 +27,11 @@ newsjp: バックグラウンドの仕事が、前の段の GIS 結果を全件�
 - **切ってから数えない。** `js/atlas-caps.js` に `counted(list, max)` を 1 つ。`geo.shadeAreas` は由来の無い 2,000 の上限を外し、分母は受け取った行数、達成判定は「全行が結ばれたか」。全数調査（scout）で同じ形だった `layers` の指標一覧（40）・custom score（8）・標高断面（12）・`ui.inlineControls`（8）・国の比較（10）は上限を残したまま、切ったときだけ元の件数と捨てた件数を述べ `userGoalSatisfied:false`。
 - **計画器を実体と照合。** `server`/`job` → `jobs.start`。演算名は GIS が宣言する一覧（`flow.find().ops`、サーバ分は `flow.runsWithoutScreen`——`gis-headless.js` もこの 1 つの述語を使う）と照合し、無い名前は `runnable:false`。期間が問われたら `temporal:'overlaps'` の候補だけが覆い、解像度は `search` の `maxGsd` と `match.resolution:'meets'` で照合する。
 
-## 2. 検査
+## 2. 費用（`check:perf` の天井を上げた理由）
+
+起動時の資産は変わらない。増えたのは遅延チャンクだけ: `atlas-cap-runs` +約 9 kB（`jobs.amend` の revise/keep、dataset 成果物、`counted`、計画器の照合——この回の能力そのもの）と、`atlas-cap-work.js` が `atlas-jobs-client.js` を遅延 import するようになったため `atlas-job-core` が独立した遅延チャンク（10.9 kB）になったこと。どちらも使うときに読む費用で、取り除けば受け渡しの能力が無くなる。`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
+
+## 3. 検査
 
 - `tests/gis-result-handoff-checks.test.mjs`（実際の planJob・runJob・ページの GIS・jobFacts・作業ストアを通す）: 500 地点から B が末尾 1 件を A から抽出／C が A の最後の行まで読む／ジョブ done／ページを開き直して 1 件の座標と元ファイルの URL が取れる・失敗は `partial`・1.5 MB 超は部分で全件・版 2 つと `revise`/`keep` の効果・参照の実装は 1 つ・`counted`。
 - `tests/atlas-shade-areas-checks.test.mjs` に 2,001 行。`tests/geo-task-planner-checks.test.mjs` に監査の計画と実在 GIS の演算一覧。
