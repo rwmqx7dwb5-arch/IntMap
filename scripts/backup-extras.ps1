@@ -22,6 +22,7 @@
 
   USAGE
       powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-extras.ps1
+      ... -Status                   is the encrypted part stale? (no passphrase; RESULT stale|ok)
       ... -SkipEncrypted            only the plain parts + the secret NAMES
       ... -SelfTest -PassphraseFromStdin   encrypt→decrypt a dummy file and compare (no USB needed)
 
@@ -36,6 +37,8 @@ param(
   [switch]$SkipEncrypted,
   [switch]$PassphraseFromStdin,
   [switch]$SelfTest,
+  [switch]$Status,
+  [int]$StaleDays = 14,
   [int]$KeepDumps = 3
 )
 $ErrorActionPreference = 'Stop'
@@ -108,6 +111,25 @@ function Get-Sha256([string]$path) {
 
 $null = New-Item -ItemType Directory -Path $Tmp -Force
 try {
+  # ── status: is the ENCRYPTED part stale? Needs no passphrase and no USB; agents report this at the end of work. ──
+  # Stale = never done, older than -StaleDays, or CLAUDE.local.md changed since (SHA-256 recorded at the last encrypted run).
+  if ($Status) {
+    $st = $null; if (Test-Path $Ledger) { $st = Get-Content -Raw $Ledger | ConvertFrom-Json }
+    $local = Join-Path $Repo 'CLAUDE.local.md'
+    $cur = $null; if (Test-Path $local) { $cur = Get-Sha256 $local }
+    $reasons = @()
+    if (-not $st -or -not $st.credentialsAt) { $reasons += 'credentials never encrypted' }
+    else {
+      $age = [int]((Get-Date) - [datetime]$st.credentialsAt).TotalDays
+      if ($age -gt $StaleDays) { $reasons += "credentials $age days old" }
+      if ($cur -and $st.credentialsSha256 -ne $cur) { $reasons += 'CLAUDE.local.md changed since the last encrypted copy' }
+    }
+    if (-not $st -or -not $st.dbAt) { $reasons += 'DB dump never taken' }
+    else { $age = [int]((Get-Date) - [datetime]$st.dbAt).TotalDays; if ($age -gt $StaleDays) { $reasons += "DB dump $age days old" } }
+    if ($reasons.Count) { Say ('encrypted extras are stale: ' + ($reasons -join '; ') + ' -> run scripts/backup-extras.ps1 in a terminal and type the passphrase'); Write-Host ('RESULT stale ' + ($reasons -join '; ')); exit 0 }
+    Write-Host 'RESULT ok encrypted-extras-fresh'; exit 0
+  }
+
   # ── self test: encrypt → decrypt a dummy and compare. Needs no USB and touches no real data. ──
   if ($SelfTest) {
     $gpg = Get-Gpg; if (-not $gpg) { Say 'gpg not found'; Write-Host 'RESULT failed no-gpg'; exit 1 }
@@ -201,6 +223,7 @@ try {
         $out = Join-Path $dstDir 'credentials.tar.gpg'
         Protect-File $gpg $pass $tar $out
         Part 'credentials' 'ok' "$count file(s) encrypted"
+        $credHash = if (Test-Path $local) { Get-Sha256 $local } else { $null }; $credAt = (Get-Date).ToString('o')
       }
     } catch { Part 'credentials' 'failed' $_.Exception.Message; $failed += 'credentials' }
   } else {
@@ -234,6 +257,7 @@ try {
       Set-Content (Join-Path $dbDir "intmap-$stamp.dump.gpg.sha256") ((Get-Sha256 $encDump) + '  ' + (Split-Path $encDump -Leaf)) -Encoding ascii
       $old = @(Get-ChildItem $dbDir -Filter 'intmap-*.dump.gpg' | Sort-Object Name -Descending | Select-Object -Skip $KeepDumps)
       foreach ($o in $old) { Remove-Item $o.FullName -Force; Remove-Item ($o.FullName + '.sha256') -Force -ErrorAction SilentlyContinue }
+      $dbAt = (Get-Date).ToString('o')
       Part 'db' 'ok' ("{0:N1} MB encrypted" -f ((Get-Item $encDump).Length / 1MB))
     } catch { Part 'db' 'failed' $_.Exception.Message; $failed += 'db' }
     finally { Remove-Item Env:\DB_URL_FILE, Env:\GITHUB_ENV -ErrorAction SilentlyContinue }
@@ -257,7 +281,12 @@ try {
   if ($failed.Count) { Write-Host ("RESULT failed " + ($failed -join ',')); exit 1 }
   # The ledger moves only when nothing failed; a skipped encrypted step is recorded so it cannot look done.
   $dir = Split-Path $Ledger -Parent; if (-not (Test-Path $dir)) { $null = New-Item -ItemType Directory -Path $dir -Force }
-  @{ lastRunAt = (Get-Date).ToString('o'); drive = $Root; parts = $manifest.parts; skipped = $skipped; by = 'scripts/backup-extras.ps1' } | ConvertTo-Json -Depth 4 | Set-Content $Ledger -Encoding utf8
+  # the encrypted timestamps/hash carry over from the previous run unless THIS run did that step
+  $prev = $null; if (Test-Path $Ledger) { $prev = Get-Content -Raw $Ledger | ConvertFrom-Json }
+  $state = [ordered]@{ lastRunAt = (Get-Date).ToString('o'); drive = $Root; parts = $manifest.parts; skipped = $skipped; by = 'scripts/backup-extras.ps1'
+    credentialsAt = $(if ($credAt) { $credAt } elseif ($prev) { $prev.credentialsAt }); credentialsSha256 = $(if ($credAt) { $credHash } elseif ($prev) { $prev.credentialsSha256 })
+    dbAt = $(if ($dbAt) { $dbAt } elseif ($prev) { $prev.dbAt }) }
+  $state | ConvertTo-Json -Depth 4 | Set-Content $Ledger -Encoding utf8
   if ($skipped.Count) { Write-Host ("RESULT partial skipped: " + ($skipped -join ',') + " ($why$dbWhy)"); exit 0 }
   Write-Host "RESULT ok $Root"; exit 0
 } finally {

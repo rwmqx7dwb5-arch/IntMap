@@ -118,6 +118,15 @@ keeps those in the USB folder `extras\` — a folder the mirror never deletes, n
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-extras.ps1
 ```
 
+**Limit, stated as fact:** the USB stays plugged in behind the monitor, so it is the same place as the PC — it covers
+disk failure, deletion and a bad change, **not fire, theft or a power surge**. It is not an off-site copy.
+
+**Operating form:** the end-of-work `backup-usb.ps1` is run by an agent (no passphrase), so the encrypted parts are never
+refreshed by it. You run `backup-extras.ps1` yourself, interactively, when the agent reports the encrypted part stale.
+`backup-extras.ps1 -Status` (no passphrase, no USB) says so: stale = never done, older than 14 days, or `CLAUDE.local.md`
+changed since the last encrypted copy (SHA-256 recorded at that run, in `usb-extras-state.json` outside the repo).
+The agent only reads that verdict; it never sees or handles the passphrase.
+
 It asks for a passphrase twice (hidden). **The passphrase is yours alone**: it is not a parameter, is never written or
 printed, and is not recorded anywhere — lose it and the encrypted files are unrecoverable. With no way to ask (an agent's
 shell), the encrypted steps are skipped and the last line says `RESULT partial skipped: …`; nothing is written in plain.

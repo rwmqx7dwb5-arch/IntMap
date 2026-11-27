@@ -81,6 +81,14 @@ test('with no way to ask for a passphrase the self test skips and says so', { sk
     { cwd: ROOT, input: '', encoding: 'utf8' });
   assert.match(r.stdout, /RESULT (skipped no-passphrase|failed no-gpg)/);
 });
+test('-Status reports staleness without a passphrase and the ledger records the encrypted run', () => {
+  const c = code(extras);
+  assert.match(c, /\$Status/);
+  assert.match(c, /RESULT stale/);
+  assert.match(c, /credentialsSha256/);
+  assert.match(read('AGENTS.md'), /backup-extras\.ps1 -Status/);
+  assert.match(read('docs/BACKUP-RESTORE.md'), /not fire, theft or a power surge/);
+});
 test('docs state the decrypt commands', () => {
   assert.ok(existsSync(new URL('../docs/BACKUP-RESTORE.md', import.meta.url)));
   assert.match(read('docs/BACKUP-RESTORE.md'), /gpg --decrypt/);
