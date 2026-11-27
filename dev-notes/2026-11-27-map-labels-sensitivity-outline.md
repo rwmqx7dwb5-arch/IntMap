@@ -23,3 +23,6 @@ newsjp: 国名は国より狭い範囲へズームすると消え、地名ポッ
 
 ## 検査
 `tests/map-labels-sensitivity-outline-checks.test.mjs`。ピンチの既存検査（`layer-pointer-performance-checks`）は基準 1.7 を掛けた期待値に更新。
+
+## 性能の天井
+eager gzip が 1568.6 → 約 1576 kB（許容幅 7.8 kB のぎりぎり）。この変更が足したのは移行処理・Isolate の縁の層・ポップアップ CSS で、生で数 kB。残りは取り込んだ main の他の変更で、基準が同じ幅の中で動いていたため、この PR が境を越えた。`perf-budget.mjs --update` で eager の行を上げた。
