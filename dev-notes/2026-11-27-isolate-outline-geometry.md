@@ -1,6 +1,7 @@
 ---
 title: Isolate・ハイライトの輪郭と国境線を 1 つの形に——国境はコードでなく形で選び、多角形の陸の国境を描かれた線そのものに置き換える
 date: 2026-11-27
+pr: 1492
 newsen: Isolate, the place highlight and Atlas country highlights now follow the drawn national border exactly — the mask edge and the highlight no longer sit beside the border line, including in Chronos.
 newsjp: Isolate・地名のハイライト・Atlas の国ハイライトの輪郭が、描かれている国境線とぴったり重なるようになりました（Chronos の昔の国も同じ）。
 ---
