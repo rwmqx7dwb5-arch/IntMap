@@ -31,9 +31,9 @@ newsjp: Atlas の回答の下のオンオフが、その回答が描いたもの
 
 - `js/geo-engine.js` — `render.drawn` の各ソースに内容の版 `rev`（レンダラが持つデータオブジェクトの同一性）。claim に `show(on)` を添えられ、`render.showSurface(id,on)` はそれを通る（無ければ読む層の可視性）。
 - `js/atlas-console.js` — 受領証は `rev`・件数・状態で比べ、隠れた面への描き込みも数えて表示に戻す。チップは申告された面を `showSurface` で切り替え、`_OVL` の手書きの層だけを直接倒す（`isolate` の行は claim に置き換えて消した）。前の回答のクローン退避は、この run の開始時にその内容（`revs`）が表示されていたときだけ。タブの押下は `EXEC.execute`（source `ui`）を通す。
-- `js/map-tools.js` — Isolate が `iso-src`・`iso-edge-src` を kind `isolate` で claim し `show` を持つ（隠している間は再表示しない）。Objects の表示切替も `showSurface`、取り込みレイヤーの隠し状態は層から読む（`hiddenUp` の副表を消した——層の可視性が同じ事実を持つ）。
+- `js/map-tools.js` — Isolate が `iso-src`・`iso-edge-src` を効果キー `map.isolate` で claim し（チップは mask だけでなく国境線も切り替えるようになった） `show` を持つ（隠している間は再表示しない）。Objects の表示切替も `showSurface`、取り込みレイヤーの隠し状態は層から読む（`hiddenUp` の副表を消した——層の可視性が同じ事実を持つ）。
 - `js/map-tools.js`・`js/atlas-cap-map.js` — Isolate の入口は mask を地図に置いた（または国境が無かった）ときに解決する Promise を返し、能力はそれを待って ✓ を言う（描き手自身の待ち 7.2 s を超えたら従来どおり「開始した」）。
-- `js/map-ui.js` — 取り込みレイヤーを `upload:ugj-N` で claim（1 枚ずつ切れる）。
+- `js/map-ui.js` — 取り込みレイヤーを効果キー `map.object` で claim。回答の受領証はソース id で持ち、チップはそのターンが描いた面だけを切り替える（1 枚ずつ切れる）。
 - `js/atlas-map-compose.js` — ラベル層を作り直しても可視性を保つ。
 - `js/atlas-switch.js` — 戻り先は順番が来たときの確定状態。戻せたら記録も同じ値で確定。成否はカーネルの観測状態（`unobserved` は失敗ではない）。
 - `js/atlas-cap-ui.js` — `meta.drawn`＝実際に描いたコントロールの `{id, kind, options}`、markup に `data-ctl-id`。
@@ -52,3 +52,9 @@ newsjp: Atlas の回答の下のオンオフが、その回答が描いたもの
 ## 4. main との合流
 
 #1492 が Isolate の形（`refit`・`showEdge`）を作り直していたので、その版を取り、こちらの 4 点（mask が載ったら解決する Promise・`shown`・`show()` の扉・再表示の条件）を載せ直した。`ui.inlineControls` は main の件数の切り詰め（`counted`）と `meta.drawn` を両方持つ。
+
+## 5. CI で見つかったこと
+
+- claim の持ち主は能力が書く効果キーでなければならない（`tests/atlas-one-declaration-checks.test.mjs` ④b）。`isolate`・`upload:…` という私的な名前をやめ、`map.isolate`・`map.object` にした。同じ kind の中の区別は受領証のソース id が持つ。
+- 解決関数を `done` と名づけたら、名前で呼び出しを結ぶ外向き効果の解析（D①）が `apply → done → post` を作り、無関係な 3 ファイルの押下が書き込みに届くと判定された。`landed` に改名。
+- `check:perf`: `atlas-console` の非同期チャンクが天井 +帯を 0.2 kB 超えた（main は #1493 で天井を実測まで下げたばかり）。増分は機能そのもの（受領証・扉・押下の観測）なので、理由をここに書いて天井を上げる。

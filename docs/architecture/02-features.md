@@ -65,8 +65,9 @@
   `map.compose`）ならその効果キーで `render.claim` されたソースを読むレイヤー（claim は `js/routing.js`・`js/sims.js`・`js/stats-compare.js`・`js/viewshed.js`・
   `js/shakemap.js`・`js/outbreaks.js`・`js/map-tools.js` の到達圏・`js/atlas-map-compose.js`・Atlas 自身の描画が層を作る関数の頭で行う）。`_OVL` に手で残るのは、
   共有ソース `nlq-src` を feature-state で塗るもの（強調・コロプレス・線）、`js/map-tools.js` の輪郭、`js/app-body.js` のピン、ストリートビューの行、
-  `js/routing-ops.js` の 2 解析（`map.route` の claim に足される）。孤立化（`iso-src`・`iso-edge-src`、kind `isolate`）と取り込みレイヤー（`js/map-ui.js` の `ugj-N`、
-  kind `upload:ugj-N`＝1 枚ずつ。`geo.shadeAreas` と GIS の結果もここを通る）は claim する。
+  `js/routing-ops.js` の 2 解析（`map.route` の claim に足される）。孤立化（`iso-src`・`iso-edge-src`、効果キー `map.isolate`）と取り込みレイヤー（`js/map-ui.js` の `ugj-N`、
+  効果キー `map.object`。`geo.shadeAreas` と GIS の結果もここを通る）は claim する。回答の受領証はソース id で持つ（`__atlDrewSurf`）ので、同じ kind でも
+  チップはその回答のターンが描いた面だけを切り替え、別の面を描いた後の回答は前の回答から所有を奪わない。
 - **チップの受領証と切り替え** — run の前後で `render.drawn()` の各ソースの **内容の版 `rev`**（レンダラが持つデータオブジェクトの同一性）と件数を比べ、変わったソースの
   持ち主の kind をその回答の受領証にする（隠れていたソースへの描き込みも数え、表示に戻す）。切り替えは申告されたソースなら `render.showSurface(id,on)`——claim に
   `show(on)` を添えた描き手（自分で可視性を持ち直すもの: 孤立化）はその扉を、無ければ読むレイヤーの可視性を変える。Objects の表示切替も同じ扉。前の回答の描画を
