@@ -142,7 +142,7 @@ export function makeAtlasLive(HOST, deps) {
   const raf = (f) => { try { return requestAnimationFrame(f); } catch (_) { return setTimeout(f, 16); } };
   /* (atlas-progress-one) THE PLAN STANDS IN THE LATEST TURN'S WORK TRACE (js/atlas-progress.js
      `.atl-trace-plan`), not on the map. It outlives the turn there: the trace stays in the conversation,
-     and the next turn's trace takes it over (makePlanView moves it — one plan, one place). */
+     and a later turn's trace shows a plan only when that turn writes one (atlas-plan-per-question: makePlanView binds a list to the trace it was written in). */
   let lastAi = null;
   const PLANV = deps.plan ? makePlanView(deps.plan, { L, GE: deps.GE, objects: deps.objects,
     slot: () => { try { const el = (PROG && PROG.traceEl && lastAi) ? PROG.traceEl(lastAi) : null; return el ? el.querySelector('.atl-trace-plan') : null; } catch (_) { return null; } },
@@ -166,7 +166,7 @@ export function makeAtlasLive(HOST, deps) {
     history.push(st.lat);
     if (history.length > 20) history.shift();
     lastAi = ai;
-    try { if (PLANV) PLANV.render(); } catch (_) { }   /* a plan from an earlier turn moves into this turn's trace */
+    try { if (PLANV) PLANV.render(); } catch (_) { }   /* (atlas-plan-per-question) a plan this turn has not written stays in the trace of the turn that wrote it (js/atlas-plan.js render) */
     return st;
   }
   function mark(st, k) { if (st && st.lat[k] == null) st.lat[k] = Math.round(now() - st.t0); }

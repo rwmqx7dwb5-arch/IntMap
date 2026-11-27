@@ -155,6 +155,7 @@ export function makeAtlasPlan(opts) {
       /* WHO WROTE THE LIST: `thisTurn` says the plan was touched in this turn (a call that only moved `current` counts); `declaredThisTurn` says this turn
          WROTE the steps. The checklist a reader sees is the second one — a question that merely continues an earlier plan did not make that list. */
       declaredThisTurn: plan.declaredTurn === turnNo,
+      declaredTurn: plan.declaredTurn,   /* (atlas-plan-per-question) WHICH turn wrote the list — what a view binds the list to (makePlanView render) */
       steps: plan.steps.map((st, i) => ({
         n: i + 1, title: st.title, state: stepState(st, i),
         ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null, work: o.work || undefined })),
@@ -465,6 +466,7 @@ export function makePlanView(ledger, deps) {
     running: 'run', pending: 'pending', noop: 'noop' };
   const SAYS_ITSELF = { completed: 1, running: 1, pending: 1 };
   let lastSlot = null;
+  const boundSlot = Object.create(null);   /* (atlas-plan-per-question) declaredTurn → the trace slot that list belongs to */
   function render() {
     const slot = deps.slot ? deps.slot() : null;
     /* ⚠ A PLAN BELONGS TO THE TURN THAT DECLARED IT. The ledger is one per conversation and keeps the last plan, and this
@@ -477,6 +479,14 @@ export function makePlanView(ledger, deps) {
     if (!slot) return;
     const s = ledger.snapshot();
     if (!s || !s.declaredThisTurn) return;   /* nothing is drawn, and nothing already drawn is erased: a slot holds the plan of the turn it belongs to */
+    /* ⚠ (atlas-plan-per-question) …AND «THIS TURN» IS THE TURN THE LIST WAS WRITTEN IN, NOT THE TURN THE LEDGER IS ON AT THIS INSTANT. The view is asked to
+       draw the moment a new reply opens (js/atlas-live.js begin), which is BEFORE the loop has told the ledger a new turn began (runTurn beginTurn) —
+       so for that one call `declaredThisTurn` still described the previous turn, and the previous question's checklist was drawn into the new
+       question's trace, where it stayed (measured on production 2026-11-28: the G7 CO2 answer carried the five-country GDP plan, 2/2). The list is
+       bound to the first slot it is drawn into; another slot gets it only when a later turn writes a list of its own. */
+    const bound = boundSlot[s.declaredTurn];
+    if (bound && bound !== slot) return;
+    boundSlot[s.declaredTurn] = slot;
     const done = s.steps.filter((x) => x.state === 'completed').length;
     const bad = s.steps.some((x) => x.state === 'failed' || x.state === 'stopped');
     const warn = s.steps.some((x) => x.state === 'partial' || x.state === 'unobserved' || x.state === 'waiting');
