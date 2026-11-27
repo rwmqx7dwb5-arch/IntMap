@@ -246,14 +246,14 @@ function paintEverything(eng) {
   const SIMS = codeOnly(read('js/atlas-sims.js'));
   for (const f of ['ensureFlyLayers', 'ensureBlastLayers', 'ensureElevLayers', 'ensureFacLayers']) runLifted(SIMS, [f], { GE: eng.GE, geo: () => ({}), window: W }, f + '();');
   /* js/atlas-console.js — the POI layer, and the mount-time claim statement exactly as it ships */
-  runLifted(CON, ['ensurePoiLayer'], { GE: eng.GE, window: W }, 'ensurePoiLayer();');
+  runLifted(CON, ['ensurePoiLayer'], { GE: eng.GE, window: W, _poiOp: null }, 'ensurePoiLayer();');
   const mount = /try\{ const RC=GE\(\)\.render; RC\.claim\([^\n]*?\}catch\(_\)\{\}/.exec(CON);
   assert.ok(mount, 'the mount-time claim statement moved');
   const stubs = ['clearPolyHl', 'clearLineHl', 'clearPois', 'clearFly', 'clearBlast', 'clearElev', 'clearFac'];
   new Function('GE', ...stubs, mount[0])(eng.GE, ...stubs.map(() => nop));
-  /* js/atlas-map-compose.js — the real module claims at construction; its painter is lifted */
+  /* js/atlas-map-compose.js claims at construction and can call its painter directly */
   const C = makeAtlasMapCompose({ GE: eng.GE });
-  runLifted(codeOnly(read('js/atlas-map-compose.js')), ['ensureLayers', 'addNameLayer'], { GE: eng.GE, window: W, SRC: C.SRC }, 'ensureLayers();');
+  C.paint();
   /* js/routing.js — the journey, and the drawn keep-out areas */
   const RT = codeOnly(read('js/routing.js'));
   runLifted(RT, ['ensureLayers', '_layersOK'], { GE: eng.GE, _watchStyle: nop, _imCanDraw: yes, _wireLineEvents: nop, ...constsOf(RT, ['SRC', 'LAYERS']) }, 'ensureLayers();');

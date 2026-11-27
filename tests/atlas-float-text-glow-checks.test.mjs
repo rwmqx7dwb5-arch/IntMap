@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const float = readFileSync(new URL('../js/atlas-float.js', import.meta.url), 'utf8');
-test('glow is one root-level rule on every descendant, and the reader\'s bubble is not restyled off the pane', () => {
-  assert.match(float, /#atlas-float:not\(\.bg\) #atlas-panel \*,[^']*\{text-shadow:var\(--atl-glow\);\}/);
-  assert.doesNotMatch(float, /#atlas-float:not\(\.bg\) #atlas-panel \.atl-chat \.atl-b\.u:not\(\.atl-imgrow\)\{[^}]*background/);
+test('glow is one root-level rule on every descendant, and the reader\'s bubble uses the same tint in both modes', () => {
+  assert.match(float, /#atlas-float #atlas-panel \*,[^']*\{text-shadow:var\(--atl-glow\);\}/);
+  assert.match(float, /#atlas-float #atlas-panel \.atl-b\.u\{--atlas-glass:linear-gradient/);
 });

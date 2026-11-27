@@ -55,7 +55,7 @@ export default [
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), on: bool() }, required: ['name'] }),
-    async run(a, dctx, K) { const _visSnapshot = K._visSnapshot, toggleLayer = K.toggleLayer, doControl = K.doControl, R = K.R, warn = K.warn, L = K.L, esc = K.esc, _visDelta = K._visDelta, note = K.note, layerOpacityControl = K.layerOpacityControl;
+    async run(a, dctx, K) { const _visSnapshot = K._visSnapshot, toggleLayer = K.toggleLayer, doControl = K.doControl, R = K.R, warn = K.warn, L = K.L, esc = K.esc, _visDelta = K._visDelta, note = K.note;
       {
           /* (#R73) SELF-VERIFICATION ("レイヤーのオンオフが実情と対応していない" / vision §16): snapshot the
              style's visible layers (+ overlay canvas count) BEFORE the toggle, then verify the map actually
@@ -100,8 +100,8 @@ export default [
           let ctl=''; try{ if(r.cb){ const cbRef=' data-cb="'+esc(r.cb.id||'')+'"';
             ctl='<div style="display:flex;flex-direction:column;gap:6px;margin:5px 0 2px;">'
             +'<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(r.label)+'</span><button class="atl-ctl-toggle'+(r.cb.checked?' on':'')+'" data-layer="'+esc(r.label)+'"'+cbRef+' role="switch" aria-checked="'+(r.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>';
-            if(r.want){ const sl=layerOpacityControl(r.cb);
-              if(sl) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(r.label)+'"'+cbRef+' min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
+            if(r.want){ const value=K.readLayerOpacity(r.cb.id);
+              if(value!=null) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(r.label)+'"'+cbRef+' min="0" max="1" step="any" value="'+esc(value)+'"></div>'; }
             ctl+='</div>'; } }catch(_){}
           return R(!layerFailed, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, layerFailed?{meta:{layerState:'failed',reason:layerFailed.reason||''}}:unverified?{meta:{unverified:true,layerState:'unconfirmed'}}:undefined); }
     },
@@ -115,8 +115,19 @@ export default [
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), value: num(0, 100), percent: num(0, 100), delta: num(-100, 100) }, anyOf: [{ required: ['name', 'value'] }, { required: ['name', 'percent'] }, { required: ['name', 'delta'] }] }),
-    async run(a, dctx, K) { const resolveLayer = K.resolveLayer, R = K.R, warn = K.warn, L = K.L, esc = K.esc, layerOpacityControl = K.layerOpacityControl, note = K.note;
-      { const r=resolveLayer(a.name); if(!r) return R(false, warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note(icon('sliders')+' '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn(L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label))); }
+    async run(a, dctx, K) { const { resolveLayer, R, warn, L, esc, note, readLayerOpacity, writeLayerOpacity } = K;
+      const r=resolveLayer(a.name);
+      if(!r) return R(false,warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||'')));
+      const current=readLayerOpacity(r.cb.id);
+      let v=null;
+      if(a.value!=null){ v=+a.value; if(v>1) v/=100; }
+      else if(a.percent!=null) v=+a.percent/100;
+      if(v==null&&a.delta!=null&&current!=null){ const d=+a.delta; v=current+(Math.abs(d)>1?d/100:d); }
+      if(current!=null&&v!=null&&Number.isFinite(v)){
+        if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }
+        if(writeLayerOpacity(r.cb.id,v)) return R(true,note(icon('sliders')+' '+esc(r.label)+' '+Math.round(readLayerOpacity(r.cb.id)*100)+'%'));
+      }
+      return R(false,warn(L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label)));
     },
   },
   {

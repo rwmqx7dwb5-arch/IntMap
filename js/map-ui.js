@@ -2647,27 +2647,25 @@ export function labelPopup(HOST){
         +'.plc-pin .pp-body::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#fff;}'
         +'.plc-pin .pp-name{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:2px;max-width:240px;color:#fff;font-size:13px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 3px rgba(0,0,0,0.9),0 0 3px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.6);}';
       (document.head||document.documentElement).appendChild(st); }
-    /* The city label under the pin is hidden while it stands (Google Earth: the label turns into the pin).
-       Tile labels have no feature id, so the clicked feature is excluded by its OWN name property, read from the
-       features actually rendered at the point; the layer's previous filter is kept and put back on close. Only the two
-       city layers: they are the ones whose filter nothing else rewrites (ofm-admin1's is written by time-admin1.js). */
-    /* ══ THE NAME UNDER THE PIN IS HIDDEN, WHATEVER KIND OF PLACE IT NAMES ══════════════════════════════════════
-       「行政区分名と国名のラベルは、クリックしても都市名のように消えない」: only the city layer was hidden, by rewriting
-       its FILTER — and a filter is not ours to rewrite on the others (js/time-admin1.js writes ofm-admin1's on every time
-       change, js/place-labels.js owns ofm-country's), so a country or a prefecture name stayed printed through its own pin.
-       The suppression now rides on a property nobody else writes on a label layer, `text-opacity`: the clicked name goes
-       to 0 in EVERY place-name layer that carries it (PLACE_LBL, the same list the click is wired from), and each layer's
-       previous value is put back on close. A new place-label layer joins PLACE_LBL and needs nothing here. */
+    /* A pin temporarily hides the name it replaces. The extent fade owns text opacity on
+       region labels and composes the pin into that expression, so moving or dismissing the pin
+       can never restore an obsolete fade. Other place labels keep the ordinary opacity override. */
     let _hidLbl=null;
-    function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return; for(const id of Object.keys(h)){ try{ GE().layers.setPaint(id,'text-opacity',h[id]); }catch(_){} } }
+    function _restoreLabel(){ const h=_hidLbl; _hidLbl=null; if(!h) return;
+      for(const id of Object.keys(h)){ try{
+        if(h[id]===null) window.IntMapCountryExtent?.suppressNameFade(GE,id,[]);
+        else GE().layers.setPaint(id,'text-opacity',h[id]);
+      }catch(_){} } }
     function _hideLabelAt(lngLat){ _restoreLabel();
       try{ const p=GE().coords.project([lngLat.lng,lngLat.lat]); if(!p||!isFinite(p.x)||!isFinite(p.y)) return;
         const ids=PLACE_LBL.filter(id=>GE().layers.has(id)); if(!ids.length) return;
         const pad=14, hit=GE().coords.queryRenderedFeatures([[p.x-pad,p.y-pad],[p.x+pad,p.y+pad]],{layers:ids})||[];
         const byLayer={}; for(const h of hit){ const n=h&&h.properties&&h.properties.name, id=h&&h.layer&&h.layer.id;
           if(typeof n==='string'&&n&&id&&ids.includes(id)) (byLayer[id]=byLayer[id]||new Set()).add(n); }
-        const keep={}; for(const id of Object.keys(byLayer)){ const prev=GE().layers.getPaint(id,'text-opacity'); keep[id]=(prev===undefined||prev===null)?1:prev;
-          GE().layers.setPaint(id,'text-opacity',['case',['in',['get','name'],['literal',[...byLayer[id]]]],0,keep[id]]); }
+        const keep={}; for(const id of Object.keys(byLayer)){ const names=[...byLayer[id]];
+          if(window.IntMapCountryExtent?.suppressNameFade(GE,id,names)){ keep[id]=null; continue; }
+          keep[id]=GE().layers.getPaint(id,'text-opacity')??1;
+          GE().layers.setPaint(id,'text-opacity',['case',['in',['get','name'],['literal',names]],0,keep[id]]); }
         if(Object.keys(keep).length) _hidLbl=keep; }catch(_){ _restoreLabel(); } }
     function _dropPin(mine){ if(!placePin||(mine&&mine!==placePin)) return; const p=placePin; placePin=null; _restoreLabel(); try{ p.remove(); }catch(_){} }
     /* stand the pin on the point; hands back its box (the name chip counts: it is what a popup beside it must clear) */
@@ -3458,10 +3456,10 @@ export function geojsonUpload(HOST){
       if(!(isFinite(west)&&isFinite(east)&&isFinite(north)&&isFinite(south))) return null;
       const coords=[[west,north],[east,north],[east,south],[west,south]];
       const W=Math.max(1,Math.min(ds.width,RASTER_MAX_PX)), H=Math.max(1,Math.min(ds.height,RASTER_MAX_PX));
-      const it={n,sid,name,col,fc:null,kind:'raster',ds,band,coords,
+      const it={n,sid,name,col,fc:null,kind:'raster',ds,band,coords,alpha:0.85,
         datasetId:(opts&&opts.datasetId)||null,spec:null,legend:c.legend};
       let on=false;
-      try{ on=!!GE().layers.addDynamicImage(sid,{width:W,height:H,coordinates:coords,opacity:0.85,smooth:false,draw:rasterDrawFn(it,coords)}); }catch(_){ on=false; }
+      try{ on=!!GE().layers.addDynamicImage(sid,{width:W,height:H,coordinates:coords,opacity:it.alpha,smooth:false,draw:rasterDrawFn(it,coords)}); }catch(_){ on=false; }
       if(!on){ toast(IntMapLang.t(HOST.lang,"This map view cannot draw grids","この地図表示では格子を描けません")); return null; }
       items.push(it); renderList();
       try{ GE().camera.fitBounds([[west,south],[east,north]],{padding:60,duration:900,maxZoom:12}); }catch(_){}

@@ -521,6 +521,12 @@ export function timeAdmin1(HOST) {
          js/map-ui.js's click (`geomAt`, `_eraSourceDates`) reads exactly what it read off the polygon.
          ⚠ Without the era module (a harness that runs this file alone) the whole polygons are handed over
          as before — the defect, not a silence; in the app js/time-borders.js is built first (js/app-body.js). */
+      function fitLabelNames() {
+        const CE = window.IntMapCountryExtent;
+        if (CE) CE.applyNameFade(GE, cfg.lbl);
+      }
+      try { GE().events.on('resize', fitLabelNames); } catch (_) {}
+
       function labelsFor(fc) {
         /* (hist-modern-admin) a unit still in force today is named by today's label (`ofm-admin1`), exactly as at Now */
         if (presentOn()) fc = { type: 'FeatureCollection', features: (fc.features || []).filter(f => !(f.properties && f.properties._open)) };
@@ -757,24 +763,27 @@ export function timeAdmin1(HOST) {
              exists for (js/time-borders.js `_ERAFONT`, #R309). */
           const FONT = readerFont();
           const SIZE = (function () { try { return window.IntMapLabelScale.place('admin1'); } catch (_) { return ['interpolate', ['linear'], ['zoom'], 4, 9.5, 7, 11.5]; } })();
-          if (!GE().layers.has(cfg.lbl)) GE().layers.add({
-            id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.minZ ? cfg.minZ + 1 : 4,
-            layout: {
-              visibility: 'none', 'symbol-placement': 'point', 'text-field': ['coalesce', ['get', 'NAME'], ['get', 'name'], ''],
-              'text-font': FONT, 'text-size': SIZE, 'text-letter-spacing': 0.06, 'text-max-width': 8,
-              'text-padding': 4, 'text-optional': true,
-              /* (#R711) Computed polygon anchors need placement alternatives just as era
-                 country anchors do. Keep collision detection; move the one name aside. */
-              'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
-              'text-radial-offset': 0.65, 'text-justify': 'auto',
-              /* (#R707) …and with `text-optional` the loser of a collision disappears without a
-                 word, so the order the placer tries them in is a decision about what the reader
-                 sees. `sortKeyOf` above is that decision; 0 is «one square kilometre», i.e. the
-                 bottom, for a feature that somehow arrived without a measured area. */
-              'symbol-sort-key': ['coalesce', ['get', SORT_PROP], 0]
-            },
-            paint: { 'text-color': COL, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': window.IntMapLabelScale.halo(1.5), 'text-opacity': cfg.deep ? 0.8 : 1 }
-          });
+          if (!GE().layers.has(cfg.lbl)) {
+            GE().layers.add({
+              id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.minZ ? cfg.minZ + 1 : 4,
+              layout: {
+                visibility: 'none', 'symbol-placement': 'point', 'text-field': ['coalesce', ['get', 'NAME'], ['get', 'name'], ''],
+                'text-font': FONT, 'text-size': SIZE, 'text-letter-spacing': 0.06, 'text-max-width': 8,
+                'text-padding': 4, 'text-optional': true,
+                /* (#R711) Computed polygon anchors need placement alternatives just as era
+                   country anchors do. Keep collision detection; move the one name aside. */
+                'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+                'text-radial-offset': 0.65, 'text-justify': 'auto',
+                /* (#R707) …and with `text-optional` the loser of a collision disappears without a
+                   word, so the order the placer tries them in is a decision about what the reader
+                   sees. `sortKeyOf` above is that decision; 0 is «one square kilometre», i.e. the
+                   bottom, for a feature that somehow arrived without a measured area. */
+                'symbol-sort-key': ['coalesce', ['get', SORT_PROP], 0]
+              },
+              paint: { 'text-color': COL, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': window.IntMapLabelScale.halo(1.5), 'text-opacity': cfg.deep ? 0.8 : 1 }
+            });
+            fitLabelNames();
+          }
           /* ⚠ THE CLICK IS NOT WIRED HERE. An era province name is a place label like any other, and
              js/map-ui.js is the ONE place that decides what a place label does when it is tapped —
              #R201 put `ofm-admin1` into all four of its lists after 「クリック可能ではない！ほかの地名

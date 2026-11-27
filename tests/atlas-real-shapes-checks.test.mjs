@@ -3,6 +3,7 @@
    Evaluated: js/atlas-shape-resolve.js with scripted ladders, js/atlas-map-compose.js with a fake engine. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { resolveShape, geometryOf, shapeAnchor } from '../js/atlas-shape-resolve.js';
 
 const { makeAtlasMapCompose } = await import('../js/atlas-map-compose.js');
@@ -84,6 +85,45 @@ test('compose: a real area and a real line are drawn into the map with their sou
   assert.ok(/近似|approximate/.test(r.html) && /OpenStreetMap/.test(r.html));
   /* the derived outline is drawn on the dashed layer, the real one on the solid */
   const dashed = eng.added.find((d) => d.id === 'atl-compose-sld'); assert.ok(dashed && dashed.paint['line-dasharray']);
+});
+
+test('composed objects keep opacity from zero to full in every painted part', async () => {
+  const { C, eng } = compose({
+    'Fossa Magna|area': { ok: true, geometry: POLY, basis: 'derived' },
+    'Fault|line': { ok: true, geometry: LINE, basis: 'real' },
+  });
+  await C.run({
+    items: [
+      { name: 'Fossa Magna', country: 'Japan', shape: 'area' },
+      { name: 'Fault', country: 'Japan', shape: 'line' },
+      { name: 'Itoigawa', country: 'Japan' },
+    ],
+    relations: [{ from: 1, to: 3, type: 'flow' }],
+  });
+  const obj = C.objects();
+  assert.deepEqual(new Set(obj.map((o) => o.geom)), new Set(['area', 'line', 'point']));
+  assert.ok(obj.some((o) => o.kind === 'link'));
+  assert.ok(obj.every((o) => o.alpha > 0 && o.alpha < 1), 'unused sliders start at existing paint strength');
+  const paints = {
+    area: [['sf', 'fill-opacity', 0.85], ['sld', 'line-opacity', 1]],
+    shape: [['sl', 'line-opacity', 1]],
+    link: [['line', 'line-opacity', 1], ['dash', 'line-opacity', 1], ['arrow', 'text-opacity', 1]],
+    place: [['c', 'circle-opacity', 1], ['c', 'circle-stroke-opacity', 1], ['n', 'text-opacity', 1], ['t', 'text-opacity', 1],
+      ['hl', 'circle-opacity', 0.3], ['hl', 'circle-stroke-opacity', 0.9]],
+  };
+  for (const opacity of [0, 0.4, 1]) {
+    for (const o of obj) assert.equal(o.setOpacity(opacity), true);
+    const props = new Map(eng.data().features.map((f) => [f.properties.id, f.properties]));
+    for (const o of C.objects()) {
+      assert.equal(o.alpha, opacity, o.id + ' readback');
+      for (const [layer, property, peak] of paints[o.geom === 'area' ? 'area' : o.kind]) {
+        const style = eng.added.find((l) => l.id === 'atl-compose-' + layer);
+        const parsed = createExpression(style.paint[property], { type: 'number' });
+        assert.equal(parsed.result, 'success');
+        assert.equal(parsed.value.evaluate({ zoom: 3 }, { properties: props.get(o.id) }), opacity * peak, layer + ' ' + property);
+      }
+    }
+  }
 });
 
 test('compose: a shape that cannot be obtained is NOT drawn, nothing stands in for it, and the run is partial', async () => {

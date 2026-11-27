@@ -21,6 +21,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { layerOpacityChanged, registerLayerOpacityAccess } from './layer-opacity.js';
 
 
   /* ══ ⚠⚠ (#R284) THE PLAYER'S ICONS ARE DRAWN, AND NO TWO OF THEM ARE THE SAME ═══════════════
@@ -1310,6 +1311,18 @@ export function weatherEC(HOST){
       try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'line-opacity',op); }
         else if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',op); }catch(_){} }
     function setOp(cfg,op){ setOpSlot(cfg,cfg._s|0,op); }
+    function setOpacity(cfg,op){
+      if(!Number.isFinite(op)) return;
+      const value=Math.max(0,Math.min(1,op)), changed=state[cfg.id].op!==value;
+      state[cfg.id].op=value;
+      setOp(cfg,value);
+      const row=document.getElementById('ec-op-'+cfg.id), legend=boxes[cfg.id];
+      const slider=legend?.querySelector('.ec-oplg'), label=legend?.querySelector('.dl-op-val');
+      if(row&&row.valueAsNumber!==value) row.value=String(value);
+      if(slider&&slider.valueAsNumber!==value) slider.value=String(value);
+      if(label) label.textContent=Math.round(value*100)+'%';
+      if(changed) layerOpacityChanged('dl-'+cfg.id,value);
+    }
     const liveLayer=(cfg)=>{ try{ return GE().layers.has(cfg.id+'-'+(cfg._s|0)); }catch(_){ return false; } };
 
     /* ══ ⚠⚠⚠ (#R337) THE WIND'S STREAKS, ASKED FOR FROM THE TEMPERATURE LEGEND ════════════════
@@ -1857,7 +1870,7 @@ export function weatherEC(HOST){
     function opRow(cfg){
       const v=state[cfg.id].op;
       return '<div class="dl-op-row"><label style="display:contents;">'+L('Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')
-        +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="0.05" value="'+v+'"></label>'
+        +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="any" value="'+v+'"></label>'
         +'<span class="dl-op-val">'+Math.round(v*100)+'%</span></div>';
     }
     /* ⚠ (#R337) the wind's streaks over THIS layer — the switch belongs in this legend by #R16's
@@ -1902,9 +1915,7 @@ export function weatherEC(HOST){
         +'</div>';
       closeBtn(el);
       const op=el.querySelector('.ec-oplg');
-      if(op) op.oninput=()=>{ const v=+op.value; state[cfg.id].op=v; setOp(cfg,v);
-        const lbl=el.querySelector('.dl-op-val'); if(lbl) lbl.textContent=Math.round(v*100)+'%';
-        const row=document.querySelector('.ec-op[data-for="'+cfg.id+'"]'); if(row) row.value=String(v); };
+      if(op) op.oninput=()=>setOpacity(cfg,op.valueAsNumber);
       /* (#R337) the switch reports; the module decides — the same door the wind legend uses */
       const wp=el.querySelector('.ec-wind-parts');
       if(wp) wp.onchange=()=>{ setParts(cfg.id,wp.checked); };
@@ -1946,11 +1957,12 @@ export function weatherEC(HOST){
         if(l.sub) return;   /* (#R439) a sub-layer's switch lives in its parent's legend, not here */
         if(document.getElementById('lyrrow-'+l.id)) return;
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
-        w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl" id="lyrname-'+l.id+'">'+ecLbl(l)+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" id="ec-op-'+l.id+'" aria-label="'+L('Opacity','不透明度')+'" aria-labelledby="ec-op-'+l.id+' lyrname-'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'">';
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl" id="lyrname-'+l.id+'">'+ecLbl(l)+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" id="ec-op-'+l.id+'" aria-label="'+L('Opacity','不透明度')+'" aria-labelledby="ec-op-'+l.id+' lyrname-'+l.id+'" min="0" max="1" step="any" value="'+state[l.id].op+'">';
         dd.appendChild(w);
         const cb=w.querySelector('#dl-'+l.id), op=w.querySelector('.ec-op');
         cb.addEventListener('change',()=>{ w.classList.toggle('on',cb.checked); toggle(l.id,cb.checked); });
-        op.addEventListener('input',()=>{ state[l.id].op=+op.value; const cfg=LAYERS.find(x=>x.id===l.id); if(cfg) setOp(cfg,+op.value); });
+        registerLayerOpacityAccess(cb.id,()=>state[l.id].op,v=>setOpacity(l,v));
+        op.addEventListener('input',()=>setOpacity(l,op.valueAsNumber));
       });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
       /* ⚠ the metadata is a 3 kB JSON and needs no SDK, so the forecast axis is real from boot;
@@ -2048,9 +2060,7 @@ export function weatherEC(HOST){
       set(v){ if(!v) return;
         EC().meta().then(()=>{
           if(v.t){ const ms=Date.parse(/[zZ]$/.test(v.t)?v.t:v.t+'Z'); if(isFinite(ms)) EC().setIndex(EC().nearestTo(ms)); }
-          if(v.op) Object.keys(v.op).forEach(id=>{ if(!state[id]) return; state[id].op=+v.op[id];
-            const sl=document.querySelector('.ec-op[data-for="'+id+'"]'); if(sl) sl.value=state[id].op;
-            const cfg=LAYERS.find(l=>l.id===id); if(cfg) setOp(cfg,state[id].op); });
+          if(v.op) LAYERS.forEach(cfg=>{ if(v.op[cfg.id]!=null) setOpacity(cfg,+v.op[cfg.id]); });
           /* ⚠⚠ (#R356) A MODEL THAT NO LONGER EXISTS IS SAID OUT LOUD, not silently swapped. 「復元時に
              データが公開終了していた場合は、最も近い時刻へ黙って変更せず、復元できなかった項目と代替候補
              を明示」 — the same rule for models. `setModel` refuses with a reason and puts the picker
@@ -2066,7 +2076,7 @@ export function weatherEC(HOST){
       } }; }
 
     return { open(){ if(!anyOn()) return; legendLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); },
-      toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); },
+      toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOpacity(c,+op); },
       layerFor:(id)=>LAYERS.find(l=>l.id===id)||null,
       activeVariable:()=>{ const a=activeLayers().filter(l=>l.type==='raster'); return a.length?a[a.length-1]:null; },
       /* (#R356) the model a layer reads, for Atlas and for the readout. ⚠ `modelOf` answers with

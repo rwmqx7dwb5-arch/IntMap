@@ -9,6 +9,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { runInNewContext } from 'node:vm';
+import * as objectOpacity from '../js/object-opacity.js';
 
 const root = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8').replace(/\r\n/g, '\n');
@@ -52,6 +54,60 @@ test('Objects: width and opacity are stored on the item and read by the layer', 
   assert.match(tools, /data-act="width"/);
   assert.match(tools, /data-act="alpha"/);
   assert.match(tools, /act==='width'/, 'the input handler wires the width slider');
+});
+
+test('Objects reads the live opacity of drawn surfaces and applies it to uploaded rasters', () => {
+  const features = new Map([
+    ['area', [{ geometry: { type: 'Polygon', coordinates: [] } }]],
+    ['marks', [{ geometry: { type: 'Point', coordinates: [3, 7] } }]],
+  ]);
+  const layers = [
+    { id: 'area-outline', source: 'area', type: 'line', paint: { 'line-opacity': 0.8 } },
+    { id: 'area-fill', source: 'area', type: 'fill', paint: { 'fill-opacity': 0.34 } },
+    { id: 'marks-circles', source: 'marks', type: 'circle', paint: { 'circle-opacity': 0.6, 'circle-stroke-opacity': 0.8 } },
+  ];
+  let rasterAlpha = 0.85;
+  let rasterOn = true;
+  const engine = {
+    hasRenderer: () => true,
+    scene: { getStyle: () => ({ layers }) },
+    render: { drawn: () => ({ observable: true, surfaces: { area: { state: 'drawn' }, marks: { state: 'drawn' } } }) },
+    layers: {
+      sourceData: (id) => ({ features: features.get(id) }),
+      setPaint: (id, property, value) => { layers.find((l) => l.id === id).paint[property] = value; },
+      hasDynamicImage: (id) => id === 'grid' && rasterOn,
+      setDynamicImageOpacity: (id, value) => { assert.equal(id, 'grid'); rasterAlpha = value; return true; },
+    },
+  };
+  const window = { GeoJSONUpload: { _items: [{ n: 1, sid: 'grid', kind: 'raster', alpha: rasterAlpha }] } };
+  runInNewContext(`(function ${tools.slice(tools.indexOf('export function objectList(') + 'export function '.length)})({ lang: 'en' })`, {
+    window, IntMapGeoEngine: engine, IntMapLang: { pick: () => (en) => en }, icon: () => '', everyTick: () => {}, setTimeout: () => {}, ...objectOpacity,
+  });
+  const objects = window.IntMapObjects;
+  assert.equal(objects.getObj('surface:area').opacity, 0.4);
+  assert.equal(objects.getObj('surface:marks').opacity, 0.6);
+  assert.equal(objects.getObj('up_1').opacity, 0.85);
+
+  for (const alpha of [0, 0.4, 1]) {
+    const update = (id) => {
+      const result = objects.set(id, { opacity: alpha });
+      assert.equal(result.ok, true);
+      assert.equal(result.object.opacity, alpha);
+      assert.equal(objects.getObj(id).opacity, alpha);
+    };
+    update('surface:area');
+    assert.equal(layers[1].paint['fill-opacity'], objectOpacity.fillFromAlpha(alpha));
+    assert.equal(layers[0].paint['line-opacity'], alpha);
+    update('surface:marks');
+    assert.equal(layers[2].paint['circle-opacity'], alpha);
+    assert.equal(layers[2].paint['circle-stroke-opacity'], alpha);
+    update('up_1');
+    assert.equal(rasterAlpha, alpha);
+  }
+  rasterOn = false;
+  const missed = objects.set('up_1', { opacity: 0 });
+  assert.equal(missed.ok, false);
+  assert.equal(missed.object.opacity, 1);
 });
 
 test('Objects: the head buttons have a gap and a 28 px hit area', () => {

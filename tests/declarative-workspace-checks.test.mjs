@@ -58,7 +58,7 @@ function fakeK(over) {
     mdMini: (s) => '<p>' + esc(s) + '</p>',
     CAPS, HOST: { lang: 'en' },
     resolveLayer: (n) => (/^population$/i.test(n) ? layer : null),
-    layerOpacityControl: () => ({ value: '0.8' }),
+    readLayerOpacity: () => 0.8,
     dispatch: async (a) => { calls.push(a); if (a.type !== 'chart') return K.R(false, ''); const r = CHART.render(a); return r.ok ? K.R(true, r.html, { meta: { chart: { kind: r.kind, plotted: r.plotted } } }) : K.R(false, K.warn(esc(r.detail)), { meta: { code: r.reason } }); },
   };
   return Object.assign(K, over || {}, { calls });

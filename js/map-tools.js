@@ -26,7 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
-import { fillFromAlpha, alphaFromFill, opacityPaint } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
+import { fillFromAlpha, alphaFromFill, opacityPaint, opacityAlpha } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 import { countryShapeOnMap, OFM_FRONTIER_MINZOOM } from './frontier-fit.js';   /* the one shape of a country on the map — mask, edge and highlight are drawn from it */
 
@@ -1363,8 +1363,7 @@ export function objectList(HOST){
   window.IntMapObjects=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
     const OL=IntMapLang.pick(()=>HOST.lang);
-    /* the paint js/map-ui.js gives an uploaded layer when it creates it (line 2.2 px, fill 0.22): the starting point of the sliders, nothing else reads them */
-    const UPLOAD_LINE_W=2.2, UPLOAD_FILL_OP=0.22;
+    const UPLOAD_LINE_W=2.2;   /* the width js/map-ui.js gives a new upload */
     const labels={};   /* labels: rename side-store for objects with no native name. (atlas-controls-receipts) a hidden object is read off its layers, not kept in a side table */
     let panel=null, fab=null, openState=false;
     const esc=s=>window.IntMapSafe.html(s);
@@ -1382,6 +1381,7 @@ export function objectList(HOST){
       if(g.type==='GeometryCollection') return g.geometries.reduce((a,x)=>a+(geomKm2(x)||0),0); }catch(_){} return null; }
     function featsKm2(feats){ let t=0,any=false; (feats||[]).forEach(f=>{ const a=geomKm2(f&&f.geometry); if(a!=null){ t+=a; any=true; } }); return any?t:null; }
     function geomKind(g){ const t=g&&g.type; return /Polygon/.test(t||'')?'area':/LineString/.test(t||'')?'line':t?'point':null; }
+    function featuresKind(fs){ const types=fs.map(f=>geomKind(f&&f.geometry)); return types.includes('area')?'area':types.includes('line')?'line':types.includes('point')?'point':null; }
     /* a colour Atlas or the reader wrote — a name, #hex, rgb() — as #rrggbb; null when the browser cannot read it as a colour */
     function normColor(v){ try{ const t=String(v==null?'':v).trim(); if(!t) return null; if(/^#[0-9a-f]{6}$/i.test(t)) return t.toLowerCase();
       const cx=document.createElement('canvas').getContext('2d'); cx.fillStyle='#010203'; cx.fillStyle=t; const a=cx.fillStyle; if(a==='#010203'&&!/^#?010203$/i.test(t)) return null; return a; }catch(_){ return null; } }
@@ -1392,9 +1392,18 @@ export function objectList(HOST){
       return {
         setColor:col=>each(l=>{ const p=({fill:'fill-color',line:'line-color',circle:'circle-color'})[l.type]; if(p) GE().layers.setPaint(l.id,p,col); }),
         setWidth:w=>each(l=>{ if(l.type==='line') GE().layers.setPaint(l.id,'line-width',w); }),
-        setOpacity:a=>each(l=>{ for(const [p,v] of opacityPaint(l.type,a)) GE().layers.setPaint(l.id,p,v); }),
+        setOpacity:a=>{ let applied=false;
+          each(l=>{ for(const [p,v] of opacityPaint(l.type,a)){ GE().layers.setPaint(l.id,p,v); applied=true; } });
+          return applied;
+        },
         toggleHide:null }; }
-    function hasType(sids,t){ return layersOf(sids).some(l=>l.type===t); }
+    function layerOpacity(layers,geom){
+      /* Read the paint on the object itself. For a mixed drawing, prefer the fill for areas and the principal line for lines. */
+      const primary=({area:'fill',line:'line',point:'circle'})[geom];
+      const layer=layers.find(l=>l.type===primary);
+      if(layer) return opacityAlpha(layer.type,layer.paint);
+      return layers.map(l=>opacityAlpha(l.type,l.paint)).find(a=>a!=null)??null;
+    }
     /* one normalised object list gathered live from every subsystem */
     function collect(){ const out=[];
       try{ (HOST.userPins||[]).forEach((p,i)=>out.push({ id:p.id, kind:'pin', dot:'#ff3b30', name:labels[p.id]||(OL('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)),
@@ -1405,12 +1414,17 @@ export function objectList(HOST){
         width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), geo:()=>it.geom, area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
-      try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; const _ul=layersOf([it.sid]); out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', src:[it.sid],
+      try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; const _ul=layersOf([it.sid]); const geom=featuresKind(srcFeats(it.sid));
+        const raster=it.kind==='raster'; const alpha=raster?it.alpha:layerOpacity(_ul,geom);
+        out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', src:[it.sid],
         hidden:_ul.length>0&&_ul.every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }),   /* (atlas-controls-receipts) read off the layers, so an Atlas switch that hid it is seen here */
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
-        width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha:it.alpha!=null?it.alpha:alphaFromFill(UPLOAD_FILL_OP), area:()=>featsKm2(srcFeats(it.sid)), geom:(()=>{ const k=srcFeats(it.sid).map(f=>geomKind(f&&f.geometry)); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':'point'; })(),
+        width:it.lw!=null?it.lw:UPLOAD_LINE_W, alpha, area:()=>featsKm2(srcFeats(it.sid)), geom:geom||'point',
         setWidth:w=>{ it.lw=w; try{ if(GE().layers.has(it.sid+'-line')) GE().layers.setPaint(it.sid+'-line','line-width',w); }catch(_){} },
-        setOpacity:a=>{ it.alpha=a; [['-fill','fill'],['-line','line'],['-pt','circle']].forEach(([sfx,type])=>{ try{ if(GE().layers.has(it.sid+sfx)) for(const [prop,v] of opacityPaint(type,a)) GE().layers.setPaint(it.sid+sfx,prop,v); }catch(_){} }); },
+        setOpacity:raster?(a=>{ const layers=GE().layers;
+          if(!layers.hasDynamicImage(it.sid)||!layers.setDynamicImageOpacity(it.sid,a)) return false;
+          it.alpha=a; return true;
+        }):(alpha==null?null:layerStyle([it.sid]).setOpacity),
         setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(GE().layers.has(L)) GE().layers.setPaint(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
         toggleHide:()=>{ const _now=layersOf([it.sid]).every(l=>{ try{ return GE().layers.getLayout(l.id,'visibility')==='none'; }catch(_){ return false; } }); try{ GE().render.showSurface(it.sid,_now); }catch(_){} },   /* (atlas-controls-receipts) the same door the Atlas chip takes */
         remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
@@ -1470,12 +1484,13 @@ export function objectList(HOST){
           const feats=fs.map((f,i)=>{ const p=f.properties||{}; return { id:String(p.id!=null?p.id:(f.id!=null?f.id:i)), name:String(p.name||p.label||'') }; });
           const named=feats.map(f=>f.name).filter(Boolean), oid='surface:'+sid;
           const col=((fs.find(f=>f.properties&&f.properties.color)||{}).properties||{}).color||'#8e8e93';
+          const layers=layersOf([sid]), geom=featuresKind(fs), alpha=layerOpacity(layers,geom), style=layerStyle([sid]);
           out.push({ id:oid, kind:'drawn', dot:col, src:[sid], owners:(su.owners||[]).slice(), features:feats,
             name:labels[oid]||(named.length?(named.slice(0,3).join(', ')+(named.length>3?(' +'+(named.length-3)):'')):(OL('Map drawing','地図の描画')+' ('+fs.length+')')),
-            geom:(()=>{ const k=fs.map(f=>geomKind(f&&f.geometry)).filter(Boolean); return k.indexOf('area')>=0?'area':k.indexOf('line')>=0?'line':k[0]||null; })(), area:()=>featsKm2(fs), hidden:su.state==='hidden',
-            setColor:hasType([sid],'fill')||hasType([sid],'line')||hasType([sid],'circle')?(c=>{ layerStyle([sid]).setColor(c); }):null,
-            setWidth:hasType([sid],'line')?(w=>{ layerStyle([sid]).setWidth(w); }):null,
-            setOpacity:layersOf([sid]).length?(a=>{ layerStyle([sid]).setOpacity(a); }):null,
+            geom, alpha, area:()=>featsKm2(fs), hidden:su.state==='hidden',
+            setColor:layers.some(l=>l.type==='fill'||l.type==='line'||l.type==='circle')?style.setColor:null,
+            setWidth:layers.some(l=>l.type==='line')?style.setWidth:null,
+            setOpacity:alpha==null?null:style.setOpacity,
             toggleHide:()=>{ try{ GE().render.showSurface(sid, su.state==='hidden'); }catch(_){} },   /* (atlas-controls-receipts) through the painter's door, as the Atlas chip does */
             focus:()=>fitFeats(srcFeats(sid)), rename:v=>{ labels[oid]=v; }, remove:()=>{ try{ GE().render.clearSurface(sid); }catch(_){} } }); }); }catch(_){}
       return out; }
@@ -1568,7 +1583,7 @@ export function objectList(HOST){
       panel.querySelector('.iol-body').addEventListener('input',e=>{ if(e.target.classList&&e.target.classList.contains('iol-q')){ _filter=e.target.value; const pos=e.target.selectionStart; renderList(); const q2=panel.querySelector('.iol-q'); if(q2){ q2.focus(); try{ q2.setSelectionRange(pos,pos); }catch(_){} } return; } const act=e.target.getAttribute&&e.target.getAttribute('data-act'); if(act!=='color'&&act!=='width'&&act!=='alpha') return; const row=e.target.closest('.iol-row'); const o=row&&_objs[+row.getAttribute('data-i')]; if(!o) return;
         if(act==='color'){ if(o.setColor){ try{ o.setColor(e.target.value); }catch(_){} const dot=row.querySelector('.iol-dot'); if(dot) dot.style.background=e.target.value; } }
         else if(act==='width'){ if(o.setWidth){ try{ o.setWidth(+e.target.value); }catch(_){} o.width=+e.target.value; } }
-        else if(o.setOpacity){ try{ o.setOpacity(+e.target.value); }catch(_){} o.alpha=+e.target.value; } });
+        else if(o.setOpacity){ try{ const a=+e.target.value; if(o.setOpacity(a)!==false){ o.alpha=a; return; } }catch(_){} e.target.value=o.alpha; } });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iol-head')); }catch(_){}
       /* ⚠⚠⚠ (#R251) AN OPEN PANEL FOLLOWS THE LANGUAGE. Its head and body are built ONCE, and
          opening an already-open panel is a no-op, so a reader who opened the Objects panel and then
@@ -1680,7 +1695,7 @@ export function objectList(HOST){
       const applied={}, unsupported=[], bad=[];
       if(a.color!=null){ const c=normColor(a.color); if(!c) bad.push('color'); else if(o.setColor){ try{ o.setColor(c); applied.color=c; }catch(_){ unsupported.push('color'); } } else unsupported.push('color'); }
       if(a.width!=null){ const w=+a.width; if(!isFinite(w)||w<=0) bad.push('width'); else if(o.setWidth){ try{ o.setWidth(Math.min(24,w)); applied.width=Math.min(24,w); }catch(_){ unsupported.push('width'); } } else unsupported.push('width'); }
-      if(a.opacity!=null){ let v=+a.opacity; if(v>1&&v<=100) v=v/100; if(!isFinite(v)||v<0) bad.push('opacity'); else if(o.setOpacity){ v=Math.max(0,Math.min(1,v)); try{ o.setOpacity(v); applied.opacity=v; }catch(_){ unsupported.push('opacity'); } } else unsupported.push('opacity'); }
+      if(a.opacity!=null){ let v=+a.opacity; if(v>1&&v<=100) v=v/100; if(!isFinite(v)||v<0) bad.push('opacity'); else if(o.setOpacity){ v=Math.max(0,Math.min(1,v)); try{ if(o.setOpacity(v)!==false) applied.opacity=v; else unsupported.push('opacity'); }catch(_){ unsupported.push('opacity'); } } else unsupported.push('opacity'); }
       if(a.name!=null){ if(o.rename){ try{ o.rename(String(a.name).slice(0,60)); applied.name=String(a.name).slice(0,60); }catch(_){ unsupported.push('name'); } } else unsupported.push('name'); }
       if(a.hidden!=null){ const want=!!a.hidden; if(o.toggleHide){ try{ if(!!o.hidden!==want) o.toggleHide(); applied.hidden=want; }catch(_){ unsupported.push('hidden'); } } else unsupported.push('hidden'); }
       refresh(); const now=get(id); return { ok:Object.keys(applied).length>0, id:String(id), applied, unsupported, invalid:bad, object:now?describe(now,0):null }; }

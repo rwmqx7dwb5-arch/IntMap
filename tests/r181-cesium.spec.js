@@ -209,6 +209,31 @@ test('R181 ④: fitBounds actually shows the box it was given', async ({ app }) 
   const world = rows.find((r) => r.b.includes('-180'));
   expect(world.zoom, 'a 360-degree span must not read as zero and let the zoom run away')
     .toBeLessThan(3);
+
+  const padded = await page.evaluate(async () => {
+    const E = window.IntMapGeoEngine;
+    const old = E.camera.getPadding();
+    const width = E.render.container().clientWidth;
+    const inset = Math.round(width / 3);
+    E.camera.setPadding({ left: inset });
+    try {
+      const box = [[-10, 40], [25, 47]];
+      E.camera.fitBounds(box, { padding: 12, duration: 0 });
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const centre = E.camera.getCenter();
+      const p = E.coords.project(centre);
+      const pick = E.coords.unproject(p);
+      const edges = [box[0], box[1], [-10, 47], [25, 40]].map(ll => E.coords.project(ll).x);
+      return { x: p.x, expected: (width + inset) / 2, inset, width, edges,
+        pickError: Math.hypot(pick.lng - centre.lng, pick.lat - centre.lat) };
+    } finally {
+      E.camera.setPadding(old);
+    }
+  });
+  expect(padded.x).toBeCloseTo(padded.expected, 0);
+  expect(padded.pickError).toBeLessThan(0.001);
+  expect(Math.min(...padded.edges)).toBeGreaterThan(padded.inset);
+  expect(Math.max(...padded.edges)).toBeLessThan(padded.width);
 });
 
 /* ── ⑤ THE DEFAULT ENGINE ─────────────────────────────────────────────────────────────────

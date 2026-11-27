@@ -58,6 +58,13 @@ feature identity and corrected shapes, and the precision metadata. The source si
 is separate from historical survey accuracy. Refinement must preserve polygon components and holes;
 adding interpolated vertices is not evidence of greater accuracy.
 
+The Atlas and map interaction regressions evaluate current and historical label fades with the style
+expression interpreter (`tests/label-fade-opacity-checks.test.mjs`) and control actual browser
+scrolling during a streamed reply and when moving Atlas between layouts (`tests/atlas-live-stream.spec.js`
+and `tests/atlas-float-text-glow.spec.js`). The floating suite reads computed glyph shadows, composer
+material, and the centre projected into the map. The Cesium fit check in `tests/r181-cesium.spec.js`
+also round-trips that centre through picking with a desktop inset.
+
 Memory lifecycle regressions execute the actual function bodies with controlled resource owners:
 `tests/layer-legends-checks.test.mjs` (#R708) keeps the entire clock range reachable with constant DOM
 and one subscription across legend rebuilds;

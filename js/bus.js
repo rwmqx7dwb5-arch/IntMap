@@ -80,6 +80,11 @@ export const EVENTS = Object.freeze({
     from: ['js/app-body.js', 'js/article-reader.js', 'js/map-ui.js', 'js/playground.js'],
     pending: { 'js/app-body.js': 'pinned', 'js/map-ui.js': 'parallel' },
   },
+  'intmap-atlas-float-visibility': {
+    means: 'the floating Atlas starts or stops covering the map; recompute the desktop camera inset',
+    detail: null,
+    from: ['js/atlas-float.js'],
+  },
   'intmap-mem-pressure': {
     means: 'the page is short of memory; caches that can be rebuilt drop what is not on screen',
     detail: null,

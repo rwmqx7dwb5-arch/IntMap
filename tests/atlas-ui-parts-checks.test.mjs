@@ -3,9 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { layerOpacityChanged, onLayerOpacityChange, readLayerOpacity, registerLayerOpacityAccess, writeLayerOpacity } from '../js/layer-opacity.js';
 
 const { switchCallProblem, SWITCH } = await import('../js/atlas-ui-spec.js');
 const caps = (await import('../js/atlas-cap-ui.js')).default;
+const layerCaps = (await import('../js/atlas-cap-layers.js')).default;
 const { makeAtlasAgent } = await import('../js/atlas-agent.js');
 const AGENT = makeAtlasAgent();
 
@@ -28,12 +30,46 @@ test('a switch call must be a registered, session-reversible, unconfirmed, plain
   assert.match(switchCallProblem({ type: 'flyTo', pad: 'x'.repeat(SWITCH.callChars) }, CAPS, L), /longer/);
 });
 
-function inline(items) {
+function inline(items, context) {
   const e = caps.find((c) => c.row[0] === 'ui.inlineControls');
-  const K = { R: (ok, html, extra) => ({ ok, html, ...(extra || {}) }), warn: (h) => h, esc: (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])), L, CAPS, resolveLayer: () => null, layerOpacityControl: () => null };
-  return e.run({ items }, {}, K);
+  const K = { R: (ok, html, extra) => ({ ok, html, ...(extra || {}) }), warn: (h) => h, esc: (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])), L, CAPS, resolveLayer: () => null, readLayerOpacity: () => null };
+  return e.run({ items }, {}, { ...K, ...context });
 }
 const opt = (label, type = 'flyTo') => ({ label, calls: [{ type, place: label }] });
+
+test('inline opacity and the layer action read the same owner and represent zero', async () => {
+  const layer = { label: 'Coverage', cb: { id: 'dl-coverage', checked: true } };
+  const unrelated = { label: 'Reference', cb: { id: 'dl-reference', checked: true } };
+  let value = 0.43;
+  registerLayerOpacityAccess(layer.cb.id, () => value, (next) => {
+    value = next;
+    layerOpacityChanged(layer.cb.id, next);
+  });
+  const changes = [];
+  const unsubscribe = onLayerOpacityChange((...change) => changes.push(change));
+  const owner = {
+    resolveLayer: (name) => name === layer.label ? layer : unrelated,
+    readLayerOpacity,
+    writeLayerOpacity,
+  };
+  const cap = layerCaps.find((c) => c.row[0] === 'layers.opacity');
+  const ctx = { ...owner, R: (ok, html) => ({ ok, html }), L, esc: String, note: String, warn: String };
+  const reply = await cap.run({ name: layer.label, percent: 0 }, {}, ctx);
+  assert.equal(reply.ok, true);
+  assert.match(reply.html, /Coverage 0%/);
+  const r = await inline([{ kind: 'opacity', layer: layer.label }, { kind: 'opacity', layer: unrelated.label }], owner);
+  assert.match(r.html, /data-cb="dl-coverage"[^>]*value="0"/);
+  assert.doesNotMatch(r.html, /data-cb="dl-reference"/);
+  const delta = await cap.run({ name: layer.label, delta: 43 }, {}, ctx);
+  assert.match(delta.html, /Coverage 43%/);
+  const after = await inline([{ kind: 'opacity', layer: layer.label }], owner);
+  assert.match(after.html, /data-cb="dl-coverage"[^>]*value="0\.43"/);
+  const percent = await cap.run({ name: layer.label, percent: 1 }, {}, ctx);
+  assert.match(percent.html, /Coverage 1%/);
+  assert.equal(value, 0.01);
+  unsubscribe();
+  assert.deepEqual(changes, [[layer.cb.id, 0], [layer.cb.id, 0.43], [layer.cb.id, 0.01]]);
+});
 
 test('tabs and steps draw one control per option, the chosen one marked, calls carried for the press', async () => {
   const t = await inline([{ kind: 'tabs', label: 'Era', options: [opt('1910'), opt('2021')], selected: 1 }]);

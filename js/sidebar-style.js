@@ -54,10 +54,23 @@ function applySidebarStyle(animate){ const s=window.imSidebarStyle;
      function and none of them may move the map by a pixel (CONSTITUTION §3). ⚠ AND THE OTHER SIDES ARE READ BEFORE THEY
      ARE WRITTEN: js/mobile-ui.js owns `bottom` for the sheet, so only `left` is decided here (`right` keeps #R160's
      one-time cleanup of a stray value). */
+  syncCameraInset();
+}
+
+function syncCameraInset(){
   try{ if(GE().camera.getPadding && GE().camera.setPadding && !isMobile()){ const cur=GE().camera.getPadding()||{};
-    const want=_glassInset();
+    const want=Math.max(_glassInset(), floatingAtlasInset());
     if((cur.left||0)!==want || (cur.right||0)!==0) GE().camera.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:want}); } }catch(_){}
 }
+// The host starts after a solid sidebar. With a glass sidebar the floating card already sits beyond it.
+function floatingAtlasInset(){
+  const atlas=document.getElementById('atlas-float');
+  if(!atlas?.classList.contains('on')) return 0;
+  const host=atlas.parentElement.getBoundingClientRect();
+  const right=atlas.getBoundingClientRect().right;
+  return Math.max(0,Math.min(host.width,Math.round(right-host.left)));
+}
+
 /* the width of the sidebar that is actually covering the map right now — 0 whenever nothing is */
 function _glassInset(){ try{
   if(!document.body.classList.contains('sidebar-glass')) return 0;   /* solid: the canvas is already narrower */
@@ -78,7 +91,10 @@ function _glassInset(){ try{
 (function(){ try{
   let was=document.body.className.indexOf('ws-mode')>=0;
   const sync=()=>{ try{ applySidebarStyle(false); }catch(_){} };
-  bus.on('intmap-sidebar-resize',sync);
+  bus.on('intmap-sidebar-resize',syncCameraInset);
+  bus.on('intmap-atlas-float-visibility',syncCameraInset);
+  const mapHost=document.getElementById('map-container');
+  if(mapHost&&typeof ResizeObserver!=='undefined') new ResizeObserver(syncCameraInset).observe(mapHost);
   try{ GE().events.on('load',sync); }catch(_){}
   new MutationObserver(()=>{ const now=document.body.className.indexOf('ws-mode')>=0;
     if(now===was) return; was=now; sync(); if(!now) setTimeout(sync,450); })

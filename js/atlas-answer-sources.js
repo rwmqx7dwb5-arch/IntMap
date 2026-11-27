@@ -371,7 +371,7 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-scard-t{font-weight:600;font-size:13.5px;line-height:1.4;}'
   + '.atl-scard-d{color:var(--text-muted);font-size:11.5px;margin-top:2px;}'
   + '.atl-scard-s{margin-top:5px;color:var(--text-main);opacity:.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}'
-  + '.atl-scard-open{display:inline-block;margin-top:8px;color:var(--accent,#0a84ff);font-weight:600;text-decoration:none;}'
+  + '.atl-scard-open{color:inherit;text-underline-offset:.18em;}'
   + '.atl-menu>summary{display:inline-block;list-style:none;border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--text-muted);font-weight:600;}'
   + '.atl-menu>summary::-webkit-details-marker{display:none;}'
   + 'sup.atl-srcn a{color:var(--accent,#0a84ff);text-decoration:none;font-size:0.78em;font-weight:650;margin-left:1px;}';
@@ -483,15 +483,19 @@ export function attachSources(ctx) {
     if (toggle && !cardEl.hidden && cardEl.__for === chip) { hideCard(); return; }
     cardEl.__for = chip;
     const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+    const link = (cls, text) => {
+      const a = document.createElement('a'); a.className = cls + ' atl-scard-open';
+      a.textContent = text; a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      return a;
+    };
     const head = node('div', 'atl-scard-h');
     const ico = document.createElement('img'); ico.width = 16; ico.height = 16; ico.alt = ''; ico.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=32'; ico.onerror = () => ico.remove();
-    head.append(ico, node('span', 'atl-scard-pub', w.name || host));
+    const publisher = w.name || host;
+    head.append(ico, w.title ? node('span', 'atl-scard-pub', publisher) : link('atl-scard-pub', publisher));
     const kids = [head];
-    if (w.title) kids.push(node('div', 'atl-scard-t', w.title));
+    if (w.title) kids.push(link('atl-scard-t', w.title));
     if (w.date) kids.push(node('div', 'atl-scard-d', w.date));
     if (w.summary) kids.push(node('div', 'atl-scard-s', w.summary));
-    const open = node('a', 'atl-scard-open', core.T('Open the original article', '元記事を開く') + ' ↗'); open.href = url; open.target = '_blank'; open.rel = 'noopener';
-    kids.push(open);
     cardEl.replaceChildren(...kids);
     cardEl.hidden = false;
     const r = chip.getBoundingClientRect(), cw = Math.min(320, window.innerWidth - 16);
