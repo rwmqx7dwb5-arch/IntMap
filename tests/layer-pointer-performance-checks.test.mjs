@@ -237,7 +237,7 @@ function pinchRig(sens) {
   globalThis.window.imNavZoomSens = sens;
   const RT = makeRuntime({});
   globalThis.window.IntMapRuntime = RT;
-  makeWheelZoom({}, { GE: () => GEo, i18n: {} });
+  makeWheelZoom({}, { GE: () => GEo, i18n: {}, NAV_BASE: { zoom: 1.7, pan: 1.7, inertia: 1.1 } });
   const fire = (t, touches) => { for (const fn of (L[t] || []).slice()) fn({ touches, cancelable: true, preventDefault() { } }); };
   return { B, fire, counts, RT, last: () => last, zoom: () => zoom, armed: () => !!L.touchmove };
 }

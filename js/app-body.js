@@ -49,7 +49,7 @@ import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, d
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
 import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
 import { makeLabelOcclusion } from './label-occlusion.js';
-import { makeWheelZoom, NAV_BASE } from './wheel-zoom.js';
+import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection, openingProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
@@ -1287,7 +1287,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }catch(_){} }
   /* (#R200) moved to js/wheel-zoom.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeWheelZoom(IM_HOST, { GE, i18n });
+  /* The Settings sliders show a PERCENT OF THE DEFAULT, and the default is the feel the owner tuned: observed 2026-11-27 (owner's own
+     settings: Zoom 170% / Pan 170% / Inertia 110% of the older raw scale), adopted as the new 100%. imNav* hold the slider value
+     (1 = default); NAV_BASE is the one place that turns it into the raw rate (wheel-zoom, double-tap zoom, loadSettings' migration).
+     Expires when the owner re-tunes the default. */
+  const NAV_BASE=Object.freeze({ zoom:1.7, pan:1.7, inertia:1.1 });
+  makeWheelZoom(IM_HOST, { GE, i18n, NAV_BASE });
   /* (#R200) moved to js/label-occlusion.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   _IM_LABELOCCLUSION = makeLabelOcclusion(IM_HOST, { GE, isMobile });

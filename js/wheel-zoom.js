@@ -12,12 +12,8 @@
  *  Everything else arrives through CTX under its ORIGINAL name, which is what lets the body stay
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
-/* The Settings sliders show a PERCENT OF THE DEFAULT, and the default is the feel the owner tuned: observed 2026-11-27 (owner's own
-   settings: Zoom 170% / Pan 170% / Inertia 110% of the older raw scale), adopted as the new 100%. imNav* hold the slider value
-   (1 = default); this is the one place that turns it into the raw rate. Expires when the owner re-tunes the default. */
-export const NAV_BASE = Object.freeze({ zoom:1.7, pan:1.7, inertia:1.1 });
 export function makeWheelZoom(HOST, CTX) {
-  const GE=CTX.GE, i18n=CTX.i18n;
+  const GE=CTX.GE, i18n=CTX.i18n, NAV_BASE=CTX.NAV_BASE;   /* the default's raw rates — js/app-body.js owns them (the sliders' 100%) */
   /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
      The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
      zoom-toward-the-cursor UX on the globe ("カーソル地点へとズームされるというUXがなくなってしまった").
