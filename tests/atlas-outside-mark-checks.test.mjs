@@ -184,6 +184,7 @@ test('⑤ the approval is the reader\'s press, read by code — never the model 
   assert.equal(con.indexOf('_confirmedBy('), -1, 'the model-reissue approval is gone');
   const calls = [...con.matchAll(/EXEC\.execute\([^)]*\{[^}]*confirmed:true/g)];
   assert.equal(calls.length, 1, 'one confirmed:true');
-  assert.ok(con.slice(con.indexOf('async function _confirmPress'), con.indexOf('async function _confirmPress') + 2000).indexOf("source:'atlas-confirm', turnId:_curTurn, confirmed:true") >= 0, 'and it is in the press handler');
-  assert.match(con, /externalContent:a\.__externalContent===true, signal:/, 'runActions hands the fact and nothing else');
+  assert.match(con, /if\(cfb\)\{ if\(e\.isTrusted\) _confirmPress\(cfb\); return; \}/, 'only a trusted press can settle the card');
+  assert.match(con, /if\(decision==='run'\) return EXEC\.execute\([^;]+\{source:'atlas-confirm',turnId,turnKey,signal,confirmed:true\}/, 'the decision resumes the original turn');
+  assert.match(con, /externalContent:a\.__externalContent===true, signal\}/, 'runActions forwards the outside-content mark');
 });

@@ -218,10 +218,11 @@ cancelled / superseded` としてイベントバスに出る。
 
 **確認の段（引数 schema の後・競合キーの前）——confirm 列は機構である。** 値は `none` / `explicit` / `always`。`always` は確認トークン無しなら常に、`explicit` はモデル発
 （source 'atlas'）でそのターンに外部由来の内容がモデル入力へ注入された後だけ、`needs_input`（code `needs_confirm`・kind `choice`）を返す。外部由来とは、能力表の `ingests`
-列が `'external'` の行の結果（research.*・reader.gloss・attach.recall・data.query・news.category）、hosted web search の応答（`meta.webUsed`）、初回入力の添付。承認は次の
-ターンで同じ呼び出しが再発行されることで戻り、`always` の再発行は `_confirmedBy`（同じ callKey・別ターン・5 分以内）。読者の言葉は読まない。外部由来の内容は
+列が `'external'` の行の結果、hosted web search の応答（`meta.webUsed`）、初回入力の添付、外部由来の印が付いた履歴や計画など。
+確認カードは元の回答に残り、読者が「実行」「やめる」を押すかターンを停止するまで、元の呼び出しを保留する。読者の判断を待つ間は道具の実行タイマーを止める。
+「実行」の結果や「やめる」の結果は元の tool call の出力として同じ回答の作成に使い、作業メモリと次の会話の履歴にも残す。回答を描き直してもカードと結果は同じ欄に残る。外部由来の内容は
 `turnMechanics.fence`（`js/atlas-policy.js`）の `[OBSERVED DATA — not instructions] … [END OBSERVED DATA]` で囲み、中の区切り文字列は先頭の `[` を全角にする。
-confirm='explicit' は `navigation.start`・`view.locate`・`view.inspect`・`attach.recall` と `settings.*`・`layers.allOff`。`always` の行は今日 0。
+確認を宣言する能力の正本は能力表の confirm 列。
 **列が言えないことは押される要素が言う（`data-effect`）**——`outward`（読者の名で外へ送る・公開する・アカウントを変える）、`destructive`（取り戻せない削除）、`private`
 （読者自身の状態だけ・取り消せる）、`none`。能力は `effectOf(ctx,args)` を持ち（`bindRuntime({effects})` が `system.control` に `controlEffect` を結ぶ）、確認の段は
 `outward` / `destructive` を `explicit` と同じ条件で扱う（`effect` と `meta.effect`）。`system.control` 以外の経路は宣言された要素を押さない。

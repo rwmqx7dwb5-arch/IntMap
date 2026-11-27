@@ -3894,6 +3894,11 @@ with the change being made.
 
 ## The Atlas capability audit (`scripts/atlas-capability-audit.mjs`)
 
+`tests/atlas-cited-answers.spec.js` also uses its signed-in page to exercise confirmation with
+scripted AI and job endpoints. It checks that the confirmation accepts a reader's click, sends at
+most one job creation request, keeps the job card in the original answer, and carries the outcome
+into the model's next request.
+
 `scripts/atlas-catalog.mjs` asks one question — *is every dispatch case described to the planner?* —
 and it is a good one; it found six working features the planner had never been shown. It is also the
 only question anything was asking, and the diary is full of the others: an operation that ran and

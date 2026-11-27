@@ -1002,19 +1002,28 @@ export function makeAtlasAgent() {
            was told it never arrived. A caller whose execute ignores it behaves exactly as before. */
         let callAbort = null;
         try { callAbort = new AbortController(); } catch (_) { /* no AbortController: the old, waiting-only deadline */ }
+        let tm = null, timeout;
+        const arm = () => {
+          if (!(lim.toolTimeoutMs > 0) || (callAbort && callAbort.signal.aborted)) return;
+          tm = setTimeout(() => {
+            let cancelled = false;
+            if (callAbort) { try { callAbort.abort(); cancelled = true; } catch (_) { /* could not signal */ } }
+            timeout({ ok: false, error: 'tool_timeout',
+              message: '"' + String((call && call.name) || '') + '" did not finish within '
+                + Math.round(lim.toolTimeoutMs / 1000) + ' s and ' + (cancelled ? 'was cancelled' : 'was left running')
+                + '; nothing it was fetching arrived in time. Answer with what you have, or try a different approach.' });
+          }, lim.toolTimeoutMs);
+        };
         const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1,
-          callSignal: callAbort ? callAbort.signal : undefined });
+          callSignal: callAbort ? callAbort.signal : undefined,
+          // The reader's decision is input to this call. Time the execution on either side of it.
+          async awaitInput(decision) {
+            clearTimeout(tm);
+            try { return await decision; } finally { arm(); }
+          } });
         const p = Promise.resolve().then(() => execute(call, facts));
         if (!(lim.toolTimeoutMs > 0)) return p;
-        let tm = null;
-        const clock = new Promise((res) => { tm = setTimeout(() => {
-          let cancelled = false;
-          if (callAbort) { try { callAbort.abort(); cancelled = true; } catch (_) { /* could not signal */ } }
-          res({ ok: false, error: 'tool_timeout',
-            message: '"' + String((call && call.name) || '') + '" did not finish within '
-              + Math.round(lim.toolTimeoutMs / 1000) + ' s and ' + (cancelled ? 'was cancelled' : 'was left running')
-              + '; nothing it was fetching arrived in time. Answer with what you have, or try a different approach.' });
-        }, lim.toolTimeoutMs); });
+        const clock = new Promise((res) => { timeout = res; arm(); });
         return Promise.race([p, clock]).finally(() => { try { clearTimeout(tm); } catch (_) { /* already fired */ } });
       };
 
@@ -1419,7 +1428,9 @@ export function makeAtlasAgent() {
             /* (atlas-turn-engine) an UNOBSERVED call is answered the same way, and says why it is not run
                again: it did run, and the same call on the same page cannot be seen any better. */
             const rec0 = Object.assign({}, prior, { id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
-              note: prior.status === 'unobserved'
+              note: prior.code === 'confirmation_declined'
+                ? 'The reader declined this exact call. It has not run. Continue without it.'
+                : prior.status === 'unobserved'
                 ? 'This turn has ALREADY made this exact call, and it RAN — IntMap could not observe whether it took effect ('
                   + String(prior.code || 'unobserved') + '), and nothing has been written since. It was not run a second time. '
                   + 'Observation can come back (a hidden page that returns to the front can be seen), so this is not a statement that it '
@@ -1499,6 +1510,8 @@ export function makeAtlasAgent() {
              change the arguments, which is precisely how one request became two maps in the reply.
              A call that still owes something must be allowed to be made again. */
           if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') remember(ckey, rec);
+          // An identical request in this turn must respect the reader's decision.
+          if (ckey && rec.code === 'confirmation_declined') remember(ckey, rec);
           /* ══ ⚠⚠⚠ (atlas-turn-engine) …AND A CALL THAT RAN BUT COULD NOT BE SEEN IS DONE, NOT OWED ═══════════
              `unobserved` (js/atlas-results.js) used to arrive as `partial` + `not_rendering`, and a partial
              is exactly what the line above lets be made again — so a draw that had done its whole job on a

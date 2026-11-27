@@ -301,3 +301,30 @@ test('atlas-timeout-cancel: a tool past its deadline has its callSignal aborted,
   assert.equal(seen.aborted, true, 'and it is aborted once the deadline has passed');
   assert.match(out.results[0].message, /was cancelled/);
 });
+
+test('a tool waits past its execution deadline for reader input, then resumes its deadline', async () => {
+  const ready = Promise.withResolvers();
+  const decision = Promise.withResolvers();
+  let requests = 0;
+  const out = AGENT.runTurn({
+    model: async () => ++requests === 1
+      ? { text: '', toolCalls: [{ id: 't0', name: 'tool', arguments: {} }] }
+      : { text: 'answer', toolCalls: [] },
+    tools: { tool: { name: 'tool', description: 'x', parameters: { type: 'object' } } },
+    execute: async (call, facts) => {
+      ready.resolve(facts.callSignal);
+      await facts.awaitInput(decision.promise);
+      return new Promise(() => {}); // Execution stalls after the reader answers.
+    },
+    messages: [{ role: 'user', content: 'q' }],
+    limits: { toolTimeoutMs: 30 },
+  });
+  const signal = await ready.promise;
+  await new Promise(resolve => setTimeout(resolve, 90));
+  assert.equal(requests, 1);
+  assert.equal(signal.aborted, false);
+  decision.resolve('run');
+  const verdict = await orHang(out, 8000);
+  assert.equal(verdict.results[0].error, 'tool_timeout');
+  assert.equal(signal.aborted, true);
+});
