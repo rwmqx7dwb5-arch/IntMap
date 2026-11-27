@@ -44,8 +44,9 @@ import { makeLazyModules } from './lazy-modules.js';
 import { makeRuntime, everyTick, stopTick } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
-import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH, ADMIN1_OPACITY, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT } from './border-style.js';
-import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
+import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH, ADMIN1_OPACITY, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT, NATIONAL_BORDER_FILTER } from './border-style.js';
+import { makeCoastLine } from './coast-line.js';
+import { countryShapeOnMap } from './frontier-fit.js';   /* the one shape of a country on the map — handed to lazy readers in IM_HOST */   /* (#R289) the border line, drawn round the water */
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
 import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
 import { makeLabelOcclusion } from './label-occlusion.js';
@@ -299,6 +300,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      so index.html code and module code keep reading the same live value. Every RW member is a
      `get x(){…}, set x(v){ x=v; }` pair on ONE line; everything else stays getter-only.
      tests/atlas-console-kernel-checks.test.mjs (#R165) pins the RW list to exactly these five. */
+  function countryShape(geo,iso3){ return countryShapeOnMap(GE(),countryGeo,geo,iso3); }
   const IM_HOST={
     /* mutable UI / session state */
     get lang(){ return currentLang; },              get user(){ return currentUser; },
@@ -324,6 +326,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (data-studio) the Natural Earth loader the country table uses, for the lazy data studio (js/data-studio.js): a static import of
      * js/ne-countries.js from a lazy chunk costs every session two start-up requests (the note in js/data-studio.js) */
     get loadNECountries(){ return loadNECountries; }, get neCountriesPath(){ return neCountriesPath; },
+    /* (isolate-outline-geometry) a country's shape as this map draws it — the polygon whose land frontier is the visible border
+     * (js/frontier-fit.js). Atlas's country highlight (a lazy chunk) reaches it here for the same reason as loadNECountries above. */
+    get countryShape(){ return countryShape; },
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
     get makeDraggable(){ return makeDraggable; },   get bringToFront(){ return bringToFront; },
@@ -2083,7 +2088,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!GE().layers.has('borders-only-line')){
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id)) || (GE().layers.has('tool-poly')?'tool-poly':undefined);
       GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
-        filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
+        filter:NATIONAL_BORDER_FILTER(),
         layout:{...BORDER_LAYOUT(),visibility:bordersOn?'visible':'none'},
         /* (#R210) WHITE and ~2x thicker (国境線は白・太く). `borders-only-casing` goes UNDER it so white still reads over a pale basemap; both are driven together by _applyBorders/cb-borders.
            (#R212) 「国境線は少しだけ灰色に。…両者とも少しだけ細く。」 — pure white against a pale basemap is
@@ -2092,7 +2097,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
            (js/time-borders.js `imtb-line`), because 「歴史的国境線も同じものに統一」 — one line for
            «this is a national border», whichever year is on the clock. */
         paint:BORDER_PAINT()}, before);
-      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{...BORDER_LAYOUT(),visibility:bordersOn?'visible':'none'},paint:BORDER_CASING_PAINT()}, 'borders-only-line');
+      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:NATIONAL_BORDER_FILTER(),layout:{...BORDER_LAYOUT(),visibility:bordersOn?'visible':'none'},paint:BORDER_CASING_PAINT()}, 'borders-only-line');
     }
     return true; }catch(e){ return false; } }
   window.ensureBordersLayer=ensureBordersLayer;

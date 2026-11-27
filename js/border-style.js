@@ -41,6 +41,10 @@ export const ADMIN1_OPACITY = ['interpolate', ['linear'], ['zoom'], 3, 0.3, 6, 0
    casing live here, and every layer that draws one (today's border, the coastline, the era border)
    spreads these objects instead of re-typing them. Each reader gets its own copy (a style layer must
    not share a mutable object with another). */
+/* WHICH LINES ARE «A NATIONAL BORDER» on the ofm `boundary` tiles: admin level 2, not at sea. `borders-only-line` and its
+   casing (js/app-body.js) draw it, and js/frontier-fit.js fits a country's shape to it — one expression, so the shape
+   is fitted to exactly the line that is drawn. A fresh array per reader (a style layer must not share a mutable value). */
+export const NATIONAL_BORDER_FILTER = () => ['all', ['==', ['get', 'admin_level'], 2], ['!=', ['get', 'maritime'], 1]];
 export const BORDER_LAYOUT = () => ({ 'line-join': 'round' });
 export const BORDER_PAINT = () => ({ 'line-color': BORDER_COLOR, 'line-opacity': 0.95, 'line-width': BORDER_WIDTH });
 export const BORDER_CASING_PAINT = () => ({ 'line-color': '#000000', 'line-opacity': 0.35, 'line-width': BORDER_CASING });

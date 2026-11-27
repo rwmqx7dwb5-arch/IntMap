@@ -1519,6 +1519,16 @@ API ホストを含むか目録を import するファイルの行表（`{id:'<k
   `onLayer` に `ownership:'fallback'` を宣言して登録する。地名の所有権判定は
   `clickLayers({ownersOnly:true})` を使い、説明用の面と地名が互いに譲って両方無反応になることを防ぐ。
   面のクリック自体は保持し、他の対象が取らなかったときに出典の形を説明する。
+- **今日の国のハイライト・Isolate・Atlas の国ハイライトは、描かれている国境線と同じ 1 つの形を描く**
+  （`js/frontier-fit.js` の `countryShapeOnMap`）。国の面は Natural Earth、国境線は OpenFreeMap の `boundary` で、
+  両者は中央値 0.7〜1.6 km・最大 5.7 km 離れている（2026-11-27 実測）。そこで、多角形の陸の国境の辺（隣国の多角形と
+  共有する辺＝Natural Earth の位相そのもの）を、読み込み済みのタイルの国境線（`border-style.js` の
+  `NATIONAL_BORDER_FILTER`、`borders-only-line` と同じ条件）の頂点で置き換える。線はコードではなく形の近さで選ぶ
+  （タイルの `adm0_l` / `adm0_r` は国境片の約 4 割で片側か両側が欠けている）。両側のコードが揃い、どちらもその国
+  でない線だけは使わない。海岸の辺は動かさない。z5 未満（タイルに国境線が無い）は多角形がそのまま形で、その輪郭が線。
+  Isolate のマスクの穴・その上の縁の線（`iso-edge-src`）、ハイライトの塗りと線（`pl-outline-src`）、Atlas の
+  `nlq-fill` / `nlq-line`（`nlq-hl-src`）は全部この形から描き、タイルが入れ替わった `idle` で描き直す。
+  Isolate は国の多角形の穴（レソトのような包領）もマスクする。
 - **線（`imtb-line`・`imta*-vt-line`・`imta*-line`・`imta-gap-line`・今日の `borders-only-line`）を押すと
   「この線の根拠」**（`js/border-provenance.js`）。線は地図全体の 1 本のリスナがパディング付きで当て、独占の持ち主
   （地名・昔の国名）が同じ点にあれば譲る。押した点に線があれば無名形状の説明は線に譲る。線は登録されても
