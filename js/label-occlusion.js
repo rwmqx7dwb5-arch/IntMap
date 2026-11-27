@@ -70,7 +70,7 @@ export function makeLabelOcclusion(HOST, CTX) {
        ABOVE the place-name labels ("地名ラベルは、ニュースピンの帯よりも後ろに表示して。いまは帯が地名ラベルに
        さえぎられてしまっている"). Adding them here keeps the bands fully visible over labels instead of being
        clipped by them, while real DATA layers (choropleths, rasters) still sit beneath the labels. */
-    const isOwn=(id)=>/^(tool|draw|los|route|place-hl|news|dash|user-pin|comm)-/.test(id)||id==='iso-mask';
+    const isOwn=(id)=>/^(tool|draw|los|route|place-hl|news|dash|user-pin|comm)-/.test(id)||/^iso-(mask|edge)/.test(id);
     /* (#R25) ROOT CAUSE labels kept getting buried by land-cover/relief/etc.: the old top-scan declared
        "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
        label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
@@ -91,6 +91,7 @@ export function makeLabelOcclusion(HOST, CTX) {
       stack().forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
       const ls=GE().scene.getStyle().layers.map(l=>l.id);
       ls.forEach(id=>{ if(isOwn(id) && GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* own overlays back above labels */
+      ['iso-mask','iso-edge-poly','iso-edge'].forEach(id=>{ if(ls.includes(id)) try{ GE().layers.move(id); }catch(_){} });   /* Isolate: its border lines stand above its mask, whatever order the loop above met them in */
     }catch(_){} }
     window._raiseLabelLayers=raise;
     let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
