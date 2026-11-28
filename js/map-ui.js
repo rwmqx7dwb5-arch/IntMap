@@ -3593,7 +3593,7 @@ export function geojsonUpload(HOST){
       const p=it.sourceQuality;
       const q=p?.quality, position=q?.positional;
       if(!p?.mapSource||!q) return '';
-      const t=(en,jp)=>IntMapLang.t(HOST.lang,en,jp), c=q.classification;
+      const t=IntMapLang.pick(()=>HOST.lang), c=q.classification;
       const rows=[];
       const checkedMapSourceHref=IntMapSafe.url(p.mapSource.url||p.sourceUrl||'');
       const sourceName=esc(p.mapSource.name||t('Source map','原図'));
