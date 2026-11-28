@@ -33,7 +33,8 @@
  *      npm run check:agents        # gate: render into memory and compare
  *      node scripts/agent-sync.mjs --write   # rewrite the rendered copies
  */
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
+import { updateSettings } from './lib/local-settings.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crlfBytes } from './eol.mjs';
@@ -295,8 +296,9 @@ const session = JSON.parse(rd(SESSION_SRC));
 const forProduct = (p) => session.commands.filter((c) => c.products.includes(p));
 
 /* Claude Code takes the bare command and a timeout; it has no status line and no context cap. */
-const renderClaudeSettings = () => {
-  const cur = existsSync(join(ROOT, '.claude/settings.json')) ? JSON.parse(rd('.claude/settings.json')) : {};
+const CLAUDE_SETTINGS = '.claude/settings.json';
+const renderClaudeSettings = (text) => {
+  const cur = text == null ? {} : JSON.parse(text);
   cur.hooks = { ...(cur.hooks ?? {}) };
   cur.hooks.SessionStart = [{
     hooks: forProduct('claude').map((c) => ({ type: 'command', command: c.command, timeout: c.timeout })),
@@ -323,7 +325,7 @@ const renderCodexHooks = () => JSON.stringify({
   },
 }, null, 2) + '\n';
 
-plan.set('.claude/settings.json', renderClaudeSettings());
+plan.set(CLAUDE_SETTINGS, renderClaudeSettings(existsSync(join(ROOT, CLAUDE_SETTINGS)) ? rd(CLAUDE_SETTINGS) : null));
 plan.set('.codex/hooks.json', renderCodexHooks());
 
 /* Codex reads `.agents/skills/` at the repository root by itself; Claude Code only reads
@@ -376,14 +378,17 @@ if (!problems.some((p) => p.startsWith('frontmatter-yaml'))) ok('frontmatter-yam
   let stale = 0;
   for (const [rel, want] of plan) {
     const abs = join(ROOT, rel);
-    const got = existsSync(abs) ? readFileSync(abs, 'utf8') : null;
-    if (got !== null && lf(got) === lf(want)) continue;
-    stale++;
     if (WRITE) {
-      mkdirSync(dirname(abs), { recursive: true });
-      writeFileSync(abs, rel.endsWith('.toml') ? lf(want) : want);
-      console.log(`  ${got === null ? 'created' : 'updated'}  ${rel}`);
+      const changed = await updateSettings(abs, (got) => {
+        const next = rel === CLAUDE_SETTINGS ? renderClaudeSettings(got) : rel.endsWith('.toml') ? lf(want) : want;
+        if (got !== null && lf(got) === lf(next)) return { result: null };
+        return { text: next, result: got === null ? 'created' : 'updated' };
+      });
+      if (changed) { stale++; console.log(`  ${changed}  ${rel}`); }
     } else {
+      const got = existsSync(abs) ? readFileSync(abs, 'utf8') : null;
+      if (got !== null && lf(got) === lf(want)) continue;
+      stale++;
       fail('stale', `${rel} is ${got === null ? 'missing' : 'not what .agents/ renders to'} — run \`node scripts/agent-sync.mjs --write\``);
     }
   }

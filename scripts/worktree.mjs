@@ -56,6 +56,8 @@ import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
 import { blame as blameNights } from './nightly-blame.mjs';
 import { fetchAtlasEval, atlasEvalLine } from './lib/nightly-status.mjs';
+import { updateSettings, updateSettingsLocked, withSettingsLock } from './lib/local-settings.mjs';
+import { trustCodexProject } from './lib/codex-settings.mjs';
 /* (field-speed) NOT a static import: scripts/field-speed.mjs reads the counter's rule from supabase/functions/usage-count/shape.js,
    and a tree without that file (a partial checkout, the minimal tree tests/r771 builds) would lose the WHOLE status to one
    missing line. Loaded once, and a failure is said as «could not be read» while the rest of the status goes on. */
@@ -104,25 +106,22 @@ function slugTaken(master, slug) {
    machine names (the master's and every worktree's) AND that nothing is listening on right now.
    The range sits above the per-checkout test servers (tests/helpers/session-seed.js, 4174–4373) and
    the canonical 4173, so a preview never takes a port a test run is about to bind.
-   ⚠ Two `new` runs in the same instant could still both see a port as free; the second preview
-   then fails to bind and says so. That is recoverable (edit launch.json), unlike a shared name. */
+   The master launch lock covers both selecting a port and publishing its reservation. */
 export const PREVIEW_PORTS = [4400, 4999];
 
 export const previewName = (slug) => `intmap-preview-${slug}`;
 
-/* Add (or replace) one configuration by name; with `entry` null, remove it. A missing file is
-   created only when there is something to add. */
-export function upsertLaunch(path, entry, name = entry && entry.name) {
-  let lj = { version: '0.0.1', configurations: [] };
-  if (existsSync(path)) lj = JSON.parse(readFileSync(path, 'utf8'));
-  else if (!entry) return false;
-  const before = (lj.configurations || []).length;
-  lj.configurations = (lj.configurations || []).filter((c) => c && c.name !== name);
-  if (entry) lj.configurations.unshift(entry);
-  if (!entry && lj.configurations.length === before) return false;
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(lj, null, 2) + '\n');
-  return true;
+/* Add or remove one configuration while retaining every other entry and setting. */
+function changeLaunch(entry, name = entry?.name) {
+  return text => {
+    if (text == null && !entry) return { result: false };
+    const launch = text == null ? { version: '0.0.1', configurations: [] } : JSON.parse(text);
+    if (!launch || !Array.isArray(launch.configurations)) throw new Error('Invalid preview launch configuration');
+    const next = launch.configurations.filter(c => c?.name !== name);
+    if (!entry && next.length === launch.configurations.length) return { result: false };
+    if (entry) next.unshift(entry);
+    return { text: JSON.stringify({ ...launch, configurations: next }, null, 2) + '\n', result: true };
+  };
 }
 
 function portsNamedInLaunchJson(master) {
@@ -763,24 +762,26 @@ async function makeNew(slug) {
      master's file had grown to ~200 dead entries).
      ⚠ (#R338) this file is NOT TRACKED — it holds absolute paths into this machine's worktrees. */
   try {
-    const port = await freePreviewPort(master);
-    if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
-    const name = previewName(slug);
-    const abs = (p) => join(dir, p).replace(/\\/g, '/');
-    upsertLaunch(join(dir, '.claude', 'launch.json'), {
-      name, runtimeExecutable: 'node',
-      runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
-      port, url: `http://127.0.0.1:${port}`,
+    await withSettingsLock(join(master, '.claude', 'launch.json'), async (launch) => {
+      const port = await freePreviewPort(master);
+      if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
+      const name = previewName(slug);
+      const abs = (p) => join(dir, p).replace(/\\/g, '/');
+      await updateSettings(join(dir, '.claude', 'launch.json'), changeLaunch({
+        name, runtimeExecutable: 'node',
+        runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
+        port, url: `http://127.0.0.1:${port}`,
+      }));
+      updateSettingsLocked(launch, changeLaunch({
+        name, runtimeExecutable: 'node',
+        runtimeArgs: [abs('scripts/serve.mjs'), '--root', abs('dist'), '--port', String(port)],
+        port,
+      }));
+      console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
     });
-    upsertLaunch(join(master, '.claude', 'launch.json'), {
-      name, runtimeExecutable: 'node',
-      runtimeArgs: [abs('scripts/serve.mjs'), '--root', abs('dist'), '--port', String(port)],
-      port,
-    });
-    console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
   } catch (e) { console.log('  ⚠ launch.json を更新できなかった: ' + e.message); }
 
-  trustWithCodex(dir);
+  await trustWithCodex(dir);
 
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
@@ -842,37 +843,15 @@ function markVerified() {
     + (fetched ? '' : '\n  ⚠ fetch できなかった。この sha はこの checkout が最後に取った origin/main。'));
 }
 
-/* ── CODEX TRUST ─────────────────────────────────────────────────────────────────────────────
-   (#R503) Codex reads a project's own `.codex/` layer — the five subagent roles, the lifecycle
-   hooks, the Codex-specific developer instructions — ONLY in a project it has been told to trust,
-   and it records that trust against the PATH. AGENTS.md §6 gives every round a brand-new path, so
-   without this step a Codex session in a fresh worktree silently loses all five roles: it still
-   reads AGENTS.md (that needs no trust), but the half of the configuration that lives in files is
-   skipped, and nothing says so.
-   ⚠ IT ONLY EVER ADDS THE DIRECTORY THIS SCRIPT JUST CREATED, and only if it is not already
-     listed. It never rewrites, reorders or removes anything else in the user's global config —
-     the file is appended to, never parsed and re-emitted, because a TOML round-trip through a
-     hand-rolled writer is how comments and formatting get destroyed.
-   ⚠ Failure here is not fatal. Codex is optional; the round is not. */
-function trustWithCodex(dir) {
-  const home = process.env.CODEX_HOME || join(process.env.USERPROFILE || process.env.HOME || '', '.codex');
-  const cfg = join(home, 'config.toml');
-  if (!existsSync(cfg)) return;                       /* Codex is not installed here — nothing to do */
+/* A fresh path needs its own Codex trust entry. Codex is optional for worktree creation. */
+async function trustWithCodex(dir) {
   try {
-    const body = readFileSync(cfg, 'utf8');
-    const path = resolve(dir);
-    /* both spellings a human or a previous version might have written */
-    if (body.includes(`[projects.'${path}']`) || body.includes(`[projects."${path.replace(/\\/g, '\\\\')}"]`)) {
-      console.log('  ✓ codex     この作業場は既に信頼済み');
-      return;
-    }
-    if (path.includes("'")) return;                   /* a literal TOML key cannot hold a quote */
-    const add = `${body.endsWith('\n') ? '' : '\n'}\n# (#R503) IntMap worktree — scripts/worktree.mjs new\n`
-      + `[projects.'${path}']\ntrust_level = "trusted"\n`;
-    writeFileSync(cfg, body + add);
-    console.log('  ✓ codex     ~/.codex/config.toml にこの作業場を信頼済みとして登録');
+    const status = await trustCodexProject(dir);
+    if (status === 'trusted') console.log('  ✓ codex     この作業場は既に信頼済み');
+    if (status === 'added') console.log('  ✓ codex     ~/.codex/config.toml にこの作業場を信頼済みとして登録');
+    if (status === 'unchanged') console.log('  ⚠ codex     既存の信頼設定を保持しました');
   } catch (e) {
-    console.log('  ⚠ codex     信頼の登録に失敗（Codex を使うなら /permissions で手動）: ' + e.message);
+    console.log('  ⚠ codex     信頼の登録に失敗: ' + e.message);
   }
 }
 
@@ -903,7 +882,7 @@ export function sweepAdminRemnants(adminRoot) {
   return swept;
 }
 
-function done() {
+async function done() {
   const master = masterDir();
   const here = resolve(q(['rev-parse', '--show-toplevel']) || REPO);
   if (here === resolve(master)) {
@@ -927,7 +906,7 @@ function done() {
     const m = /^wt-(.+)$/.exec(basename(here));
     if (m) {
       try {
-        if (upsertLaunch(join(master, '.claude', 'launch.json'), null, previewName(m[1]))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
+        if (await updateSettings(join(master, '.claude', 'launch.json'), changeLaunch(null, previewName(m[1])))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
       } catch (e) { console.log('  ⚠ 原本の launch.json を直せなかった: ' + e.message); }
     }
   }
@@ -998,7 +977,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (cmd === '--probe') console.log(JSON.stringify(PROBES[argv[1]]?.() ?? null));
     else if (cmd === 'status') await status(argv.includes('--brief'));
     else if (cmd === 'new') await makeNew(argv[1]);
-    else if (cmd === 'done') done();
+    else if (cmd === 'done') await done();
     else if (cmd === 'verified') {
       /* ⚠ a leftover `--round R770` is REFUSED rather than ignored: the caller meant to say which
          work was verified, and silently recording something else is the one thing that must not

@@ -47,6 +47,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { staleDeps, describeStale } from './deps-fresh.mjs';
 import { install as installMergeDriver } from './merge-driver.mjs';
+import { replaceSettings, withSettingsLock } from './lib/local-settings.mjs';
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -241,56 +242,67 @@ if (want('--sync')) {
     }
   };
 
-  let why = ff();
+  const leaving = departing();
+  const syncMachineLocal = () => {
+    let why = ff();
 
-  /* ⚠ THE RESCUE IS NARROW ON PURPOSE, AND IT IS NOT A SECOND OPINION ABOUT GIT'S ANSWER.
-     It runs only when git named some paths AND every last one of them is a declared machine-local
-     file that origin/main has stopped tracking. One unrecognised path and nothing is touched: the
-     refusal stands and gets reported, exactly as before. This is the difference between «carry the
-     machine's own scratch file across» and «decide somebody else's edit was unimportant». */
-  if (why) {
-    const leaving = departing();
-    const blocked = obstructedPaths(why);
-    if (blocked.length && blocked.every((p) => leaving.includes(p))) {
-      const headBefore = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true });
-      const stash = mkdtempSync(path.join(tmpdir(), 'intmap-machine-local-'));
-      const saved = [];
-      try {
-        for (const p of blocked) {
-          const abs = path.join(MASTER, p);
-          const keep = path.join(stash, p.replace(/[\\/]/g, '_'));
-          /* Buffers, never strings: no encoding guess, no newline rewrite, no reformatting. The
-             bytes that come out are the bytes that went in, and that is checkable — it is. */
-          const bytes = readFileSync(abs);
-          writeFileSync(keep, bytes);
-          const wasTracked = trackedNow(p);
-          saved.push({ p, abs, keep, wasTracked, sha: sha256(bytes), restored: false });
-          if (wasTracked) git(MASTER, ['rm', '--cached', '-q', '--', p], { quiet: true });
-          rmSync(abs);
+    /* ⚠ THE RESCUE IS NARROW ON PURPOSE, AND IT IS NOT A SECOND OPINION ABOUT GIT'S ANSWER.
+       It runs only when git named some paths AND every last one of them is a declared machine-local
+       file that origin/main has stopped tracking. One unrecognised path and nothing is touched: the
+       refusal stands and gets reported, exactly as before. This is the difference between «carry the
+       machine's own scratch file across» and «decide somebody else's edit was unimportant». */
+    if (why) {
+      const blocked = obstructedPaths(why);
+      if (blocked.length && blocked.every((p) => leaving.includes(p))) {
+        const headBefore = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true });
+        const stash = mkdtempSync(path.join(tmpdir(), 'intmap-machine-local-'));
+        const saved = [];
+        try {
+          for (const p of blocked) {
+            const abs = path.join(MASTER, p);
+            const keep = path.join(stash, p.replace(/[\\/]/g, '_'));
+            /* Buffers, never strings: no encoding guess, no newline rewrite, no reformatting. The
+               bytes that come out are the bytes that went in, and that is checkable — it is. */
+            const bytes = readFileSync(abs);
+            writeFileSync(keep, bytes);
+            const wasTracked = trackedNow(p);
+            saved.push({ p, abs, keep, wasTracked, sha: sha256(bytes), restored: false });
+            if (wasTracked) git(MASTER, ['rm', '--cached', '-q', '--', p], { quiet: true });
+            rmSync(abs);
+          }
+          why = ff();
+        } finally {
+          /* ⚠ IN `finally`, AND IT PUTS THE INDEX BACK TOO. If the retry failed the master must end
+             up exactly as it was found — bytes on disk AND the index entry that `rm --cached` took
+             out — or this «rescue» would be the very thing §6 forbids, just with a friendlier name. */
+          const moved = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true }) !== headBefore;
+          for (const s of saved) {
+            if (!moved && s.wasTracked) git(MASTER, ['reset', '-q', '--', s.p], { quiet: true });
+            try { replaceSettings(s.abs, readFileSync(s.keep), { expected: null }); } catch { /* left false; reported below */ }
+            /* «Restored» is not «writeFileSync did not throw»: read it back and compare the hash. */
+            try { s.restored = existsSync(s.abs) && sha256(readFileSync(s.abs)) === s.sha; } catch { s.restored = false; }
+          }
+          if (saved.every((s) => s.restored)) {
+            try { rmSync(stash, { recursive: true, force: true }); } catch { /* temp cleanup */ }
+          }
         }
-        why = ff();
-      } finally {
-        /* ⚠ IN `finally`, AND IT PUTS THE INDEX BACK TOO. If the retry failed the master must end
-           up exactly as it was found — bytes on disk AND the index entry that `rm --cached` took
-           out — or this «rescue» would be the very thing §6 forbids, just with a friendlier name. */
-        const moved = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true }) !== headBefore;
         for (const s of saved) {
-          if (!moved && s.wasTracked) git(MASTER, ['reset', '-q', '--', s.p], { quiet: true });
-          try { writeFileSync(s.abs, readFileSync(s.keep)); } catch { /* left false; reported below */ }
-          /* «Restored» is not «writeFileSync did not throw»: read it back and compare the hash. */
-          try { s.restored = existsSync(s.abs) && sha256(readFileSync(s.abs)) === s.sha; } catch { s.restored = false; }
+          console.error(`master-sync: ${s.p} is machine-local — carried across the fast-forward (${s.restored ? 'restored, unchanged' : '⚠ NOT RESTORED'}).`);
         }
-        try { rmSync(stash, { recursive: true, force: true }); } catch { /* a temp dir, not a result */ }
-      }
-      for (const s of saved) {
-        console.error(`master-sync: ${s.p} is machine-local — carried across the fast-forward (${s.restored ? 'restored, unchanged' : '⚠ NOT RESTORED'}).`);
-      }
-      if (saved.some((s) => !s.restored)) {
-        console.error('master-sync: a machine-local file did not come back intact — stopping rather than reporting success.');
-        process.exit(1);
+        if (saved.some((s) => !s.restored)) {
+          console.error(`master-sync: a machine-local file did not come back intact; its saved copy is in ${stash}.`);
+          return 'machine-local file could not be restored';
+        }
       }
     }
-  }
+
+    return why;
+  };
+  // The legacy migration can temporarily move launch.json. Serialize only
+  // that exceptional fast-forward with worktree preview registration.
+  const lockLocal = (index) => index === leaving.length ? syncMachineLocal()
+    : withSettingsLock(path.join(MASTER, leaving[index]), () => lockLocal(index + 1));
+  const why = await lockLocal(0);
 
   if (why) {
     console.error(`master-sync: git refused the fast-forward in ${MASTER}.`);
