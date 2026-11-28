@@ -3593,32 +3593,32 @@ export function geojsonUpload(HOST){
       const p=it.sourceQuality;
       const q=p?.quality, position=q?.positional;
       if(!p?.mapSource||!q) return '';
-      const t=IntMapLang.pick(()=>HOST.lang), c=q.classification;
+      const sourceLabel=IntMapLang.pick(()=>HOST.lang), c=q.classification;
       const rows=[];
       const checkedMapSourceHref=IntMapSafe.url(p.mapSource.url||p.sourceUrl||'');
-      const sourceName=esc(p.mapSource.name||t('Source map','原図'));
+      const sourceName=esc(p.mapSource.name||sourceLabel('Source map','原図'));
       if(checkedMapSourceHref) rows.push('<a href="'+esc(checkedMapSourceHref)+'" target="_blank" rel="noopener noreferrer">'+sourceName+'</a>');
       else rows.push(sourceName);
-      if(p.retrievedAt) rows.push(esc(t('Retrieved','取得日時')+' · '+p.retrievedAt));
+      if(p.retrievedAt) rows.push(esc(sourceLabel('Retrieved','取得日時')+' · '+p.retrievedAt));
       if(p.mapSource.sha256) rows.push('<code>'+esc(p.mapSource.sha256)+'</code>');
       if(c?.classes?.length){
         const missing=c.classes.filter(v=>!v.registeredFeatures);
-        rows.push(esc(t('Classes with geometry','形状を取得した区分')+' '+(c.classes.length-missing.length)+'/'+c.classes.length));
-        if(missing.length) rows.push(esc(t('Missing classes','未収録区分')+' · '+missing.map(v=>v.label).join(', ')));
+        rows.push(esc(sourceLabel('Classes with geometry','形状を取得した区分')+' '+(c.classes.length-missing.length)+'/'+c.classes.length));
+        if(missing.length) rows.push(esc(sourceLabel('Missing classes','未収録区分')+' · '+missing.map(v=>v.label).join(', ')));
       }
-      const addCheck=(label,checks)=>rows.push(esc(label+' '+checks.count+' · RMSE '+nfmt(checks.rmseM)+' m · '+t('Maximum','最大')+' '+nfmt(checks.maxM)+' m'));
+      const addCheck=(label,checks)=>rows.push(esc(label+' '+checks.count+' · RMSE '+nfmt(checks.rmseM)+' m · '+sourceLabel('Maximum','最大')+' '+nfmt(checks.maxM)+' m'));
       const heldOut=position?.independent, independent=position?.checkEvidence?.['independent-observation'];
-      if(heldOut) addCheck(t('Held-out check points','位置合わせから外した検証点'),heldOut);
-      if(independent) addCheck(t('Independently verified points','別途確認した検証点'),independent);
-      else rows.push(esc(t('Independent positional check unavailable','独立した位置精度は未確認')));
-      if(q.coverageStatus==='unknown') rows.push(esc(t('Spatial coverage unverified','地域全体の網羅性は未確認')));
+      if(heldOut) addCheck(sourceLabel('Held-out check points','位置合わせから外した検証点'),heldOut);
+      if(independent) addCheck(sourceLabel('Independently verified points','別途確認した検証点'),independent);
+      else rows.push(esc(sourceLabel('Independent positional check unavailable','独立した位置精度は未確認')));
+      if(q.coverageStatus==='unknown') rows.push(esc(sourceLabel('Spatial coverage unverified','地域全体の網羅性は未確認')));
 
-      if(position?.maxAllowedM != null) rows.push(esc(t('Tolerance','許容値')+' '+nfmt(position.maxAllowedM)+' m'));
-      if(p.recipe?.method) rows.push(esc(t('Extraction','抽出方法')+' · '+p.recipe.method));
+      if(position?.maxAllowedM != null) rows.push(esc(sourceLabel('Tolerance','許容値')+' '+nfmt(position.maxAllowedM)+' m'));
+      if(p.recipe?.method) rows.push(esc(sourceLabel('Extraction','抽出方法')+' · '+p.recipe.method));
       const size=p.recipe?.viewport;
-      if(size?.width&&size?.height) rows.push(esc(t('Source dimensions','処理寸法')+' · '+size.width+' × '+size.height));
+      if(size?.width&&size?.height) rows.push(esc(sourceLabel('Source dimensions','処理寸法')+' · '+size.width+' × '+size.height));
       if(p.output?.sha256) rows.push('<code>'+esc(p.output.sha256)+'</code>');
-      return '<details style="font-size:10px;padding-left:18px;overflow-wrap:anywhere"><summary>'+esc(t('Source and accuracy','出典と精度'))+'</summary>'+rows.map(row=>'<div>'+row+'</div>').join('')+'</details>';
+      return '<details style="font-size:10px;padding-left:18px;overflow-wrap:anywhere"><summary>'+esc(sourceLabel('Source and accuracy','出典と精度'))+'</summary>'+rows.map(row=>'<div>'+row+'</div>').join('')+'</details>';
     }
     function renderList(){ if(!listEl) return;
       listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)+sourceQuality(it)).join('');
