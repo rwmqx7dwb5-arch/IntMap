@@ -12,9 +12,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const SRC = readFileSync(new URL('../js/gis-datasets.js', import.meta.url), 'utf8');
+const MODULE_URL = new URL('../js/gis-datasets.js', import.meta.url);
+const SRC = readFileSync(MODULE_URL, 'utf8');
 
-/* the module with one code struck from REFUSALS, evaluated from memory (the file has no imports) */
+/* the module with one code struck from REFUSALS, evaluated from memory with imports resolved beside the real file */
 async function withoutCode(code) {
   const needle = `'${code}'`;
   const at = SRC.indexOf('const REFUSALS');
@@ -23,7 +24,9 @@ async function withoutCode(code) {
   const decl = SRC.slice(at, end);
   assert.ok(decl.includes(needle), `${code} is declared in REFUSALS`);
   const mutated = SRC.slice(0, at) + decl.replace(new RegExp(`${needle},?\\s*`), '') + SRC.slice(end);
-  const mod = await import('data:text/javascript;base64,' + Buffer.from(mutated).toString('base64'));
+  const loadable = mutated.replace(/^(import .* from )'([.][^']+)'/gm,
+    (_, prefix, relative) => prefix + JSON.stringify(new URL(relative, MODULE_URL).href));
+  const mod = await import('data:text/javascript;base64,' + Buffer.from(loadable).toString('base64'));
   return mod.makeGisDatasets();
 }
 const pt = (x, y, p) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [x, y] }, properties: p || {} });

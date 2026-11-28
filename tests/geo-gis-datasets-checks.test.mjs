@@ -2247,15 +2247,15 @@ describe('§ #R783 · a band\'s declared quantity survives the dataset door', ()
   before(ISOLATED.enter);
   after(ISOLATED.leave);
 
-  /* 扉そのものを評価する: `bands.map(...)` の式をソースから取り出して走らせる。
-     ⚠ 式を書き写さない——写した式は実装が戻っても緑のままになる（#R505）。 */
   const SRC = readFileSync(new URL('../js/gis-datasets.js', import.meta.url), 'utf8');
 
   function normaliseBands(bands) {
-    const m = SRC.match(/bands: bands\.map\(\(b, i\) => \(\{[\s\S]*?\}\)\),/);
-    assert.ok(m, 'js/gis-datasets.js no longer normalises bands where this test reads it');
-    const fn = new Function('bands', 'return [' + m[0].replace(/^bands: /, '').replace(/,$/, '') + '][0];');
-    return fn(bands);
+    const data = makeGisDatasets();
+    return data.add({
+      kind: 'raster', width: 1, height: 1, bands,
+      grid: { west: 0, north: 1, pixelLng: 1, pixelLat: 1 },
+      read: () => new Float64Array([1]),
+    }).bands;
   }
 
   test('R783 ① a band that declares its quantity still declares it after the dataset door', () => {

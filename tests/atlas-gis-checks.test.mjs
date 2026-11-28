@@ -1184,3 +1184,57 @@ test('R783 ⑥ 既存の 5 欄は残り、resolveRef は今までどおり照合
   for (const l of miss.detail.layers) assert.deepEqual(Object.keys(l).sort(), ['label', 'ref']);
 });
 
+
+test('raster mosaic copies aligned dateline tiles and carries their declarations through Atlas', async () => {
+  const { w, data, atlas } = await boot752();
+  w.IntMapGisRaster = (await import('../js/gis-raster.js')).makeGisRaster();
+  w.IntMapGisCrs = (await import('../js/gis-crs.js')).makeGisCrs();
+  w.IntMapGisWarp = (await import('../js/gis-warp.js')).makeGisWarp();
+  const quantity = { kind: 'category', space: 'point', time: 'instant' };
+  const classification = { codes: { 7: 'first', 19: 'second' } };
+  function add(west, pixelLng, values) {
+    return data.add({ kind: 'raster', width: values.length, height: 1,
+      grid: { west, north: 1, pixelLng, pixelLat: 1 },
+      bands: [{ name: 'classes', quantity, classification, categorical: true, nodata: -999 }],
+      read: () => Float64Array.from(values),
+    });
+  }
+  const a = add(176, 1, [7, -999, 7, 19]), b = add(-180, 1, [19, 7, 19, 19]);
+  const masked = await atlas.run({ op: 'rasterMask', inputs: [a.id], params: { op: '>=', value: 7 } });
+  assert.equal(masked.ok, true, JSON.stringify(masked));
+  assert.deepEqual(masked.dataset.bands[0], a.bands[0]);
+  const mosaic = (a, b, params = {}) => atlas.run({ op: 'mosaic', inputs: [a, b],
+    params: { overlap: 'first', method: 'nearest', rule: 'finer', ...params } });
+  const joined = await mosaic(masked.dataset.id, b.id);
+  assert.equal(joined.ok, true, JSON.stringify(joined));
+  assert.equal(joined.dataset.width, 8);
+  assert.deepEqual(joined.stats.resampling, [{ path: 'copy' }, { path: 'copy' }]);
+  assert.deepEqual(Array.from(data.get(joined.dataset.id).read(0)), [7, NaN, 7, 19, 19, 7, 19, 19]);
+  assert.deepEqual(joined.dataset.bands[0].classification, classification);
+  assert.deepEqual(joined.dataset.bands[0].quantity, quantity);
+  assert.equal(joined.dataset.integrity.spatialIntegrity.checkedSamples, 8);
+  const { recordOf } = await import('../js/atlas-goal-verify.js');
+  assert.match(recordOf([{ name: 'gis', details: { gis: { record: joined.dataset } } }])[0], /source-coordinate-samples, samples: 8, mismatches: 0/);
+  const noMean = await mosaic(a.id, b.id, { overlap: 'mean' });
+  assert.equal(noMean.why, 'merge-category-incompatible');
+  const coarser = add(-180, 2, [19, 7]);
+  const invalid = await mosaic(a.id, coarser.id, { method: 'bilinear' });
+  assert.equal(invalid.why, 'bilinear-on-categorical');
+  const resampled = await mosaic(a.id, coarser.id);
+  assert.equal(resampled.ok, true, JSON.stringify(resampled));
+  assert.deepEqual(Array.from(data.get(resampled.dataset.id).read(0)), [7, NaN, 7, 19, 19, 19, 7, 7]);
+  const reversed = await mosaic(coarser.id, a.id);
+  assert.equal(reversed.ok, true, JSON.stringify(reversed));
+  assert.deepEqual(reversed.dataset.grid, resampled.dataset.grid);
+
+  const nearest = w.IntMapGisRaster.sample;
+  w.IntMapGisRaster.sample = (...args) => {
+    const result = nearest(...args);
+    return result.ok && result.value != null ? { ...result, value: result.value + 1 } : result;
+  };
+  const corrupt = await mosaic(a.id, coarser.id);
+  assert.equal(corrupt.ok, false);
+  assert.equal(corrupt.why, 'raster-integrity-failed');
+  assert.ok(corrupt.detail.spatialIntegrity.mismatches > 0);
+  assert.equal(corrupt.dataset, undefined);
+});

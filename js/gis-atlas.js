@@ -180,6 +180,7 @@ export function makeGisAtlas(core) {
         if (Array.isArray(pv.warnings) && pv.warnings.length) row.warnings = pv.warnings;
         if (pv.timeRule && typeof pv.timeRule === 'object') row.timeRule = pv.timeRule;
         if (pv.geoBasis && typeof pv.geoBasis === 'object') row.geoBasis = pv.geoBasis;
+        if (pv.integrity && typeof pv.integrity === 'object') row.integrity = pv.integrity;
       }
       return row;
     }

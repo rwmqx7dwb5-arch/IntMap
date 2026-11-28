@@ -63,9 +63,16 @@ export function recordOf(results) {
       ? ' [could not place: ' + r.unresolved.slice(0, 12).map((x) => clip(typeof x === 'string' ? x : (x && (x.name || x.query)) || '', 40)).filter(Boolean).join(', ')
         + (r.unresolved.length > 12 ? ', … ' + (r.unresolved.length - 12) + ' more' : '') + ']' : '';
     const said = (typeof r.summary === 'string' && r.summary.trim()) ? r.summary : ((typeof r.message === 'string' && r.message.trim() && r.ok !== false) ? r.message : '');
+    const raster = r.details?.gis?.record?.integrity;
+    const spatial = r.details?.gisIntegrity || raster?.spatialIntegrity;
+    const spatialFact = spatial ? ' [raster spatial integrity: ' + clip(spatial.status, 40)
+      + ', method: ' + clip(spatial.method, 65) + ', samples: ' + (spatial.checkedSamples ?? 0)
+      + ', mismatches: ' + (spatial.mismatches ?? 0) + ']' : '';
+    const semanticFact = raster?.semanticIntegrity?.status
+      ? ' [raster band semantics: ' + clip(raster.semanticIntegrity.status, 40) + ']' : '';
     rows.push(id + (r.id ? ' (call ' + clip(r.id, 120) + ')' : '') + ' → ' + state
       + (Array.isArray(r.producedModes) && r.producedModes.length ? ' [produced: ' + r.producedModes.join(', ') + ']' : '')
-      + placed + unplaced + (said ? ' — reported: ' + clip(said, 160) : ''));
+      + placed + unplaced + spatialFact + semanticFact + (said ? ' — reported: ' + clip(said, 160) : ''));
   }
   return rows;
 }

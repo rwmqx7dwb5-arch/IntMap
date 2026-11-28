@@ -1085,6 +1085,19 @@ node scripts/sync-newsgeo.mjs
 
 `tests/atlas-gis-handoff-integrity-checks.test.mjs` follows whole GIS data through browser delegation, durable worker selection, dependent tasks and browser readback. It also covers temporary storage errors and server strict validation. `tests/atlas-gis-execution-location-checks.test.mjs` exercises the planner against the GIS location contract.
 
+## Raster coordinate integrity
+
+`tests/gis-warp-checks.test.mjs` measures wide identities, a single valid value, and a shifted world grid that must
+conserve a declared total. `tests/history-gis-warp-worker-budget-checks.test.mjs` checks the same pixels in a real
+Worker. `tests/atlas-gis-checks.test.mjs` runs the registry, mask, direct-copy and resampled mosaics across the
+antimeridian and exercises the first integrity refusal with injected corruption.
+
+The first CI regression shard also runs the wide nearest-neighbour comparison against Rasterio/GDAL using test-only
+Python dependencies. The comparison generates two numerical grids, including a rotated affine, and checks every
+destination value and missing cell. To run it separately, install `rasterio==1.5.2` in a Python virtual environment,
+set `INTMAP_GIS_GDAL=1`, and run
+`node --test --test-name-pattern="Rasterio/GDAL independently agrees" tests/gis-warp-checks.test.mjs`.
+
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**

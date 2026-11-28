@@ -586,6 +586,15 @@ jobs:
           if [ -f "$RUNNER_TEMP/checks-cost/checks-cost.json" ]; then echo "IM_CHECKS_COST=$RUNNER_TEMP/checks-cost/checks-cost.json" >> "$GITHUB_ENV"; fi
       - name: Source-level regression checks (Edge Function invariants, R1xx suites)
         run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }} --timings "$RUNNER_TEMP/checks-timings.json"
+      - name: Compare wide raster warps with GDAL
+        if: matrix.shard == 1
+        env:
+          INTMAP_GIS_GDAL: '1'
+        run: |
+          python -m venv "$RUNNER_TEMP/intmap-gis-reference"
+          source "$RUNNER_TEMP/intmap-gis-reference/bin/activate"
+          python -m pip install --only-binary=:all: rasterio==1.5.2
+          node --test --test-name-pattern='Rasterio/GDAL independently agrees' tests/gis-warp-checks.test.mjs
       # (gate-parity-and-shards) The seconds each file took: on main the `timings` job folds them into
       # the cached ledger the next run packs by (checks-cost-from-main, above); the ledger decides
       # BALANCE only, so drift costs seconds, never coverage.

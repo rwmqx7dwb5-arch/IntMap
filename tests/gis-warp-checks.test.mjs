@@ -30,6 +30,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -533,4 +534,75 @@ test('R819 ③ the raster kernel weighs a ring, and refuses one it cannot weigh'
   assert.ok(Math.abs(sum - whole.value) < 1e-9,
     'four quarters of a pixel apportioned ' + sum + ' of its ' + whole.value);
   assert.ok(Math.abs(whole.value - 43) < 1e-9, 'a footprint covering exactly one pixel did not apportion all of it');
+});
+
+test('a wide identity warp never treats source pixel indices as longitude', async () => {
+  const { warp } = await boot();
+  for (const width of [359, 360, 361, 720, 721, 1031]) {
+    const target = { west: 20, north: 2, pixelLng: 1 / 16, pixelLat: 1 / 16, width, height: 3 };
+    const src = degreeGrid({ ...target, value: (col, row) => width * row + col });
+    for (const method of ['nearest', 'bilinear', 'cubic', 'average', 'mode', 'sum']) {
+      const result = await warp.resample(src, target, { method });
+      assert.equal(result.ok, true, JSON.stringify(result));
+      const expected = src.read(0);
+      const actual = result.grid.read(0);
+      const wrong = actual.findIndex((v, i) => !(Math.abs(v - expected[i]) < 1e-9));
+      assert.equal(wrong, -1, method + ' at width ' + width + ', value at wrong index: ' + actual[wrong]);
+    }
+  }
+});
+
+test('a world grid preserves an extensive total when the destination seam cuts pixels', async () => {
+  const { warp } = await boot();
+  const settings = { west: -180, north: 2, pixelLng: 1, pixelLat: 1, width: 360, height: 2 };
+  const quantity = { kind: 'count', space: 'total', time: 'instant' };
+  const source = degreeGrid({ ...settings, band: { quantity }, value: (col, row) => col + row + 1 });
+  const result = await warp.resample(source, { ...settings, west: 179.5 }, { method: 'sum' });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.ok(Math.abs(bandTotal(result.grid.read(0)) - bandTotal(source.read(0))) < 1e-8);
+  assert.equal(result.grid.read(0)[0], (360 + 1) / 2);
+  assert.deepEqual(result.grid.bands[0].quantity, quantity);
+
+  const nearest = await warp.resample(source, { ...settings, west: 179.5 }, { method: 'nearest' });
+  assert.equal(nearest.ok, true, JSON.stringify(nearest));
+  assert.equal(nearest.grid.read(0)[0], 1);
+  assert.equal(nearest.grid.bands[0].quantity, undefined);
+  assert.equal(nearest.report.semanticIntegrity.droppedQuantities, 1);
+});
+
+test('an isolated value cannot repeat 360 or 720 pixels later', async () => {
+  const { raster, warp } = await boot();
+  const target = { west: 20, north: 1, pixelLng: 1 / 16, pixelLat: 1 / 16, width: 1024, height: 1 };
+  const source = degreeGrid({ ...target, value: (col) => col === 12 ? 7 : NaN });
+  const projected = { ...source, grid: { ...source.grid, west: 0, pixelLng: 1, coordinateSpace: 'projected' } };
+  assert.equal(raster.sample(projected, 0, 372.5, 0.96875).value, null);
+  const result = await warp.to4326(source, { method: 'nearest' });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.deepEqual(result.grid.read(0), source.read(0));
+  assert.equal(result.report.spatialIntegrity.status, 'verified');
+});
+
+test('Rasterio/GDAL independently agrees on wide affine nearest-neighbour warps', {
+  skip: !process.env.INTMAP_GIS_GDAL,
+}, async () => {
+  const { warp } = await boot();
+  const sourceSize = { west: 12, north: 40, pixelLng: 1 / 16, pixelLat: 1 / 16, width: 1033, height: 13,
+    band: { nodata: -9999 }, value: (col, row) => (col * 11 + row * 17) % 101 === 0 ? -9999 : col * 17 + row };
+  const target = { west: 12 + 3 / 128, north: 40 + 1 / 128, pixelLng: 7 / 128, pixelLat: 9 / 128,
+    width: 1101, height: 14 };
+  const cases = [degreeGrid(sourceSize), rotatedGrid({ ...sourceSize, rotationDeg: 0.37 })];
+  for (const source of cases) {
+    const g = source.grid;
+    const affine = source.affine || [g.west, g.pixelLng, 0, g.north, 0, -g.pixelLat];
+    const independent = spawnSync('python', [join(ROOT, 'tests', 'helpers', 'rasterio-warp.py')], {
+      input: JSON.stringify({ affine, shape: [source.height, source.width],
+        source: Array.from(source.read(0)), target, nodata: source.bands[0].nodata }),
+      encoding: 'utf8',
+    });
+    assert.equal(independent.status, 0, independent.error?.message || independent.stderr);
+    const expected = JSON.parse(independent.stdout);
+    const actual = await warp.resample(source, target, { method: 'nearest' });
+    assert.equal(actual.ok, true, JSON.stringify(actual));
+    assert.deepEqual(Array.from(actual.grid.read(0), (v) => Number.isNaN(v) ? null : v), expected);
+  }
 });

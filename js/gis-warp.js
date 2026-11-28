@@ -121,6 +121,8 @@
  *  `raster-unavailable` / `crs-unavailable` by name instead of throwing.
  * ==========================================================================*/
 
+import { categoricalRasterBand, inheritRasterBand } from './gis-raster.js';
+
 export function makeGisWarp() {
   return (function () {
 
@@ -182,18 +184,18 @@ export function makeGisWarp() {
         neighbours: 1, interpolates: false,
         /* The output value is one of the input values, unchanged — which is the whole of why a
            classification can be warped at all. */
-        preservesValues: true, categoricalSafe: true, voidPolicy: 'value-or-missing',
+        preservesValues: true, voidPolicy: 'value-or-missing',
       },
       bilinear: {
         neighbours: 4, interpolates: true,
-        preservesValues: false, categoricalSafe: false,
+        preservesValues: false,
         /* The rule js/gis-raster.js owns and this file asks for: a void among the four corners
            abandons the blend and falls back to nearest, saying so. */
         voidPolicy: 'nearest-fallback',
       },
       cubic: {
         neighbours: 16, interpolates: true,
-        preservesValues: false, categoricalSafe: false,
+        preservesValues: false,
         voidPolicy: 'nearest-fallback',
         /* ⚠ Keys' kernel has NEGATIVE outer weights, so a cubic value can lie outside the range of
            the 16 values it came from — the overshoot at a step. Declared rather than clamped away,
@@ -201,7 +203,7 @@ export function makeGisWarp() {
         overshoots: true,
       },
       average: {
-        interpolates: true, preservesValues: false, categoricalSafe: false,
+        interpolates: true, preservesValues: false,
         /* The areal void rule: a missing input pixel is left OUT of the aggregate (never read as 0),
            and `coverage` says how much of the footprint had an answer. */
         voidPolicy: 'skip-voids', needsFootprint: true,
@@ -210,11 +212,11 @@ export function makeGisWarp() {
         interpolates: false,
         /* The output is one of the input values — the class covering the most ground — which is why
            this is the method a classification is DOWNsampled with. */
-        preservesValues: true, categoricalSafe: true,
+        preservesValues: true,
         voidPolicy: 'skip-voids', needsFootprint: true,
       },
       sum: {
-        interpolates: false, preservesValues: false, categoricalSafe: false,
+        interpolates: false, preservesValues: false,
         voidPolicy: 'skip-voids', needsFootprint: true,
         /* What makes it different from `average` in one word: the quantity, not the level. Each
            source pixel is apportioned by the fraction of itself the output pixel covers, so a set of
@@ -231,7 +233,7 @@ export function makeGisWarp() {
          how many neighbours it reads) is the kernel's to say, and what it MEANS is this file's. */
       return R.sampleMethodFacts().map((k) => {
         const f = METHOD_FACTS[k.id];
-        return Object.assign({ stated: !!f }, f || {}, k);
+        return Object.assign({ stated: !!f, categoricalSafe: false }, f || {}, k);
       });
     }
 
@@ -375,13 +377,12 @@ export function makeGisWarp() {
          bilinear was the first method to meet the fact. It is ONE fact and therefore one code (the
          call sites in js/map-ui.js and js/gis-panel.js translate it as one sentence), and the detail
          names the method actually asked for. */
-      const mf = METHOD_FACTS[method];
-      if (!mf || mf.categoricalSafe !== true) {
+      if (R.sampleCategoricalSafe(method) !== true) {
         for (let i = 0; i < g.bands.length; i++) {
           const b = g.bands[i] || {};
           /* ⚠ DECLARED, not deduced. Integer values are not evidence — a household count is an
              integer and its average IS meaningful. Only a producer's own statement refuses. */
-          if (b.categorical === true) return refuse('bilinear-on-categorical', { bandIndex: i, name: b.name == null ? null : b.name, method: method });
+          if (categoricalRasterBand(b)) return refuse('bilinear-on-categorical', { bandIndex: i, name: b.name == null ? null : b.name, method: method });
         }
       }
 
@@ -396,6 +397,13 @@ export function makeGisWarp() {
 
       /* ⚠ (#R819) THE FOOTPRINT'S SHAPE IS THE CALLER'S AND IT IS CHECKED BEFORE ANYTHING IS READ,
          so a warp that cannot keep the promise it was given costs no decode. */
+      if (method === 'sum') {
+        const bandIndex = g.bands.findIndex((band) => {
+          const q = band?.quantity;
+          return q?.space != null && q.space !== 'total';
+        });
+        if (bandIndex >= 0) return refuse('resample-quantity-incompatible', { bandIndex, method, quantity: g.bands[bandIndex].quantity });
+      }
       const fp = footprintPlan(R, opts, kind, method);
       if (!fp.ok) return fp;
       let areaTolerance = null;
@@ -424,9 +432,13 @@ export function makeGisWarp() {
         /* The pixel-space grid described in the header: 「lng」 is the fractional column, 「lat」 is
            the negated fractional row, so `pixelAt`'s floor and the bilinear −0.5 are the source's own
            index arithmetic and nothing in js/gis-raster.js has to know about a projection. */
-        grid: { west: 0, north: 0, pixelLng: 1, pixelLat: 1 },
+        grid: { west: 0, north: 0, pixelLng: 1, pixelLat: 1, coordinateSpace: 'pixel' },
         read: (i) => cache[(i == null) ? 0 : i],
       };
+      for (let i = 0; i < g.bands.length; i++) {
+        const plane = R.values(proxy, i);
+        if (!plane.ok) return plane;
+      }
       return {
         ok: true,
         raster: g, proxy: proxy, method: method, kind: kind, R: R,
@@ -507,6 +519,12 @@ export function makeGisWarp() {
        cost is 2·(width+height) transforms against width·height in the loop that follows. */
     function sourceExtent(S, P) {
       const W = S.raster.width, H = S.raster.height;
+      const a = S.affine;
+      if (P.wgs84 && a[1] > 0 && a[2] === 0 && a[4] === 0 && a[5] < 0) {
+        const span = a[1] * W;
+        if (span > 360 + COUNT_EPS * a[1]) return refuse('warp-spans-world', { lngSpan: span });
+        return { ok: true, bbox: [a[0], a[3] + a[5] * H, a[0] + span, a[3]] };
+      }
       const ring = [];
       for (let px = 0; px <= W; px++) ring.push([px, 0]);
       for (let py = 1; py <= H; py++) ring.push([W, py]);
@@ -547,6 +565,10 @@ export function makeGisWarp() {
        ⚠ The caller may state `width` / `height` instead; then this is not consulted at all, because
        a stated resolution is a decision and this is only the default when none was made. */
     function nativePixelSize(S, P) {
+      const a = S.affine;
+      if (P.wgs84 && a[1] > 0 && a[2] === 0 && a[4] === 0 && a[5] < 0) {
+        return { ok: true, pixelLng: a[1], pixelLat: -a[5] };
+      }
       const cx = Math.floor(S.raster.width / 2), cy = Math.floor(S.raster.height / 2);
       const at = (px, py) => {
         const xy = fwd(S.affine, px, py);
@@ -1081,11 +1103,14 @@ export function makeGisWarp() {
       };
       let hTop = null, hBot = null, vCur = null;
 
+      const sampleIndexes = new Set(S.method === 'nearest' ? S.R.integritySampleIndexes(N) : []);
+      let checkedSamples, mismatches, firstMismatch;
       const reset = (off) => {
         offThread = !!off;
         perBand = [];
         for (let i = 0; i < S.bandCount; i++) perBand.push({ filled: 0, missing: 0, partial: 0, incomplete: 0 });
         clipped = 0; failed = 0; walked = 0;
+        checkedSamples = 0; mismatches = 0; firstMismatch = null;
         curRow = -1; lat = 0; base = 0;
         geom = null; geomBase = 0;
         boxExcess = 0; boxExcessAt = null; boxExcessSeen = false;
@@ -1108,9 +1133,26 @@ export function makeGisWarp() {
          for a run that holds the output whole, so a resident warp writes exactly where it did; a
          windowed one subtracts the window's first pixel and nothing else in the walk changes —
          which is what keeps the two from becoming two walks. */
+      const sourceCentreLng = fwd(S.affine, sw / 2, sh / 2)[0];
+      S.proxy.grid.periodicColumns = P.wgs84 && S.affine[1] > 0 && S.affine[2] === 0 && S.affine[4] === 0
+        && Math.abs(sw * S.affine[1] - 360) <= COUNT_EPS * S.affine[1];
+      const moveCell = (cell, dx, dy) => Array.isArray(cell)
+        ? [cell[0] + dx, cell[1] - dy, cell[2] + dx, cell[3] - dy]
+        : { ring: cell.ring.map(([x, y]) => [x + dx, y - dy]) };
       const voidAt = (at) => { const k = at - winOff; for (let i = 0; i < S.bandCount; i++) bands[i][k] = NaN; };
-      const valueAt = (px, py, at) => {
-        if (!(px >= 0 && px < sw && py >= 0 && py < sh)) { clipped++; voidAt(at); return; }
+      const writeValue = (px, py, at) => {
+        if (P.wgs84) {
+          const lng = out.west + out.pixelLng * (at % W + 0.5);
+          const shift = -360 * Math.floor((lng - sourceCentreLng + 180) / 360);
+          if (shift) {
+            const dx = S.affine[5] * shift / S.det, dy = -S.affine[4] * shift / S.det;
+            px += dx;
+            py += dy;
+            if (areal) opt.cell = moveCell(opt.cell, dx, dy);
+          }
+        }
+        const inSource = px >= 0 && px < sw && py >= 0 && py < sh;
+        if (!inSource && !areal) { clipped++; voidAt(at); return; }
         const k = at - winOff;
         for (let i = 0; i < S.bandCount; i++) {
           /* The pixel-space proxy: column as 「lng」, negated row as 「lat」 (header). */
@@ -1123,6 +1165,11 @@ export function makeGisWarp() {
             if (s.why === 'outside') { clipped++; bands[i][k] = NaN; continue; }
             return s;
           }
+          if (i === 0 && !inSource && s.pixels === 0 && s.missingPixels === 0) {
+            clipped++;
+            voidAt(at);
+            return;
+          }
           if (s.partial) perBand[i].partial++;
           /* ⚠ `partial` AND `incomplete` ARE NOT THE SAME NUMBER, so they are not one field. A
              point sample is `partial` when the method the caller asked for was ABANDONED (a void
@@ -1133,6 +1180,33 @@ export function makeGisWarp() {
           if (s.value != null && s.coverage != null && s.coverage < 1) perBand[i].incomplete++;
           if (s.value == null) { bands[i][k] = NaN; perBand[i].missing++; }
           else { bands[i][k] = s.value; perBand[i].filled++; }
+        }
+      };
+
+      const valueAt = (px, py, at) => {
+        const problem = writeValue(px, py, at);
+        if (problem !== undefined || !sampleIndexes.has(at)) return problem;
+        const lng = out.west + (at % W + 0.5) * out.pixelLng;
+        const lat = out.north - (Math.floor(at / W) + 0.5) * out.pixelLat;
+        const west = sourceCentreLng - 180;
+        const framed = lng >= west && lng < west + 360 ? lng : west + eastward(lng - west);
+        const xy = P.wgs84 ? [framed, lat] : P.forward(lng, lat);
+        if (!xy) return;
+        const [x0, a, b, y0, c, d] = S.affine;
+        const x = xy[0] - x0, y = xy[1] - y0;
+        const col = Math.floor((x * d - y * b) / (a * d - b * c));
+        const row = Math.floor((y * a - x * c) / (a * d - b * c));
+        for (let band = 0; band < S.bandCount; band++) {
+          const source = S.proxy.read(band);
+          const raw = row >= 0 && row < sh && col >= 0 && col < sw ? source[row * sw + col] : NaN;
+          const expected = S.R.missing(raw, S.raster.bands[band]?.nodata) ? NaN : raw;
+          const actual = bands[band][at - winOff];
+          checkedSamples++;
+          if (!Object.is(actual, expected)) {
+            mismatches++;
+            firstMismatch ??= { lng, lat, band, expected: Number.isFinite(expected) ? expected : null,
+              actual: Number.isFinite(actual) ? actual : null };
+          }
         }
       };
 
@@ -1442,17 +1516,28 @@ export function makeGisWarp() {
 
       async function finishWarp(workerNote) {
 
-      const outBands = S.raster.bands.map((b) => ({
-        name: (b && b.name != null) ? b.name : null,
-        unit: (b && b.unit != null) ? b.unit : null,
-        /* ⚠ `nodata: null` — the warp writes NaN and never a sentinel, because every sentinel pixel
-           was already answered as 「値が無い」 by js/gis-raster.js `sample` and never reached the
-           output. Declaring the source's sentinel here would claim an encoding this grid does not
-           use; NaN is missing by the raster contract regardless (docs/GIS-CORE.md §1.4). */
-        nodata: null,
-        categorical: (b && b.categorical === true) ? true : undefined,
-      }));
-      for (const b of outBands) if (b.categorical === undefined) delete b.categorical;
+      const spatial = S.R.spatialIntegrity(S.method === 'nearest' ? 'source-affine-coordinate-samples' : null,
+        checkedSamples, mismatches, firstMismatch);
+      if (spatial.status === 'failed') return refuse('raster-integrity-failed', {
+        execution: 'success', structuralIntegrity: { status: 'verified' }, spatialIntegrity: spatial,
+      });
+      // Per-cell totals only transfer to a different footprint by area apportionment.
+      const [x0, a, b0, y0, c, d] = S.affine;
+      const nearInteger = (value) => Math.abs(value - Math.round(value)) <= COUNT_EPS;
+      const sameCells = P.wgs84 && b0 === 0 && c === 0 && a === out.pixelLng && -d === out.pixelLat
+        && nearInteger((unwrapTo(x0, out.west) - x0) / a) && nearInteger((out.north - y0) / d);
+      let droppedQuantities = 0;
+      const outBands = S.raster.bands.map((b) => {
+        const outBand = inheritRasterBand(b, { nodata: null });
+        const space = b?.quantity?.space;
+        if (space === 'total' && !sameCells && S.method !== 'sum') {
+          delete outBand.quantity;
+          droppedQuantities++;
+        }
+        return outBand;
+      });
+      const semantic = { status: droppedQuantities ? 'qualified' : 'preserved', droppedQuantities,
+        categoricalBands: outBands.filter(categoricalRasterBand).length };
 
       let filled = 0, missingCount = 0, partial = 0, incomplete = 0;
       for (const b of perBand) { filled += b.filled; missingCount += b.missing; partial += b.partial; incomplete += b.incomplete; }
@@ -1529,7 +1614,8 @@ export function makeGisWarp() {
         west: out.west, north: out.north,
         filled: filled, missing: missingCount, partial: partial, incomplete: incomplete,
         clipped: clipped, failed: failed,
-        cells: N, bands: perBand,
+        cells: N, bands: perBand, execution: 'success', structuralIntegrity: { status: 'verified' },
+        spatialIntegrity: spatial, semanticIntegrity: semantic,
       });
 
       /* ⚠⚠⚠ A WINDOWED RUN HAS NO GRID TO HAND BACK, AND SAYS SO BY CARRYING NULL. The alternative
@@ -1609,6 +1695,9 @@ export function makeGisWarp() {
       if (!(t.pixelLat > 0)) return refuse('target-invalid', { field: 'pixelLat', value: t.pixelLat });
       if (!isInt(t.width) || t.width <= 0) return refuse('target-invalid', { field: 'width', value: t.width });
       if (!isInt(t.height) || t.height <= 0) return refuse('target-invalid', { field: 'height', value: t.height });
+      if (t.pixelLng * t.width > 360 + t.pixelLng * COUNT_EPS) {
+        return refuse('warp-spans-world', { lngSpan: t.pixelLng * t.width });
+      }
       return { ok: true };
     }
 
@@ -1627,7 +1716,9 @@ export function makeGisWarp() {
       const C = CRS();
       if (!C || typeof C.isWgs84 !== 'function') return refuse('crs-unavailable');
       if (g.crs == null || String(g.crs).trim() === '') return refuse('crs-not-stated');
-      if (!C.isWgs84(g.crs)) return refuse('resample-source-not-4326', { crs: String(g.crs) });
+      if ((g.grid?.coordinateSpace != null && g.grid.coordinateSpace !== 'geographic') || !C.isWgs84(g.crs)) {
+        return refuse('resample-source-not-4326', { crs: String(g.crs), coordinateSpace: g.grid?.coordinateSpace || null });
+      }
       const P = await projector(g.crs);
       if (!P.ok) return P;
       const out = {
@@ -1651,7 +1742,7 @@ export function makeGisWarp() {
       /* ⚠ A COMMON GRID IS A GRID IN DEGREES. Two rasters in two projections have no common grid
          until both have been through `to4326`, and picking one of the two projections here would be
          a choice made on the caller's behalf — the very thing `rule` exists to stop. */
-      if (!C.isWgs84(g.crs)) return refuse('align-needs-4326', { which: which, crs: String(g.crs) });
+      if ((g.grid?.coordinateSpace != null && g.grid.coordinateSpace !== 'geographic') || !C.isWgs84(g.crs)) return refuse('align-needs-4326', { which: which, crs: String(g.crs) });
       const aff = affineOf(g);
       if (!aff.ok) return Object.assign({}, aff, { detail: Object.assign({ which: which }, aff.detail || {}) });
       const A = aff.affine;
@@ -1671,6 +1762,62 @@ export function makeGisWarp() {
        those is acceptable depends on the question being asked, not on the grids. */
     const ALIGN_RULES = ['finer', 'coarser', 'first'];
 
+    function referenceGrid(a, b, rule) {
+      if (rule === 'first') return a;
+      const area = a.pixelLng * a.pixelLat - b.pixelLng * b.pixelLat;
+      if (area !== 0) return (rule === 'finer' ? area < 0 : area > 0) ? a : b;
+      for (const key of ['pixelLng', 'pixelLat', 'west', 'north']) {
+        if (a[key] !== b[key]) return a[key] < b[key] ? a : b;
+      }
+      return a;
+    }
+
+    const eastward = (degrees) => degrees - 360 * Math.floor(degrees / 360);
+
+    // A regional union fits in the shortest longitude interval that contains both input arcs.
+    // Try either arc as the start of that interval. Whole-world coverage uses the reference seam.
+    function mosaicGrid(gridA, gridB, rule = 'first') {
+      if (!ALIGN_RULES.includes(rule)) return refuse('align-rule-unknown', { rule, rules: ALIGN_RULES.slice() });
+      const A = as4326Grid(gridA, 'a'); if (!A.ok) return A;
+      const B = as4326Grid(gridB, 'b'); if (!B.ok) return B;
+      const ref = referenceGrid(A, B, rule);
+      const spanA = A.width * A.pixelLng, spanB = B.width * B.pixelLng;
+      const fromA = Math.max(spanA, eastward(B.west - A.west) + spanB);
+      const fromB = Math.max(spanB, eastward(A.west - B.west) + spanA);
+      const start = fromA < fromB ? A : fromB < fromA ? B : ref;
+      const span = Math.min(fromA, fromB, 360);
+      const west = span === 360 ? ref.west : ref.west - eastward(ref.west - start.west);
+      const south = Math.min(A.north - A.height * A.pixelLat, B.north - B.height * B.pixelLat);
+      const north = Math.max(A.north, B.north);
+      const tWest = ref.west + Math.floor((west - ref.west) / ref.pixelLng + COUNT_EPS) * ref.pixelLng;
+      const tNorth = ref.north - Math.floor((ref.north - north) / ref.pixelLat + COUNT_EPS) * ref.pixelLat;
+      const width = pixelCount(west + span - tWest, ref.pixelLng);
+      const height = pixelCount(tNorth - south, ref.pixelLat);
+      if (width == null || height == null) return refuse('target-invalid');
+      const target = { west: tWest, north: tNorth, pixelLng: width * ref.pixelLng > 360 || span === 360 ? 360 / width : ref.pixelLng,
+        pixelLat: ref.pixelLat, width, height };
+      return { ok: true, target, from: ref === A ? 'a' : 'b' };
+    }
+
+    // An offset copy is exact only when both lattices agree at both ends of each axis.
+    function placement(source, target) {
+      const g = source.grid;
+      const offset = eastward(g.west - target.west);
+      const col = Math.round(offset / target.pixelLng);
+      const row = Math.round((target.north - g.north) / target.pixelLat);
+      const period = Math.round(360 / target.pixelLng);
+      const wraps = target.width === period && Math.abs(360 / target.pixelLng - period) <= COUNT_EPS;
+      const seam = Math.abs(offset - 360) <= target.pixelLng * COUNT_EPS;
+      const placeCol = seam ? 0 : col;
+      const error = (start, size, step, n) => Math.max(Math.abs(start), Math.abs(start + n * (size / step - 1)));
+      if (error(seam ? 0 : offset / target.pixelLng - col, g.pixelLng, target.pixelLng, source.width) > COUNT_EPS
+        || error((target.north - g.north) / target.pixelLat - row, g.pixelLat, target.pixelLat, source.height) > COUNT_EPS
+        || Math.abs((unwrapTo(g.west, target.west + placeCol * target.pixelLng) - g.west) / target.pixelLng) > COUNT_EPS
+        || row < 0 || row + source.height > target.height
+        || (!wraps && (placeCol < 0 || placeCol + source.width > target.width))) return null;
+      return { row, col: placeCol, period: wraps ? period : null };
+    }
+
     function align(gridA, gridB, opts) {
       const o = opts || {};
       const rule = (o.rule == null) ? null : String(o.rule);
@@ -1681,7 +1828,13 @@ export function makeGisWarp() {
 
       const bbox = (G) => [G.west, G.north - G.pixelLat * G.height, G.west + G.pixelLng * G.width, G.north];
       const ba = bbox(A), bb = bbox(B);
-      const west = Math.max(ba[0], bb[0]), east = Math.min(ba[2], bb[2]);
+      const spanA = ba[2] - ba[0], spanB = bb[2] - bb[0];
+      const offset = eastward(bb[0] - ba[0]);
+      const intervals = spanA >= 360 ? [[bb[0], bb[2]]] : spanB >= 360 ? [[ba[0], ba[2]]]
+        : [offset - 360, offset].map((o) => [Math.max(0, o), Math.min(spanA, o + spanB)])
+          .filter(([w, e]) => e > w).map(([w, e]) => [ba[0] + w, ba[0] + e]);
+      if (intervals.length > 1) return refuse('align-intersection-disconnected', { a: ba, b: bb, intervals });
+      const [west, east] = intervals[0] || [0, 0];
       const south = Math.max(ba[1], bb[1]), north = Math.min(ba[3], bb[3]);
       /* ⚠ TOUCHING IS NOT OVERLAPPING. Two grids that share an edge have an intersection of zero
          width, and a 「共通の格子」 of zero pixels is not an answer — it is the same disjointness with
@@ -1690,19 +1843,16 @@ export function makeGisWarp() {
 
       /* The pixel's ground size is compared as an AREA in degrees, so a grid finer in one axis and
          coarser in the other is decided rather than half-chosen. */
-      const areaA = A.pixelLng * A.pixelLat, areaB = B.pixelLng * B.pixelLat;
-      let ref;
-      if (rule === 'first') ref = A;
-      else if (rule === 'finer') ref = (areaA <= areaB) ? A : B;
-      else ref = (areaA >= areaB) ? A : B;
+      const ref = referenceGrid(A, B, rule);
 
       /* ⚠ THE ORIGIN IS SNAPPED TO THE REFERENCE GRID'S OWN PIXEL EDGES. Without this, aligning a
          grid with itself would produce a target offset by a fraction of a pixel and every value
          would be resampled — a warp where a copy was the right answer. With it, align(a, a) IS a's
          grid, and a resample onto it moves nothing. */
-      const wSteps = Math.floor((west - ref.west) / ref.pixelLng + COUNT_EPS);
+      const refWest = unwrapTo(west, ref.west);
+      const wSteps = Math.floor((west - refWest) / ref.pixelLng + COUNT_EPS);
       const nSteps = Math.floor((ref.north - north) / ref.pixelLat + COUNT_EPS);
-      const tWest = ref.west + wSteps * ref.pixelLng;
+      const tWest = refWest + wSteps * ref.pixelLng;
       const tNorth = ref.north - nSteps * ref.pixelLat;
       const width = pixelCount(east - tWest, ref.pixelLng);
       const height = pixelCount(tNorth - south, ref.pixelLat);
@@ -1728,11 +1878,11 @@ export function makeGisWarp() {
        the day it is reopened, and until this round nothing recorded which one that was — #R749 built
        both this file and the version machinery and did not connect them. The keeper is
        scripts/gis-kernel-versions.mjs; js/gis-project.js records it beside the ops version. */
-    const KERNEL_VERSION = 'warp-1';
+    const KERNEL_VERSION = 'warp-2';
     const API = {
       /* which implementation answered — see KERNEL_VERSION above */
       version: () => KERNEL_VERSION,
-      methods, to4326, resample, align,
+      methods, to4326, resample, align, mosaicGrid, placement,
       /* the vocabularies, published for the same reason js/gis-raster.js publishes its condition
          ops: a UI reads the declaration rather than keeping a hand-written copy of it */
       alignRules: () => ALIGN_RULES.slice(),

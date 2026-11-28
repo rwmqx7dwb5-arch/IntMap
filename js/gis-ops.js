@@ -918,6 +918,7 @@ export function makeGisOps() {
              reason, and a list retyped here would fall behind it the first time a rule is added. */
           { name: 'overlap', type: 'enum', required: true, valuesOf: 'merge-overlaps' },
           { name: 'method', type: 'enum', required: true, valuesOf: 'sample-methods-all' },
+          { name: 'rule', type: 'enum', required: false, valuesOf: 'align-rules' },
           { name: 'band', type: 'field', required: false, input: 0 },
         ],
       },
@@ -4895,6 +4896,12 @@ export function makeGisOps() {
 
     /* ── resample: where `grid-mismatch` has been pointing since #R749 (#R752) ─────────────────── */
 
+    function warpIntegrity(report) {
+      if (!report?.spatialIntegrity) return null;
+      const { execution, structuralIntegrity, spatialIntegrity, semanticIntegrity } = report;
+      return { execution, structuralIntegrity, spatialIntegrity, semanticIntegrity };
+    }
+
     async function runResample(aDs, bDs, params, ctx, step) {
       const WK = warpKernel();
       const method = String(params.method == null ? '' : params.method);
@@ -4958,7 +4965,7 @@ export function makeGisOps() {
             return {
               ok: true,
               raster: Object.assign({}, plan.written, { read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < held.length) ? held[k] : null; } }),
-              stats: rep, shapeOnly: [1],
+              stats: rep, integrity: warpIntegrity(rep), shapeOnly: [1],
             };
           }
         }
@@ -5018,7 +5025,7 @@ export function makeGisOps() {
       if (!sink) {
         /* 既定の道。⚠ `overBudget` の陳述は warp のもので、ここで握り潰さない。 */
         const rep = windowing.overBudget ? Object.assign({}, r.report, { windows: windowing }) : r.report;
-        return { ok: true, raster: r.grid, stats: rep, shapeOnly: [1] };
+        return { ok: true, raster: r.grid, stats: rep, integrity: warpIntegrity(rep), shapeOnly: [1] };
       }
       /* 窓で走った。⚠ 一覧（plan）を置くのは**ここ**——end まで到達し、全部の窓が置けたとき
          だけである。途中で止まった run はここに来ない。 */
@@ -5031,7 +5038,7 @@ export function makeGisOps() {
         });
       } else windowing.reason = windowing.reason || 'window-not-stored';
       const grid = Object.assign({}, r.written, { read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < held.length) ? held[k] : null; } });
-      return { ok: true, raster: grid, stats: Object.assign({}, r.report, { windows: windowing }), shapeOnly: [1] };
+      return { ok: true, raster: grid, stats: Object.assign({}, r.report, { windows: windowing }), integrity: warpIntegrity(r.report), shapeOnly: [1] };
     }
 
     /* ══ (#R819) rasterCalc の式を、もう一方のスレッドで ═══════════════════════════════════════
@@ -5352,39 +5359,94 @@ export function makeGisOps() {
       if (ms.indexOf(method) < 0) return fail(method ? 'bad-param' : 'missing-param', { param: 'method', value: method || undefined, values: ms });
       const ba = bandIndexOf(aDs, params.band); if (!ba.ok) return ba.res;
 
-      /* ⚠ THE UNION OF THE TWO EXTENTS, WHICH IS WHAT A MOSAIC IS. js/gis-warp.js's `align` answers
-         the INTERSECTION — right for a difference, wrong here: aligning two adjacent tiles would
-         produce the sliver they share and throw away the map. So the target lattice is built from
-         a's pixel size (the reader chose the order) over the bounding box of both, and both inputs
-         are resampled onto it with the method they named. */
-      const g = aDs.grid;
-      const boxOf = (d) => [d.grid.west, d.grid.north - d.grid.pixelLat * d.height, d.grid.west + d.grid.pixelLng * d.width, d.grid.north];
-      const A = boxOf(aDs), B = boxOf(bDs);
-      const west = Math.min(A[0], B[0]), south = Math.min(A[1], B[1]);
-      const east = Math.max(A[2], B[2]), north = Math.max(A[3], B[3]);
-      /* Snapped to a's own pixel edges, so mosaic(a, a) is a and nothing is resampled for a fraction
-         of a pixel — the same argument `align` makes about its origin. */
-      const wSteps = Math.ceil((g.west - west) / g.pixelLng - 1e-9);
-      const nSteps = Math.ceil((north - g.north) / g.pixelLat - 1e-9);
-      const tWest = g.west - wSteps * g.pixelLng;
-      const tNorth = g.north + nSteps * g.pixelLat;
-      const width = Math.round(Math.ceil((east - tWest) / g.pixelLng - 1e-9));
-      const height = Math.round(Math.ceil((tNorth - south) / g.pixelLat - 1e-9));
-      if (!(width > 0) || !(height > 0)) return fail('grids-disjoint', { a: A, b: B });
-      const target = { west: tWest, north: tNorth, pixelLng: g.pixelLng, pixelLat: g.pixelLat, width: width, height: height };
+      const rule = params.rule == null ? 'first' : String(params.rule);
+      const layout = WK.mosaicGrid(aDs, bDs, rule);
+      if (!layout.ok) return layout;
+      const { target } = layout;
+      const targetRaster = { width: target.width, height: target.height, grid: target };
+      const opts = { method, ctx, signal: ctx?.signal || null, onProgress: ctx?.onProgress || null };
+      const grids = [], originals = [], placements = [], resampling = [];
+      for (const ds of [aDs, bDs]) {
+        const original = RK.values(ds, ba.index);
+        if (!original.ok) return original;
+        const source = { ...ds.raster(), bands: [original.band], read: () => original.values };
+        originals.push(source);
+        const offset = WK.placement(source, target);
+        placements.push(offset);
+        if (offset) {
+          grids.push(source);
+          resampling.push({ path: 'copy' });
+          continue;
+        }
+        const warped = await WK.resample(source, target, opts);
+        if (!warped.ok) return warped;
+        grids.push(warped.grid);
+        resampling.push({ path: 'resample', spatialIntegrity: warped.report.spatialIntegrity,
+          semanticIntegrity: warped.report.semanticIntegrity });
+      }
 
-      const opts = { method: method, ctx: ctx, signal: (ctx && ctx.signal) || null, onProgress: (ctx && ctx.onProgress) || null };
-      const ra = await WK.resample(aDs, target, opts);
-      if (!ra || !ra.ok) return ra || fail('resample-failed');
-      const rb = await WK.resample(bDs, target, opts);
-      if (!rb || !rb.ok) return rb || fail('resample-failed');
-
-      const m = await RK.merge(ra.grid, rb.grid, ba.index, { overlap: overlap, ctx: ctx });
+      const m = await RK.merge(grids[0], grids[1], 0, { overlap, ctx, target: targetRaster, placements });
       if (!m || !m.ok) return m || fail('mosaic-failed');
-      return {
-        ok: true, raster: m.raster,
-        stats: { count: m.count, nodata: m.nodataCount, overlapPixels: m.overlapCount, onlyA: m.onlyA, onlyB: m.onlyB, overlap: m.overlap },
+      const spatial = mosaicIntegrity(RK, m.raster, originals, grids, placements, method, overlap);
+      const band = m.raster.bands[0];
+      const declared = originals.map((input) => input.bands[0]);
+      const quantityPreserved = band.quantity != null;
+      const classificationPreserved = band.classification != null;
+      const qualified = (!quantityPreserved && declared.some((b) => b.quantity != null))
+        || (!classificationPreserved && declared.some((b) => b.classification != null));
+      const semantic = {
+        status: qualified ? 'qualified' : quantityPreserved || band.categorical === true ? 'preserved' : 'undeclared',
+        categorical: band.categorical === true, classificationPreserved, quantityPreserved,
       };
+      const integrity = { execution: 'success', structuralIntegrity: { status: 'verified' },
+        spatialIntegrity: spatial, semanticIntegrity: semantic };
+      if (spatial.status === 'failed') return fail('raster-integrity-failed', integrity);
+      return {
+        ok: true, raster: m.raster, integrity, resolved: { rule, resolutionFrom: layout.from },
+        stats: { count: m.count, nodata: m.nodataCount, overlapPixels: m.overlapCount, onlyA: m.onlyA, onlyB: m.onlyB,
+          overlap: m.overlap, rule, resolutionFrom: layout.from, resampling, integrity },
+      };
+    }
+
+    function mosaicIntegrity(R, output, sources, grids, placements, method, overlap) {
+      const originalChecks = placements.every(Boolean) || method === 'nearest';
+      const U = unitKernel();
+      const unitA = grids[0].bands[0].unit, unitB = grids[1].bands[0].unit;
+      const conversion = U?.compare(unitA, unitB);
+      const at = (source, lng, lat) => {
+        const g = source.grid;
+        const offset = lng - g.west;
+        const col = Math.floor((offset - 360 * Math.floor(offset / 360)) / g.pixelLng);
+        const row = Math.floor((g.north - lat) / g.pixelLat);
+        if (col < 0 || col >= source.width || row < 0 || row >= source.height) return NaN;
+        const value = source.read(0)[row * source.width + col];
+        return R.missing(value, source.bands[0].nodata) ? NaN : value;
+      };
+      const samples = R.integritySampleIndexes(output.width * output.height);
+      const values = output.read(0);
+      let mismatches = 0, firstMismatch;
+      for (const i of samples) {
+        const lng = R.colCentreLng(output, i % output.width);
+        const lat = R.rowCentreLat(output, Math.floor(i / output.width));
+        const a = at(placements[0] || method === 'nearest' ? sources[0] : grids[0], lng, lat);
+        let b = at(placements[1] || method === 'nearest' ? sources[1] : grids[1], lng, lat);
+        if (!Number.isNaN(b) && conversion?.verdict === 'convertible') b = U.convert(b, unitB, unitA);
+        let expected;
+        if (Number.isNaN(a)) expected = b;
+        else if (Number.isNaN(b)) expected = a;
+        else if (overlap === 'first') expected = a;
+        else if (overlap === 'second') expected = b;
+        else if (overlap === 'min') expected = Math.min(a, b);
+        else if (overlap === 'max') expected = Math.max(a, b);
+        else expected = (a + b) / 2;
+        if (!Object.is(values[i], expected)) {
+          mismatches++;
+          firstMismatch ??= { lng, lat, expected: Number.isFinite(expected) ? expected : null,
+            actual: Number.isFinite(values[i]) ? values[i] : null };
+        }
+      }
+      return R.spatialIntegrity(originalChecks ? 'source-coordinate-samples' : 'aligned-grid-coordinate-samples',
+        samples.length, mismatches, firstMismatch);
     }
 
     /* ── rasterize: features onto a lattice the reader stated (#R752) ──────────────────────────── */
@@ -7397,6 +7459,7 @@ export function makeGisOps() {
       if (eng) prov.engine = eng;
       /* which engine computed THIS record, stated at the moment it was computed (see ENGINES above) */
       if (usedEngine) prov.computedBy = usedEngine;
+      if (res.integrity) prov.integrity = res.integrity;
       /* ══ ⚠⚠⚠ (#R783) レシピは、呼び手が打ったものだけでなく、実行が解決したものも持つ ═════════
          `convert` forced this. A reader converting 人口密度 to /km² states only the TARGET, because
          the source unit is already on the column with its own author — so `params` alone says
@@ -7552,7 +7615,7 @@ export function makeGisOps() {
        the overlap / the bracket (or none, when unstated or disjoint). Geometry and columns are unchanged. */
     /* (gov-gis-terms) ops-12 -> ops-13: a replayed step registers a record that says more (`provenance.upstreams`, inheritTerms); no cell or geometry changes. */
     /* (spatiotemporal-join) ops-13 -> ops-14: every pairing op (join / spatialJoin / nearestJoin / timeJoin / aggregate / intersect) derives its result's period from BOTH inputs by one rule (makeTimeKit) and accepts the same time condition `when`; a row-wise result carries `_validFrom` / `_validTo` per row and declares them as its axis; `provenance.warnings` and `provenance.geoBasis` are recorded. Geometry and the cells an existing call produced are unchanged; the period a record states, and two columns on row-wise inputs, are not. */
-    const KERNEL_VERSION = 'ops-14';
+    const KERNEL_VERSION = 'ops-15';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
