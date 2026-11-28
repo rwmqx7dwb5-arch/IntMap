@@ -1987,9 +1987,12 @@ export function makeAtlasAgent() {
         (goalVerifiedAt !== operationProgress || trace.goalCheck === 'unobserved');
       const hasAnswer = Boolean(String(text || '').trim());
       const hasOutput = produced.length > 0;
-      const completion = !hasAnswer && !hasOutput ? 'none'
+      const expectedModes = MODE_NEEDS[answerMode];
+      const outputUnobserved = expectedModes?.some(mode => ranModes.includes(mode)) &&
+        !expectedModes.some(mode => produced.includes(mode));
+      const completion = !hasAnswer && !hasOutput ? (outputUnobserved ? 'unobserved' : 'none')
         : (unmet.length || verificationPending || !hasAnswer) ? 'partial'
-        : trace.goalCheck === 'unobserved' ? 'unobserved' : 'complete';
+        : trace.goalCheck === 'unobserved' || outputUnobserved ? 'unobserved' : 'complete';
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
          written — CUT_STOPS; not a cancelled turn, a transport failure, a question back to the reader or an

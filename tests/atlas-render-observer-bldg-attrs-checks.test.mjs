@@ -26,7 +26,7 @@ function fake(o = {}) {
     getStyle: () => ({ layers: [layer] }), isVisible: (id) => st.vis[id] !== false, setVisible: (id, v) => { st.vis[id] = !!v; },
     getPaint: (id, p) => (o.paint ? o.paint[p] : undefined), setPaint: (id, p, v) => { st.op = v === undefined ? 1 : v; if (o.paint) o.paint[p] = v; }, sourceData: () => ({ type: 'FeatureCollection', features: feats }),
     getBounds: () => ({ getWest: () => o.west ?? 0, getEast: () => o.east ?? 10, getSouth: () => 0, getNorth: () => 10 }),
-    getZoom: () => o.zoom ?? 5, project: (p) => ({ x: p[0] * 20, y: 200 - p[1] * 20 }), getCanvas: () => canvas,
+    getZoom: () => o.zoom ?? 5, getCenter: () => ({ lng: 5, lat: 5 }), project: (p) => ({ x: p[0] * 20, y: 200 - p[1] * 20 }), getCanvas: () => canvas,
     queryRenderedFeatures: () => (o.rendered === 0 || outside || o.errors ? [] : [{ layer: { id: 's-l' } }]),
     redraw: o.noRedraw ? undefined : () => { st.frames++; },
   };
@@ -39,6 +39,8 @@ function fake(o = {}) {
 test('① a surface whose frame changes where its features are is SEEN', async () => {
   const f = fake(); const r = await f.look(); const s = r.surfaces.s;
   assert.equal(s.verdict, 'seen'); assert.equal(s.reason, 'pixels_changed'); assert.ok(s.pixels.changed > 0);
+  assert.deepEqual(r.camera, { lng: 5, lat: 5, zoom: 5, pitch: null, bearing: null });
+  assert.ok(Number.isFinite(Date.parse(r.observedAt)));
   assert.equal(f.st.op, 1, 'the opacity is put back exactly as it was found'); assert.equal(f.st.vis['s-l'], true, 'visibility is never touched (it rebuilds the tiles — measured)'); assert.equal(f.st.frames, 2, 'one frame at opacity 0 and one with it back');
 });
 

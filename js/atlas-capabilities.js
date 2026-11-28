@@ -2688,7 +2688,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     /* ── THE DEFAULT TRANSPORT: the atlas-embed Edge Function, with the reader's own session.
        A reason code comes back for everything that is not an answer, and the code is what the result
        reports. A catalogue miss seeds in the background. If the first request had a transport
-       failure, the next confirmed miss can start one retry, shared by concurrent searches. */
+       failure, subsequent confirmed misses can retry with backoff, shared by concurrent searches. */
     var _seeds = new Map();
     var _seed = { catalog: null, state: 'none', at: 0 };
     API.semanticStatus = function () { return { catalog: _seed.catalog, state: _seed.state, at: _seed.at }; };
@@ -2714,7 +2714,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         return post({ op: 'search', catalog: cat.hash, q: q }, signal).then(function (j) {
           if (j.state !== 'catalog_unknown') return j;
           var prior = _seeds.get(cat.hash);
-          if (prior && !(prior.attempts === 1 && /^(unreachable|store_unavailable|http_50[234])$/.test(prior.state))) {
+          const transient = prior && /^(unreachable|store_unavailable|limiter_unavailable|model_unavailable|upstream_(?:rate_limit|error|unreachable)|http_(?:429|5\d\d))$/.test(prior.state);
+          const retryDelay = prior && prior.attempts > 1 ? 60_000 * 2 ** Math.min(prior.attempts - 2, 4) : 0;
+          if (prior && (!transient || Date.now() - prior.at < retryDelay)) {
             return { state: prior.state === 'running' ? 'catalog_indexing' : ('catalog_seed_' + prior.state) };
           }
           var seed = { catalog: cat.hash, state: 'running', at: Date.now(), attempts: (prior ? prior.attempts : 0) + 1 };

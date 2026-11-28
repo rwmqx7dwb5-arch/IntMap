@@ -159,6 +159,12 @@ export function makeRenderWitness(deps) {
       try { layers = a.getStyle()?.layers || []; zoom = num(a.getZoom()); canvas = a.getCanvas(); } catch (_) {}
       const moving = a.isAnimating?.();
       out.observedAt = new Date().toISOString();
+      try {
+        const center = a.getCenter?.();
+        if (center && Number.isFinite(center.lng) && Number.isFinite(center.lat)) {
+          out.camera = { lng: center.lng, lat: center.lat, zoom, pitch: num(a.getPitch?.()), bearing: num(a.getBearing?.()) };
+        }
+      } catch (_) {}
       for (const id of ids) {
         const rec = out.surfaces[id];
         if (rec.state !== 'drawn') continue;
