@@ -178,7 +178,19 @@ export function makeAtlasAnswerSources(deps) {
     const context = text.slice(clauseStart, token.index + token.length) + after.split(CLAUSE_END, 1)[0];
     const sentence = before.split(SENTENCE_END).at(-1) + token.raw + after.split(SENTENCE_END, 1)[0];
     const measures = items.filter((item) => mentions(beforeMeasure, say(item.what)));
-    const namedPlaces = new Set(measures.flatMap((item) => (item.facts || []).map((fact) => fact.geography)).filter((place) => mentions(context, place)));
+    const places = new Set(measures.flatMap((item) => (item.facts || []).map((fact) => fact.geography)).filter(Boolean));
+    const namedPlaces = new Set([...places].filter((place) => mentions(context, place)));
+    if (lastBreak && /[,、]/.test(lastBreak[0])) {
+      const surrounding = normalized(text.slice(0, clauseStart) + context);
+      const boundary = normalized(before.slice(0, clauseStart)).length;
+      for (const place of places) {
+        const name = normalized(place).trim();
+        const start = surrounding.lastIndexOf(name, boundary - 1);
+        // A comma inside the recorded name is not the boundary of the claim.
+        if (start >= 0 && start + name.length > boundary &&
+            mentions(surrounding.slice(Math.max(0, start - 1), start + name.length + 1), place)) namedPlaces.add(place);
+      }
+    }
     const periods = new Set(measures.flatMap((item) => [item.date, ...(item.facts || []).map((fact) => fact.period)]).filter((period) => mentions(sentence, period)));
     const matchesPeriod = (period) => !period || mentions(context, period) || (periods.size === 1 && periods.has(period));
     const matches = [];

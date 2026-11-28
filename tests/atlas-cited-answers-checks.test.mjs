@@ -92,6 +92,8 @@ test('equal values in different places or years are attributed only to the match
   assert.doesNotMatch(html, /data-atl-srcn="[23]"/);
   const ambiguous = '<p>Discharge was 29.44 m³/s.</p>';
   assert.equal(C.linkNumbers(ambiguous, items, 's'), ambiguous);
+  const qualified = C.collect([{ ok: true, meta: { provenance: [row('Juniper Creek, Northern Branch', '1907', 'Volume 4')] } }], {});
+  assert.match(C.linkNumbers('In 1907, Juniper Creek, Northern Branch discharge was 29.44 m³/s.', qualified, 's'), /data-atl-srcn="1"/);
 });
 
 test('③ no author, no item — and the map’s credits are listed once, not beside the border records', () => {

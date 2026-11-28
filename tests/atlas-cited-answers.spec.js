@@ -34,7 +34,7 @@ function valueFrom(body) {
   if (!query) return null;
   const text = String(query.output || '');
   try {
-    const result = JSON.parse(text);
+    const result = JSON.parse(text.split('\n').find((line) => line.startsWith('{')) || '');
     const column = result.details?.provenance?.find((p) => p.kind === 'number' && p.unit === 'm');
     const fact = column?.facts?.[0];
     if (fact?.geography && Number.isFinite(fact.value)) return { name: fact.geography, value: fact.value.toLocaleString('en-US') };
@@ -58,7 +58,7 @@ test.beforeAll(async ({ browser }) => {
       const n = turnBodies.length;
       let r;
       if (n === 1) r = { turn: 'continuing', final_text: '調べます。', calls: [
-        { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 5 } },
+        { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 1 } },
         { name: 'set_time', arguments: { year: 1900 } }] };
       else { echoed = valueFrom(body) || echoed; r = { turn: 'final', final_text: (echoed?.name || '?') + ' の標高は ' + (echoed?.value || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
       text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
