@@ -104,8 +104,9 @@ function _glassInset(){ try{
     const events=GE().events;
     events.on('load',sync);
     // Camera moves and renderer resizes can finish after the overlay changes its geometry.
-    events.on('resize',scheduleCameraInset);
-    events.on('moveend',()=>{ if(document.getElementById('atlas-float')?.classList.contains('on')) scheduleCameraInset(); });
+    const keepFloatInset=()=>{ if(document.getElementById('atlas-float')?.classList.contains('on')) scheduleCameraInset(); };
+    events.on('resize',keepFloatInset);
+    events.on('moveend',keepFloatInset);
   }catch(_){}
   new MutationObserver(()=>{ const now=document.body.className.indexOf('ws-mode')>=0;
     if(now===was) return; was=now; sync(); if(!now) setTimeout(sync,450); })

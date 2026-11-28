@@ -23,6 +23,9 @@ const boot = (page, engine) => bootEngine(page, engine, BOOT);
    subscriptions the app makes AT BOOT, ⑤ and ⑦(default) are claims about a MapLibre session, and ①
    (the provider's tile orientation) was left where it was. */
 test.use({ appEngine: 'cesium' });
+// The software-rendered globe can take over 60 s to reset and deliver the first frame on CI
+// before any assertion runs. Keep the per-operation and source waits in the individual tests.
+test.describe.configure({ timeout: 120_000 });
 
 /* ── ① THE REPORTED DEFECT: THE IMAGERY IS THE RIGHT WAY UP ────────────────────────────────
    A flipped tile is flipped about ITS OWN centre, so the giveaway is not a mirrored map but a
