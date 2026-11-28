@@ -5340,6 +5340,6 @@ uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管�
 ### 公開 GIS・原図の回復
 
 `atlas-geographic-source-recovery-checks.test.mjs` は未収録のサービスと原図の発見、アフィン変換の
-独立検証点、分類不能画素の集計、取得済み原図の再利用を測る。同名の Playwright spec は Atlas の
+独立検証点、分類不能画素の集計、取得済み原図の再利用を測る。`atlas-live-stream.spec.js` の原図ケースは、ログイン済みページを既存の試験と共有し、Atlas の
 ファイル取得から PDF 曲線・SVG 線と穴付き面の抽出、出典と期間の記録、参照面との IoU、次の GIS 演算までを
 ケース名に依存しない原図で通す。

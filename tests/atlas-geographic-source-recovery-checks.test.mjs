@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { browse, parseHtml, snapshotOf } from '../supabase/functions/_shared/web-browse.js';
 import { makeGisCrs } from '../js/gis-crs.js';
 import { mapRegistration, legendPixels } from '../js/gis-map-registration.js';
-import { resolveMapSource } from '../js/gis-map-source.js';
+import { resolveMapSource, mapSourceReason } from '../js/gis-map-source.js';
 
 const map = { width: 101, height: 83 };
 const from = ([x, y]) => [21 + 0.017*x + 0.004*y, 49 + 0.003*x - 0.014*y];
@@ -95,4 +96,17 @@ test('concurrent inspection and subsequent extraction use one copy of the actual
   assert.equal(first.id, second.id);
   assert.equal((await resolveMapSource({ action: 'extract', source: first.id }, {}, settings)).file, file);
   assert.equal(downloads, 1);
+});
+
+test('every map-specific refusal has English and Japanese text in the Atlas reader', () => {
+  const paths = ['gis-map-source.js', 'gis-map-registration.js'];
+  for (const name of paths) {
+    const source = readFileSync(new URL('../js/' + name, import.meta.url), 'utf8');
+    for (const [, code] of source.matchAll(/fail\(\s*['"](map-[a-z-]+)['"]/g)) {
+      const en = mapSourceReason(code, (en) => en);
+      const jp = mapSourceReason(code, (_, jp) => jp);
+      assert.ok(en && !en.includes(code), code + ' missing English wording');
+      assert.ok(jp && !jp.includes(code) && /[\p{Script=Han}\p{Script=Hiragana}]/u.test(jp), code + ' missing Japanese wording');
+    }
+  }
 });
