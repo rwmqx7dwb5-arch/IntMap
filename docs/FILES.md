@@ -1205,6 +1205,9 @@ atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする
 atlas-cap-ui.js                   Atlas の能力 — 返答の中の UI（ui.*）：インラインの操作（ui.inlineControls）と宣言的なビュー（ui.compose・綴り `dashboard`）。
                                   操作の行の描画は 1 か所（controlRows）で、両方が使う
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
+gis-map-source.js                 原図ファイル・添付をブラウザで読み、プレビュー・抽出と GIS 登録をつなぐ
+gis-map-registration.js           原図のアフィン座標変換・独立検証点・凡例色の分類・既存 GIS を使った面の比較
+gis-map-linework.js               PDF のストローク演算列と SVG 要素から原図座標の線を抽出
 atlas-cap-web.js                  Atlas の能力 — ウェブ検索（web.search：複数の問いを同時に）・取得済み証拠の読み直し（web.evidence）・ウェブサイトの操作とファイル取得（web.browse・web.fetchFile）。データポータル等を検索・リンク辿り・フォーム送信し、返ったファイルを GIS データセットにする
 data-tables.js                    **生成物** — `data/` のファイルが自分で宣言した表（`rowTables`）の索引。`node scripts/data-tables.mjs --write` が書き、
                                   `check:datagov` が照合する。js/atlas-query.js がこれを読み、宣言された表をすべて `data.query` の表にする

@@ -173,7 +173,7 @@ function makeWebBrowse(HOST) {
     const got = await webEvidence.acquire(kind, key, async () => {
       const r = await call(fetchBody, signal, tier);
       const ok = !!(r && r.ok && !r.handoff && r.page);
-      return { ok, result: r, url: (r && r.state && r.state.url) || a.url, title: ok ? r.page.title : '', text: ok ? String(r.page.text || '') : '', value: ok ? { r, chars: want } : null };
+      return { ok, result: r, url: (r && r.scriptUrl) || (r && r.state && r.state.url) || a.url, title: ok ? r.page.title : '', text: ok ? String(r.page.text || '') : '', value: ok ? { r, chars: want } : null };
     }, { refresh: a.refresh === true, turn: use && use.turn, worker: !!(use && use.worker), fits: (e) => !!(e.value && (e.value.chars >= want || !(e.value.r.page && e.value.r.page.textTruncated))) });
     if (!got.entry) return got.result && got.result.result;   /* a failure is the caller's answer, as it always was; the next call tries again */
     const r = got.entry.value.r;
@@ -183,9 +183,9 @@ function makeWebBrowse(HOST) {
 
   async function browse(a, signal, use) {
     if (a.ref) a = Object.assign({}, a, { ref: untag(a.ref) });
-    const body = { action: a.action || 'open', url: a.url, ref: a.ref, form: a.form, values: a.values, button: a.button, textChars: a.textChars, state };
+    const body = { action: a.action || 'open', url: a.url, ref: a.ref, form: a.form, values: a.values, button: a.button, textChars: a.textChars, assetContext: a.assetContext, state };
     if ((a.action || 'open') === 'open' && a.url && !a.ref && !a.form) {
-      const r0 = await stored('page', a, signal, '', body, undefined, use);
+      const r0 = await stored('page', a, signal, a.assetContext ? '|scripts:' + a.assetContext : '', body, undefined, use);
       if (r0) return r0;
     }
     const r = await call(body, signal);
