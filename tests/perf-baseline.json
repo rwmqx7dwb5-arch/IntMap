@@ -102,12 +102,13 @@
       "gis-fetch": 8730,
       "gis-geopackage": 26667,
       "gis-geotiff": 26535,
+      "gis-map-source": 26366,
       "gis-ogcapi": 5664,
       "gis-overture": 17647,
       "gis-packed": 11355,
       "gis-pipeline": 11424,
       "gis-pmtiles": 11491,
-      "gis-remote": 38190,
+      "gis-remote": 36408,
       "gis-shapefile": 10420,
       "gis-units": 13909,
       "great-circle": 186,
@@ -164,6 +165,8 @@
       "on-this-day": 11387,
       "pandemic-atlas": 16879,
       "pandemic-world": 32012,
+      "pdf.min": 80,
+      "pdf.worker.min": 87,
       "photo-geo": 77696,
       "photo-geo-exif": 4679,
       "place-dossier": 78842,
@@ -245,7 +248,7 @@
   },
   "dist": {
     "total": 1620603887,
-    "data": 1255381703,
+    "data": 1255381433,
     "assets": 25631800
   },
   "phone": {
