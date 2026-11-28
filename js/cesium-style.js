@@ -354,17 +354,19 @@ const UNSUPPORTED=new Set(['format','image','pitch','distance-from-center']);
         const kind=Array.isArray(curve)?curve[0]:'linear';
         const base=kind==='exponential'?(asNum(_ev(curve[1],ctx,vars))||1)
                  :kind==='cubic-bezier'?[+curve[1],+curve[2],+curve[3],+curve[4]]:1;
-        const x=asNum(A(2));
-        const stops=[];
-        for(let i=3;i+1<ex.length;i+=2) stops.push([asNum(_ev(ex[i],ctx,vars)), _ev(ex[i+1],ctx,vars)]);
-        if(!stops.length) return null;
-        if(x==null||x<=stops[0][0]) return stops[0][1];
-        if(x>=stops[stops.length-1][0]) return stops[stops.length-1][1];
-        for(let i=0;i+1<stops.length;i++){
-          const [lo,lv]=stops[i], [hi,hv]=stops[i+1];
-          if(x>=lo&&x<=hi) return mixValue(lv,hv,curveT(kind,base,x,lo,hi),space);
+        const x=asNum(A(2)), count=Math.floor((ex.length-3)/2);
+        if(count<1) return null;
+        const stop=i=>asNum(A(3+2*i)), output=i=>A(4+2*i);
+        if(x==null||x<=stop(0)) return output(0);
+        if(x>=stop(count-1)) return output(count-1);
+        // Style stops are ordered. Only the two outputs surrounding the input can affect paint.
+        let lower=0, upper=count-1;
+        while(upper-lower>1){
+          const middle=Math.floor((lower+upper)/2);
+          if(x<=stop(middle)) upper=middle;
+          else lower=middle;
         }
-        return stops[stops.length-1][1]; }
+        return mixValue(output(lower),output(upper),curveT(kind,base,x,stop(lower),stop(upper)),space); }
       /* ── boolean ─────────────────────────────────────────────────────── */
       case '!': return !truthy(A(1));
       case '==': case '!=': { const a=A(1), b=A(2); const col=ex.length>3?A(3):null;

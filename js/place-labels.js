@@ -119,25 +119,18 @@ export function placeLabels(HOST){
      re-added — which is exactly why labels were missing on first load but appeared after toggling
      names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
-  /* ══ A COUNTRY'S NAME GOES WHEN THE VIEW HAS ENTERED THE COUNTRY ═══════════════════════════════
-     「国名・地名のラベルは、その領域を一定以上ズームしたら消える」 — decided by the SIZE of the region against the size of the view
-     (IntMapCountryExtent.viewShare), never by a country's name. Each country label in the loaded tiles is matched to the country
-     whose home extent holds its point (the smallest such extent wins, so an enclave beats its host), and the names whose share
-     is past NAME_GONE_SHARE are taken out of the layer's filter. `querySourceFeatures` and not `queryRenderedFeatures`: a name
-     already filtered out is not rendered, and would never be asked again when the reader zooms back out. Only the count of
-     matched names is kept, so nothing is rewritten while the answer is unchanged. */
-  const _fitState={ 'ofm-country':{}, 'ofm-admin1':{} };
+  /* Match each visible tile label to its region's extent. Source features are used so that the
+     same name can fade in again when it comes back into view. Only the renderer tracks fractional zoom. */
   function fitCountryNames(CE){
-    if(!GE().layers.has('ofm-country')) return;
-    const stats=HOST.countryStats; if(!CE||!CE.viewShare||!stats) return;
-    const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
-    const z=GE().camera.getZoom();
+    const id='ofm-country';
+    if(!CE||!GE().layers.isVisible(id)) return;
+    const stats=HOST.countryStats||{};
     const rows=[]; for(const k of Object.keys(stats)){ const b=stats[k]&&stats[k].bbox; if(b&&b.length===4&&isFinite(b[0])) rows.push(b); }
     const feats=GE().coords.querySourceFeatures('ofm',{sourceLayer:'place',filter:['==',['get','class'],'country']})||[];
-    CE.applyGone(GE,_fitState['ofm-country'],'ofm-country',['get','name'],CE.gone(boxedLabels(feats,rows),z,vw,vh)); }
+    CE.applyNameFade(GE,id,['get','name'],boxedLabels(feats,rows,['country'])); }
   /* a label point → the SMALLEST region box that holds it (an enclave beats its host); [{key:name, box}] for the shared rule */
-  function boxedLabels(feats,boxes){ const out=[];
-    for(const f of feats){ const p=f&&f.properties, g=f&&f.geometry; const nm=p&&p.name; if(typeof nm!=='string'||!nm||!g||g.type!=='Point') continue;
+  function boxedLabels(feats,boxes,classes){ const out=[];
+    for(const f of feats){ const p=f&&f.properties, g=f&&f.geometry; const nm=p&&p.name; if(typeof nm!=='string'||!nm||!classes.includes(p.class)||!g||g.type!=='Point') continue;
       const x=g.coordinates[0], y=g.coordinates[1]; let best=null, area=Infinity;
       for(const b of boxes){ const x2=(x<b[0])?x+360:x; if(x2>=b[0]&&x2<=b[2]&&y>=b[1]&&y<=b[3]){ const a=(b[2]-b[0])*(b[3]-b[1]); if(a<area){ area=a; best=b; } } }
       if(best) out.push({key:nm,box:best}); }
@@ -152,13 +145,13 @@ export function placeLabels(HOST){
       _a1Boxes=out; fitAdmin1Names(CE); }).catch(()=>{ _a1Loading=false; });
     return _a1Boxes; }
   function fitAdmin1Names(CE){
-    const L=GE().layers; if(!L.has('ofm-admin1')) return;
-    if(!CE||!CE.gone) return;
-    const cv=GE().render.canvas(); const vw=cv&&cv.clientWidth, vh=cv&&cv.clientHeight; if(!(vw>0&&vh>0)) return;
-    const z=GE().camera.getZoom(); if(z<4) return;
-    const boxes=admin1Boxes(CE); if(!boxes) return;
-    const feats=GE().coords.querySourceFeatures('ofm',{sourceLayer:'place',filter:['in',['get','class'],['literal',['state','province']]]})||[];
-    CE.applyGone(GE,_fitState['ofm-admin1'],'ofm-admin1',['get','name'],CE.gone(boxedLabels(feats,boxes),z,vw,vh)); }
+    const id='ofm-admin1';
+    if(!CE||!GE().layers.isVisible(id)) return;
+    const classes=['state','province'];
+    const boxes=GE().camera.getZoom()>=4?admin1Boxes(CE):_a1Boxes;
+    if(!boxes){ CE.applyNameFade(GE,id,['get','name'],[]); return; }
+    const feats=GE().coords.querySourceFeatures('ofm',{sourceLayer:'place',filter:['in',['get','class'],['literal',classes]]})||[];
+    CE.applyNameFade(GE,id,['get','name'],boxedLabels(feats,boxes,classes)); }
   function ensurePlaceLabels(){
     if(!_imCanDraw()) return;
     /* (#R252) the ONE answer to «which `name:*` field is this label showing?», published before any
@@ -458,7 +451,14 @@ export function placeLabels(HOST){
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
-      if(!ensurePlaceLabels._fitHooked){ ensurePlaceLabels._fitHooked=true; const _fit=()=>{ const CE=window.IntMapCountryExtent; try{ fitCountryNames(CE); }catch(_){} try{ fitAdmin1Names(CE); }catch(_){} }; GE().events.on('moveend',_fit); GE().events.on('idle',_fit); }
+      if(!ensurePlaceLabels._fitHooked){
+        ensurePlaceLabels._fitHooked=true;
+        const CE=window.IntMapCountryExtent;
+        if(CE) for(const id of ['ofm-country','ofm-admin1']) CE.applyNameFade(GE,id,['get','name'],[]);
+        GE().events.on('idle',()=>{ const extent=window.IntMapCountryExtent;
+          try{ fitCountryNames(extent); }catch(_){}
+          try{ fitAdmin1Names(extent); }catch(_){} });
+      }
       if(!ensurePlaceLabels._harvestHooked){ ensurePlaceLabels._harvestHooked=true; GE().events.on('idle',()=>{ try{ harvestStableLabels(); }catch(_){}
         /* (#R72) SELF-HEAL: a basemap/style swap can wipe individual label layers; if the water/sea layers are
            gone while the toggle is on, re-add + re-apply. This was the reported "東シナ海が全体を写していても

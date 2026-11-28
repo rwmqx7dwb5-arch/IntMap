@@ -2607,6 +2607,19 @@ window.IntMapCesiumEngine=(function(){
     resize(){ try{ this._widget.resize(); this._applyFov(); this._scene.requestRender(); this.fire('resize',{}); }catch(_){} }
     triggerRepaint(){ try{ this._scene.requestRender(); }catch(_){} }
     getCanvas(){ return this._widget.canvas; }
+
+    _leftViewportInset(){ return Math.max(0,this._padding.left-this._padding.right); }
+    setPadding(p){
+      const previous=this._leftViewportInset();
+      this._padding=Object.assign({},this._padding,p);
+      const extra=this._leftViewportInset();
+      if(extra===previous) return;
+      // Extend the symmetric viewport to the right so the optical centre moves by half
+      // the left inset. Cesium renders and picks against the same canvas coordinates.
+      this._widget.canvas.parentElement.style.width=extra?'calc(100% + '+extra+'px)':'';
+      this._container.style.overflowX=extra?'clip':'';
+      this.resize();
+    }
     /* (layer-click-polish) maplibre's `redraw()`: one SYNCHRONOUS frame, for a page whose rAF is stopped (a hidden tab) — postRender fires 'render' inside it */
     /* draw NOW, from the document as it is: style changes made this task (setPaint, setLayout) are applied on the next animation frame, so a synchronous draw without this flush would show the previous document — the frame comparison in js/render-witness.js read an unchanged picture for a surface it had just made transparent */
     redraw(){ try{ if(this._dirty&&this._dirty.size) this._flush(); this._scene.render(); }catch(_){} return this; }
@@ -2822,7 +2835,7 @@ window.IntMapCesiumEngine=(function(){
     cameraForBounds(b,o){ const v=this; if(!b) return null;
       const bb=normBounds(b); if(!bb) return null;
       const pad=(o&&o.padding)||0, padN=(typeof pad==='number')?pad:0;
-      const W=Math.max(1,v._canvasW()-2*padN), H=Math.max(1,v._canvasH()-2*padN);
+      const W=Math.max(1,(v._container.clientWidth||v._canvasW())-v._leftViewportInset()-2*padN), H=Math.max(1,v._canvasH()-2*padN);
       const my=l=>Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,l))*D2R/2));
       const myInv=y=>(2*Math.atan(Math.exp(y))-Math.PI/2)/D2R;
       /* (#R181) THE CENTRE OF A BOX ON A MAP IS THE MERCATOR MIDPOINT, not the mean of the
@@ -3029,7 +3042,7 @@ window.IntMapCesiumEngine=(function(){
          needs it too, and a second copy of the sphere solve is exactly what #R181
          went to the trouble of not having. */
       cameraForBounds(b,o){ const v=V(); return v?v.cameraForBounds(b,o):null; },
-      setPadding(p){ const v=V(); if(v) v._padding=Object.assign({},v._padding,p||{}); },
+      setPadding(p){ const v=V(); if(v) v.setPadding(p); },
       getPadding(){ const v=V(); return v?v._padding:null; },
       getCamera(){ const v=V(); if(!v) return null;
         return { center:v.getCenter(), zoom:v.getZoom(), bearing:v.getBearing(), pitch:v.getPitch() }; },

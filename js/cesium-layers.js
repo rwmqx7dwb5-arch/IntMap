@@ -780,12 +780,13 @@ window.IntMapCesiumLayers=(function(){
               const rad=Math.max(0.5,RN(paint['circle-radius'],ctx,5));
               const sw=RN(paint['circle-stroke-width'],ctx,0);
               const sc=RC(paint['circle-stroke-color'],ctx,'#ffffff');
+              const sop=RN(paint['circle-stroke-opacity'],ctx,1);
               for(const pt of points(g)){
                 if(!pt||pt.length<2) continue;
                 add({ id:def.id+'/p'+ents.values.length, properties:f.properties,
                   position:Cesium.Cartesian3.fromDegrees(+pt[0],+pt[1],pt.length>2?+pt[2]:0),
                   point:{ pixelSize:rad*2, color:col({...cc,a:(cc.a==null?1:cc.a)*op}),
-                    outlineWidth:sw, outlineColor:col(sc),
+                    outlineWidth:sw, outlineColor:col({...sc,a:(sc.a==null?1:sc.a)*sop}),
                     /* a marker must not be swallowed by the hill it stands on */
                     disableDepthTestDistance:Number.POSITIVE_INFINITY,
                     heightReference:(pt.length>2?Cesium.HeightReference.NONE:Cesium.HeightReference.CLAMP_TO_GROUND) } });
@@ -799,6 +800,7 @@ window.IntMapCesiumLayers=(function(){
               const hc=RC(paint['text-halo-color'],ctx,'rgba(255,255,255,0.9)');
               const hw=RN(paint['text-halo-width'],ctx,0);
               const top=RN(paint['text-opacity'],ctx,1);
+              const iop=RN(paint['icon-opacity'],ctx,1);
               const off=R(layout['text-offset'],ctx,null);
               const anchor=R(layout['text-anchor'],ctx,'center');
               const label=(text==null?'':String(text));
@@ -811,14 +813,14 @@ window.IntMapCesiumLayers=(function(){
                   font:`${Math.round(size)}px ${fontOf(layout['text-font'])}`,
                   fillColor:col({...tc,a:(tc.a==null?1:tc.a)*top}),
                   style:hw>0?Cesium.LabelStyle.FILL_AND_OUTLINE:Cesium.LabelStyle.FILL,
-                  outlineColor:col(hc), outlineWidth:hw*2,
+                  outlineColor:col({...hc,a:(hc.a==null?1:hc.a)*top}), outlineWidth:hw*2,
                   pixelOffset:Array.isArray(off)?new Cesium.Cartesian2(off[0]*size,off[1]*size):undefined,
                   horizontalOrigin:hAnchor(Cesium,anchor), verticalOrigin:vAnchor(Cesium,anchor),
                   disableDepthTestDistance:Number.POSITIVE_INFINITY,
                   heightReference:(pt.length>2?Cesium.HeightReference.NONE:Cesium.HeightReference.CLAMP_TO_GROUND),
                   /* the declutter pass below owns this; allow-overlap opts out of it */
                   show:true };
-                if(icon&&env.images&&env.images[icon]) e.billboard={ image:env.images[icon],
+                if(icon&&env.images&&env.images[icon]) e.billboard={ image:env.images[icon], color:new Cesium.Color(1,1,1,iop),
                   scale:RN(layout['icon-size'],ctx,1),
                   rotation:-(RN(layout['icon-rotate'],ctx,0))*Math.PI/180,
                   disableDepthTestDistance:Number.POSITIVE_INFINITY,

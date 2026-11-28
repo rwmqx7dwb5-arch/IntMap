@@ -61,6 +61,55 @@ test('cesium-layers hands the feature geometry to the evaluator', () => {
   assert.match(read('js/cesium-layers.js'), /state:state\|\|\{\},\s*geometry:f\.geometry/);
 });
 
+test('Cesium applies opacity to both parts of a circle, to label ink and halo, and to icons', () => {
+  vm.runInContext(read('js/cesium-layers.js'), ctx);
+  class Color {
+    constructor(_r, _g, _b, alpha = 1) { this.alpha = alpha; }
+  }
+  const renderer = ctx.window.IntMapCesiumLayers.makeVectorRenderer({
+    Color, Cartesian3: { fromDegrees: (...v) => v }, Matrix4: class {}, Cartesian4: class {},
+    HeightReference: { NONE: 0, CLAMP_TO_GROUND: 1 },
+    LabelStyle: { FILL: 0, FILL_AND_OUTLINE: 1 },
+    HorizontalOrigin: { CENTER: 0 }, VerticalOrigin: { CENTER: 0 },
+  });
+  const values = [];
+  const ds = { entities: {
+    values, removeAll: () => { values.length = 0; }, add: (v) => { values.push(v); return v; },
+    suspendEvents: () => {}, resumeEvents: () => {},
+  } };
+  const opacity = ['get', 'opacity'];
+  const circle = { id: 'circles', type: 'circle', paint: {
+    'circle-opacity': opacity, 'circle-stroke-color': 'rgba(255,255,255,0.8)', 'circle-stroke-opacity': opacity,
+  } };
+  const symbol = { id: 'labels', type: 'symbol', layout: { 'text-field': 'A', 'icon-image': 'mark' }, paint: {
+    'text-opacity': opacity, 'text-halo-color': 'rgba(255,255,255,0.8)', 'icon-opacity': opacity,
+  } };
+  const env = { zoom: 3, maxFeatures: 5, images: { mark: {} } };
+  for (const alpha of [0, 0.5, 1]) {
+    const features = [{ properties: { opacity: alpha }, geometry: { type: 'Point', coordinates: [0, 0] } }];
+    renderer.update(ds, circle, features, env);
+    assert.equal(values[0].point.color.alpha, alpha);
+    assert.equal(values[0].point.outlineColor.alpha, alpha * 0.8);
+    renderer.update(ds, symbol, features, env);
+    assert.equal(values[0].label.fillColor.alpha, alpha);
+    assert.equal(values[0].label.outlineColor.alpha, alpha * 0.8);
+    assert.equal(values[0].billboard.color.alpha, alpha);
+  }
+});
+
+test('interpolate evaluates only the two paint outputs spanning the zoom', () => {
+  const steps = ['interpolate', ['linear'], ['zoom']];
+  const seen = [], properties = {};
+  for (let stop = 0; stop <= 200; stop++) {
+    Object.defineProperty(properties, 's' + stop, { get() { seen.push(stop); return stop; } });
+    steps.push(stop / 10, ['get', 's' + stop]);
+  }
+  assert.equal(S.evaluate(steps, { properties, zoom: 4.05 }), 40.5);
+  assert.deepEqual(seen.splice(0), [40, 41]);
+  assert.equal(S.evaluate(steps, { properties, zoom: 22 }), 200);
+  assert.deepEqual(seen, [200]);
+});
+
 test('collator / number-format / resolved-locale / within answer the way MapLibre does', () => {
   const ev = (e, c) => S.evaluate(e, c);
   // collator: case/diacritic-insensitive equality and ordering as the third argument

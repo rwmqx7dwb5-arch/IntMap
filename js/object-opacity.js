@@ -11,24 +11,34 @@
  *
  *  FILL_AT_FULL = 0.85: a design value, not a measurement — dark enough that the colour reads as a solid area, light enough that
  *  the base map's coast and borders still show through. Expires if the base map's land colour changes so much that 0.85 hides it.
- *  A fill whose opacity nobody set keeps the look its painter has always given it; `alphaOfFill` is that look expressed on the slider,
+ *  A fill whose opacity nobody set keeps the look its painter has always given it; `alphaFromFill` is that look expressed on the slider,
  *  so the slider opens where the map is, not at 100 %.
  */
 const FILL_AT_FULL = 0.85;
 
+const clampAlpha = (a) => Math.max(0, Math.min(1, +a));
+
 /** slider value (0..1) → fill-opacity */
-export const fillFromAlpha = (a) => Math.max(0, Math.min(1, +a)) * FILL_AT_FULL;
+export const fillFromAlpha = (a) => clampAlpha(a) * FILL_AT_FULL;
 
 /** a fill-opacity a painter already uses → the slider value that shows it (to the slider's 5 % step) */
 export const alphaFromFill = (f) => Math.max(0, Math.min(1, Math.round((+f / FILL_AT_FULL) * 20) / 20));
 
 /** the layer-level paint property an object's opacity drives, by style-layer type, and the value for slider value `a` */
 const OPACITY_PROPS = Object.freeze({
-  fill: 'fill-opacity', line: 'line-opacity', circle: 'circle-opacity',
+  fill: 'fill-opacity', line: 'line-opacity', circle: ['circle-opacity', 'circle-stroke-opacity'],
   symbol: ['text-opacity', 'icon-opacity'], 'fill-extrusion': 'fill-extrusion-opacity', raster: 'raster-opacity', heatmap: 'heatmap-opacity',
 });
 export const opacityPaint = (type, a) => {
   const p = OPACITY_PROPS[type]; if (!p) return [];
-  const v = type === 'fill' ? fillFromAlpha(a) : Math.max(0, Math.min(1, +a));
+  const v = type === 'fill' ? fillFromAlpha(a) : clampAlpha(a);
   return (Array.isArray(p) ? p : [p]).map((k) => [k, v]);
+};
+
+/** Read a uniform painter opacity in slider units. A feature-driven expression has no single starting value. */
+export const opacityAlpha = (type, paint = {}) => {
+  const p = OPACITY_PROPS[type]; if (!p) return null;
+  const main = Array.isArray(p) ? p[0] : p;
+  const v = type === 'symbol' ? [paint[main], paint[p[1]]].find(Number.isFinite) : paint[main];
+  return Number.isFinite(v) ? clampAlpha(type === 'fill' ? v / FILL_AT_FULL : v) : 1;
 };

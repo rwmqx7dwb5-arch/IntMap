@@ -571,7 +571,9 @@ export function mobileUI(HOST){
       /* (#R15b) Entering the phone layout (first load OR crossing 768px) snaps to the lowest reading stop
          synchronously, so there is no half→min flash. */
       if(isM){ recompute(); setDetent(crossed?'min':currentDetent,false); if(crossed){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
-      else{ document.body.classList.remove('sheet-full','sheet-min','sheet-hidden'); try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} }
+      else{ document.body.classList.remove('sheet-full','sheet-min','sheet-hidden');
+        // The sheet owns vertical padding. Desktop resizes must keep the sidebar and Atlas inset.
+        if(crossed) try{ const C=_cam(), p=C&&C.getPadding(); if(p&&(p.top||p.bottom)) C.setPadding({...p,top:0,bottom:0}); }catch(_){} }
     }
     syncResponsive();                                                     // initial layout at load width
     if(mq.addEventListener) mq.addEventListener('change',syncResponsive); // width crosses 768 in either direction

@@ -607,10 +607,16 @@ function definitions() {
   }
   const modern = rd('js/place-labels.js').match(/if\(!GE\(\)\.layers\.has\('ofm-admin1'\)\)[\s\S]*?\}\);/);
   assert.ok(modern); vm.runInContext(modern[0], ctx);
-  const admin = rd('js/time-admin1.js').match(/if \(!GE\(\)\.layers\.has\(cfg.lbl\)\) GE\(\)\.layers\.add\(\{[\s\S]*?\n          \}\);/);
-  assert.ok(admin);
-  Object.assign(ctx, { FONT: ['Arial'], SIZE: 12, COL: '#fff', DEEP_Z: 6, SORT_PROP: '_sort' });
-  for (const deep of [false, true]) { ctx.cfg = { lbl: deep ? 'imta2-lbl' : 'imta-lbl', src: 'test', deep }; vm.runInContext(admin[0], ctx); }
+  const admin = rd('js/time-admin1.js').match(/if\s*\(!GE\(\)\.layers\.has\(cfg\.lbl\)\)\s*\{[\s\S]*?\n\s*\}\);\s*fitLabelNames\(\);\s*\}/);
+  assert.ok(admin, 'each historical administrative label is added and receives its extent fade');
+  const fitted = [];
+  Object.assign(ctx, { FONT: ['Arial'], SIZE: 12, COL: '#fff', DEEP_Z: 6, SORT_PROP: '_sort',
+    fitLabelNames: () => { assert.equal(result.at(-1).id, ctx.cfg.lbl); fitted.push(ctx.cfg.lbl); } });
+  for (const deep of [false, true]) {
+    ctx.cfg = { lbl: deep ? 'imta2-lbl' : 'imta-lbl', src: 'test', deep };
+    vm.runInContext(admin[0], ctx);
+  }
+  assert.deepEqual(fitted, ['imta-lbl', 'imta2-lbl']);
   return result;
 }
 const labelDefs = definitions();

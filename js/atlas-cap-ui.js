@@ -32,7 +32,7 @@ import { IntMapLang } from './lang-registry.js';
    on its markup (`data-ctl-id`) and is listed in `drawn` — [{id, kind, at, options?, selected?}] — so a reader of the result (the model, the evaluation, a
    spec) can find exactly that control on the page and press it. An item that was not drawn has no id and is in `problems` instead. */
 function controlRows(items, K) {
-  const esc = K.esc, L = K.L, resolveLayer = K.resolveLayer, layerOpacityControl = K.layerOpacityControl;
+  const { esc, L, resolveLayer, readLayerOpacity } = K;
   let h = ''; const problems = [], drawn = []; const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);   /* unique per call and beyond this page load (a reply restored from a saved conversation keeps its ids); no module state — a capability module holds none (scripts/atlas-caps-split.mjs) */
   (items || []).forEach((it, i) => {
     const kind = String((it && it.kind) || '').toLowerCase();
@@ -46,9 +46,9 @@ function controlRows(items, K) {
       h += '<div class="atl-ctl-row"' + did + '><span class="atl-ctl-lbl">' + esc(rl.label) + '</span><button class="atl-ctl-toggle' + (rl.cb.checked ? ' on' : '') + '" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" role="switch" aria-checked="' + (rl.cb.checked ? 'true' : 'false') + '"><span class="atl-ctl-knob"></span></button></div>';
     } else if (kind === 'opacity' || kind === 'slider') {
       const rl = resolveLayer(String(it.layer || it.name || '')); if (!rl) return no('unknown_layer', L('names no layer this map has', 'この地図にあるレイヤーを指していません'));
-      const sl = layerOpacityControl(rl.cb); if (!sl) return no('no_opacity', L('this layer has no opacity control', 'このレイヤーには不透明度の調整がありません'));
+      const value = readLayerOpacity(rl.cb.id); if (value == null) return no('no_opacity', L('this layer has no opacity control', 'このレイヤーには不透明度の調整がありません'));
       drew('opacity', { layer: rl.label });
-      h += '<div class="atl-ctl-row"' + did + '><span class="atl-ctl-lbl">' + esc(rl.label) + ' · ' + L('opacity', '不透明度', 'Deckkraft', 'непрозрачность', 'opacidad') + '</span><input type="range" class="atl-ctl-op" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" min="0" max="1" step="0.05" value="' + esc(sl.value) + '"></div>';
+      h += '<div class="atl-ctl-row"' + did + '><span class="atl-ctl-lbl">' + esc(rl.label) + ' · ' + L('opacity', '不透明度', 'Deckkraft', 'непрозрачность', 'opacidad') + '</span><input type="range" class="atl-ctl-op" data-layer="' + esc(rl.label) + '" data-cb="' + esc(rl.cb.id || '') + '" min="0" max="1" step="any" value="' + esc(value) + '"></div>';
     } else if (kind === 'button') {
       const lbl = String(it.label || '').slice(0, 40); const cmd = String(it.run || it.command || '').slice(0, 160);
       if (!lbl || !cmd) return no('missing', L('a button needs "label" and "run"', 'ボタンには "label" と "run" が必要です'));

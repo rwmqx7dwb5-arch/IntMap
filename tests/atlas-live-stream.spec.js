@@ -127,6 +127,7 @@ test('①② the note goes to the trace, the answer is shown while written and t
   /* ① the note, live, in the trace — and not in the reply */
   await expect(page.locator('#atlas-panel .atl-trace-row.say').last()).toContainText(NOTE, { timeout: 20_000 });
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
+  await expect(lastReply()).not.toContainText(/Done\.|完了しました。/);
   /* (2026-11-26) the statement of intent (「次: …」) stands in the head beside the live word while the call is being decided and goes when the operation starts —
      it is not a history row any more, so it is not asserted here (tests/atlas-progress-display-checks.test.mjs ① covers that the wait leaves no row) */
   /* ② step 2 holds before `done`: the candidate is on screen, live, in the trace — and NOT in the answer's place */
@@ -149,6 +150,43 @@ test('①② the note goes to the trace, the answer is shown while written and t
   expect(lat.firstVisible).toBeLessThan(lat.firstAnswer);
   expect(lat.firstAnswer).toBeLessThan(lat.answer);
   expect(await page.evaluate(() => window.__live.bodies.every((b) => b.stream))).toBe(true);
+
+  // Rebuild an older answer after the reader asked to follow the end of a long conversation.
+  const scroll = await page.evaluate(async () => {
+    const panel = document.querySelector('#atlas-panel');
+    const chat = panel.querySelector('.atl-chat');
+    const oldQuestion = document.createElement('div');
+    oldQuestion.className = 'atl-b u';
+    oldQuestion.textContent = 'Earlier question';
+    const longReply = document.createElement('div');
+    longReply.className = 'atl-b a';
+    const content = document.createElement('div');
+    content.style.height = (chat.clientHeight * 3) + 'px';
+    longReply.append(content);
+    chat.append(oldQuestion, longReply);
+    panel.querySelector('.atl-jump').click();
+    const latest = chat.scrollHeight - chat.clientHeight;
+    const ended = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await ended();
+    const oldTop = chat.scrollTop;
+    longReply.append(document.createElement('div'));
+    await ended();
+    const afterRepaint = chat.scrollTop;
+    chat.dispatchEvent(new WheelEvent('wheel', { deltaY: -200 }));
+    chat.scrollTo({ top: latest - 200, behavior: 'instant' });
+    const manual = chat.scrollTop;
+    content.style.height = (chat.clientHeight * 4) + 'px';
+    longReply.append(document.createElement('div'));
+    await ended();
+    const afterManual = chat.scrollTop;
+    oldQuestion.remove();
+    longReply.remove();
+    return { latest, oldTop, afterRepaint, manual, afterManual };
+  });
+  expect(scroll.latest).toBeGreaterThan(200);
+  expect(scroll.oldTop).toBeCloseTo(scroll.latest, 0);
+  expect(scroll.afterRepaint).toBeCloseTo(scroll.oldTop, 0);
+  expect(scroll.afterManual).toBeCloseTo(scroll.manual, 0);
 });
 
 test('③ a stop mid-sentence keeps what was written, marked unfinished, and records no answer', async () => {

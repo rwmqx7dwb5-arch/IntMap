@@ -47,6 +47,7 @@
  * ==========================================================================*/
 import './waves-palette.js';
 import './waves-gl.js';
+import { layerOpacityChanged, registerLayerOpacityAccess } from './layer-opacity.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -399,7 +400,7 @@ export function waves(HOST) {
   function opRow() {
     /* the word and the slider are one <label>, like every legend's opacity row (js/data-layers.js ensureLegendOpacity) */
     return '<div class="dl-op-row"><label style="display:contents;">' + esc(L('Opacity', '不透明度', 'Deckkraft', 'Непрозрачность', 'Opacidad'))
-      + '<input type="range" class="wv-op" min="0" max="1" step="0.05" value="' + st.op + '"></label>'
+      + '<input type="range" class="wv-op" min="0" max="1" step="any" value="' + st.op + '"></label>'
       + '<span class="dl-op-val">' + Math.round(st.op * 100) + '%</span></div>';
   }
   function particleRow() {
@@ -497,7 +498,7 @@ export function waves(HOST) {
     const x = el.querySelector('.layer-popup-x');
     if (x) x.onclick = () => { setRow(false); toggle(false); };
     const op = el.querySelector('.wv-op');
-    if (op) op.oninput = () => { setOpacity(+op.value); const lb = el.querySelector('.dl-op-val'); if (lb) lb.textContent = Math.round(st.op * 100) + '%'; };
+    if (op) op.oninput = () => setOpacity(op.valueAsNumber);
     const pa = el.querySelector('.wv-parts');
     if (pa) pa.onchange = () => setParticles(pa.checked);
     const ms = el.querySelector('.wv-model');
@@ -529,8 +530,13 @@ export function waves(HOST) {
   }
   function setOpacity(v) {
     v = Math.max(0, Math.min(1, +v || 0));
+    const changed = st.op !== v;
     st.op = v;
     try { if (renderer) renderer.setOpacity(v); } catch (_) { }
+    const slider = box?.querySelector('.wv-op'), label = box?.querySelector('.dl-op-val');
+    if (slider && slider.valueAsNumber !== v) slider.value = String(v);
+    if (label) label.textContent = Math.round(v * 100) + '%';
+    if (changed) layerOpacityChanged('dl-' + ROW_ID, v);
     repaint();
     return v;
   }
@@ -561,6 +567,7 @@ export function waves(HOST) {
   /* the reader changed language or units: the legend is words and numbers, so it is rebuilt */
   bus.on('intmap-lang', () => { if (st.on) render(); });
   bus.on('intmap-units', () => { if (st.on) render(); });
+  registerLayerOpacityAccess('dl-' + ROW_ID, () => st.op, setOpacity);
 
   return {
     open: () => toggle(true), close: () => toggle(false), toggle,

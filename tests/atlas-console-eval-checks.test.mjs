@@ -820,7 +820,7 @@ test('R775 ⑤ the auto-scroll anchors to the reader\u2019s question, not to a p
   assert.ok(i > 0, 'the follow rule is gone');
   const block = src.slice(i, i + 900);
   assert.ok(/\.atl-b\.u/.test(block), 'the anchor must be the last USER bubble');
-  assert.ok(/offsetTop/.test(block), 'anchoring to an element means reading its offset, not the scroll height');
+  assert.ok(/question\.getBoundingClientRect\(\)\.top-chatEl\.getBoundingClientRect\(\)\.top/.test(block), 'the question is measured inside the chat scrollport');
   assert.ok(/if\(!_chatFollow/.test(block), 'nothing may move the scroll once the reader has taken it');
   assert.ok(/_chatFollow=false/.test(src), 'a reader gesture must release the follow');
 });

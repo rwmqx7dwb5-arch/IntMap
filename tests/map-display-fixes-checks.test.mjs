@@ -30,14 +30,15 @@ test('① a country name goes when the view has entered the country — by size,
 test('① no country is named in the rule', () => {
   const src = read('js/place-labels.js'); const i = src.indexOf('function fitCountryNames');
   const body = src.slice(i, src.indexOf('function ensurePlaceLabels', i));
-  assert.ok(body.includes('CE.gone('));   /* the size-of-region rule, shared (js/country-extent.js) */
+  assert.ok(body.includes('CE.applyNameFade('));   /* the size-of-region rule, shared (js/country-extent.js) */
   assert.doesNotMatch(body, /Russia|France|Japan|Monaco|'[A-Z]{3}'/);
 });
 
-test('② the click hides the name under the pin in EVERY place-name layer, through one property nobody else writes', () => {
+test('② the click hides the name under the pin in EVERY place-name layer, without overriding the shared region fade', () => {
   const src = read('js/map-ui.js'); const i = src.indexOf('function _hideLabelAt');
   const body = src.slice(i, src.indexOf('function _dropPin', i));
   assert.match(body, /PLACE_LBL\.filter/);
+  assert.match(body, /suppressNameFade/);
   assert.match(body, /'text-opacity'/);
   assert.doesNotMatch(body, /setFilter/, 'a filter on ofm-admin1 / ofm-country belongs to other modules');
   assert.doesNotMatch(src, /_CITY_LBL/);

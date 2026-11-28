@@ -16,7 +16,7 @@ import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the
 import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the fertility row's World Bank read — the one read, under the host's clock (stalled-fetch). (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
 import './night-lights.js'; import { seamlessTiles } from './antimeridian-seam.js';   /* (dateline-nightsat-seam: the ±180° band stepped over) (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight, ownershipLearner } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there; (layer-ownership-by-declaration) which layers a box owns: what its own OFF took off the map */
-import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
+import { layerState } from './layer-state.js'; import { layerOpacityChanged, registerLayerOpacityAccess } from './layer-opacity.js';   /* the row's request status and its painter's opacity are available to Atlas */
 import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
@@ -37,41 +37,11 @@ import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.j
    in its place — the same assignment it always made, so after the first switch the preview calls the row's read
    directly, and before it the preview still reads through the row's ladder rather than through a copy. */
 export const layerReads = {};
-/* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
-   「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
-   Three readers need this list and they must not disagree, so it is stated once, here, above the
-   factory that builds the rows:
-     · the row builder below marks these checkboxes `checked`;
-     · js/app-body.js dispatches their `change` once the style can accept layers — a checked box on
-       its own paints nothing, which is the mistake #R34 already recorded for the Place-names toggle;
-     · the session restore in js/app-body.js switches one back OFF when the saved snapshot says the
-       user had switched it off, so "default on" never means "cannot be turned off".
-   Ids, not layer keys, because that is what all three readers hold. */
+/* (#R186) The manifest's default-on checkbox ids are shared by row creation, initial painting and session restoration. */
 window.IntMapDefaultLayers=defaultLayers();   /* (layer-manifest) the manifest's `on` rows that are not markup rows — EMPTY since basic-display-not-layers (2026-10-02,「どちらも規定レイヤーは削除」: no layer is on for a first-time reader; until then dl-climate, dl-subcables) */
-/* ══ ⚠⚠ (#R225) THE BASE TOGGLES SHIP `checked` AND THE RESTORE NEVER TURNED THEM BACK OFF ══════════
-   「base map & labelsも勝手に全部オンになる」 — and it was structural, not a glitch. index.html ships
-   `cb-names / cb-geolabels / cb-poi / cb-borders / cb-admin1 / cb-roads / cb-rail2` CHECKED. The session
-   snapshot records the boxes that are ticked, and js/session-tabs.js's restore turns ON everything in
-   that list but only turns OFF the ids in `IntMapDefaultLayers` — which is Köppen and the cables.
-   So a base toggle the reader switched off was saved correctly as «absent» and then, on the next load,
-   was left at its HTML default: ON. Every reload undid the choice, for ever.
-   ⚠ THE LIST HAS TO BE ONE LIST. #R186's rule is «absent means the user switched it off» and it has to
-   hold for every DEFAULT-ON id, not for the two that happened to be thematic. `IntMapDefaultLayers`
-   keeps its old meaning (the thematic layers the app switches on for a first-time reader, and the ones
-   `imAutoOff` protects); `IntMapDefaultOn` is that set PLUS the base toggles the HTML ticks, and it is
-   what the restore's off-sweep reads. Adding a default-on row means adding it here, once.
-   ⚠⚠ (#R476) «HERE» IS TWO PLACES AND THEY ARE ONE EDIT. index.html has to ship the box `checked` as well,
-   because this list is not what ticks it — js/app-body.js only dispatches `change` for boxes that are
-   ALREADY ticked (#R34), and js/data-layers.js's IntMapBaseDisplay.matches() compares the live ticks
-   against defOn(). Half the edit is silent both ways: the tick alone drops 基本表示 to 「カスタム」 400 ms
-   after every boot, the id alone paints nothing. tests/layer-panel-taxonomy-checks.test.mjs #R476 ① holds the two sides equal, in BOTH
-   directions — the html→list direction had no gate at all until this round.
-   ⚠ (layer-manifest) AND NOW IT IS ONE FIELD. The box is no longer markup: js/layer-rows.js writes it from
-   js/layer-manifest.js, whose `on` both ticks it and puts the id in this list (defaultOn() below).
-   ⚠ It reaches FIRST-TIME readers only. A saved session that predates the change has the id absent, and
-   the restore's off-sweep below reads absence as «the reader switched it off» (#R186/#R225) and switches
-   it back off. Healing those would be a `defv` generation bump (#R189/#R190); not done — the round was
-   asked for the default, not for a migration. */
+/* (#R225/#R476) Restore treats an absent default-on checkbox as off. The manifest's `on` field both
+   checks the box at first boot and places it in this list, including map display options. Changing a
+   default applies to new sessions; migrating existing sessions would require a new `defv`. */
 window.IntMapDefaultOn=defaultOn();   /* (layer-manifest) every `on` row of the manifest, markup rows first — the SAME field that ticks the generated box, so the tick and this list are one edit by construction */
 /* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
    「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
@@ -963,6 +933,13 @@ export function dataLayers(HOST){
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
     const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95,histurban:0.85,sanctions:0.85,unvotes:0.7,crossings:0.9};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacityCheckboxes=new Map();
+    function registerOpacity(id,cbId='dl-'+id){
+      if(opacityCheckboxes.get(id)===cbId) return;
+      opacityCheckboxes.set(id,cbId);
+      registerLayerOpacityAccess(cbId,()=>opacities[id],v=>setLayerOpacity(id,v));
+    }
+    Object.keys(opacities).forEach(id=>registerOpacity(id));
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -1447,7 +1424,7 @@ export function dataLayers(HOST){
       const defOn=(id==='nightside')
         ? (function(){ try{ return !window.IntMapNightSide||window.IntMapNightSide.isOn(); }catch(_){ return true; } })()
         : (window.IntMapDefaultLayers||[]).indexOf('dl-'+id)>=0;
-      w.innerHTML=html`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span id="lyrname-${id}" data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" aria-label="${t('opacity')}" data-i18n-aria="opacity" aria-labelledby="op-${id} lyrname-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
+      w.innerHTML=html`<label class="layer-option"><input type="checkbox" id="dl-${id}"${defOn?' checked':''}> <span id="lyrname-${id}" data-i18n="${key}">${i18n[HOST.lang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" aria-label="${t('opacity')}" data-i18n-aria="opacity" aria-labelledby="op-${id} lyrname-${id}" min="0" max="1" step="any" value="${opacities[id]}">${extra}`;
       if(defOn){ w.classList.add('on'); const ex0=w.querySelector('.lyr-extras'); if(ex0) ex0.style.display='block'; }
       dd.appendChild(w);
       const cb=w.querySelector('#dl-'+id);
@@ -2896,21 +2873,16 @@ export function dataLayers(HOST){
 
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
        legends that haven't been manually dragged (left/top still 'auto'/unset). */
-    /* Opacity slider moved INTO the legend popup (#17). Injected lazily into each legend the first
-       time it's shown; covers every layer that has a legend. */
     function legendIdOf(el){ if(!el) return null; if(el.id==='koppen-legend') return 'climate'; const m=/^data-legend-(.+)$/.exec(el.id||''); return m?m[1]:null; }
     function ensureLegendOpacity(el){
       const id=legendIdOf(el); if(!id||opacities[id]==null) return;
-      if(el.querySelector('.dl-op-row')) return;
-      /* ⚠ the word and the slider are one <label>, so the word beside it IS its accessible name. The
-         label is `display:contents`, so the row's flex layout is exactly what it was; the % readout
-         stays outside it — it repeats the slider's own value, and inside the label the name would
-         change on every drag. js/weather.js and js/waves.js build the same row the same way. */
-      const row=document.createElement('div'); row.className='dl-op-row';
-      row.innerHTML=html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
+      if(el.querySelector('[data-layer-opacity]')) return;
+      /* The percentage is outside the label so the accessible name stays stable while dragging. */
+      const row=document.createElement('div'); row.className='dl-op-row'; row.dataset.layerOpacity=id;
+      row.innerHTML=html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="any" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
       const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
-      const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
-      r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
+      const r=row.querySelector('input');
+      r.addEventListener('input',()=>setLayerOpacity(id,r.valueAsNumber));
     }
     window._ensureLegendOpacity=ensureLegendOpacity;
     /* ══ ⚠⚠⚠ (#R469) 等高線 IS A SWITCH INSIDE THREE LEGENDS, NOT A ROW OF ITS OWN ═══════════════════
@@ -2982,11 +2954,7 @@ export function dataLayers(HOST){
       r.addEventListener('change',()=>{ if(window._setContourDensity) window._setContourDensity(parseFloat(r.value)); });
       try{ const c=document.getElementById('dl-contours'); row.style.display=(c&&c.checked)?'':'none'; }catch(_){}
     }catch(_){} }
-    /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
-       panel and no legend of their own (precip, ships, planes, hillshade, contours, day/night).
-       Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
-       + minimise button are added automatically by tileLegends()/ensureLegendOpacity() (id matches
-       data-legend-<id> → opacities[<id>]). */
+    /* (#R15c) tileLegends() gives each generic legend its own opacity and minimise controls. */
     /* ══ ⚠⚠ (#R241) THE LEGEND TITLES WERE A TWO-ELEMENT ARRAY ═══════════════════════════════════
        `['Precipitation (IMERG)','降水量 (IMERG)']` read at `IntMapLang.index(lang)` — so DE, RU, ES,
        FR, KO and both Chinese scripts all fell to element 0, English, and no instrument could see it
@@ -4852,7 +4820,8 @@ export function dataLayers(HOST){
       _syncAllDateUI();
       try{ _refreshLegendDates(); }catch(_){}
     };
-    function setLayerOpacity(id,v){ opacities[id]=v;
+    function setLayerOpacity(id,v){
+      opacities[id]=v;
       if(packageOf('dl-'+id)){ _pkgOpacity('dl-'+id,v); }   /* (layer-packages) the package's own, once it is here */
       else if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
         /* Keep no-data countries gray (0.45) — see addChoro for the "<= 0" reasoning. */
@@ -4876,6 +4845,14 @@ export function dataLayers(HOST){
       else if(id==='wind'){ try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
       else { if(GE().layers.has('lyr-'+id))GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }
+      const panelRange=document.getElementById('op-'+id);
+      if(panelRange&&panelRange.valueAsNumber!==v) panelRange.value=String(v);
+      document.querySelectorAll('[data-layer-opacity="'+CSS.escape(id)+'"]').forEach(row=>{
+        const range=row.querySelector('input'), val=row.querySelector('.dl-op-val');
+        if(range.valueAsNumber!==v) range.value=String(v);
+        val.textContent=Math.round(v*100)+'%';
+      });
+      layerOpacityChanged(opacityCheckboxes.get(id),v);
     }
     /* ===== (#R19) Opacity for EVERY layer ("どのレイヤーも透明度選択ができるように") =====
        A type-aware setter + a registry mapping a legend id → its MapLibre layer ids. Any module can call
@@ -4927,6 +4904,7 @@ export function dataLayers(HOST){
          gone. Its rank is carried by the outline and its hazard by a label, both of which survive a
          fill you can see through (see the alerts block in js/world-packs.js). */
       if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:(id==='worldcover'?1:(id==='tz'?0.5:(id==='wpalerts'?0.38:0.85))));   /* (#R40) Land cover 100%; (#R79c) Time zones default 50% */
+      registerOpacity(id,cbId||opacityCheckboxes.get(id));
       window._opacityTargets[id]=layerIds||[];
       /* (#R74) feed the layer-state audit: remember which REAL style layers belong to this checkbox */
       try{ if(cbId&&layerIds&&layerIds.length){ (window._imAuditReg=window._imAuditReg||{})[cbId]=layerIds.slice(); } }catch(_){}

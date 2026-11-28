@@ -55,8 +55,8 @@ test('⑥⑦⑧ the floating conversation is reachable, white-with-glow, and has
   assert.match(fl, /\.atl-chat>\.atl-b,#atlas-float #atlas-panel \.atl-chat>\.atl-msgt/, 'bubbles and their tool bars take the pointer');
   assert.ok(!/\.atl-chat>\.atl-b\{pointer-events:none;\}/.test(fl), 'no rule hands the bubbles back to the map');
   assert.match(fl, /--text-muted:#fff/, 'no grey ink');
-  assert.match(fl, /#atlas-float:not\(\.bg\) #atlas-panel \*,[^']*\{text-shadow:var\(--atl-glow\);\}/, 'every glyph of the card carries the glow');
-  assert.match(fl, /atl-float-bg/); assert.match(fl, /#atlas-float\.bg #atlas-panel \.atl-chat\{[^}]*text-shadow:none[^}]*backdrop-filter/, 'background on = frosted pane and no glow');
+  assert.match(fl, /#atlas-float #atlas-panel \*,[^']*\{text-shadow:var\(--atl-glow\);\}/, 'every glyph of the card carries the glow');
+  assert.match(fl, /atl-float-bg/); assert.match(fl, /#atlas-float\.bg #atlas-panel \.atl-chat\{[^}]*backdrop-filter/, 'background on adds a frosted pane');
   assert.ok(!/(?<!svg)\{filter:drop-shadow|box-shadow[^;]*#atlas-float #atlas-panel \.atl-chat\{/.test(fl), 'the glow is on glyphs, not on a rectangle');
   assert.match(read('js/locales/ui.en.js'), /atlFloatBg:/); assert.match(read('js/locales/ui.jp.js'), /atlFloatBg:/);
 });

@@ -71,7 +71,7 @@ import { makeAtlasProgress } from './atlas-progress.js';
 import { makeAtlasPlan, opState } from './atlas-plan.js';   /* (atlas-plan-on-map) the conversation's plan ledger — Atlas declares the steps, the executor's verdicts are their states */
 import { makeAtlasBriefing } from './atlas-briefing.js';   /* (atlas-briefing) an investigation as a link — the composer and the recipient's reader */
 import { makeAtlasNotebook } from './atlas-notebook.js';   /* (atlas-os) the investigation notebook — kept, replayable, comparable, shareable Atlas answers */
-import { floatRoute } from './atlas-float.js';   /* (ui-feedback-nov17) the floating card over the map, when Settings chose it */
+import { floatRoute, moveAtlasPanel } from './atlas-float.js';   /* (ui-feedback-nov17) the floating card over the map, when Settings chose it */
 import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the turn as it streams — the draft answer, the notes on the way, the reasoning headline, the map HUD and the measured wait */   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
 import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
@@ -82,6 +82,7 @@ import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-la
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { readLayerOpacity, writeLayerOpacity, onLayerOpacityChange } from './layer-opacity.js';
 import { makeTurnRecorder, reportShown } from './atlas-turn-metrics.js';   /* (atlas-verify-metrics) the per-answer measurements: wait, cost, repeats, grounded claims — counts only */
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
 
@@ -385,11 +386,11 @@ export function atlasConsole(HOST){
       GE().layers.add({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','fc'],['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],_POLY_FILL_BASE]}},before);   /* the fill opacity Atlas's areas have always had (32 %); only the colour is quieter */
       /* (#R64) composed regions (unions of many real admin polygons) get FAINT member outlines so the internal
          admin seams don't dominate — the region reads as one shape. */
-      GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','lc'],['get','color'],'#ff9f0a'],'line-width':['coalesce',['get','w'],['case',['==',['get','comp'],1],1,1.4]],'line-opacity':['case',['==',['get','comp'],1],0.35,0.8]}},before);
+      GE().layers.add({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','lc'],['get','color'],'#ff9f0a'],'line-width':['coalesce',['get','w'],['case',['==',['get','comp'],1],1,1.4]],'line-opacity':['coalesce',['get','alpha'],['case',['==',['get','comp'],1],0.35,0.8]]}},before);
       return true; }catch(_){ return false; } }
     function paintPolys(){ if(!_hlPolys.length){ try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
-      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,fc:_soft(p.color||_hlColor,0.55,0),lc:_soft(p.color||_hlColor,0.7,0.06),w:(p.w!=null?p.w:null),name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null),sb:p.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,fc:_soft(p.color||_hlColor,0.55,0),lc:_soft(p.color||_hlColor,0.7,0.06),w:(p.w!=null?p.w:null),name:p.name||'',comp:p.comp?1:0,op:p.op??null,alpha:p.alpha??null,sb:p.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
     /* the same desaturation the composed figures use (js/atlas-map-compose.js) — read at paint time, so the order the modules load in does not matter */
     function _soft(c,k,l){ try{ const S=window.IntMapAtlasCompose&&window.IntMapAtlasCompose.soften; return S?S(c,k,l):c; }catch(_){ return c; } }
     function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
@@ -417,7 +418,7 @@ export function atlasConsole(HOST){
       return true; }catch(_){ return false; } }
     function paintLines(){ if(!_hlLines.length){ try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensureLineLayer()) return false;
-      try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||'',sb:l.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+      try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op??null,name:l.name||'',sb:l.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
     function clearLineHl(){ _hlLines=[]; try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     GE().events.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
     window._imAtlasPaint=_ERA.paintState({countries:()=>_hl, era:()=>_eraHl, polys:()=>_hlPolys, lines:()=>_hlLines, choro:()=>_choroState, metric:()=>_choroMetric, poi:()=>_pois, /* (#R802) the markers are a painted surface too — read at OBSERVATION time like every other getter here, so a declaration is held against what the map holds THEN */ outline:()=>{ try{ const c=window.IntMapOutline&&window.IntMapOutline.current&&window.IntMapOutline.current(); return (c&&c.name)||null; }catch(_){ return null; } }});   /* (#R760) the place outline paints its own source, so no count here moves when the same place is outlined twice */   /* (#R736) what Atlas has painted, declared beside the state that paints it — reasoning in js/atlas-era-highlight.js, reader is js/atlas-capabilities.js `paintNow()` */
@@ -1228,10 +1229,6 @@ export function atlasConsole(HOST){
       const already=(r.cb.checked===want);
       if(!already){ try{ r.cb.checked=want; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
       return {ok:(r.cb.checked===want), label:r.label, already, want, cb:r.cb}; }   /* (#R142) expose the exact checkbox so reply toggles read THIS one's live state, not a fuzzy re-resolve (#17) */
-    function layerOpacityControl(cb){ try{ const row=cb.closest('.lyr-row')||cb.closest('label'); if(!row) return null;
-      let sl=row.querySelector&&row.querySelector('input[type=range]'); if(sl) return sl;
-      let n=row.nextElementSibling; let k=0; while(n&&k++<2){ if(n.matches&&n.matches('input[type=range]')) return n; if(n.querySelector){ const s=n.querySelector('input[type=range]'); if(s) return s; } n=n.nextElementSibling; }
-      if(cb.id){ const o=document.getElementById('op-'+cb.id.replace(/^dl-/,''))||document.getElementById(cb.id.replace(/^dl-/,'op-')); if(o&&o.type==='range') return o; } }catch(_){} return null; }
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
     /* (#R199) ↳ js/atlas-geo-resolve.js — place / region resolution and camera framing.
        Moved whole; the 16 names below are what the rest of this file still calls. */
@@ -1711,12 +1708,12 @@ export function atlasConsole(HOST){
     /* (#R199) ↳ js/atlas-sources.js — external evidence sources — leaders, live news, POI catalogues.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
-    let _pois=[], _poiColor=null;
+    let _pois=[], _poiColor=null, _poiOp=null;
     function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poi-c')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
-      GE().layers.add({id:'nlq-poi-c',type:'circle',source:'nlq-poi-src',paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,4.5,10,7.5],'circle-color':['coalesce',['get','color'],'#ff453a'],'circle-opacity':0.88,'circle-stroke-color':'#ffffff','circle-stroke-width':1.4}},before);
-      GE().layers.add({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3}},before);
+      GE().layers.add({id:'nlq-poi-c',type:'circle',source:'nlq-poi-src',paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,4.5,10,7.5],'circle-color':['coalesce',['get','color'],'#ff453a'],'circle-opacity':_poiOp??0.88,'circle-stroke-color':'#ffffff','circle-stroke-width':1.4,'circle-stroke-opacity':_poiOp??1}},before);
+      GE().layers.add({id:'nlq-poi-t',type:'symbol',source:'nlq-poi-src',minzoom:7.5,layout:{'text-field':['get','name'],'text-font':['literal',['Noto Sans Regular']],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,1.05],'text-anchor':'top','text-optional':true},paint:{'text-color':'#ff453a','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.3,'text-opacity':_poiOp??1}},before);
       /* (#R72) POI popups reworked ("ポップアップがホバーしたときに出てこないほか、ポップアップの文字が見えないし、
          詳細情報をWikipediaのリンクで確認することもできない"):
          (a) HOVER now shows a light name/kind popup (desktop pointer);
@@ -1768,10 +1765,13 @@ export function atlasConsole(HOST){
       try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:_pois.map((p,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name||'',kind:p.kind||'',color:_poiColor,wiki:p.wiki||'',wd:p.wd||'',web:p.web||'',wikiUrl:p.wikiUrl||'',sum:p.sum||'',url:p.url||'',src:p.src||''}}))}); return true; }catch(_){ return false; } }
     function clearPois(){ _pois=[]; try{ GE().layers.setSourceData('nlq-poi-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* the markers as one map-object (js/map-tools.js collect): one colour and one opacity for the lot, as the painter holds them */
-    let _poiOp=0.88;
-    window._imHlPoi={ count:()=>_pois.length, color:()=>_poiColor||'#ff453a', opacity:()=>_poiOp,
+    window._imHlPoi={ count:()=>_pois.length, color:()=>_poiColor||'#ff453a', opacity:()=>_poiOp??0.88,
       setColor:c=>{ _poiColor=c; paintPois(); },
-      setOpacity:a=>{ _poiOp=a; try{ if(GE().layers.has('nlq-poi-c')) GE().layers.setPaint('nlq-poi-c','circle-opacity',a); }catch(_){} },
+      setOpacity:a=>{ _poiOp=a; const layers=GE().layers;
+        for(const [id,prop] of [['nlq-poi-c','circle-opacity'],['nlq-poi-c','circle-stroke-opacity'],['nlq-poi-t','text-opacity']]){
+          if(layers.has(id)) layers.setPaint(id,prop,a);
+        }
+      },
       focus:()=>{ try{ const g=_pois.filter(p=>isFinite(+p.lng)&&isFinite(+p.lat)); if(!g.length) return; let a=180,b=90,c=-180,d=-90; g.forEach(p=>{ a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat); }); if(a===c&&b===d) GE().camera.flyTo({center:[a,b],zoom:Math.max(GE().camera.getZoom(),11),duration:800}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:800}); }catch(_){} },
       clear:()=>clearPois() };
     GE().events.on('styledata',()=>{ if(_pois.length){ setTimeout(()=>{ try{ paintPois(); }catch(_){} },160); } });
@@ -1890,7 +1890,8 @@ export function atlasConsole(HOST){
       get doControl(){ return doControl; },
       get esc(){ return esc; },
       get _visDelta(){ return _visDelta; },
-      get layerOpacityControl(){ return layerOpacityControl; },
+      get readLayerOpacity(){ return readLayerOpacity; },
+      get writeLayerOpacity(){ return writeLayerOpacity; },
       get resolveLayer(){ return resolveLayer; },
       get kexec(){ return kexec; },
       get _featTogHtml(){ return _featTogHtml; },
@@ -2244,7 +2245,7 @@ export function atlasConsole(HOST){
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
     const { copyBtn, editBtn, msgTools, pressMenu } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl, follow:()=>_followChat(),
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
-      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} try{ WM.dropFrom(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus(); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) */
+      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} try{ WM.dropFrom(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus({preventScroll:true}); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
        with ({turn,q,imgs,files,edit}): the turn id is stamped on the bubble so an edit can rewind to it, and a bubble
        that carries a request (not a bare image row) gets Edit next to Copy. */
@@ -2254,16 +2255,21 @@ export function atlasConsole(HOST){
        send (a new question starts a new turn) or by pressing 「最新へ」. It is a STATE with an owner, not a distance test: the old
        near-bottom rule (150px) and the question-anchor rule both pulled a reader back who had scrolled up to read, because they
        asked "where is the scroll" and never "who moved it". */
-    let _chatFollow=true; let _selfTop=0, _lastTouch=0;   /* where the follow rule itself last put the scroll / when the reader last did something to the conversation */
-    function _followChat(){ try{ if(!_chatFollow||!chatEl) return; const bs=chatEl.querySelectorAll('.atl-b.u'), u=bs[bs.length-1];
-      /* a reply taller than the panel stops following where its own question reaches the top — the reader sees what was asked and the start of the answer */
-      const want=chatEl.scrollHeight-chatEl.clientHeight, lim=u?Math.max(0,u.offsetTop-6):want; const to=Math.max(0,Math.min(want,lim));
-      if(Math.abs(chatEl.scrollTop-to)>1){ chatEl.scrollTop=to; _selfTop=chatEl.scrollTop; } }catch(_){} }
+    let _chatFollow=true, _followLatest=false, _selfTop=-1, _lastTouch=0;
+    function _followChat(){
+      if(!_chatFollow||!chatEl||!chatEl.clientHeight||!chatEl.getClientRects().length) return;
+      const top=chatEl.scrollTop, bottom=chatEl.scrollHeight-chatEl.clientHeight;
+      const questions=chatEl.querySelectorAll('.atl-b.u'), question=questions[questions.length-1];
+      // Follow the latest question until it reaches the top of this scroller. Only an explicit jump follows the bottom thereafter.
+      const anchor=question&&!_followLatest?top+question.getBoundingClientRect().top-chatEl.getBoundingClientRect().top-6:bottom;
+      const next=Math.min(bottom,anchor);
+      if(next>top+1){ chatEl.scrollTo({top:next,behavior:'instant'}); _selfTop=chatEl.scrollTop; }
+    }
     function bubble(who,html,ed){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
       if(ed&&ed.turn!=null) d.dataset.turn=String(ed.turn);
       if(who==='u'){ try{ const bar=document.createElement('div'); bar.className='atl-msgt atl-msgt-u';
         bar.appendChild(copyBtn(d)); if(ed&&ed.edit) bar.appendChild(editBtn(d,ed)); d.insertAdjacentElement('afterend',bar); pressMenu(d,bar); }catch(_){} }
-      try{ if(who==='u') _chatFollow=true; _followChat(); }catch(_){} return d; }
+      try{ if(who==='u'){ _chatFollow=true; _followLatest=false; } _followChat(); }catch(_){} return d; }
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
@@ -2290,7 +2296,10 @@ export function atlasConsole(HOST){
         chatEl.addEventListener('keydown',(e)=>{ if(/^(PageUp|PageDown|Home|End|ArrowUp|ArrowDown| )$/.test(e.key)&&e.target===chatEl) _take(); });
         /* the reader takes the scroll by ANY means (a key on a focused bubble, the thumb, a selection dragged past the edge): a scroll the follow rule did not make, soon after the reader did something there */
         for(const ev of ['pointerdown','keydown','mousedown']) chatEl.addEventListener(ev,()=>{ _lastTouch=Date.now(); },true); chatEl.addEventListener('scroll',()=>{ if(_chatFollow&&Math.abs(chatEl.scrollTop-_selfTop)>2&&Date.now()-_lastTouch<1500) _take(); },{passive:true});
-        new MutationObserver(()=>{ _followChat(); }).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
+        new MutationObserver(records=>{
+          _followChat();
+          if(records.some(r=>Array.from(r.addedNodes).some(n=>n instanceof Element&&(n.matches('.atl-ctl-op')||n.querySelector('.atl-ctl-op'))))) syncOpacityControls();
+        }).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ try{ _atlClose(); }catch(_){ panel.style.display='none'; } try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
       /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
@@ -2336,7 +2345,7 @@ export function atlasConsole(HOST){
               rec.onstart=()=>{ recng=true; mic.classList.add('rec'); };
               rec.onresult=(ev)=>{ let txt=''; for(let i=ev.resultIndex;i<ev.results.length;i++){ txt+=ev.results[i][0].transcript; } if(inEl){ inEl.value=base+txt; try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} } try{ _atlSyncGo(); }catch(_){} };
               rec.onerror=()=>{ recng=false; mic.classList.remove('rec'); };
-              rec.onend=()=>{ recng=false; mic.classList.remove('rec'); try{ _atlSyncGo(); }catch(_){} try{ inEl&&inEl.focus(); }catch(_){} };
+              rec.onend=()=>{ recng=false; mic.classList.remove('rec'); try{ _atlSyncGo(); }catch(_){} try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){} };
               try{ rec.start(); }catch(_){ recng=false; mic.classList.remove('rec'); } }; } }catch(_){}
         panel.addEventListener('dragover',(e)=>{ try{ if(e.dataTransfer&&[...(e.dataTransfer.types||[])].indexOf('Files')>=0){ e.preventDefault(); panel.classList.add('atl-drag'); } }catch(_){} });
         panel.addEventListener('dragleave',(e)=>{ try{ if(!panel.contains(e.relatedTarget)) panel.classList.remove('atl-drag'); }catch(_){} });
@@ -2344,7 +2353,7 @@ export function atlasConsole(HOST){
       }catch(_){}
       /* (#R72) scroll-to-bottom jump ("上部にスクロールしたら、最下部まで行くボタンがでるように") */
       const jump=panel.querySelector('.atl-jump');
-      if(jump){ jump.onclick=()=>{ _chatFollow=true; try{ chatEl.scrollTo({top:chatEl.scrollHeight,behavior:'smooth'}); }catch(_){ chatEl.scrollTop=chatEl.scrollHeight; } };
+      if(jump){ jump.onclick=()=>{ _chatFollow=true; _followLatest=true; _followChat(); };
         chatEl.addEventListener('scroll',()=>{ try{ jump.classList.toggle('show',(chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight)>140); }catch(_){} }); }
       /* (#R72) delegated wiring for INLINE CONTROLS inside replies + report-item jump */
       /* (#R74) STABLE layer refs ("レイヤーの凡例等との同期ができていない" / "オンオフが実情と対応していない"):
@@ -2453,8 +2462,7 @@ export function atlasConsole(HOST){
         const sst=e.target.closest&&e.target.closest('.atl-ctl-step'); if(sst){ SWITCH.press(sst); return; }   /* (atlas-ui-parts) */
         const sl=e.target.closest&&e.target.closest('.atl-ctl-op'); if(!sl) return;
         const rl=_ctlLayer(sl); if(!rl) return;
-        const real=layerOpacityControl(rl.cb); if(!real) return;
-        real.value=sl.value; real.dispatchEvent(new Event('input',{bubbles:true})); real.dispatchEvent(new Event('change',{bubbles:true}));
+        writeLayerOpacity(rl.cb.id,Number(sl.value));
       }catch(_){} });
       panel.addEventListener('change',e=>{ try{   /* (#R85d) radiation inline config selects (isotope / source term) re-run the sim */
         const rs=e.target.closest&&e.target.closest('.atl-rad-sel[data-radp]'); if(!rs||!_lastRadCtx) return;
@@ -2472,12 +2480,21 @@ export function atlasConsole(HOST){
       const _syncCtls=()=>{ try{ if(!panel) return;
         panel.querySelectorAll('.atl-ctl-toggle[data-layer],.atl-ctl-toggle[data-cb]').forEach(tg2=>{ const rl=_ctlLayer(tg2); if(!rl) return;
           tg2.classList.toggle('on',!!rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); });
-        panel.querySelectorAll('.atl-ctl-op[data-layer],.atl-ctl-op[data-cb]').forEach(sl2=>{ if(sl2===document.activeElement) return;
-          const rl=_ctlLayer(sl2); if(!rl) return; const real=layerOpacityControl(rl.cb); if(real&&sl2.value!==real.value) sl2.value=real.value; });
+        syncOpacityControls();
       }catch(_){} };
+      function syncOpacityControls(id){
+        panel.querySelectorAll('.atl-ctl-op[data-layer],.atl-ctl-op[data-cb]').forEach(sl=>{
+          const cb=_ctlLayer(sl)?.cb;
+          if(!cb||(id&&cb.id!==id)) return;
+          const value=readLayerOpacity(cb.id);
+          if(value==null) return;
+          sl.step='any';
+          if(Number(sl.value)!==value) sl.value=String(value);
+        });
+      }
+      onLayerOpacityChange(syncOpacityControls);
       let _syncT=null; const _schedSync=()=>{ clearTimeout(_syncT); _syncT=setTimeout(_syncCtls,120); };
       document.addEventListener('change',e=>{ try{ const t2=e.target; if(t2&&(t2.type==='checkbox'||t2.type==='range')&&!panel.contains(t2)) _schedSync(); }catch(_){} });
-      document.addEventListener('input',e=>{ try{ const t2=e.target; if(t2&&t2.type==='range'&&!panel.contains(t2)) _schedSync(); }catch(_){} });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.atl-head')); }catch(_){}
       try{ if(typeof addEdgeResize==='function') addEdgeResize(panel,{min:[300,160]}); }catch(_){}   /* (#R47) resize from ANY edge, no handle mark */
       return panel; }
@@ -2503,7 +2520,7 @@ export function atlasConsole(HOST){
         else if(d.kind==='text'){ if(nOf('text')>=ATL_FILE.LIMITS.files){ try{ aiToast(L('Up to 8 files per message','1メッセージにつきファイルは8件まで','Bis zu 8 Dateien pro Nachricht','До 8 файлов на сообщение','Hasta 8 archivos por mensaje')); }catch(_){} continue; } _atlFiles.push(d); }
         else bad=d; }
       if(bad){ try{ aiToast(_atlWhy(bad)); }catch(_){} }
-      _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
+      _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){}
     }catch(_){} }
     function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
@@ -2858,7 +2875,7 @@ export function atlasConsole(HOST){
       /* (atlas-completion) what the turn declared and the machine did not observe — js/atlas-agent.js `unmet` — named under the answer, so a reply that
          says 「地図に示しました」 over an empty map cannot read as finished */
       try{ const _u=(ai.__atlUnmet||[]); if(_u.length){ const _w=_u.map(x=>x&&x.kind==='step'?(L('plan step ','計画の手順 ','Planschritt ','шаг плана ','paso del plan ')+x.n+' 「'+String(x.title||'')+'」'):x&&x.kind==='goal'?(s0=>s0.length>80?s0.slice(0,79)+'…':s0)(String(x.need||'').replace(/\s+/g,' ').trim()):(x&&x.mode==='chart'?L('the chart','グラフ','das Diagramm','диаграмма','el gráfico'):x&&x.mode==='mixed'?L('the map or chart','地図またはグラフ','Karte oder Diagramm','карта или диаграмма','el mapa o gráfico'):L('the map','地図','die Karte','карта','el mapa'))); head+='<div class="atl-unmet" style="margin-top:6px;color:var(--text-muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(_w.join(' · '))+'">'+esc(L('Not done in this turn: ','このターンで完了していないもの: ','In diesem Zug nicht erledigt: ','Не выполнено в этом ходе: ','No completado en este turno: '))+esc(_w.join(' · '))+'</div>'; } }catch(_){}
-      _patchRegions(ai,{ head:(head||body||ops||srcs)?head:esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.')), body:body, ops:ops, srcs:srcs }); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
+      _patchRegions(ai,{ head:head, body:body, ops:ops, srcs:srcs }); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
       try{ SRCS.bind(ai, ai.__atlQ||''); }catch(_){} try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc(L('The answer could not be displayed.','回答を表示できませんでした。','Die Antwort konnte nicht angezeigt werden.','Не удалось показать ответ.','No se pudo mostrar la respuesta.'))+'</span><details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+esc(L('Details','詳細','Details','Подробности','Detalles'))+'</summary><div style="font-size:11.5px;color:var(--text-muted);">'+esc((e&&e.message)||'error')+'</div></details>'; }catch(_){} } }
     async function runActions(ai, say, acts, gen, awaitInput){
@@ -3216,12 +3233,13 @@ export function atlasConsole(HOST){
     function mountTab(){ try{ const p=ensure(); const af=document.getElementById('atlas-feed'); if(!af) return;
       p.classList.add('atl-tab'); p.classList.remove('atl-min');
       try{ document.body.classList.remove('atl-in-sheet'); }catch(_){}   /* retire any leftover popup-paste state */
-      if(p.parentNode!==af){ af.appendChild(p); }
+      const moved=p.parentNode!==af;
+      if(moved) moveAtlasPanel(p,af);
       /* shed any floating-popup geometry a previous drag/resize left inline, so the in-flow fill CSS wins */
       ['left','top','width','height','transform'].forEach(k=>{ try{ p.style.removeProperty(k); }catch(_){} });
       const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
       p.style.display='flex';
-      setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },60);
+      if(moved) setTimeout(()=>{ try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){} },60);
     }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
       if(_atlWs()){
@@ -3229,7 +3247,7 @@ export function atlasConsole(HOST){
         p.classList.remove('atl-tab');
         if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
         p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
-        setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },60); return;
+        setTimeout(()=>{ try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){} },60); return;
       }
       /* Normal / mobile — the Atlas sidebar tab, through the real tab button so the shared behaviour (sheet-lift, active state) fires
          as for News/Info/Countries; never toggles OFF. ⚠ (#R214) a tab selected inside a COLLAPSED sidebar puts the answer off-screen — uncollapse first, only ever that way. */
@@ -3238,7 +3256,7 @@ export function atlasConsole(HOST){
         if(typeof HOST.mode!=='undefined' && HOST.mode==='atlas'){ mountTab(); }
         else { const b=document.getElementById('btn-community'); if(b) b.click(); else if(typeof setMode==='function') setMode('atlas','btn-community'); else mountTab(); }
       }catch(_){ mountTab(); }
-      setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },80); }
+      setTimeout(()=>{ try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){} },80); }
     function _atlClose(){ if(floatRoute('close')) return; const p=ensure();
       if(_atlWs()){ p.style.display='none'; return; }
       /* Normal / mobile — "closing" Atlas = deselecting its tab (blank sidebar), like tapping an active tab again. */
@@ -3360,10 +3378,10 @@ export function atlasConsole(HOST){
          drew them, so the state that the next verdict reads and the map agree. */
       try{ const RC=GE().render; RC.claim('nlq-poly-src',['map.highlight','map.polygon'],{clear:clearPolyHl}); RC.claim('nlq-line-src',['map.line','map.highlight'],{clear:clearLineHl}); RC.claim('nlq-poi-src','map.poi',{clear:clearPois}); RC.claim('nlq-era-src','map.highlight'); /* js/atlas-sims.js draws these four; it is claimed here, where its removers are bound, because that module's body is kept byte-identical to the block it was lifted from (tests/atlas-console-kernel-checks.test.mjs (#R199)) */ RC.claim('nlq-fly-src',['map.fly','map.ballistic'],{clear:clearFly}); RC.claim('nlq-blast-src','map.ballistic',{clear:clearBlast}); RC.claim('nlq-elev-src','map.elevation',{clear:clearElev}); RC.claim('nlq-fac-src','map.factions',{clear:clearFac}); }catch(_){}
       try{ ASTATE.registerRestorer('layers',{ covers:['map.layer'],
-          capture:()=>{ const o={}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!cb.id) return; const sl=layerOpacityControl(cb); o[cb.id]={on:!!cb.checked,op:sl?String(sl.value):null}; }); return o; },
+          capture:()=>{ const o={}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!cb.id) return; o[cb.id]={on:!!cb.checked,op:readLayerOpacity(cb.id)}; }); return o; },
           restore:(want,now)=>{ Object.keys(want||{}).forEach(id=>{ const w=want[id], n=now&&now[id], cb=document.getElementById(id); if(!cb||!n) return;
             if(w.on!==n.on){ if(w.on) cb.__imRestored=1; cb.checked=w.on; cb.dispatchEvent(new Event('change',{bubbles:true})); }   /* (atlas-briefing) PUT BACK, not switched on by the reader: marked the way the share link and the session mark theirs (js/map-ui.js, js/session-tabs.js), so a layer that flies to its home (js/layer-home.js) or moves the clock to its war (js/war-fronts.js) does not undo the camera and clock this same restore puts back — measured: a briefing that recorded dl-nato at 25°E 58°N z3.4 ended at 48°W z1.9 */
-            if(w.op!=null&&w.op!==n.op){ const sl=layerOpacityControl(cb); if(sl){ sl.value=w.op; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); } } }); } });
+            if(w.op!=null&&w.op!==n.op) writeLayerOpacity(cb.id,Number(w.op)); }); } });
         const sameList=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]), sameMap=(a,b)=>{ const ka=Object.keys(a).sort(), kb=Object.keys(b).sort(); return sameList(ka,kb)&&ka.every(k=>a[k]===b[k]); };
         ASTATE.registerRestorer('atlas',{ covers:['map.highlight','map.choropleth','map.polygon','map.line','map.poi'],
           capture:()=>({ hl:Array.from(_hl).map(String).sort(), polys:_hlPolys.slice(), lines:_hlLines.slice(), choro:Object.assign({},_choroState), metric:_choroMetric, ramp:_choroRamp.slice(), custom:_customScoreName, pois:_pois.slice(), poiColor:_poiColor, name:_wctx.highlight||null }),

@@ -43,9 +43,9 @@ test('① no rule that reaches the answer paints a surface or a per-line run', (
   assert.ok(reset, 'the legend card, the chips and the text are reset to no surface in one rule');
 });
 
-test('① legibility is the glyphs\' halo, set once on the conversation, white ink with a dark halo (2026-11-26)', () => {
+test('① the map-side glyphs use white ink and a dark halo', () => {
   const css = floatCss();
-  assert.match(css, /#atlas-float:not\(\.bg\)\{--atl-halo:0,0,0;--atl-glow:[^}]*rgba\(var\(--atl-halo\)/, 'one halo, defined once at the root');
+  assert.match(css, /#atlas-float\{--atl-halo:0,0,0;[^}]*--atl-glow:[^}]*rgba\(var\(--atl-halo\)/, 'one halo, defined once at the root');
   /* 2026-11-26 (the reader: white text with a glow, no grey): the ink is white in BOTH themes, so the halo is dark in both */
   assert.match(css, /--atl-halo:0,0,0;/, 'a dark halo round white ink, whatever the theme');
   assert.match(css, /--text-muted:#fff/, 'no grey ink on the map');

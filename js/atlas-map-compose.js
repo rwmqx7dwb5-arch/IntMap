@@ -133,6 +133,8 @@ export function makeAtlasMapCompose(deps) {
     const LAYERS = ['atl-compose-sf', 'atl-compose-sl', 'atl-compose-sld', 'atl-compose-line', 'atl-compose-dash', 'atl-compose-arrow', 'atl-compose-c', 'atl-compose-hl', 'atl-compose-n', 'atl-compose-t'];
 
     /* iOS system colours, in the order markers take them when the model names none. */
+    /* Default paint before an Objects opacity is set; the slider starts at the same strength. */
+    const BASE_OPACITY = { area: 0.2, line: 0.82, dashedShape: 0.78, link: 0.8, dashedLink: 0.75, point: 0.95 };
     const PALETTE = ['#0a84ff', '#ff453a', '#30d158', '#ff9f0a', '#bf5af2', '#64d2ff', '#ffd60a', '#ff375f', '#5e5ce6', '#ac8e68'];
 
     /* Kinds whose resolved coordinate stands in for an AREA, not a spot (js/atlas-geo-object.js). */
@@ -242,28 +244,29 @@ export function makeAtlasMapCompose(deps) {
         /* (atlas-real-shapes) shapes first, so lines and markers sit on them. A DERIVED shape is drawn dashed — the map says
            「approximate」 in the same place the legend does. */
         const HOV = ['==', ['get', 'hov'], 1];
+        const OP = ['get', 'op'];
         g.layers.add({ id: 'atl-compose-sf', type: 'fill', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['==', ['get', 'g'], 'area']],
-          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['coalesce', ['get', 'fop'], ['case', HOV, 0.4, 0.2]] } }, before);
+          paint: { 'fill-color': ['get', 'fc'], 'fill-opacity': ['coalesce', ['get', 'fop'], ['case', HOV, 0.4, BASE_OPACITY.area]] } }, before);
         g.layers.add({ id: 'atl-compose-sl', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['!=', ['get', 'basis'], 'derived'], ['!=', ['get', 'ref'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.82]] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['coalesce', OP, ['case', HOV, 1, BASE_OPACITY.line]] } }, before);
         g.layers.add({ id: 'atl-compose-sld', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'shape'], ['any', ['==', ['get', 'basis'], 'derived'], ['==', ['get', 'ref'], 1]]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], ['case', HOV, 1, 0.78]], 'line-dasharray': [2.2, 1.6] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['*', ['coalesce', ['get', 'w'], ['case', ['==', ['get', 'g'], 'line'], 2.2, 1.2]], ['case', HOV, 1.4, 1]], 'line-opacity': ['coalesce', OP, ['case', HOV, 1, BASE_OPACITY.dashedShape]], 'line-dasharray': [2.2, 1.6] } }, before);
         g.layers.add({ id: 'atl-compose-line', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['!=', ['get', 'dash'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.8] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['coalesce', OP, BASE_OPACITY.link] } }, before);
         g.layers.add({ id: 'atl-compose-dash', type: 'line', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['==', ['get', 'dash'], 1]],
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.75], 'line-dasharray': [2, 2] } }, before);
+          paint: { 'line-color': ['get', 'lc'], 'line-width': ['get', 'w'], 'line-opacity': ['coalesce', OP, BASE_OPACITY.dashedLink], 'line-dasharray': [2, 2] } }, before);
         g.layers.add({ id: 'atl-compose-arrow', type: 'symbol', source: SRC, filter: ['all', ['==', ['get', 't'], 'rel'], ['==', ['get', 'arrow'], 1]],
           layout: { 'symbol-placement': 'line', 'symbol-spacing': 110, 'text-field': '›', 'text-font': font, 'text-size': 16, 'text-keep-upright': false,
             'text-rotation-alignment': 'map', 'text-allow-overlap': true, 'text-ignore-placement': true },
           paint: { 'text-color': ['get', 'lc'], 'text-opacity': ['coalesce', ['get', 'op'], 1], 'text-halo-color': 'rgba(0,0,0,0.35)', 'text-halo-width': 0.8 } }, before);
         g.layers.add({ id: 'atl-compose-hl', type: 'circle', source: SRC, filter: ['all', ['==', ['get', 't'], 'pt'], ['==', ['get', 'hl'], 1]],
-          paint: { 'circle-radius': 12, 'circle-color': ['get', 'color'], 'circle-opacity': 0.3, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.2, 'circle-stroke-opacity': 0.9 } }, before);
+          paint: { 'circle-radius': 12, 'circle-color': ['get', 'color'], 'circle-opacity': ['*', ['coalesce', OP, 1], 0.3], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.2, 'circle-stroke-opacity': ['*', ['coalesce', OP, 1], 0.9] } }, before);
         g.layers.add({ id: 'atl-compose-c', type: 'circle', source: SRC, filter: ['==', ['get', 't'], 'pt'],
-          paint: { 'circle-radius': 7.5, 'circle-color': ['get', 'color'], 'circle-opacity': ['*', ['coalesce', ['get', 'op'], 1], 0.95], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.3, 'circle-stroke-opacity': ['coalesce', ['get', 'op'], 1] } }, before);
+          paint: { 'circle-radius': 7.5, 'circle-color': ['get', 'color'], 'circle-opacity': ['coalesce', OP, BASE_OPACITY.point], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.3, 'circle-stroke-opacity': ['coalesce', ['get', 'op'], 1] } }, before);
         /* the number reserves its place (it is NOT ignore-placement), so a basemap name — placed after it, see liftLabels — gives way instead of printing across it; the number itself is never dropped */
         g.layers.add({ id: 'atl-compose-n', type: 'symbol', source: SRC, filter: ['==', ['get', 't'], 'pt'],
           layout: { 'text-field': ['get', 'n'], 'text-font': font, 'text-size': 9, 'text-allow-overlap': true, 'text-ignore-placement': false, 'text-padding': 4 },
@@ -378,7 +381,7 @@ export function makeAtlasMapCompose(deps) {
       const o = styleOv[id] || (styleOv[id] = {});
       if (patch.color != null) o.color = String(patch.color);
       if (patch.width != null && isFinite(+patch.width)) o.w = Math.max(0.3, Math.min(24, +patch.width));
-      if (patch.opacity != null && isFinite(+patch.opacity)) o.op = Math.max(0.05, Math.min(1, +patch.opacity));
+      if (patch.opacity != null && isFinite(+patch.opacity)) o.op = Math.max(0, Math.min(1, +patch.opacity));
       return paint();
     }
     /* remove ONE figure — the one the object list names. A place takes with it the links that end at it (a link with a missing end is not a drawing of anything);
@@ -399,18 +402,18 @@ export function makeAtlasMapCompose(deps) {
       const out = [];
       shapes.forEach((sh) => {
         const id = shapeId(sh), o = ovOf(id) || {}, area = sh.want === 'area';
-        out.push({ id, kind: 'shape', geom: area ? 'area' : 'line', name: sh.name, color: o.color || sh.color, width: o.w != null ? o.w : (area ? 1.2 : 2.2), alpha: o.op != null ? o.op : (area ? alphaFromFill(0.2) : 1),
+        out.push({ id, kind: 'shape', geom: area ? 'area' : 'line', name: sh.name, color: o.color || sh.color, width: o.w != null ? o.w : (area ? 1.2 : 2.2), alpha: o.op != null ? o.op : (area ? alphaFromFill(BASE_OPACITY.area) : (sh.basis === 'derived' || sh.reference ? BASE_OPACITY.dashedShape : BASE_OPACITY.line)),
           areaKm2: area ? areaKm2(sh.geometry) : null, geometry: sh.geometry, src: [SRC],
           setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
       });
       records.forEach((r) => {
         const o = ovOf(r.id) || {};
-        out.push({ id: r.id, kind: 'place', geom: 'point', name: r.n + ' ' + r.name, color: o.color || r.color, width: null, alpha: o.op != null ? o.op : 1, center: [r.lng, r.lat], src: [SRC],
+        out.push({ id: r.id, kind: 'place', geom: 'point', name: r.n + ' ' + r.name, color: o.color || r.color, width: null, alpha: o.op != null ? o.op : BASE_OPACITY.point, center: [r.lng, r.lat], src: [SRC],
           setColor: (c) => setStyle(r.id, { color: c }), setOpacity: (v) => setStyle(r.id, { opacity: v }) });
       });
       relations.forEach((rel) => {
         const id = relId(rel), o = ovOf(id) || {};
-        out.push({ id, kind: 'link', geom: 'line', name: (rel.fromName || '') + ' → ' + (rel.toName || '') + (rel.label ? ' · ' + rel.label : ''), color: o.color || rel.color, width: o.w != null ? o.w : Math.min(rel.w, 2.4), alpha: o.op != null ? o.op : 1, geometry: rel.geo, src: [SRC],
+        out.push({ id, kind: 'link', geom: 'line', name: (rel.fromName || '') + ' → ' + (rel.toName || '') + (rel.label ? ' · ' + rel.label : ''), color: o.color || rel.color, width: o.w != null ? o.w : Math.min(rel.w, 2.4), alpha: o.op != null ? o.op : (rel.dash ? BASE_OPACITY.dashedLink : BASE_OPACITY.link), geometry: rel.geo, src: [SRC],
           setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
       });
       return out;

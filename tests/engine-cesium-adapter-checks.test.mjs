@@ -333,14 +333,15 @@ test('R181 ③: leaving the canvas closes out the layer hovers it opened', () =>
 
 /* ══ #R181 ④ fitBounds: A RECTANGLE ON A SPHERE IS NOT A RECTANGLE ══════════════════════════════
    RUN: cameraForBounds is lifted with the zoom mapping it shares with the rest of the adapter
-   (_canvasW/_canvasH/_c2cPx/zoomFor/minZoomAt) and the module constants it closes over, and called
+   (_canvasW/_canvasH/_leftViewportInset/_c2cPx/zoomFor/minZoomAt) and the module constants it closes over, and called
    on a 1024×768 view. Cesium itself is only needed for the scene-mode enum. */
 const SceneMode = { SCENE2D: 2, COLUMBUS_VIEW: 1, SCENE3D: 3, MORPHING: 0 };
 function fitView(mode) {
-  const proto = cesiumView(['_canvasH', '_canvasW', '_c2cPx', 'zoomFor', 'minZoomAt', 'cameraForBounds'],
+  const proto = cesiumView(['_canvasH', '_canvasW', '_leftViewportInset', '_c2cPx', 'zoomFor', 'minZoomAt', 'cameraForBounds'],
     { Cesium: { SceneMode } }, ['R_EARTH', 'ML_FOVY', 'wrapLng', 'normBounds']);
   return Object.assign(Object.create(proto), {
     _widget: { canvas: { clientWidth: 1024, clientHeight: 768 } },
+    _container: { clientWidth: 1024 }, _padding: { left: 0, right: 0 },
     _scene: { mode }, _minZoom: 0, _maxZoom: 22,
   });
 }
@@ -357,6 +358,10 @@ test('R181 ④: a box that goes the whole way round is 360 degrees wide, not zer
   /* …while a box that really has no width is still fitted by its height alone */
   const line = v.cameraForBounds([[10, -10], [10, 10]]);
   assert.ok(line.zoom > round.zoom, 'a zero-width box is not mistaken for a full circle');
+  v._padding.left = 256;
+  v._widget.canvas.clientWidth = 1280;
+  const inset = v.cameraForBounds([[-180, -10], [180, 10]]);
+  assert.ok(Math.abs(inset.zoom - Math.log2(768 / 512)) < 1e-9, 'fit uses the remaining on-screen width');
 });
 
 test('R181 ④: the fit asks the sphere when the scene is one', () => {

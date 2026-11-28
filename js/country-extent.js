@@ -225,12 +225,17 @@
      country (Chile, Norway) leaves the view as its length does. */
   const WORLD_PX_AT_Z0 = 512;
   function mercY(latDeg){ const c = Math.max(-85.0511, Math.min(85.0511, latDeg)) * D2R; return Math.log(Math.tan(Math.PI / 4 + c / 2)); }
+  function labelDimensions(extent){
+    if(!extent) return {};
+    return {
+      _imNameWidth: Math.abs(extent[2] - extent[0]) / 360 * WORLD_PX_AT_Z0,
+      _imNameHeight: Math.abs(mercY(extent[3]) - mercY(extent[1])) / (2 * Math.PI) * WORLD_PX_AT_Z0,
+    };
+  }
   function viewShare(extent, zoom, viewW, viewH){
     if(!extent || !(viewW > 0) || !(viewH > 0) || !isFinite(zoom)) return 0;
-    const world = WORLD_PX_AT_Z0 * Math.pow(2, zoom);
-    const wPx = Math.abs(extent[2] - extent[0]) / 360 * world;
-    const hPx = Math.abs(mercY(extent[3]) - mercY(extent[1])) / (2 * Math.PI) * world;
-    return Math.max(wPx / viewW, hPx / viewH);
+    const {_imNameWidth, _imNameHeight} = labelDimensions(extent);
+    return Math.max(_imNameWidth / viewW, _imNameHeight / viewH) * Math.pow(2, zoom);
   }
   /* The share at which the name goes: the view is no wider than the country's longer side, i.e. the reader has entered the country
      (at 1400 px wide: Russia, 164° across, from z≈2.7; France, ≈12° across, from z≈5.9). It was 2 (the view holds at most half the
@@ -239,30 +244,92 @@
      that «the region fills the view» means something else. */
   const NAME_GONE_SHARE = 1;
 
-  /* ══ THE ONE RULE FOR EVERY NAME THAT STANDS FOR A REGION ═════════════════════════════════════
-     A country's name, a past polity's name and a province's name are the same thing for this purpose: a label printed once, at one
-     point, for a region that has an extent. The rule is therefore written once and each label layer only says WHICH regions it
-     names — `gone(items, …)` answers for [{ key, box }] and `applyGone` writes the answer into the layer's filter. Nothing here
-     knows a name, a country or a layer. `st` is the layer's own bookkeeping ({}). The filter a layer had before is its BASE; if
-     another module rewrites the filter meanwhile (js/time-admin1.js does, when the clock travels), the rewrite is the new base, so
-     this never restores a stale one. */
-  function gone(items, zoom, viewW, viewH){
-    const out = new Set();
-    for(const it of items){ if(it && it.box && viewShare(it.box, zoom, viewW, viewH) >= NAME_GONE_SHARE) out.add(it.key); }
-    return out;
-  }
-  function applyGone(GE, st, layerId, keyExpr, keys){
-    if(!GE().layers.has(layerId)) return;
-    const list = [...keys]; list.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    const key = JSON.stringify(list);
-    const cur = GE().layers.getFilter(layerId) || null, curS = JSON.stringify(cur);
-    if(st.base === undefined || curS !== st.written) st.base = cur;   /* someone else wrote the filter: that is the base now */
-    if(key === st.key && curS === st.written) return;
-    st.key = key;
-    const next = list.length ? ['all', st.base || ['has', 'name'], ['!', ['in', keyExpr, ['literal', list]]]] : st.base;
-    st.written = JSON.stringify(next || null);
-    GE().layers.setFilter(layerId, next);
+  /* Start three-quarters of a zoom level before the existing endpoint. This design span gives a
+     visible transition during one normal zoom step without hiding names at an overview scale. */
+  const NAME_FADE_ZOOM = 0.75;
+  const nameLayers = new Map();
+
+  /* Renderer-side interpolation keeps up with a moving camera in both directions. The ordered
+     stops are all the starts and ends of the fades. At each stop the same clamped ramp gives
+     each feature's opacity, so adding a label costs two stops and one lookup entry. */
+  function nameFadeStyle(items, viewW, viewH, keyExpr, suppressed, baseOpacity, zoomRange){
+    const hidden = suppressed?.length ? ['in', ['get', 'name'], ['literal', suppressed]] : null;
+    const plain = {paint: hidden ? ['case', hidden, 0, baseOpacity] : baseOpacity, filter: null};
+    if(!(viewW > 0 && viewH > 0)) return plain;
+    let stops, endExpr, hasExtent;
+    if(keyExpr){
+      const ends = new Map();
+      for(const {key,box} of items){
+        const share = viewShare(box, 0, viewW, viewH);
+        if(share > 0 && isFinite(share)){
+          const end = Math.log2(NAME_GONE_SHARE / share);
+          ends.set(key, Math.min(end, ends.get(key) ?? Infinity));
+        }
+      }
+      if(!ends.size) return plain;
+      const entries = [...ends].sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0);
+      stops = [...new Set(entries.flatMap(([,end]) => [end - NAME_FADE_ZOOM, end]))].sort((a,b) => a-b);
+      endExpr = ['match', keyExpr, ...entries.flat(), stops.at(-1) + NAME_FADE_ZOOM];
+      hasExtent = ['in', keyExpr, ['literal', entries.map(([key]) => key)]];
+    }else{
+      /* Geometry-backed sources carry their own dimensions. A fixed style-zoom ladder
+         bounds the expression size even for the whole world's historical subdivisions. */
+      const first = Math.floor(zoomRange[0]);
+      const last = Math.max(first + 1, Math.ceil(zoomRange[1]));
+      stops = Array.from({length: last - first + 1}, (_,i) => i + first);
+      const share = ['max', ['/', ['number', ['get', '_imNameWidth'], 0], viewW], ['/', ['number', ['get', '_imNameHeight'], 0], viewH]];
+      hasExtent = ['>', share, 0];
+      endExpr = ['case', hasExtent, ['log2', ['/', NAME_GONE_SHARE, share]], stops.at(-1) + NAME_FADE_ZOOM];
+    }
+    const cut = hidden ? ['case', hidden, stops[0], endExpr] : endExpr;
+    const alpha = ['interpolate', ['linear'], ['zoom']];
+    for(const z of stops){
+      const opacity = ['min', 1, ['max', 0, ['/', ['-', ['var', 'fadeEnd'], z], NAME_FADE_ZOOM]]];
+      alpha.push(z, baseOpacity === 1 ? opacity : ['*', baseOpacity, opacity]);
+    }
+    /* The filter removes fully faded features from collisions and hit testing at the next
+       tile zoom. Paint evaluates at fractional zoom and can fade back in as zoom recedes. */
+    const filter = ['any', ['!', hasExtent], ['<', ['zoom'], endExpr]];
+    return {paint: ['let', 'fadeEnd', cut, alpha], filter};
   }
 
-  window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE, gone, applyGone };
+  function paintNameFade(layers, id, state){
+    const currentPaint = layers.getPaint(id, 'text-opacity') ?? 1;
+    const currentPaintKey = JSON.stringify(currentPaint);
+    if(currentPaintKey !== state.writtenPaint && typeof currentPaint === 'number') state.baseOpacity = currentPaint;
+    const {paint,filter} = nameFadeStyle(state.items, state.width, state.height, state.keyExpr,
+      state.suppressed, state.baseOpacity ?? 1, state.zoomRange);
+    state.writtenPaint = JSON.stringify(paint);
+    if(currentPaintKey !== state.writtenPaint) layers.setPaint(id, 'text-opacity', paint);
+    const current = layers.getFilter(id) || null;
+    if(state.writtenFilter !== JSON.stringify(current)) state.baseFilter = current;
+    const next = filter && state.baseFilter ? ['all', state.baseFilter, filter] : filter || state.baseFilter || null;
+    state.writtenFilter = JSON.stringify(next);
+    if(JSON.stringify(current) !== state.writtenFilter) layers.setFilter(id, next);
+  }
+
+  function applyNameFade(GE, id, keyExpr, items){
+    const engine = GE();
+    if(!engine.layers.has(id)) return;
+    const state = nameLayers.get(id) || {};
+    const canvas = engine.render.canvas();
+    state.items = items;
+    state.zoomRange = engine.camera.zoomRange();
+    state.keyExpr = keyExpr;
+    state.width = canvas?.clientWidth;
+    state.height = canvas?.clientHeight;
+    nameLayers.set(id, state);
+    paintNameFade(engine.layers, id, state);
+  }
+
+  function suppressNameFade(GE, id, names){
+    const state = nameLayers.get(id);
+    if(!state) return false;
+    state.suppressed = names;
+    const layers = GE().layers;
+    if(layers.has(id)) paintNameFade(layers, id, state);
+    return true;
+  }
+
+  window.IntMapCountryExtent = { homeExtent, fullExtent, viewShare, NAME_GONE_SHARE, GAP_DEG, MAJOR_SHARE, labelDimensions, applyNameFade, suppressNameFade };
 })();

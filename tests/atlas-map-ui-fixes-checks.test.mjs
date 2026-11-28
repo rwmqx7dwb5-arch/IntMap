@@ -66,8 +66,8 @@ test('the Objects panel is placed again after a language rebuild and after its a
 test('era names follow the same size-of-region rule as today\'s names', () => {
   const t = read('js/time-borders.js');
   assert.match(t, /function _fitEraNames\(\)/);
-  assert.ok(t.includes('CE.gone(') && t.includes('CE.applyGone('), 'the era names go through the one shared rule (js/country-extent.js)');
-  assert.ok(t.includes('_lblBox.set(feats[feats.length-1],bx)'));
+  assert.ok(t.includes('CE.applyNameFade('), 'the era names go through the one shared rule (js/country-extent.js)');
+  assert.ok(t.includes('CE.labelDimensions(_polyBox(it.part.poly))'));
 });
 
 test('a finding Atlas answered with a reason is contested, not shown as unfinished; the same finding twice is not bounced again; an unobserved step is not a failure', () => {
