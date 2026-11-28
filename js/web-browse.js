@@ -193,13 +193,13 @@ function makeWebBrowse(HOST) {
     return r;
   }
 
-  /* render({url?,wait,viewport,fullPage,screenshot,textChars}) → the REAL-browser tier's answer (same page shape as browse, plus `screenshot`), state kept
+  /* render({url?,wait,viewport,fullPage,screenshot,textChars,networkAssets}) → the REAL-browser tier's answer (same page shape as browse, plus `screenshot`), state kept
      so a rendered page's links are clickable by the light tier. READ-ONLY by construction: only these fields are ever sent. */
   async function render(a, signal, use) {
-    const body = { url: a.url, wait: a.wait, viewport: a.viewport, fullPage: a.fullPage, screenshot: a.screenshot, textChars: a.textChars, state };
+    const body = { url: a.url, wait: a.wait, viewport: a.viewport, fullPage: a.fullPage, screenshot: a.screenshot, textChars: a.textChars, networkAssets: a.networkAssets === true, state };
     if (a.url) {
       /* the real browser costs the site money: the same address, in the same way of being looked at (wait, viewport, full page, picture), is rendered once */
-      const shape = '|' + [a.wait || '', a.viewport || '', a.fullPage ? 'full' : '', a.screenshot === false ? 'nopic' : 'pic'].join(',');
+      const shape = '|' + [a.wait || '', a.viewport || '', a.fullPage ? 'full' : '', a.screenshot === false ? 'nopic' : 'pic'].join(',') + (a.networkAssets === true ? ',network' : '');
       const r0 = await stored('render', a, signal, shape, body, 'render', use);
       if (r0) return r0;
     }

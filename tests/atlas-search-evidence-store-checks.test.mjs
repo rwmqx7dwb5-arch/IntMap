@@ -115,6 +115,7 @@ async function withDoor(fn) {
     if (/handoff/.test(body.url || '')) out = { ok: false, code: 'handoff', handoff: { kind: 'login', url: body.url }, state: { url: body.url } };
     else if (body.action === 'click') out = page('https://x.example/clicked', { clickedFrom: body.state && body.state.url });
     else out = page(String(body.url));
+    if (body.networkAssets) out.page.assets = [{ href: 'https://geo.example/layers', kind: 'geojson', via: 'network-response' }];
     return { status: 200, json: async () => out };
   };
   try {
@@ -157,12 +158,27 @@ test('④ the light reader: one request for one address however it is spelled, s
   });
 });
 
+test('rendering a page and observing its geographic requests have separate evidence', async () => {
+  await withDoor(async (door, sent) => {
+    const args = { url: 'https://x.example/chart', screenshot: false };
+    const ordinary = await door.render(args);
+    const { render } = await capsOf();
+    const observed = (await render.run({ ...args, networkAssets: true }, null, KIT())).exec.web;
+    const reused = await door.render({ ...args, networkAssets: true });
+    assert.deepEqual(sent.map(({ networkAssets }) => networkAssets), [false, true]);
+    assert.equal(ordinary.page.assets, undefined);
+    assert.equal(observed.page.assets[0].href, 'https://geo.example/layers');
+    assert.notEqual(ordinary.evidence.id, observed.evidence.id);
+    assert.equal(reused.evidence.id, observed.evidence.id);
+  });
+});
+
 /* ── ⑤ ⑥ the capabilities ─────────────────────────────────────────────────────────────────────────────────────── */
 async function capsOf() {
   globalThis.window = globalThis.window || {};
   const mod = await import('../js/atlas-cap-web.js');
   const by = (id) => mod.default.find((e) => e.row[0] === id);
-  return { search: by('web.search'), evidence: by('web.evidence') };
+  return { search: by('web.search'), evidence: by('web.evidence'), render: by('web.render') };
 }
 const KIT = (extra) => ({ R: (ok, html, o) => ({ ok, html, ...(o || {}) }), warn: (x) => x, esc: (x) => String(x), L: (en) => en, note: (x) => x, _curTurnKey: 'turn-1', ...extra });
 

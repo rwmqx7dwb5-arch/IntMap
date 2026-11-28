@@ -361,7 +361,7 @@ flag that lives in a comment is not configuration. All twenty-two are declared t
 `fetch-relay` own-fetch-relay, `gis-fetch` gis-remote-fetch, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `ai-quota-class.js`, `embedding-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `supabase-keys.js`, `world-graph-ports.js`, `world-graph-identity.js`, `atlas-persona.js`, `atlas-job-core.js`, `atlas-job-runner.js`, `atlas-input-limits.js`, `atlas-server-caps.js`・`atlas-cap-classes.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-entities.js`, `news-history.js`, `news-backfill.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `web-browse.js`, `web-render.js`, `web-session.js`, `who-don-extract.js`, `gis-headless.js`, `gis-input-fetch.js`, `gis-loader.js`, `bbox.js`, `read-budget.js`, `connection-policy.js`, `connection-vault.js`, `connection-gateway.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `gis-fetch-policy.js`, `mcp-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
+`news-entities.js`, `news-history.js`, `news-backfill.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `web-browse.js`, `web-render.js`, `web-render-network.js`, `web-session.js`, `who-don-extract.js`, `gis-headless.js`, `gis-input-fetch.js`, `gis-loader.js`, `bbox.js`, `read-budget.js`, `connection-policy.js`, `connection-vault.js`, `connection-gateway.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `gis-fetch-policy.js`, `mcp-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
 
 **The project's two keys are read in one place**, `_shared/supabase-keys.js` (`secretKey`,
 `publishableKey`, `serviceHeaders` — the `apikey` + `Bearer` pair every server-side request carries).
@@ -452,6 +452,10 @@ whole plan; only which part of the invoice fence its requests come from is decid
 Sizing (production ledger, 2026-10-01): at most 9 accounts under a week old used AI on one day, 16 turns
 between them (≤ 192 requests even at 12 per turn); 14 of the 16 accounts ever charged were first charged
 on the day they signed up.
+
+`web.render` の地理データ観測には別の操作セッションや利用者の資格情報を引き継がない。
+新規ブラウザーの通信審査とモデルへ返す応答情報の範囲は
+[実行時の地理データを観測する](architecture/06-supabase.md#実行時の地理データを観測する) を参照。
 
 ⚠ **(client-error-log) `client-errors`, (anon-write-guard) `reader-reports` and (anonymous-usage-counts) `usage-count` are the only functions a browser WRITES to
 without a login**, which is why they carry four bounds where a relay carries one allow-list. It stores readers' uncaught exceptions in

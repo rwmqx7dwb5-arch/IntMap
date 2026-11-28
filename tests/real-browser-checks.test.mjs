@@ -123,6 +123,62 @@ test('⑤ a login, a CAPTCHA or a bot check on the rendered page is a hand-over'
   assert.equal(ch.handoff.kind, 'challenge');
 });
 
+test('a runtime result requires a public anonymous GET and its successful geographic response', async () => {
+  const pageUrl = 'https://survey.example.jp/view';
+  const dataUrl = 'https://layers.example.jp';
+  const docs = '<title>Survey</title><main>Harbor survey catalogue</main>';
+  const requests = [
+    ['public', dataUrl + '/geometry', 'GET', 200, {}],
+    ['missing', dataUrl + '/gone', 'GET', 404, {}],
+    ['cookie', dataUrl + '/login', 'GET', 200, { Cookie: 'fixture=private' }],
+    ['no-wire', dataUrl + '/no-confirmation', 'GET', 200, null],
+    ['write', dataUrl + '/posted', 'POST', 200, {}],
+    ['private', 'https://private.example.jp/geometry', 'GET', 200, {}],
+    ['signed', dataUrl + '/geometry?sig=fixture', 'GET', 200, {}],
+  ];
+  const observed = [];
+  const sid = 'fixture-session';
+  const socket = { close() {} };
+  const event = (method, params) => socket.onmessage({ data: JSON.stringify({ sessionId: sid, method, params }) });
+  socket.send = (raw) => {
+    const { id, method, params } = JSON.parse(raw);
+    const result = {
+      'Target.getTargets': { targetInfos: [{ type: 'page', url: 'about:blank', targetId: 'tab' }] },
+      'Target.attachToTarget': { sessionId: sid },
+      'Page.getFrameTree': { frameTree: { frame: { id: 'main', url: pageUrl } } },
+      'Page.navigate': { loaderId: 'main-loader' },
+      'Runtime.evaluate': { result: { value: docs } },
+    }[method];
+    queueMicrotask(() => {
+      socket.onmessage({ data: JSON.stringify({ id, result }) });
+      if (method === 'Page.navigate') {
+        event('Network.responseReceived', { requestId: 'page', frameId: 'main', type: 'Document', response: { status: 200, url: pageUrl } });
+        for (const [key, url, verb] of requests) event('Fetch.requestPaused', { requestId: key, networkId: key, request: { method: verb, url } });
+      }
+      if (method === 'Fetch.continueRequest' || method === 'Fetch.failRequest') {
+        const key = params.requestId;
+        observed.push([key, method]);
+        const [, url, , status, headers] = requests.find(([candidate]) => candidate === key);
+        if (method === 'Fetch.continueRequest') {
+          event('Network.responseReceived', { requestId: key, response: { status, url, mimeType: 'application/geo+json' } });
+          if (headers) event('Network.requestWillBeSentExtraInfo', { requestId: key, headers });
+        }
+        if (observed.length === requests.length) {
+          for (const name of ['load', 'networkIdle']) event('Page.lifecycleEvent', { frameId: 'main', loaderId: 'main-loader', name });
+        }
+      }
+    });
+  };
+  const r = await render({ url: pageUrl, networkAssets: true, screenshot: false }, {
+    cfg: CFG, resolvesPublic: async (host) => host !== 'private.example.jp', openNetworkSocket: async () => socket,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.page.title, 'Survey');
+  assert.deepEqual(r.page.assets, [{ href: dataUrl + '/geometry', kind: 'geojson', via: 'network-response' }]);
+  assert.deepEqual(r.page.assetObservation, { status: 'observed', matches: 1 });
+  assert.deepEqual(observed.filter(([, method]) => method === 'Fetch.failRequest').map(([id]) => id).sort(), ['private', 'signed', 'write']);
+});
+
 test('⑥ provider failures are named', async () => {
   const u = { url: 'https://a.example.jp/' };
   assert.equal((await render(u, DEPS(provider({ status: 401, body: {} })))).code, 'render_auth');

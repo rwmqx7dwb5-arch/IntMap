@@ -5341,6 +5341,14 @@ uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管�
 | `worktree.mjs status` | 12 回の `gh` 呼び出しを直列から並列へ。何もキャッシュしない（毎回その場で訊く） | 出力は同一。29 秒（`--brief`）・37 秒 → 14 秒 |
 | USB ミラー | ミラー段で内容比較して同一だったファイルを検証段で 2 度読まない（コピーしたファイルは両側を再読） | 検証の対象（書いたバイトが正しいか）は変わらない |
 
+### 公開ページが実行時だけ取得する地理データ
+
+`node scripts/web-browse-runtime-probe.mjs` は、インストール済みの Chromium の通信を外部接続なしで CDP から観測する。
+静的なページと設定に URL がなく、ブラウザーが別ホストの拡張子なし URL を組み立てる場合に、
+応答の MIME 型で GeoJSON を見つけ、得た URL を既存のダウンロードに渡して地物を読む。
+同じページでエラー応答、非公開 DNS、書き込み、Cookie、認証ヘッダー、署名付き URL を除外する。
+常設の `real-browser-checks.test.mjs` は、候補を返す条件と読み取り用メソッドの審査を Node で検査する。
+
 ### 公開 GIS・原図の回復
 
 `atlas-geographic-source-recovery-checks.test.mjs` は未収録のサービスと原図の発見、アフィン変換の

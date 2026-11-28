@@ -139,7 +139,7 @@ function stripComments(s) {
 /* A lead says where the publisher pointed. Downloading, reading a service and
    checking geographic content are separate observations. No submitted forms,
    followed scripts or invented endpoint addresses are needed for discovery. */
-function geographicKind(url, mime = "") {
+export function geographicKind(url, mime = "") {
   const type = mime.split(";")[0].trim().toLowerCase();
   const typed = {
     "application/geo+json": "geojson", "application/vnd.google-earth.kml+xml": "kml",
@@ -426,6 +426,7 @@ export function snapshotOf(page, o) {
     textTruncated: page.text.length > chars ? page.text.length : undefined,
     files: fileLinks.slice(0, LIMITS.files),
     ...(page.assets?.length ? { assets: page.assets } : {}),
+    ...(page.assetObservation ? { assetObservation: page.assetObservation } : {}),
     ...(page.scripts?.length ? { scripts: page.scripts } : {}),
     links: plain.slice(0, LIMITS.links),
     linksOmitted: Math.max(0, plain.length - LIMITS.links) || undefined,

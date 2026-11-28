@@ -2296,7 +2296,7 @@ supabase/
   functions/_shared/              関数ではないライブラリ（ai-provider.js / embedding-provider.js / atlas-persona.js / atlas-job-core.js / atlas-job-runner.js / ai-quota-class.js / atlas-server-caps.js / atlas-cap-classes.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-entities.js / news-history.js / news-backfill.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
-                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-session.js / who-don-extract.js /
+                                  rate-limit.js / relay-guard.js / volcano-parse.js / web-browse.js / web-render.js / web-render-network.js / web-session.js / who-don-extract.js /
                                   bbox.js / read-budget.js / connection-policy.js / connection-vault.js / connection-gateway.js / client-error-shape.js /
                                   fetch-relay-policy.js / gis-fetch-policy.js / gis-headless.js / gis-input-fetch.js / gis-loader.js / mcp-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /

@@ -1,0 +1,6 @@
+{
+  "nodeModulesDir": "none",
+  "imports": {
+    "ws": "npm:ws@8.23.1"
+  }
+}
