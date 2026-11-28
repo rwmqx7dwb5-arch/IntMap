@@ -3065,7 +3065,7 @@ export function atlasConsole(HOST){
       let env=null; try{ env=await ask(_visionPrompt(q),_visionSYS(),imgs,opts); }
       catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
       if(gen!==_runGen){ _markCancelled(ai); return; }
-      let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks);
+      let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks); let withdrew=false;
       /* ONE image RE-EXAMINATION round when a deterministic recompute failed (the work order's "検算失敗時は回答をそのまま
          返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
       if(vr.ran && vr.failed.length){ try{ if(gen===_runGen){ ai.innerHTML=stageDots('verify'); PROG.phase(ai,'verify'); }
@@ -3073,16 +3073,19 @@ export function atlasConsole(HOST){
         const env2=await ask(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
         if(gen!==_runGen){ _markCancelled(ai); return; }
         if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
-          if(d2.answer.trim() && vr2.passed && !vr2.failed.length){ d=d2; vr=vr2; env=env2; } }
+          if(d2.answer.trim() && vr2.passed && !vr2.failed.length){ d=d2; vr=vr2; env=env2; }
+          else if(d2.answer.trim() && !d2.checks.length && d2.uncertain.some(value=>String(value||'').trim())){
+            d={...d2,continueWithTools:false}; withdrew=true;
+          } }
       }catch(_){} }
       if(gen!==_runGen) return;
       const verification={status:vr.failed.length?'failed':vr.passed?'verified':'unchecked',passed:vr.passed,failed:vr.failed.length};
-      if(verification.status==='failed') d=_visNorm({answer:L('I could not verify the calculation from the image.','画像から計算結果を確認できませんでした。')});
+      if(verification.status==='failed'&&!withdrew) d=_visNorm({answer:L('I could not verify the calculation from the image.','画像から計算結果を確認できませんでした。')});
       let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
       if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
       if(!vr.failed.length) try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);
-      if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
+      if(_atlShouldMap(cls)&&verification.status!=='failed'){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
         try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls,isCurrent:()=>gen===_runGen}); }catch(_){}
         if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) GE().camera.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:900}); } }catch(_){} } }
       if(gen===_runGen) ai.innerHTML=html;
