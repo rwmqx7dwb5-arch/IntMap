@@ -24,9 +24,8 @@ import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) th
 import { IntMapTime } from './chronos.js';
 import { MapState, viewOf, timeOf } from './map-state.js';   /* (map-state-store) the map's one named state — the share link and its restore are its projections */
 import './briefing-link.js';   /* (atlas-briefing) the owner of the store's `brief` field — a link may carry an Atlas briefing; js/briefing-link.js */
-import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapGeoEngine, choosePlacement, collectObstacles, measureHtml, optionsFor } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
-import { choosePlacement, collectObstacles, measureHtml, optionsFor } from './popup-placement.js';   /* (ui-polish-popup) which side of the pin the place popup opens on */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 

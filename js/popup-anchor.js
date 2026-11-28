@@ -28,8 +28,7 @@
  *  Not for: a panel that is deliberately a screen panel (the country card, the right-docked aircraft
  *  / satellite / volcano / quake cards) — those do not describe a point, so they do not take one.
  * ==========================================================================*/
-import { IntMapGeoEngine } from './geo-engine.js';
-import { collectObstacles, fitOverlay } from './popup-placement.js';
+import { IntMapGeoEngine, collectObstacles, fitOverlay } from './geo-engine.js';
 
 let serial = 0;
 

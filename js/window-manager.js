@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 
-import { clearOverlayTranslation, overlayTranslation, placeOpenedOverlay } from './popup-placement.js';
+import { clearOverlayTranslation, placeOpenedOverlay } from './geo-engine.js';
 
 export function windowManager(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
@@ -29,10 +29,7 @@ export function windowManager(HOST){
        so panels "couldn't be moved" / "only moved left-right". Inline-!important beats stylesheet-
        !important, so the drag now fully controls BOTH axes on phones. data-dragged lets any
        :not([data-dragged]) auto-placement leave it alone. */
-    const dragOrigin=(x,y)=>{ const shift=overlayTranslation(panel);
-      return {x,y,l:panel.offsetLeft+(shift?.x||0),t:panel.offsetTop+(shift?.y||0)}; };
     const move=(cx,cy)=>{ if(!HOST.panelDrag)return; const c=clampTo(HOST.panelDrag.l+cx-HOST.panelDrag.x, HOST.panelDrag.t+cy-HOST.panelDrag.y);
-      clearOverlayTranslation(panel);
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
       panel.setAttribute('data-dragged','1'); _geoBump(); };   /* (#R311) this file just moved the panel — the cached rect is stale NOW, not one microtask later */
@@ -62,8 +59,8 @@ export function windowManager(HOST){
        workspace window's content, and the same answer for edge-resize below (which is also what
        「中で左右に動かせないように」 is asking for: with no resize and no drag, and `width:100%`,
        there is nothing left that can move it sideways). */
-    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; HOST.panelDrag=dragOrigin(e.clientX,e.clientY); e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ HOST.panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
-    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; const tc=e.touches[0]; if(!tc)return; HOST.panelDrag=dragOrigin(tc.clientX,tc.clientY); e.preventDefault();
+    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; HOST.panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ HOST.panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; const tc=e.touches[0]; if(!tc)return; HOST.panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
       const up=()=>{ HOST.panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
       document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
@@ -78,21 +75,29 @@ export function windowManager(HOST){
   const __winReg=new Set();
   const __openWindows=new WeakSet();
   let __openObserver;
+  /* Store the opening position in the same coordinates the drag and resize paths use.
+     Moving both insets preserves an auto-stretched size and lets a responsive sheet own its edges. */
+  function shiftWindow(el,dx,dy){
+    if(!dx&&!dy) return;
+    const cs=getComputedStyle(el);
+    for(const [near,far,delta] of [['left','right',dx],['top','bottom',dy]]){
+      if(!delta) continue;
+      const start=parseFloat(cs[near]), end=parseFloat(cs[far]);
+      if(Number.isFinite(start)) el.style[near]=(start+delta)+'px';
+      if(Number.isFinite(end)) el.style[far]=(end-delta)+'px';
+    }
+  }
   function watchOpening(panel){
     if(typeof ResizeObserver!=='function') return;
     __openObserver??=new ResizeObserver(entries=>{
       for(const {target:el,contentRect:r} of entries){
-        if(!r.width||!r.height){ __openWindows.delete(el); clearOverlayTranslation(el); continue; }
-        const placed=__openWindows.has(el);
-        if((placed&&!overlayTranslation(el))||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
+        if(!r.width||!r.height){ __openWindows.delete(el); continue; }
+        if(__openWindows.has(el)||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
         const position=getComputedStyle(el).position;
-        const floating=position==='fixed'||position==='absolute';
-        const fullWidthSheet=position==='fixed'&&el.offsetWidth>=document.documentElement.clientWidth;
-        /* A responsive sheet owns its edges. Drop a desktop nudge when the same window docks. */
-        if(!floating||fullWidthSheet){ __openWindows.delete(el); clearOverlayTranslation(el); continue; }
-        if(placed) continue;
+        if(position!=='fixed'&&position!=='absolute') continue;
+        if(position==='fixed'&&el.offsetWidth>=document.documentElement.clientWidth) continue;
         __openWindows.add(el);
-        placeOpenedOverlay(el,document.getElementById('map-container'));
+        placeOpenedOverlay(el,document.getElementById('map-container'),4,shiftWindow);
         _geoBump();
       }
     });
@@ -131,8 +136,8 @@ export function windowManager(HOST){
      the document orders every registered window a pointerdown lands inside. `bringToFront` keeps its
      name — 33 call sites across 22 files, and IM_HOST publishes it — and is that owner's `order`. */
   function bringToFront(el){ try{ window.IntMapStack.order(el); }catch(_){} }
-  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
-    watchOpening(el);
+  function registerWindow(el,options){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
+    if(options?.place!==false) watchOpening(el);
     /* (#R238) a window that appears while the dock is on goes straight into it — see below.
        (#R239) …and is watched, so that switching it off later takes it back out again. */
     if(__dockOn) try{ _watchEl(el); _dockOne(el); }catch(_){} }
@@ -627,7 +632,6 @@ export function windowManager(HOST){
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing){ panel.style.cursor=''; panel.classList.remove('im-edge-hover'); } });
     const start=(e,d)=>{ e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
-      clearOverlayTranslation(panel);
       /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from
          left:50%). The old code pinned left to the VISUAL rect but LEFT THE TRANSFORM ON, so on grab the panel
          jumped half its width and drifted while resizing. Neutralise the transform + bottom/right anchors first,

@@ -587,7 +587,7 @@ export function workspace(HOST){
       w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px';
       w.__wsMin=def.min;
       wsDrag(w,tb); wsResize(w); wsGrip(w);
-      try{ registerWindow(w); }catch(_){}
+      try{ registerWindow(w,{place:false}); }catch(_){}   /* Workspace owns the layout of its tiles. */
       tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; try{ if(def.onHide) def.onHide(); }catch(_){} syncDock(); retile(); };   /* (#R83) fill the gap */
       tb.querySelector('.ws-d-min').onclick=()=>{ if(w.dataset.min){ delete w.dataset.min; body.style.display=''; w.style.height=(+w.dataset.h0||300)+'px'; } else { w.dataset.h0=String(w.offsetHeight); w.dataset.min='1'; body.style.display='none'; w.style.height='auto'; } retile(); };
       tb.querySelector('.ws-d-max').onclick=()=>{ if(w.dataset.maxed){ try{ const r2=JSON.parse(w.dataset.maxed); w.style.left=r2[0]+'px'; w.style.top=r2[1]+'px'; w.style.width=r2[2]+'px'; w.style.height=r2[3]+'px'; }catch(_){} delete w.dataset.maxed; }

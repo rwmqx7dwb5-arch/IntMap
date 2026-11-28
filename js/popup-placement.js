@@ -192,7 +192,7 @@ export function translateOverlay(el, x, y) {
   el.style.translate = x + 'px ' + y + 'px';
 }
 
-export function placeOpenedOverlay(el, host, gap = 4) {
+export function placeOpenedOverlay(el, host, gap = 4, move = translateOverlay) {
   if (!el?.isConnected || !host) return;
   clearOverlayTranslation(el);
   const style = getComputedStyle(el);
@@ -205,7 +205,7 @@ export function placeOpenedOverlay(el, host, gap = 4) {
     right:Math.min(vp.clientWidth, frame.right), bottom:Math.min(vp.clientHeight, frame.bottom) };
   if (area(bounds) === 0 || overlap(preferred, bounds) === 0) return;
   const fit = fitOverlay(preferred, bounds, collectObstacles(host, bounds, [el]), gap);
-  translateOverlay(el, fit.left - preferred.left, fit.top - preferred.top);
+  move(el, fit.left - preferred.left, fit.top - preferred.top);
 }
 
 /**

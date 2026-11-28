@@ -32,6 +32,10 @@ import { makeCommandCensus } from './geo-command-log.js';
 import { makeClickOwnership } from './click-ownership.js';
 import { readGlyph, keepGlyph } from './glyph-store.js';
 import { placeOpenedOverlay } from './popup-placement.js';
+/* Keep the placement functions with the renderer that is already loaded. Both the eager map
+   shell and lazy cards use this entry, so a small shared helper adds no startup request. */
+export { choosePlacement, clearOverlayTranslation, collectObstacles, fitOverlay, measureHtml,
+  optionsFor, overlayTranslation, placeOpenedOverlay, translateOverlay } from './popup-placement.js';
 
 function placeRendererPopup(popup, host) {
   const el = popup?.getElement?.();

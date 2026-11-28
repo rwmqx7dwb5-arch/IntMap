@@ -111,7 +111,7 @@ test('a visible surface participates even when its content owns the pointer even
 
 test('map-ui wires the placement and the pin; the tools host with one section draws no heading', () => {
   const src = readFileSync(new URL('../js/map-ui.js', import.meta.url), 'utf8');
-  assert.match(src, /from '\.\/popup-placement\.js'/);
+  assert.match(src, /import \{[^}]*\bchoosePlacement\b[^}]*\} from '\.\/geo-engine\.js'/);
   assert.match(src, /_standPin\(lngLat,name\)/);
   assert.match(src, /anchor:_pl\.anchor,offset:_pl\.offset/);
   assert.match(src, /bare=secs\.length===1/);

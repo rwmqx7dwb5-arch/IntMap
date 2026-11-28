@@ -35,7 +35,7 @@
 
 import { compareQuantity } from './atlas-evidence.js';
 import { IntMapLang } from './lang-registry.js';
-import { collectObstacles, fitOverlay } from './popup-placement.js';
+import { collectObstacles, fitOverlay } from './geo-engine.js';
 /* (safe-output-single-module) the ONE URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
 import './safe-html.js';
 
