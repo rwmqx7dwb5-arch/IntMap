@@ -101,13 +101,16 @@ function vectorBounds(ds, geometry) {
 
 export function datasetPlanningDetails(ds, raster, geometry) {
   const p = ds.provenance || {};
-  const measured = ds.kind === 'raster' ? raster?.bboxOf(ds) : vectorBounds(ds, geometry);
-  const recorded = Array.isArray(p.bounds) && p.bounds.length >= 4 && p.bounds.slice(0, 4).every(isNum) ? p.bounds.slice(0, 4) : null;
+  const horizontal = (b) => Array.isArray(b) && (b.length === 4 || b.length === 6) && b.every(isNum)
+    ? [b[0], b[1], b[b.length / 2], b[b.length / 2 + 1]] : null;
+  const served = horizontal(p.coverage?.served);
+  const measured = ds.kind === 'raster' ? served || raster?.bboxOf(ds) : vectorBounds(ds, geometry);
+  const recorded = horizontal(p.bounds);
   const g = ds && ds.grid;
   const m = g && isNum(g.pixelLat) ? Math.abs(g.pixelLat) * 111320 : null;   /* 観測: 1 deg of meridian ≈ 111.32 km (js/gis-atlas.js pixelKmLat). 失効条件: an ellipsoid change */
   return {
     bounds: measured || recorded,
-    boundsBasis: measured ? 'measured' : recorded ? 'recorded' : null,
+    boundsBasis: served && ds.kind === 'raster' ? 'served' : measured ? 'measured' : recorded ? 'recorded' : null,
     resolution: m ? { min: m, max: m, source: 'grid.pixelLat', unit: 'm' } : null,
     format: p.format || null,
     source: p.url || null,
@@ -120,7 +123,8 @@ export function datasetPlanningDetails(ds, raster, geometry) {
 export function localRecord(ds, raster, geometry) {
   const facts = datasetPlanningDetails(ds, raster, geometry);
   const t = ds && ds.time;
-  const iv = t && (t.from != null || t.to != null) ? [[t.from == null ? null : String(t.from), t.to == null ? null : String(t.to)]] : null;
+  const isoTime = (v) => isNum(v) && Math.abs(v) <= 8.64e15 ? new Date(v).toISOString() : null;
+  const iv = t?.kind === 'constant' && (t.start != null || t.end != null) ? [[isoTime(t.start), isoTime(t.end)]] : null;
   const bandNames = Array.isArray(ds && ds.bands) ? ds.bands.map((b) => b && b.name).filter(Boolean) : [];
   const fieldNames = Array.isArray(ds && ds.fields) ? ds.fields.map((f) => f && f.name).filter(Boolean) : [];
   return {

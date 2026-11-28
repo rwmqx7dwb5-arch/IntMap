@@ -65,7 +65,9 @@
 
 import { reachingFetch } from './gis-fetch.js';
 import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
-import { toRecord, localRecord, searchRecords, modalitiesOf, isNonCommercial, MODALITIES } from './gis-catalog-search.js';
+import { toRecord, localRecord, searchRecords, resolutionRelation, modalitiesOf, isNonCommercial, MODALITIES } from './gis-catalog-search.js';
+
+let acquisitionSeq = 0;
 
 export function makeGisRemote(deps) {
   return (function () {
@@ -194,29 +196,50 @@ export function makeGisRemote(deps) {
     /* ── extents ──────────────────────────────────────────────────────────────────────────────── */
 
     function asBox(b) {
-      if (!b) return null;
-      if (Array.isArray(b) && b.length >= 4 && b.slice(0, 4).every(isNum)) return { w: b[0], s: b[1], e: b[2], n: b[3] };
-      if (b && isNum(b.w) && isNum(b.s) && isNum(b.e) && isNum(b.n)) return { w: b.w, s: b.s, e: b.e, n: b.n };
-      return null;
+      /* RFC 7946 §5: all southwest axes precede all northeast axes. The relationship here is horizontal. */
+      const axes = Array.isArray(b) && (b.length === 4 || b.length === 6) && b.every(isNum) ? b.length / 2 : 0;
+      const [w, s, e, n] = axes ? [b[0], b[1], b[axes], b[axes + 1]] : [b?.w, b?.s, b?.e, b?.n];
+      if (![w, s, e, n].every(isNum) || s < -90 || n > 90 || s > n) return null;
+      if (Math.abs(w) <= 180 && Math.abs(e) <= 180) return { w, s, e, n };
+      // The grid reader also accepts a continuous window unwrapped past the date line.
+      if (e < w || e - w > 360) return null;
+      if (e - w === 360) return { w: -180, s, e: 180, n };
+      const wrap = (lon) => Math.abs(lon) <= 180 ? lon : ((lon + 180) % 360 + 360) % 360 - 180;
+      return { w: wrap(w), s, e: wrap(e), n };
     }
+    const boundsOf = (b) => [b.w, b.s, b.e, b.n];
     /* lon ranges as 1–2 plain intervals so a box that crosses ±180 (w > e) is handled, not mangled */
     const lonSpans = (b) => (b.w <= b.e ? [[b.w, b.e]] : [[b.w, 180], [-180, b.e]]);
-    function overlapsBox(a, b) {
-      if (a.n < b.s || a.s > b.n) return false;
-      return lonSpans(a).some((x) => lonSpans(b).some((y) => x[0] <= y[1] && y[0] <= x[1]));
+    const splitBox = (b) => lonSpans(b).map(([w, e]) => ({ w, s: b.s, e, n: b.n }));
+    const hasArea = (b) => b.w < b.e && b.s < b.n;
+    function intersectBox(a, b) {
+      const w = Math.max(a.w, b.w), s = Math.max(a.s, b.s), e = Math.min(a.e, b.e), n = Math.min(a.n, b.n);
+      return w <= e && s <= n ? { w, s, e, n } : null;
     }
-    function coversBox(outer, inner) {
-      if (outer.s > inner.s || outer.n < inner.n) return false;
-      return lonSpans(inner).every((y) => lonSpans(outer).some((x) => x[0] <= y[0] && x[1] >= y[1]));
+    /* Subtract from disjoint uncovered rectangles. Overlapping tile footprints count only once. */
+    function subtractBox(a, b) {
+      const hit = intersectBox(a, b);
+      if (!hit || (hasArea(a) && !hasArea(hit))) return [a];
+      const out = [];
+      if (a.w < hit.w) out.push({ ...a, e: hit.w });
+      if (hit.e < a.e) out.push({ ...a, w: hit.e });
+      if (a.s < hit.s) out.push({ ...hit, s: a.s, n: hit.s });
+      if (hit.n < a.n) out.push({ ...hit, s: hit.n, n: a.n });
+      return out;
+    }
+    function extentIntersections(stated, asked) {
+      const windows = splitBox(asked);
+      return (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean).flatMap(splitBox)
+        .flatMap((b) => windows.map((w) => intersectBox(b, w)).filter(Boolean)).map(boundsOf);
     }
     /* the relation of what a collection STATES to what was asked — 'unstated' when it states nothing */
     function spatialRelation(stated, asked) {
       if (!asked) return 'not-asked';
-      const boxes = (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean);
+      const boxes = (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean).flatMap(splitBox);
       if (!boxes.length) return 'unstated';
-      if (boxes.some((b) => coversBox(b, asked))) return 'covers';
-      if (boxes.some((b) => overlapsBox(b, asked))) return 'overlaps';
-      return 'outside';
+      const windows = splitBox(asked);
+      if (!boxes.some((b) => windows.some((w) => intersectBox(b, w)))) return 'outside';
+      return boxes.reduce((gaps, b) => gaps.flatMap((w) => subtractBox(w, b)), windows).length ? 'overlaps' : 'covers';
     }
     function extentIntersections(stated, asked) {
       const out = [];
@@ -245,7 +268,7 @@ export function makeGisRemote(deps) {
       };
       const a = one(parts[0], false), b = parts.length > 1 ? one(parts[1], true) : one(parts[0], true);
       if ((parts[0] !== '' && parts[0] !== '..' && a == null) || (parts.length > 1 && parts[1] !== '' && parts[1] !== '..' && b == null)) return { bad: true };
-      return { from: a, to: b };
+      return parts.length > 2 || (a != null && b != null && a > b) ? { bad: true } : { from: a, to: b };
     }
     function temporalRelation(intervals, asked) {
       if (asked == null || asked === '') return 'not-asked';
@@ -254,7 +277,8 @@ export function makeGisRemote(deps) {
       const list = (Array.isArray(intervals) ? intervals : []).filter((i) => Array.isArray(i));
       if (!list.length) return 'unstated';
       const spans = list.map((i) => ({ from: i[0] ? ms(i[0]) : null, to: i[1] ? ms(i[1]) : null }));
-      const hit = spans.some((s) => (s.to == null || want.from == null || s.to >= want.from) && (s.from == null || want.to == null || s.from < want.to));
+      const hit = spans.some((s) => (s.to == null || want.from == null || s.to >= want.from)
+        && (s.from == null || want.to == null || (want.from === want.to ? s.from <= want.to : s.from < want.to)));
       return hit ? 'overlaps' : 'outside';
     }
 
@@ -389,7 +413,7 @@ export function makeGisRemote(deps) {
       return { ok: true, cat: cat, collection: s.slice(i + 1) };
     }
 
-    const colUrl = (cat, id) => cat.url + '/collections/' + encodeURIComponent(id) + (cat.kind === 'stac' ? '' : '?f=json');
+    const collectionUrl = (cat, id) => cat.url + '/collections/' + encodeURIComponent(id);
 
     /* ── inspect() ────────────────────────────────────────────────────────────────────────────── */
 
@@ -411,6 +435,14 @@ export function makeGisRemote(deps) {
       };
     }
 
+    async function collectionOf(p, signal) {
+      const url = collectionUrl(p.cat, p.collection);
+      const r = await fetchJson(url + (p.cat.kind === 'stac' ? '' : '?f=json'), null, signal);
+      return !r.ok && r.why === 'http-status' && r.detail?.status === 404
+        ? refuse('collection-unknown', { ref: p.cat.id + '/' + p.collection })
+        : r;
+    }
+
     /* → {ok, collection, sample:{item|feature, assets[]|properties[]}, evidence}. ⚠ THE SAMPLE IS ONE
        ITEM: it states what an item LOOKS like, not that every item is like it. */
     async function inspect(ref, opts) {
@@ -419,8 +451,8 @@ export function makeGisRemote(deps) {
       const o = opts || {};
       const box = (o.bbox == null) ? null : asBox(o.bbox);
       if (o.bbox != null && !box) return refuse('bad-param', { param: 'bbox', value: o.bbox });
-      const cr = await fetchJson(colUrl(p.cat, p.collection), null, o.signal);
-      if (!cr.ok) return cr.why === 'http-status' && cr.detail && cr.detail.status === 404 ? refuse('collection-unknown', { ref: p.cat.id + '/' + p.collection }) : cr;
+      const cr = await collectionOf(p, o.signal);
+      if (!cr.ok) return cr;
       const col = normaliseCollection(p.cat, cr.json);
       let sample = null, sampleWhy = null;
       if (p.cat.kind === 'stac') {
@@ -457,7 +489,7 @@ export function makeGisRemote(deps) {
         evidence: evidenceOf(col, asked, null),
         /* how to READ it — the existing doors, not a second reader */
         refs: {
-          features: 'ogc:' + p.cat.url + '/collections/' + encodeURIComponent(p.collection),
+          features: 'ogc:' + collectionUrl(p.cat, p.collection),
           grids: sample && sample.assets ? sample.assets.filter((x) => x.cog && /^https:/.test(x.href)).map((x) => 'url:' + x.href) : [],
         },
       };
@@ -538,11 +570,13 @@ export function makeGisRemote(deps) {
       if (!doFetch) return refuse('fetch-failed', { url: ok.url, reason: 'no-fetch-in-this-runtime' });
       const ctl = (typeof AbortController === 'function') ? new AbortController() : null;
       let timedOut = false;
-      const timer = ctl ? setTimeout(() => { timedOut = true; try { ctl.abort(); } catch (_) { } }, D.timeoutMs || CALL_MS) : null;
+      const timer = ctl ? setTimeout(() => { timedOut = true; ctl.abort(); }, D.timeoutMs || CALL_MS) : null;
+      const signal = ctl && o.signal ? AbortSignal.any([ctl.signal, o.signal]) : ctl?.signal || o.signal;
       try {
         let res;
-        try { res = await doFetch(ok.url, { headers: { Range: 'bytes=0-1023' }, signal: ctl ? ctl.signal : undefined }); }
+        try { res = await doFetch(ok.url, { headers: { Range: 'bytes=0-1023' }, signal }); }
         catch (e) {
+          if (o.signal?.aborted) return refuse('cancelled');
           if (timedOut) return refuse('timeout', { url: ok.url, ms: D.timeoutMs || CALL_MS });
           return refuse('fetch-failed', Object.assign({ url: ok.url }, await explainFetchFailure(ok.url, doFetch, e)));
         }
@@ -566,37 +600,65 @@ export function makeGisRemote(deps) {
       for (const k of Object.keys(pr || {})) if (isNum(pr[k]) && /(nodata|no_data|degraded|saturated|defective)/i.test(k)) q[k] = pr[k];
       return Object.keys(q).length ? q : null;
     }
+    const itemCloud = (value) => isNum(value) && value >= 0 && value <= 100 ? value : null;
+    const cloudMatch = (value, ceiling) => ceiling == null ? 'not-asked' : value == null ? 'unstated' : value <= ceiling ? 'meets' : 'misses';
 
     async function items(ref, opts) {
       const p = parseRef(ref);
       if (!p.ok) return p;
       if (p.cat.kind !== 'stac') return refuse('bad-param', { param: 'ref', reason: 'item search is a STAC API operation; this catalogue is ' + p.cat.kind });
       const o = opts || {};
+      const request = itemRequest(p, o);
+      if (!request.ok) return request;
+      const r = await itemPage(o, request);
+      if (!r.ok) return r;
+      const { next, ...page } = r;
+      return { ...page, ref: p.cat.id + '/' + p.collection,
+        asked: { bbox: request.box, time: o.time == null || o.time === '' ? null : String(o.time), limit: request.body.limit, maxCloud: isNum(o.maxCloud) ? o.maxCloud : null } };
+    }
+
+    function itemRequest(p, o) {
       const box = (o.bbox == null) ? null : asBox(o.bbox);
       if (o.bbox != null && !box) return refuse('bad-param', { param: 'bbox', value: o.bbox });
-      if (o.time != null && o.time !== '') { const t = timeSpan(o.time); if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time }); }
       const limit = (isNum(o.limit) && o.limit > 0) ? Math.min(Math.floor(o.limit), 100) : 10;
-      const body = { collections: [p.collection], limit: limit };
-      if (box) {
-        /* a window across ±180 is TWO boxes to a server that wants w<e: STAC's `bbox` allows w>e (spec §bbox) but servers differ, so we ask the standard way
-           and say how many sides were asked */
-        body.bbox = [box.w, box.s, box.e, box.n];
-      }
+      const body = { collections: [p.collection], limit };
+      if (box) body.bbox = boundsOf(box);
       if (o.time != null && o.time !== '') {
         const t = timeSpan(o.time);
+        if (!t || t.bad) return refuse('bad-param', { param: 'time', value: o.time });
         const iso = (m) => (m == null ? '..' : new Date(m).toISOString());
-        body.datetime = iso(t.from) + '/' + iso(t.to == null ? null : t.to - 1);
+        body.datetime = t.from === t.to && t.from != null ? iso(t.from) : iso(t.from) + '/' + iso(t.to == null ? null : t.to - 1);
       }
-      const r = await fetchJson(p.cat.url + '/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/geo+json' }, body: JSON.stringify(body) }, o.signal);
+      return { ok: true, url: p.cat.url + '/search', method: 'POST', box, body };
+    }
+
+    function nextItemRequest(first, current, next) {
+      if (!next?.href) return null;
+      let url;
+      try { url = new URL(next.href, current.url); } catch (_) { return refuse('bad-param', { param: 'STAC next link' }); }
+      const method = String(next.method || 'GET').toUpperCase();
+      if (url.origin !== new URL(first.url).origin || !['GET', 'POST'].includes(method)) return refuse('bad-param', { param: 'STAC next link', reason: 'different origin or unsupported method' });
+      return {
+        ok: true, url: url.href, method,
+        headers: Object.assign({}, next.merge ? first.headers : null, next.headers),
+        body: method === 'POST' ? Object.assign({}, next.merge ? first.body : null, next.body) : undefined,
+      };
+    }
+
+    async function itemPage(o, request) {
+      const headers = Object.assign({ 'Content-Type': 'application/json', Accept: 'application/geo+json' }, request.headers);
+      const init = { method: request.method, headers, ...(request.method === 'POST' ? { body: JSON.stringify(request.body) } : {}) };
+      const r = await fetchJson(request.url, init, o.signal);
       if (!r.ok) return r;
       const feats = Array.isArray(r.json && r.json.features) ? r.json.features : [];
       let rows = feats.map((f) => {
         const pr = f.properties || {};
+        const bbox = asBox(f.bbox);
         const assets = Object.keys(f.assets || {}).map((k) => assetRow(k, f.assets[k]));
         return {
           id: f.id, datetime: pr.datetime || (pr.start_datetime ? pr.start_datetime + '/' + (pr.end_datetime || '..') : null),
-          gsd: pr.gsd === undefined ? null : pr.gsd, cloud: pr['eo:cloud_cover'] === undefined ? null : pr['eo:cloud_cover'],
-          epsg: pr['proj:epsg'] === undefined ? null : pr['proj:epsg'], bbox: Array.isArray(f.bbox) ? f.bbox.slice(0, 4) : null, assets: assets,
+          gsd: pr.gsd === undefined ? null : pr.gsd, cloud: itemCloud(pr['eo:cloud_cover']),
+          epsg: pr['proj:epsg'] === undefined ? null : pr['proj:epsg'], bbox: bbox ? boundsOf(bbox) : null, assets: assets,
           platform: pr.platform == null ? null : String(pr.platform), instruments: Array.isArray(pr.instruments) ? pr.instruments.map(String) : null,
           /* STAC SAR extension: what a radar scene IS (mode, polarisations, orbit direction) — null when the item states none */
           sar: pr['sar:instrument_mode'] === undefined && pr['sar:polarizations'] === undefined ? null
@@ -605,13 +667,16 @@ export function makeGisRemote(deps) {
         };
       });
       const beforeCloud = rows.length;
-      if (isNum(o.maxCloud)) rows = rows.filter((x) => x.cloud == null || x.cloud <= o.maxCloud);
+      if (isNum(o.maxCloud)) rows = rows.filter((x) => {
+        const match = cloudMatch(x.cloud, o.maxCloud);
+        return match === 'meets' || (match === 'unstated' && !o.strict);
+      });
       const droppedByCloud = beforeCloud - rows.length;
       const next = Array.isArray(r.json.links) ? r.json.links.find((l) => l && l.rel === 'next') : null;
       return {
-        ok: true, ref: p.cat.id + '/' + p.collection, items: rows, returned: feats.length, droppedByCloud: droppedByCloud,
+        ok: true, items: rows, returned: feats.length, droppedByCloud: droppedByCloud,
         matched: r.json && r.json.numberMatched != null ? r.json.numberMatched : (r.json && r.json.context && r.json.context.matched != null ? r.json.context.matched : null),
-        continues: !!next, asked: { bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), limit: limit, maxCloud: isNum(o.maxCloud) ? o.maxCloud : null },
+        continues: !!next, next,
       };
     }
 
@@ -641,7 +706,7 @@ export function makeGisRemote(deps) {
       }
       const answers = [];
       let fire = null;          /* early mode: resolves the caller's wait with the first usable candidate */
-      const tried = new Set();
+      const tried = new Set(), acquisitionAttempts = [];
       const compose = () => {
         const recs = [], report = [];
         for (const a of answers) {
@@ -656,21 +721,24 @@ export function makeGisRemote(deps) {
         let held = [];
         try { held = Array.isArray(o.local) ? o.local : (D.data && typeof D.data.list === 'function' ? D.data.list() : []); } catch (_) { held = []; }
         for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds, D.raster, D.geometry)); } catch (_) { } }
-        const res = searchRecords(recs, { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict },
-          { spatial: spatialRelation, temporal: temporalRelation, intersections: extentIntersections });
-        return { res: res, report: report };
+        const query = { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict };
+        const relations = { spatial: spatialRelation, temporal: temporalRelation, intersections: extentIntersections };
+        const res = searchRecords(recs, query, relations);
+        /* An absent collection summary cannot rule out a qualifying scene. The read still applies strict filters. */
+        const acquirable = early && o.strict ? searchRecords(recs, { ...query, strict: false }, relations).entries : res.entries;
+        return { res, report, acquirable };
       };
-      /* a catalogue answered: judge what has arrived so far. A candidate is tried only if the catalogue STATES it covers the window (and, when a
-         resolution was asked, states a resolution that meets it); whether it is USABLE is decided by reading it. Which one the caller uses is the caller's. */
-      const askedRes = o.maxGsd != null || o.minGsd != null;
+      /* A catalogue answered: try what it says covers the window. Whether it meets the request is decided on the items and their actual reads. */
       const tryArrived = async () => {
         if (!fire || fire.done) return;
-        const res = compose().res;
-        const cands = res.entries.filter((e) => e.origin === 'catalogue' && e.kind === 'stac' && e.match.spatial === 'covers' && (!askedRes || (e.match.resolution !== 'unstated' && e.match.resolution !== 'misses')) && !tried.has(e.ref)).slice(0, 2);
+        const cands = compose().acquirable.filter((e) => e.origin === 'catalogue' && e.kind === 'stac' && e.match.spatial === 'covers' && !tried.has(e.ref)).slice(0, 2);
         for (const e of cands) {
+          if (fire.done) return;
+          if (tried.has(e.ref)) continue;
           tried.add(e.ref);
           let r = null;
-          try { r = await acquire(e.ref, { bbox: box, time: o.time, width: o.width, height: o.height, band: o.band, asset: o.asset, signal: o.signal || null }); } catch (_) { r = null; }
+          try { r = await acquire(e.ref, { ...o, bbox: box }, true); } catch (_) { r = null; }
+          if (r?.datasets?.length) acquisitionAttempts.push(r);
           if (fire.done) return;
           if (r && r.ok && r.state && r.state.analysis === 'ready' && r.datasets && r.datasets.length) { fire.done = true; fire.resolve({ entry: e, acquired: r }); return; }
         }
@@ -692,11 +760,11 @@ export function makeGisRemote(deps) {
         if (o.items && shown.length) {
           /* the item-level look at the best few: which scenes, when, how fine — one STAC search each, and each says if it did not answer */
           const top = shown.filter((e) => e.origin === 'catalogue' && e.kind === 'stac').slice(0, 3);
-          itemsOf = await Promise.all(top.map(async (e) => { const r = await items(e.ref, { bbox: box, time: o.time, maxCloud: o.maxCloud, limit: 5, signal: o.signal || null }); return r.ok ? r : { ok: false, ref: e.ref, why: r.why, detail: r.detail || null }; }));
+          itemsOf = await Promise.all(top.map(async (e) => { const r = await items(e.ref, { bbox: box, time: o.time, maxCloud: o.maxCloud, strict: o.strict, limit: 5, signal: o.signal || null }); return r.ok ? r : { ok: false, ref: e.ref, why: r.why, detail: r.detail || null }; }));
         }
         return {
           ok: true, entries: shown, total: res.total, truncated: res.total > shown.length, facets: res.facets, dropped: res.dropped,
-          catalogs: report, items: itemsOf,
+          catalogs: report, items: itemsOf, ...(early ? { acquisitionAttempts: acquisitionAttempts.slice() } : {}),
           asked: { q: o.q == null ? null : String(o.q), bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), maxGsd: o.maxGsd == null ? null : o.maxGsd, minGsd: o.minGsd == null ? null : o.minGsd, maxCloud: o.maxCloud == null ? null : o.maxCloud, licensed: !!o.licensed, strict: !!o.strict },
           note: 'Every filter is judged on what the record STATES; a record that states nothing for a filter is kept and marked unstated (strict:true drops it). A catalogue listed as not answering is not «nothing there». `stated` counts the facts a record gives about itself, not the quality of the data.',
         };
@@ -710,7 +778,7 @@ export function makeGisRemote(deps) {
       const hit = await Promise.race([first, full.then(() => { if (!fire.done) { fire.done = true; fire.resolve(null); } return first; })]);
       if (!hit) return full;     /* nothing usable arrived early: the finished search is the answer */
       const pendingIds = which.filter((c) => !answers.some((x) => x.cat.id === c.id)).map((c) => c.id);
-      const first_ = { ref: hit.entry.ref, title: hit.entry.title, catalog: hit.entry.catalog, match: hit.entry.match, state: hit.acquired.state, datasets: hit.acquired.datasets, parts: hit.acquired.parts, acrossAntimeridian: !!hit.acquired.acrossAntimeridian };
+      const first_ = { ref: hit.entry.ref, title: hit.entry.title, catalog: hit.entry.catalog, match: hit.entry.match, state: hit.acquired.state, datasets: hit.acquired.datasets, datasetsCreated: hit.acquired.datasetsCreated, parts: hit.acquired.parts, coverage: hit.acquired.coverage, acrossAntimeridian: !!hit.acquired.acrossAntimeridian };
       return {
         ok: true, early: first_, follow: handle, stillAsking: pendingIds, entries: [hit.entry], total: null, truncated: true, catalogs: compose().report, items: null,
         note: 'EARLY RESULT: this candidate states it covers the window and its data was READ and inspected (analysis: ready) while ' + pendingIds.length + ' catalogue(s) were still answering. It is one usable candidate, not the best one: ask search with follow:"' + handle + '" for the finished list (other catalogues may hold finer or newer data) and choose.',
@@ -845,9 +913,10 @@ export function makeGisRemote(deps) {
        door that already reads (D.readGrid / D.readFeatures → js/gis-atlas.js resolveRef); this function chooses WHAT to read
        from what the collection states and records WHERE it stopped. A stage that did not hold is returned as the state — not
        as an error — because «where it stopped» is the answer the planner asked for.
-       ⚠ A WINDOW ACROSS ±180 is read as two windows, each from the item the catalogue holds for that side, each its own dataset
-       (not mosaicked: two files are two datasets); the parent says `partial` for exactly the side that did not come. */
-    async function acquire(ref, opts) {
+       Tile footprints plan the reads. Only the reader's served bounds and inspected data can clear a gap. */
+    const sineLat = (lat) => Math.sin(lat * Math.PI / 180);
+    const boxArea = (b) => (b.e - b.w) * (sineLat(b.n) - sineLat(b.s));
+    async function acquire(ref, opts, collectionKnown) {
       const P = PIPE();
       if (!P) return refuse('bad-param', { param: 'pipeline', reason: 'no ledger was handed to this module' });
       const o = opts || {};
@@ -856,60 +925,166 @@ export function makeGisRemote(deps) {
       const key = p.cat.id + '/' + p.collection;
       const box = asBox(o.bbox);
       if (!box) return refuse('bad-param', { param: 'bbox', reason: 'acquire reads a window; state it (bounds:[w,s,e,n])' });
-      const ins = await inspect(ref, { bbox: box, signal: o.signal || null });
-      if (!ins.ok) { P.recordFailure(key, 'discovered', ins.why, ins.detail); return { ok: true, ref: key, state: P.verdict(key), datasets: [], parts: [] }; }
+      for (const k of ['maxGsd', 'minGsd', 'maxCloud']) if (o[k] != null && !(isNum(o[k]) && o[k] >= 0)) return refuse('bad-param', { param: k, value: o[k] });
+      const collection = collectionKnown ? { ok: true } : await collectionOf(p, o.signal);
+      if (!collection.ok) { P.recordFailure(key, 'discovered', collection.why, collection.detail); return { ok: true, ref: key, state: P.verdict(key), datasets: [], parts: [] }; }
       P.record(key, 'discovered', { status: 'ok', say: 'the catalogue states this collection (' + p.cat.id + ')' });
 
       /* features: the collection IS the dataset (OGC API – Features, or a STAC collection read as items) */
       if (p.cat.kind !== 'stac') {
         if (typeof D.readFeatures !== 'function') return refuse('bad-param', { param: 'readFeatures', reason: 'no reader was handed to this module' });
-        const url = String(ins.refs.features).replace(/^ogc:/, '');
+        const url = collectionUrl(p.cat, p.collection);
         const r = await D.readFeatures(url, { bounds: [box.w, box.s, box.e, box.n], limit: o.limit, time: o.time });
         const k = 'ogc:' + url;
         if (!P.verdict(k).known) { if (!r.ok) P.recordFailure(k, 'fetched', r.why, r.detail); }
         P.combine(key, [{ key: k, label: 'features' }]);
-        return { ok: true, ref: key, state: P.verdict(key), datasets: r.ok && r.id ? [r.id] : [], parts: [{ label: 'features', ref: k }] };
+        return { ok: true, ref: key, state: P.verdict(key), datasets: r.ok && r.id ? [r.id] : [], datasetsCreated: r.ok && r.id && r.version != null ? [{ id: r.id, version: r.version }] : [], parts: [{ label: 'features', ref: k }] };
       }
 
       if (typeof D.readGrid !== 'function') return refuse('bad-param', { param: 'readGrid', reason: 'no reader was handed to this module' });
       if (!(isNum(o.width) && isNum(o.height) && o.width >= 1 && o.height >= 1)) return refuse('bad-param', { param: 'width/height', reason: 'a grid is read at a resolution the caller states' });
+      if (!hasArea(box) && box.w <= box.e) return refuse('bad-param', { param: 'bbox', reason: 'a raster window needs positive area' });
       const sides = P.splitAtAntimeridian(box);
       const windows = sides ? [{ label: 'east of the date line', box: sides[0] }, { label: 'west of the date line', box: sides[1] }] : [{ label: 'window', box: box }];
       const spanTotal = windows.reduce((t, w) => t + (w.box.e - w.box.w), 0) || 1;
-      const partKeys = [], ids = [], parts = [];
-      for (const w of windows) {
-        const part = { label: w.label, bounds: [w.box.w, w.box.s, w.box.e, w.box.n] };
-        parts.push(part);
-        /* which FILE holds this side: ask the catalogue for an item over THIS box */
-        const it = await items(ref, { bbox: w.box, time: o.time, limit: 5, signal: o.signal || null });
-        const synth = key + '#' + w.label.replace(/\s+/g, '-');
-        if (!it.ok) { P.recordFailure(synth, 'fetched', it.why, it.detail); part.ref = synth; partKeys.push({ key: synth, label: w.label }); continue; }
-        /* ⚠ A SERVER MAY ANSWER A BOX THAT ONLY TOUCHES A TILE'S EDGE (measured 2026-11-20: asking the east side of the date line returned the tile that starts at -180). An item is a candidate for this part only if ITS OWN bbox overlaps the part. */
-        const here = it.items.filter((x) => { const b = x.bbox && asBox(x.bbox); return !b || overlapsBox(b, w.box); });
-        const pick = here.map((x) => ({ item: x, asset: o.asset ? x.assets.find((a) => a.key === o.asset) : x.assets.find((a) => a.cog && /^https:/.test(a.href)) })).find((x) => x.asset);
-        if (!pick) {
-          P.record(synth, 'access', { status: 'ok', say: 'the catalogue answered' });
-          P.record(synth, 'fetched', { status: 'failed', why: here.length ? 'no-readable-asset' : 'no-item-in-window', say: here.length ? 'items exist here but none carries a Cloud-Optimised GeoTIFF asset (' + Array.from(new Set(here.flatMap((x) => x.assets.map((a) => a.type || '?')))).join(', ') + ')' : 'the catalogue holds no item for this part of the window — that is this catalogue, not «nothing exists»' });
-          part.ref = synth; partKeys.push({ key: synth, label: w.label }); continue;
-        }
-        part.item = pick.item.id; part.asset = pick.asset.key;
-        const url = pick.asset.href, uk = 'url:' + url;
-        part.ref = uk; partKeys.push({ key: uk, label: w.label });
-        P.record(uk, 'discovered', { status: 'ok', say: 'an asset of ' + key + ' (item ' + pick.item.id + ')' });
+      const area = windows.reduce((sum, w) => sum + boxArea(w.box), 0);
+      if (!(area > 0)) return refuse('bad-param', { param: 'bbox', reason: 'a raster window needs positive area' });
+      const scope = key + '#read-' + (++acquisitionSeq);
+      let partSeq = 0;
+      const newPart = (label, window) => {
+        const ledgerKey = scope + '/' + (++partSeq);
+        P.record(ledgerKey, 'discovered', { status: 'ok', say: 'a part of ' + key });
+        return { label, bounds: boundsOf(window), ref: ledgerKey, ledgerKey };
+      };
+      const readPart = async (label, window, item, asset, matches) => {
+        const part = newPart(label, window);
+        const url = asset.href, uk = 'url:' + url;
+        const { ledgerKey } = part;
+        Object.assign(part, { item: item.id, asset: asset.key, ref: uk, datetime: item.datetime, cloud: item.cloud, gsd: matches.gsd, matches: { cloud: matches.cloud, resolution: matches.resolution, temporal: matches.temporal } });
         /* may an anonymous reader take it? asked of the file itself, in the host's words */
         const pr = await probeAsset(url, { signal: o.signal || null });
         if (!pr.ok) {
-          const c = P.classify(pr.why, pr.detail);
-          P.record(uk, 'access', { status: c.status === 'failed' ? 'failed' : c.status, why: pr.why, kind: c.kind, say: c.say, detail: pr.detail || null, facts: { retryable: c.retryable } });
-          continue;
+          P.recordFailure(ledgerKey, 'access', pr.why, pr.detail);
+          return part;
         }
-        const width = Math.max(1, Math.round(o.width * (w.box.e - w.box.w) / spanTotal));
-        const r = await D.readGrid(url, { bounds: [w.box.w, w.box.s, w.box.e, w.box.n], width: width, height: Math.floor(o.height), band: o.band, signal: o.signal || null });
-        if (r && r.ok && r.id) { ids.push(r.id); part.id = r.id; }
+        const width = Math.max(1, Math.round(o.width * (window.e - window.w) / spanTotal));
+        const height = Math.max(1, Math.round(o.height * (window.n - window.s) / (box.n - box.s)));
+        const observation = { collection: key, item: item.id, asset: asset.key, datetime: item.datetime, cloud: item.cloud, gsd: matches.gsd };
+        const r = await D.readGrid(url, { bounds: part.bounds, width, height, band: o.band, signal: o.signal || null, ledgerKey, observation });
+        if (P.verdict(ledgerKey).stages.access.status === 'pending') {
+          /* Existing readers can still write the URL's record. Snapshot that read under this window's key. */
+          const stages = P.verdict(uk).stages;
+          const sameRead = r?.ok && r.id ? stages.dataset.facts?.id === r.id : false;
+          if (sameRead || !r?.ok) for (const stage of P.STAGES) {
+            if (stage !== 'discovered' && stages[stage].status !== 'pending') P.record(ledgerKey, stage, stages[stage]);
+          }
+        }
+        if (!r?.ok && P.verdict(ledgerKey).stages.fetched.status === 'pending') P.readFailed(ledgerKey, r?.why || 'no-window-read', r?.detail);
+        const state = P.verdict(ledgerKey);
+        const coverage = r?.ok && r.id ? D.data?.get?.(r.id)?.provenance?.coverage : null;
+        const file = asBox(coverage?.served);
+        /* A reader that reported the request fully fetched has attested the whole requested rectangle. A partial
+           fetch needs its served bounds to locate the gap. A file read with no usable values covers no analysis area. */
+        const usable = r?.ok && r.id && state.analysis !== 'not-ready';
+        const served = usable && (file ? intersectBox(window, file) : state.stages.fetched.status === 'ok' ? window : null);
+        if (usable) { part.id = r.id; part.version = r.version; }
+        part.servedBounds = served && hasArea(served) ? boundsOf(served) : null;
+        part.coverageFraction = part.servedBounds ? boxArea(served) / area : 0;
+        part.validPixelFraction = state.stages.inspected.facts?.finiteFraction ?? null;
+        part.readResolution = coverage?.resolution || null;
+        return part;
+      };
+      const readWindow = async ({ label, box: window }) => {
+        let gaps = [window];
+        const parts = [];
+        const first = itemRequest(p, { ...o, bbox: window, limit: 5 });
+        let request = first, stop = null, droppedByCloud = 0, pages = 0, intersecting = 0, candidates = 0;
+        const rejected = { time: 0, resolution: 0, assets: 0 };
+        const fallback = [], visited = new Set();
+        const toCandidates = (item) => {
+          const tile = asBox(item.bbox);
+          const footprints = tile ? extentIntersections([tile], window).map(asBox).filter(hasArea) : [window];
+          if (!footprints.length) return [];
+          intersecting++;
+          const asset = o.asset ? item.assets.find((a) => a.key === o.asset) : item.assets.find((a) => a.cog && /^https:/.test(a.href));
+          if (!asset) { rejected.assets++; return []; }
+          const statedTime = item.datetime?.split('/') || [];
+          const temporal = temporalRelation(statedTime.length && Number.isFinite(ms(statedTime[0]))
+            && (statedTime.length === 1 || statedTime[1] === '..' || Number.isFinite(ms(statedTime[1])))
+            ? [[statedTime[0], statedTime.length === 1 ? statedTime[0] : statedTime[1]]] : [], o.time);
+          if (temporal === 'outside' || (temporal === 'unstated' && o.strict)) { rejected.time++; return []; }
+          const bandGsd = asset.bands?.[o.band?.index ?? 0]?.spatial_resolution;
+          const rawGsd = bandGsd ?? item.gsd;
+          const gsd = isNum(rawGsd) && rawGsd > 0 ? rawGsd : null;
+          const resolution = resolutionRelation(gsd == null ? null : { min: gsd, max: gsd }, o);
+          if (resolution === 'misses' || (resolution === 'unstated' && o.strict)) { rejected.resolution++; return []; }
+          const cloud = cloudMatch(item.cloud, o.maxCloud);
+          return footprints.map((footprint) => ({ item, asset, footprint, matches: { cloud, resolution, temporal, gsd } }));
+        };
+        const readCandidate = async (c) => {
+          if (o.signal?.aborted || !gaps.some((gap) => { const hit = intersectBox(gap, c.footprint); return hit && hasArea(hit); })) return;
+          const part = await readPart(label, c.footprint, c.item, c.asset, c.matches);
+          parts.push(part);
+          if (part.servedBounds) gaps = gaps.flatMap((g) => subtractBox(g, asBox(part.servedBounds)));
+        };
+        /* Prefer observations that verify the requested limits; an unknown value is an explicit fallback. */
+        const unknowns = ({ matches }) => Object.values(matches).filter((m) => m === 'unstated').length;
+        const triedParts = new Set();
+        while (request && gaps.length && !o.signal?.aborted) {
+          if (!request.ok) { stop = request; break; }
+          const signature = JSON.stringify([request.method, request.url, request.body, request.headers]);
+          if (visited.has(signature) || pages >= MAX_PAGES) { stop = refuse('item-pages-incomplete', { pages, reason: visited.has(signature) ? 'repeated-next-link' : 'page-guard' }); break; }
+          visited.add(signature);
+          const page = await itemPage(o, request);
+          if (!page.ok) { stop = page; break; }
+          pages++;
+          droppedByCloud += page.droppedByCloud;
+          for (const c of page.items.flatMap(toCandidates)) {
+            const partKey = JSON.stringify([c.item.id, c.asset.href, boundsOf(c.footprint)]);
+            if (triedParts.has(partKey)) continue;
+            triedParts.add(partKey);
+            candidates++;
+            if (unknowns(c)) fallback.push(c);
+            else await readCandidate(c);
+          }
+          request = nextItemRequest(first, request, page.next);
+        }
+        fallback.sort((a, b) => unknowns(a) - unknowns(b));
+        for (const c of fallback) await readCandidate(c);
+        if (o.signal?.aborted) stop = refuse('cancelled');
+        if (gaps.length && (!parts.length || parts.some((p) => p.id))) {
+          for (const gap of gaps) {
+            const part = newPart(label, gap);
+            if (stop) P.recordFailure(part.ledgerKey, 'fetched', stop.why, stop.detail);
+            else {
+              P.record(part.ledgerKey, 'access', { status: 'ok', say: 'the catalogue answered' });
+              const why = candidates ? 'window-not-covered'
+                : rejected.time || rejected.resolution ? 'no-item-meets-conditions'
+                  : intersecting ? 'no-readable-asset' : droppedByCloud ? 'no-item-meets-cloud' : 'no-item-in-window';
+              P.recordFailure(part.ledgerKey, 'fetched', why, { bounds: part.bounds, pages, droppedByCloud, rejected });
+            }
+            parts.push(part);
+          }
+        }
+        return { parts, gaps };
+      };
+      const results = await Promise.all(windows.filter(({ box: w }) => hasArea(w)).map(readWindow));
+      const parts = results.flatMap((r) => r.parts).map(({ ledgerKey, ...p }) => ({ ...p, state: P.verdict(ledgerKey) }));
+      const missing = results.flatMap((r) => r.gaps);
+      const datasets = parts.flatMap((p) => p.id ? [p.id] : []);
+      const counted = datasets.length ? parts.filter((p) => p.id || p.ref === p.state.ref) : parts;
+      const coverage = {
+        completeness: missing.length ? (datasets.length ? 'partial' : 'none') : 'all',
+        fraction: Math.max(0, Math.min(1, 1 - missing.reduce((sum, b) => sum + boxArea(b), 0) / area)),
+        areaBasis: 'spherical', servedBounds: parts.flatMap((p) => p.servedBounds ? [p.servedBounds] : []), missingBounds: missing.map(boundsOf),
+      };
+      P.combine(key, counted.map((p) => ({ key: p.state.ref, label: p.label })));
+      if (!missing.length && counted.some((p) => Object.values(p.matches || {}).includes('unstated'))) {
+        const state = P.verdict(key);
+        P.record(key, 'dataset', { ...state.stages.dataset, status: 'partial', say: 'some observations do not state a requested acquisition condition' });
       }
-      P.combine(key, partKeys);
-      /* a parent that is `partial` because of the date line says exactly which side, and that two files are two datasets */
-      return { ok: true, ref: key, state: P.verdict(key), datasets: ids, parts: parts.map((x) => Object.assign({}, x, { state: x.ref ? P.verdict(x.ref) : null })), acrossAntimeridian: !!sides };
+      const datasetsCreated = parts.filter((p) => p.id && p.version != null).map(({ id, version }) => ({ id, version }));
+      return { ok: true, ref: key, state: P.verdict(key), datasets, datasetsCreated, parts, coverage, acrossAntimeridian: !!sides };
     }
 
     const API = {

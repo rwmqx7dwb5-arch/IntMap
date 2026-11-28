@@ -18,7 +18,7 @@ export const cors = {
   /* (#R318) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
      body is read (see the consumption step), and a preflight that does not name it makes the whole
      request fail in the browser rather than merely dropping the field. */
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   /* (speed-overhaul) THE PREFLIGHT IS CACHED. The Authorization and x-intmap-* headers make every call a
      non-simple request, and without a max-age Chrome keeps a preflight for 5 s — shorter than one Atlas

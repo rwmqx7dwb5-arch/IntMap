@@ -134,9 +134,9 @@ export default [
     ui: { none: '2026-11-20' },
     phrases: () => ['調査の状況', '裏で動いている仕事', '結果はどうなった', '途中経過'].concat(['job status', 'how is the research going', 'what did the background job find', 'my jobs']),
     doc: [
-      { in: 'research.analyze', at: 37, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done. Saved GIS outputs carry their GeoJSON geometry types and the work/product IDs for work.job restore; without an id, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
+      { in: 'research.analyze', at: 37, text: 'LOOK AT BACKGROUND JOBS: {"type":"jobStatus","id"?:job id,"limit"?:1-30,"outputTask"?:task id} = with an id, THAT job: its state, each piece and what it found SO FAR (a job that is still running already carries the pieces that ended), the cost, and the combined result once it is done. To read one saved artifact whole, specify outputTask with its job ID. Large results can be paged with read_result. Saved GIS outputs carry their GeoJSON geometry types and the work/product IDs for work.job restore; without an id, the reader\'s recent jobs (newest first). Use it when the reader comes back — 「さっきの調査どうなった」「結果を見せて」 — and when they ask what is running. A running job is not waited for: report what has ended and say the rest is still running.' },
     ],
-    schema: () => ({ type: 'object', properties: { id: str(), limit: int(1, 30) } }),
+    schema: () => ({ type: 'object', properties: { id: str(), limit: int(1, 30), outputTask: str() } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
       const client = pageJobsClient();
@@ -145,6 +145,13 @@ export default [
         if (a && a.id) {
           const f = await client.get(String(a.id));
           if (!f) return R(false, warn(esc(L('No such job of yours.', 'その仕事は見つかりません。'))), { meta: { status: 'failed', code: 'job_not_found' } });
+          if (a.outputTask) {
+            const task = String(a.outputTask);
+            const got = await client.output(f.id, task);
+            if (!got.ok) return R(false, warn(esc(L('The saved output could not be read.', '保存済みの成果物を読み込めませんでした。'))), { meta: { status: 'failed', code: got.code } });
+            return R(true, '', { meta: { status: 'completed', output: got.output, sources: got.sources,
+              data: got.value } });
+          }
           const apply = parkedApplier(K, dctx);
           const applied = await applyParked(f, apply, deviceParkedMemory());
           mountJobCards(() => pageJobsClient(), { L, esc, apply, onEnded: (g) => fileEnded(K, g) });

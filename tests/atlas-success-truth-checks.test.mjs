@@ -86,7 +86,7 @@ test('⑧ 一度確認された不足は、次の検証が無応答でも解消�
   /* 解消を観測した読み手は消せる */
   let m = 0;
   const out2 = await AGENT.runTurn({ model: scripted([{ text: '8 行です。', toolCalls: [] }, { text: '', toolCalls: [{ name: 'draw', arguments: { x: 'c' } }] }, { text: '20 行です。', toolCalls: [] }]), tools: TOOLS, messages: USER, execute: async () => ({ ok: true }),
-    verify: async () => { m++; return m === 1 ? { unmet: [{ need: '残り 12 行' }] } : { unmet: [] }; } });
+    verify: async () => { m++; return m === 1 ? { unmet: [{ need: '残り 12 行' }] } : { unmet: [], met: [{ need: '残り 12 行', how: '成果物を確認し、必要な 20 行が揃った。' }] }; } });
   assert.equal(out2.completion, 'complete');
 });
 

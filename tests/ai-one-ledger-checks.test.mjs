@@ -283,6 +283,33 @@ test('ai-one-ledger ① ai-proxy records a failed request\'s cost too, and recor
   assert.deepEqual(rpcArgs(down.calls, 'record_ai_usage'), [], 'a request that read no provider answer writes no cost');
 });
 
+test('Atlas journals paid vision, sizing and verification in their family including billed failures', () => {
+  const key = 'atlas-289a0c47-38cb-45f4-9cc6-a20832f31b8f';
+  const model = P.OPENAI_DEFAULT_MODEL;
+  const usage = { input_tokens: 2000, input_tokens_details: { cached_tokens: 1024 }, output_tokens: 30 };
+  const route = (text) => ['*', 'api\\.openai\\.com/v1/responses', { json: { model, status: 'completed', output_text: text,
+    output: [{ type: 'message', content: [{ type: 'output_text', text }] }], usage } }];
+  const expected = P.costMicros(model, { input: 976, cached_read: 1024, output: 30 }, 'openai');
+  const tasks = [['vision_read', '{"answer":"5"}'], ['atlas_effort', '{"effort":"low"}'], ['atlas_verify', '{"unmet":[]}']];
+  for (const [task, text] of tasks) {
+    const ask = { headers: { authorization: 'Bearer good', 'content-type': 'application/json', 'x-intmap-turn': key, 'x-intmap-call': 'call-'+task.replace('_','-') }, body: { task, prompt: 'hello' } };
+    const [ok] = runEdge('ai-proxy', [ask], { env: HEALTH_ENV, routes: [...HEALTH_ROUTES, route(text)] });
+    assert.equal(ok.status, 200, JSON.stringify(ok.json));
+    const rows = rpcArgs(ok.calls, 'log_ai_delegation');
+    assert.equal(rows.length, 1);
+    assert.deepEqual([rows[0].p_root, rows[0].p_task, rows[0].p_cost_micros, rows[0].p_cost_complete], [key, task, expected, true]);
+    assert.equal(rows[0].p_call_id, 'call-'+task.replace('_','-'));
+    assert.equal(ok.json.meta.costUsd, expected / 1e6);
+  }
+  const ask = { headers: { authorization: 'Bearer good', 'content-type': 'application/json', 'x-intmap-turn': key }, body: { task: 'analysis_structured', prompt: 'hello' } };
+  const [bad] = runEdge('ai-proxy', [ask], { env: HEALTH_ENV, routes: [...HEALTH_ROUTES, route('invalid')] });
+  const rows = rpcArgs(bad.calls, 'log_ai_delegation');
+  assert.equal(bad.json.error, 'invalid_structured_output', JSON.stringify(bad.json));
+  assert.equal(rows.length, 1);
+  assert.deepEqual([rows[0].p_outcome, rows[0].p_cost_micros, rows[0].p_cost_complete], ['failed', expected, true]);
+  assert.equal(bad.json.meta.costUsd, expected / 1e6);
+});
+
 /* ══ atlas-turn-observability — how a request WENT is counted, anonymously, and decides nothing ══════════
    Written to the counter that already exists (public.usage_counts through record_usage_counts), so the
    rows are (day, metric, dimension) += n and a person has no place in them. */

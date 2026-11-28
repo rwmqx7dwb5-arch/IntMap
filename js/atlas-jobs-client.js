@@ -21,7 +21,7 @@
  * ==========================================================================*/
 
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every card text and href below goes through */
-import { s, stable, jobGeometryTypes, readJobArtifactFeatures } from './atlas-job-core.js';
+import { s, stable, jobGeometryTypes, readJobArtifactFeatures, readJobArtifactValue } from './atlas-job-core.js';
 
 const TERMINAL = new Set(['done', 'partial', 'failed', 'cancelled']);   /* partial: some pieces finished and some did not (gis-result-handoff) */
 const TASK_ENDED = new Set(['done', 'partial', 'failed', 'refused', 'cancelled']);
@@ -95,9 +95,15 @@ export function makeJobsClient(o) {
       const o = d.output || null;
       if (!o) return { ok: false, code: 'no_output' };
       const sources = Array.isArray(r.outputSources) ? r.outputSources : (Array.isArray(r.sources) ? r.sources : []);
-      if (o.stored !== 'artifact') return d.result && Array.isArray(d.result.features) ? { ok: true, features: d.result.features, output: o, sources } : { ok: false, code: 'no_output' };
+      if (o.format === 'json') {
+        const got = await readJobArtifactValue(db, 'atlas_job_artifacts', jobId, taskId, d);
+        if (!got.ok) return got;
+        const features = got.value?.type === 'FeatureCollection' ? got.value.features : undefined;
+        return { ...got, ...(features ? { features } : {}), output: o, sources };
+      }
+      if (o.stored !== 'artifact') return d.result && Array.isArray(d.result.features) ? { ok: true, value: d.result, features: d.result.features, output: o, sources } : { ok: false, code: 'no_output' };
       const got = await readJobArtifactFeatures(db, 'atlas_job_artifacts', jobId, taskId, o);
-      return got.ok ? { ...got, output: o, sources } : got;
+      return got.ok ? { ...got, value: { ...o.header, type: 'FeatureCollection', features: got.features }, output: o, sources } : got;
     },
   };
 }
@@ -117,14 +123,14 @@ export function jobFacts(job, tasks) {
          to a number here, so Atlas, reading the ended job, said the result held no figures and recomputed them on the page (production 2026-11-28). */
       findings: Array.isArray(r.findings) ? r.findings.filter((x) => x && x.claim).map((x) => ({ claim: s(x.claim, 800), source: s(x.source, 400), excerpt: s(x.excerpt, 800) })) : [],
       gaps: Array.isArray(r.gaps) ? r.gaps.map((g) => s(g, 300)) : [],
-      sources: Array.isArray(r.sources) ? r.sources.slice(0, 8).map((x) => ({ url: s(x && x.url, 400), title: s(x && x.title, 160) })) : [],
+      sources: Array.isArray(r.sources) ? r.sources.map((x) => ({ url: s(x && x.url, 500), title: s(x && x.title, 200) })) : [],
       costUsd: micros(t.cost_micros),
       /* (server-capability-lane) a map-changing capability the job SAVED for the page — applyParked runs it when the reader is back */
       parked: r.parked && typeof r.parked.capability === 'string' ? { capability: s(r.parked.capability, 80), args: (r.parked.args && typeof r.parked.args === 'object') ? r.parked.args : {} } : null,
       /* (gis-result-handoff) what the piece MADE (its output's id, version, count, columns, sources, where it is kept) and which outputs it READ —
          the structured result, not only its summary; the features themselves are read with client.output when they are wanted */
       output: outputOf(r),
-      reads: Array.isArray(r.reads) ? r.reads.slice(0, 20).map((x) => ({ id: s(x && x.id, 120), version: s(x && x.version, 40), count: Number(x && x.count) || 0, ok: !!(x && x.ok) })) : [],
+      reads: Array.isArray(r.reads) ? r.reads.map((x) => ({ id: s(x && x.id, 120), version: s(x && x.version, 40), count: Number(x && x.count) || 0, ok: !!(x && x.ok) })) : [],
       requestVersion: Number(r.requestVersion) || 0, conditionsVersion: r.conditionsVersion == null ? Number(r.requestVersion) || 0 : Number(r.conditionsVersion) || 0,
     };
   });
@@ -138,7 +144,7 @@ export function jobFacts(job, tasks) {
     amends: Number(job.amend_count) || 0, spentUsd: micros(job.spent_micros), capUsd: micros(job.cost_cap_micros),
     createdAt: job.created_at, endedAt: job.ended_at || null, error: s(job.error, 300),
     result: job.result && typeof job.result.summary === 'string' ? s(job.result.summary, 6000) : '',
-    incomplete: Array.isArray(jr.incomplete) ? jr.incomplete.slice(0, 20).map((x) => ({ id: s(x && x.id, 64), state: s(x && x.state, 20), code: s(x && x.code, 60) })) : [],
+    incomplete: Array.isArray(jr.incomplete) ? jr.incomplete.map((x) => ({ id: s(x && x.id, 64), state: s(x && x.state, 20), code: s(x && x.code, 60) })) : [],
     requestVersion: Number(jr.requestVersion) || 0,
     tasks: list,
   };
@@ -150,6 +156,7 @@ function outputOf(r) {
   const geometryTypes = Array.isArray(o.geometryTypes) ? o.geometryTypes :
     Array.isArray(data.result?.features) ? jobGeometryTypes(data.result.features) : null;
   return { id: s(o.id, 120), version: s(o.version, 40), count: Number(o.count) || 0, columns: Array.isArray(o.columns) ? o.columns.slice(0, 60).map((c) => s(c, 80)) : [],
+    kind: o.kind, ref: o.ref, path: o.path, origin: o.origin, provenance: o.provenance, format: o.format,
     geometryTypes, sources: Array.isArray(o.sources) ? o.sources.filter((u) => typeof u === 'string') : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
 }
 
@@ -161,7 +168,7 @@ function outputOf(r) {
    applyParked(facts, apply, memory) → [{ task, capability, ok, why? }] — what it did THIS call; an operation done earlier is not in it. */
 export async function applyParked(f, apply, memory) {
   const out = [];
-  if (!f || typeof apply !== 'function') return out;
+  if (!f || f.status === 'cancelled' || typeof apply !== 'function') return out;
   /* ⚠ THE ORDER IS THE PLAN'S, NOT THE ALPHABET'S. The tasks arrive sorted by their NAME (the query orders by task_id), so «draw» ran before
      «move to 1850» and drew the present (reproduced 2026-11-27). A parked operation runs after every task it starts from: a topological order over
      `deps`, ties broken by when the server ended each (the order it ran them in), then by name. */

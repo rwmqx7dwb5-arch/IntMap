@@ -345,7 +345,7 @@ export function makeAtlasMapCompose(deps) {
       shapes.forEach((sh) => {
         const o = ovOf(shapeId(sh)); const col = (o && o.color) || sh.color;
         out.push({ type: 'Feature', id: out.length, geometry: sh.geometry,
-          properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, target: sh.target, author: sh.author, sourceId: sh.sourceId, sourceVersion: sh.sourceVersion, transformation: sh.transformation, turnId: sh.turnId, ...sh.range, ref: sh.reference ? 1 : 0, asOf: sh.asOf || '', color: col,
+          properties: { t: 'shape', g: sh.want, id: shapeId(sh), name: sh.name, basis: sh.basis, method: sh.method, source: sh.source, target: sh.target, author: sh.author, sourceId: sh.sourceId, sourceVersion: sh.sourceVersion, transformation: sh.transformation, createdAt:sh.createdAt, turnId: sh.turnId, ...sh.range, ref: sh.reference ? 1 : 0, asOf: sh.asOf || '', color: col,
             fc: soften(col, 0.55, 0), lc: soften(col, 0.7, 0.06), op: o && o.op != null ? o.op : null, fop: o && o.op != null ? fillFromAlpha(o.op) : null, w: o && o.w != null ? o.w : null,
             hov: hovRec && hovRec.item === sh.item ? 1 : 0 } });
       });
@@ -413,7 +413,7 @@ export function makeAtlasMapCompose(deps) {
       });
       relations.forEach((rel) => {
         const id = relId(rel), o = ovOf(id) || {};
-        out.push({ id, kind: 'link', geom: 'line', name: (rel.fromName || '') + ' → ' + (rel.toName || '') + (rel.label ? ' · ' + rel.label : ''), color: o.color || rel.color, width: o.w != null ? o.w : Math.min(rel.w, 2.4), alpha: o.op != null ? o.op : (rel.dash ? BASE_OPACITY.dashedLink : BASE_OPACITY.link), geometry: rel.geo, src: [SRC],
+        out.push({ id, kind: 'link', geom: 'line', name: (rel.fromName || '') + ' → ' + (rel.toName || '') + (rel.label ? ' · ' + rel.label : ''), color: o.color || rel.color, width: o.w != null ? o.w : Math.min(rel.w, 2.4), alpha: o.op != null ? o.op : (rel.dash ? BASE_OPACITY.dashedLink : BASE_OPACITY.link), geometry: rel.geo, provenance:rel.provenance, src: [SRC],
           setColor: (c) => setStyle(id, { color: c }), setWidth: (w) => setStyle(id, { width: w }), setOpacity: (v) => setStyle(id, { opacity: v }) });
       });
       return out;
@@ -832,7 +832,7 @@ export function makeAtlasMapCompose(deps) {
           if (sh && sh.ok && sh.geometry) {
             shapes.push({ name: str(it.name, 120), target: str(sh.target || it.name, 120), want, geometry: sh.geometry, range:geometryRange(sh.geometry), basis: sh.basis || 'unstated', method: str(sh.method, 40),
               source: str(sh.source, 120), sourceId: sh.sourceId, sourceVersion: sh.sourceVersion, transformation: sh.transformation || sh.method,
-              ...mapAuthorship(ctx), color: colour, item: i + 1,
+              ...mapAuthorship(ctx), createdAt:Date.now(), color: colour, item: i + 1,
               /* ⚠ every outline the shape ladders hold is a CURRENT one (OSM, IntMap country outlines). On a dated map it is shown as a reference and says so; a ladder that answers for the instant itself says `validAt` and is not demoted. */
               reference: !!eraAsOf && !(sh.validAt && String(sh.validAt) === eraAsOf), asOf: eraAsOf, validAt: sh.validAt ? String(sh.validAt) : (eraAsOf ? '' : 'present') });
             /* a name whose only answer is its shape still gets its numbered marker — at the shape, said so */
@@ -919,7 +919,7 @@ export function makeAtlasMapCompose(deps) {
             sea = (c && c.ok) ? { checked: true, onSea: !!c.onSea, samples: +c.samples || 0, landSamples: +c.land || 0 } : { checked: false, reason: (c && c.reason) || 'unavailable' };
           } else sea = { checked: false, reason: 'not_a_route' };
         }
-        const rel = { provenance:{...mapAuthorship(ctx),target:A.name+' → '+B.name,transformation:basis}, from: A.id, to: B.id, fromN: A.n, toN: B.n, fromName: A.name, toName: B.name, type, label: str(x.label, 120), color: colourOf(x.color, placed.length + i),
+        const rel = { provenance:{...mapAuthorship(ctx),createdAt:Date.now(),target:A.name+' → '+B.name,transformation:basis}, from: A.id, to: B.id, fromN: A.n, toN: B.n, fromName: A.name, toName: B.name, type, label: str(x.label, 120), color: colourOf(x.color, placed.length + i),
           w: type === 'flow' || type === 'route' ? 3 : 2.2, dash: type === 'influence' || type === 'border' || type === 'claim', arrow: type === 'flow' || type === 'route' || type === 'supply',
           basis, via: vias.map((p) => p.name), km, sea,
           geo: splitAntimeridian(coords) };
@@ -991,7 +991,7 @@ export function makeAtlasMapCompose(deps) {
     function shapeOf(it) { const v = str(it && it.shape, 10).toLowerCase(); return (v === 'area' || v === 'line') ? v : ''; }
     /* what the result says about one drawn shape — no geometry (the map holds it; the model does not need the vertices) */
     function shapePub(x) { return { id: shapeId(x), name: x.name, target: x.target, shape: x.want, basis: x.basis, method: x.method, source: x.source,
-      sourceId: x.sourceId, sourceVersion: x.sourceVersion, transformation: x.transformation, author: x.author, turnId: x.turnId, item: x.item, validity: x.reference ? 'modern_reference' : (x.asOf ? 'dated_record' : 'current'), ...(x.asOf ? { asOf: x.asOf } : null), bbox: refs.bboxOf(x.geometry), ...x.range }; }
+      sourceId: x.sourceId, sourceVersion: x.sourceVersion, transformation: x.transformation, author: x.author, createdAt:x.createdAt, turnId: x.turnId, item: x.item, validity: x.reference ? 'modern_reference' : (x.asOf ? 'dated_record' : 'current'), ...(x.asOf ? { asOf: x.asOf } : null), bbox: refs.bboxOf(x.geometry), ...x.range }; }
     /* what the result says about one drawn relation */
     function relPub(r) { return { id: relId(r), ...r.provenance, ...r.range, from: r.fromName, to: r.toName, fromId: r.from, toId: r.to, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
       km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }

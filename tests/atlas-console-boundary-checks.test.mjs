@@ -112,7 +112,7 @@ test('R801 A③: a bare URL carrying a quote or an angle bracket stops at it', (
 const AGENT_FOR_INPUT = makeAtlasAgent();
 function agentInput(req, q) {
   const lines = (read('js/atlas-console.js') + '\n' + capsSource()).split('\n');
-  const s = lines.findIndex((l) => /^\s*function _agentCtx\(\)\{/.test(l));
+  const s = lines.findIndex((l) => /^\s*function _agentCtx\([^)]*\)\{/.test(l));
   assert.ok(s > 0, '_agentCtx moved');
   const e = lines.findIndex((l, i) => i > s && /fence:POLICY\.turnMechanics\.fence \}\); \}/.test(l));
   assert.ok(e > s && e - s < 20, '_agentInput no longer hands the policy fence to composeInput within 20 lines');
@@ -393,7 +393,7 @@ test('R801 C⑦: the tool surface carries the turn record to the action runner b
   assert.equal(got[0].turn, turn, 'the same record object, not a copy');
   /* the model's `__externalContent` is an ARGUMENT here; js/atlas-console.js `_runOne` overwrites it from the record */
   const src = (read('js/atlas-console.js') + '\n' + capsSource());
-  assert.match(src, /_runOne=async\(action,turn\)=>\{ action\.__externalContent=!!\(turn&&turn\.externalContentSeen\);/, 'the stamp is unconditional');
+  assert.match(src, /_runOne=async\(action,turn\)=>\{[^\r\n]*?action\.__externalContent=!!\(turn&&turn\.externalContentSeen\);/, 'the stamp is unconditional');
   assert.match(src, /externalContent:a\.__externalContent===true, signal\}/, 'and the executor is given the fact as execution context — no `confirmed` on the model\'s path (atlas-outside-mark: the approval is the reader\'s press, tests/atlas-outside-mark-checks.test.mjs ⑤)');
 });
 

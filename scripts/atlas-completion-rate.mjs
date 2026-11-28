@@ -30,7 +30,7 @@ export function rowOf(report) {
     when: report.when || null, build: report.build || null, url: report.url || null,
     turns: c.turns, observedTurns: c.observedTurns, unobservedTurns: c.unobservedTurns, finishedTurns: c.finishedTurns,
     turnRate: c.turnRate, deliverables: c.deliverables, deliverablesPresent: c.deliverablesPresent, deliverableRate: c.deliverableRate,
-    falseCompletion: c.falseCompletion || [], honestIncomplete: c.honestIncomplete || [],
+    falseCompletion: c.falseCompletion || [], falseIncomplete: c.falseIncomplete ?? null, honestIncomplete: c.honestIncomplete || [],
   };
 }
 
@@ -41,11 +41,11 @@ export function readHistory(text) {
 const pct = (v) => (v == null ? 'n/a' : (v * 100).toFixed(1) + '%');
 export function renderTrend(rows) {
   if (!rows.length) return 'no rows yet';
-  const out = ['when                 build     turns(obs/unobs)  finished   deliverables      said-complete-but-absent'];
+  const out = ['when                 build     turns(obs/unobs)  finished   deliverables      false-completion  false-incompletion'];
   for (const r of rows) {
     out.push([String(r.when || '').slice(0, 19).padEnd(20), String(r.build || '').slice(0, 8).padEnd(9),
       (r.observedTurns + '/' + r.unobservedTurns).padEnd(17), pct(r.turnRate).padEnd(10),
-      (r.deliverablesPresent + '/' + r.deliverables + ' ' + pct(r.deliverableRate)).padEnd(17), (r.falseCompletion || []).length].join(' '));
+      (r.deliverablesPresent + '/' + r.deliverables + ' ' + pct(r.deliverableRate)).padEnd(17), String((r.falseCompletion || []).length).padEnd(17), r.falseIncomplete?.length ?? '—'].join(' '));
   }
   const a = rows[rows.length - 1], b = rows.length > 1 ? rows[rows.length - 2] : null;
   if (b && a.deliverableRate != null && b.deliverableRate != null) out.push('latest vs previous deliverable rate: ' + ((a.deliverableRate - b.deliverableRate) * 100).toFixed(1) + ' points');

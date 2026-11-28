@@ -623,6 +623,13 @@ export function renderMarkdown(r) {
   L.push('| misresolved place probes | ' + M.misresolution.probes.length + ' / ' + M.misresolution.probesMeasured + (M.misresolution.probes.length ? ' — ' + M.misresolution.probes.join(', ') : '') + ' |');
   L.push('| named places answered about the map centre | ' + M.misresolution.answeredAboutCentre + ' |');
   L.push('| failed expectations (alarming / known open) | ' + M.expectationFailures.alarming + ' / ' + M.expectationFailures.knownOpen + ' |');
+  if (r.completionRate?.observedTurns) {
+    const c = r.completionRate;
+    for (const [label, cases] of [['Completion claimed with missing deliverables', c.falseCompletion],
+      ['Incomplete reported with all deliverables present', c.falseIncomplete]]) {
+      if (Array.isArray(cases)) L.push('| ' + label + ' | ' + cases.length + (cases.length ? ' · ' + cases.join(', ') : '') + ' |');
+    }
+  }
   const A = M.answers;
   if (A && (A.graded || A.rubric.graded || A.rubric.unmeasured)) {
     const pc = (o) => (o.n ? Math.round((100 * o.correct) / o.n) + '% (' + o.correct + '/' + o.n + ')' : '—');

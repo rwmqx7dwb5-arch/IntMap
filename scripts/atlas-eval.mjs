@@ -17,7 +17,9 @@
  *  (atlas-quality-lab) ALSO, on a live run:
  *      --set records|answers|all   which problem set to ask (default all): the questions the manual rounds
  *                                  recorded (questions.json) and/or the verified answer key (answer-key.json)
- *      --effort-policy low-adaptive|high-fixed  measure the same question set with an explicit effort policy
+ *      --effort-policy auto|low-adaptive|high-fixed  measure the same question set with an explicit effort policy
+ *      --effort-images <file.json>  map case IDs to arrays of image data URLs sent with the final request
+ *      --compare-effort <auto.json> <high.json>  compare two reports from the same build and questions, with no model call
  *      --rubric                    grade every answer-key reply with the INDEPENDENT grader (ai-proxy
  *                                  `atlas_grade`, a provider other than the one answering; one use per grade)
  *      --record <dir>              save every measured turn as a cassette (scripts/atlas-eval/replay.mjs) —
@@ -48,6 +50,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
   judgeTurn, judgeProbe, metricsOf, badnessOf, advance, verdictOf, renderMarkdown, validateQuestionSet,
@@ -145,8 +148,8 @@ export const PAGE = {
     const orig = T.makeExecute;
     const text = (v) => { try { return JSON.stringify(v); } catch (_) { return String(v); } };
     const copy = (v) => { try { return JSON.parse(JSON.stringify(v)); } catch (_) { return null; } };
-    T.makeExecute = function (tools, agent) {
-      const ex = orig.call(this, tools, agent);
+    T.makeExecute = function (...options) {
+      const ex = orig.apply(this, options);
       return async function (call) {
         const rec = { name: String((call && call.name) || ''), args: copy(call && call.arguments), t0: Date.now() };
         (window.__atlasEvalCalls = window.__atlasEvalCalls || []).push(rec);
@@ -158,11 +161,21 @@ export const PAGE = {
     T.__atlasEvalTapped = true;
     return true;
   },
-  ask: async ({ text, effortPolicy }) => {
+  ask: async ({ text, effortPolicy, images }) => {
     const t0 = Date.now(); let err = '';
     window.__atlasEvalCalls = [];
-    try { await window.IntMapConsole.run(text, undefined, undefined, { effortPolicy }); } catch (e) { err = String((e && e.message) || e); }
+    try { await window.IntMapConsole.run(text, images, undefined, { effortPolicy }); } catch (e) { err = String((e && e.message) || e); }
     return { ms: Date.now() - t0, err };
+  },
+  turnCost: async ({ key }) => {
+    if (!key || !window.sb) return null;
+    // Journal and telemetry writes are off the serving path. Wait here only, outside the observed latency.
+    for (let i = 0; i < 5; i++) {
+      const { data, error } = await window.sb.rpc('atlas_turn_accounting', { p_turn: key });
+      if (error) return null;
+      if (data?.cost_known || i === 4) return data;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+    }
   },
   stop: () => { try { window.IntMapConsole.stopRun(); } catch (_) { } },
   /* ⚠ (atlas-controls-receipts) A SWITCH IS GRADED BY PRESSING IT. The ids are the ones the UI generator returned as DRAWN (ui.inlineControls / ui.compose
@@ -333,7 +346,7 @@ export function harnessPatienceMs(rules, patienceMin) {
 /** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
  *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
  *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
-export async function askOnFreshPage(S, text, { patienceMs, sections, earlier, effortPolicy }) {
+export async function askOnFreshPage(S, text, { patienceMs, sections, earlier, effortPolicy, images }) {
   const { page } = S;
   await S.boot(); await page.evaluate(PAGE.ensureAtlas);
   await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 });
@@ -345,20 +358,29 @@ export async function askOnFreshPage(S, text, { patienceMs, sections, earlier, e
   for (const t of earlier || []) {
     const a = await askOnce(page, t, patienceMs, effortPolicy);
     if (a.unmeasured) return { unmeasured: Object.assign({}, a.unmeasured, { detail: 'earlier turn «' + t + '»: ' + (a.unmeasured.detail || a.unmeasured.unmeasured) }) };
-    said.push({ text: t, askRes: a.askRes, raw: await page.evaluate(PAGE.observe, sections) });
+    const raw = await page.evaluate(PAGE.observe, sections);
+    if (effortPolicy) await attachTurnCost(page, raw);
+    said.push({ text: t, askRes: a.askRes, raw });
   }
-  const a = await askOnce(page, text, patienceMs, effortPolicy);
+  const a = await askOnce(page, text, patienceMs, effortPolicy, images);
   if (a.unmeasured) return { unmeasured: a.unmeasured };
   const raw = await page.evaluate(PAGE.observe, sections);
+  if (effortPolicy) await attachTurnCost(page, raw);
   /* (atlas-controls-receipts) the graded turn's drawn switches are pressed after it is observed — never an earlier turn's, which would change the map the next turn starts from */
   const switches = drawnSwitches(raw.calls);
   if (switches.length) raw.pressed = await page.evaluate(PAGE.press, switches).catch((e) => [{ error: String((e && e.message) || e) }]);
   return { askRes: a.askRes, raw, earlier: said };
 }
+async function attachTurnCost(page, raw) {
+  const m = raw?.measurement;
+  if (m?.turnKey && m.row?.model_calls > 0) {
+    m.accounting = await page.evaluate(PAGE.turnCost, { key: m.turnKey }).catch(() => null);
+  }
+}
 /** one question on the page as it stands, under the harness's watchdog → { askRes } | { unmeasured } */
-async function askOnce(page, text, patienceMs, effortPolicy) {
+async function askOnce(page, text, patienceMs, effortPolicy, images) {
   let askRes, timer = null;
-  const asking = page.evaluate(PAGE.ask, { text, effortPolicy });
+  const asking = page.evaluate(PAGE.ask, { text, effortPolicy, images });
   asking.catch(() => { });   /* if the watchdog wins, the next boot() rejects this one — that is not an error */
   try {
     askRes = await Promise.race([asking, new Promise((r) => { timer = setTimeout(() => r({ timedOut: true }), patienceMs); })]);
@@ -410,12 +432,23 @@ export function effortSample(turns, policy) {
   const evidence = attempted.map((t) => t.effort);
   const priced = evidence.filter((e) => e && Number.isFinite(e.costMicros));
   const shown = evidence.map((e) => e?.firstUsefulMs).filter(Number.isFinite).sort((a, b) => a - b);
-  const observedDeliverables = attempted.reduce((n, t) => n + (t.deliverables?.present || 0), 0);
+  const final = evidence.map((e) => e?.totalMs).filter(Number.isFinite).sort((a, b) => a - b);
+  const median = (a) => a.length ? (a[(a.length - 1) >> 1] + a[a.length >> 1]) / 2 : null;
+  const targets = attempted.reduce((s, t) => {
+    const d = t.deliverables;
+    if (d) { s.achieved += d.present; s.requested += d.rows.length; s.unobserved += d.unobserved; }
+    return s;
+  }, { achieved: 0, requested: 0, unobserved: 0 });
+  const observedDeliverables = targets.achieved;
   const totalCostMicros = attempted.length && priced.length === attempted.length ? priced.reduce((n, e) => n + e.costMicros, 0) : null;
-  return { policy, attempted: attempted.length, observedDeliverables, costObserved: priced.length, totalCostMicros,
-    costPerObservedDeliverableMicros: totalCostMicros != null && observedDeliverables ? totalCostMicros / observedDeliverables : null,
-    firstUsefulObserved: shown.length, firstUsefulMedianMs: shown.length ? (shown[(shown.length - 1) >> 1] + shown[shown.length >> 1]) / 2 : null };
+  const subtotals = evidence.map((e) => e?.observedCostMicros ?? e?.costMicros).filter(Number.isFinite);
+  const observedCostMicros = subtotals.length ? subtotals.reduce((n, cost) => n + cost, 0) : null;
+  return { policy, attempted: attempted.length, observedDeliverables, targets, costObserved: priced.length, totalCostMicros,
+    observedCostMicros, costPerObservedDeliverableMicros: totalCostMicros != null && observedDeliverables ? totalCostMicros / observedDeliverables : null,
+    firstUsefulObserved: shown.length, firstUsefulMedianMs: median(shown), finalObserved: final.length, finalMedianMs: median(final) };
 }
+
+const hashOf = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 async function evaluate() {
   const dryRun = has('--dry-run');
@@ -423,9 +456,16 @@ async function evaluate() {
   const outDir = resolve(arg('--out', join(ROOT, 'test-results', 'atlas-eval')));
   const only = arg('--only') ? new Set(arg('--only').split(',').map((s) => s.trim())) : null;
   const effortPolicy = arg('--effort-policy');
-  if (effortPolicy && !['low-adaptive', 'high-fixed'].includes(effortPolicy)) {
-    console.error('atlas-eval: --effort-policy is low-adaptive or high-fixed');
+  if (effortPolicy && !['auto', 'low-adaptive', 'high-fixed'].includes(effortPolicy)) {
+    console.error('atlas-eval: --effort-policy is auto, low-adaptive or high-fixed');
     process.exit(2);
+  }
+  const imageFile = arg('--effort-images');
+  const images = imageFile ? JSON.parse(readFileSync(imageFile, 'utf8')) : {};
+  if (imageFile && (!effortPolicy || !images || typeof images !== 'object' || Array.isArray(images) ||
+      Object.values(images).some((list) => !Array.isArray(list) || list.length > 4 ||
+        list.some((data) => typeof data !== 'string' || !/^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(data))))) {
+    throw new Error('--effort-images requires an effort policy and a case-to-image object (at most four data URLs per case).');
   }
   const token = process.env.ATLAS_EVAL_REFRESH_TOKEN || '';
   if (!dryRun && !token) {
@@ -438,6 +478,7 @@ async function evaluate() {
   const which = arg('--set', 'all');
   if (['all', 'records', 'answers'].indexOf(which) < 0) { console.error('atlas-eval: --set is all, records or answers'); process.exit(2); }
   const questions = askable(which).filter((q) => !only || only.has(q.id));
+  if (Object.keys(images).some((id) => !questions.some((q) => q.id === id))) throw new Error('Every --effort-images case must be selected.');
   const rubric = has('--rubric');
   const recordDir = arg('--record') ? resolve(arg('--record')) : '';
   const recorded = [];
@@ -475,7 +516,7 @@ async function evaluate() {
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
-      const asked = await askOnFreshPage(S, q.text, { patienceMs, effortPolicy, earlier: (q.earlier || []).map((e) => e.text),
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, effortPolicy, images: Object.hasOwn(images, q.id) ? images[q.id] : undefined, earlier: (q.earlier || []).map((e) => e.text),
         sections: [...new Set([...sectionsRead(questions), ...sectionsRead(questions.flatMap((x) => x.earlier || [])), ...deliverableSectionsOf(questions)])] });
       if (asked.unmeasured) { turns.push({ ...judgeTurn(q, asked.unmeasured, rules), ...(effortPolicy ? { effort: null } : {}) }); continue; }
       const obs = observeTurn(q, asked.raw, asked.askRes, asked.earlier);
@@ -492,10 +533,16 @@ async function evaluate() {
       const judged = judgeTurn(q, obs, rules);
       if (effortPolicy) {
         const row = obs.measurement?.row;
-        const costs = [obs].concat(obs.earlier || []).map((e) => e.measurement?.effortPolicy === effortPolicy && e.measurement.row?.cost_known ? e.measurement.row.cost_micros : null);
+        const costs = [obs].concat(obs.earlier || []).map((e) => {
+          const m = e.measurement;
+          return m?.effortPolicy === effortPolicy ? m.accounting : null;
+        });
         judged.effort = obs.measurement?.effortPolicy === effortPolicy && row ? {
-          costMicros: costs.every(Number.isFinite) ? costs.reduce((n, c) => n + c, 0) : null,
+          costMicros: costs.every((c) => c?.cost_known && Number.isFinite(c.cost_micros)) ? costs.reduce((n, c) => n + c.cost_micros, 0) : null,
+          observedCostMicros: costs.some((c) => Number.isFinite(c?.cost_micros)) ? costs.reduce((n, c) => n + (c?.cost_micros ?? 0), 0) : null,
           firstUsefulMs: row.first_useful_ms,
+          totalMs: row.completion === 'none' ? null : row.total_ms,
+          outcomeMs: row.total_ms,
         } : null;
       }
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
@@ -530,7 +577,8 @@ async function evaluate() {
     runUrl: arg('--run-url') || null, dryRun, partial, session, fatal: fatal || null, verdict,
     metrics: metricsOf(turns, probes),
     completionRate: completionRateOf(turns.map((t) => t.deliverables)),   /* (atlas-completion-rate) the requested things that existed, apart from what the turns said */
-    ...(effortPolicy ? { effortComparison: effortSample(turns, effortPolicy) } : {}),
+    ...(effortPolicy ? { effortComparison: { ...effortSample(turns, effortPolicy),
+      conditions: hashOf({ questions, images, rubric, patienceMs }) } } : {}),
     previous: previous ? { when: previous.when, runUrl: previous.runUrl || null, verdict: previous.verdict } : null,
     regressions: adv.regressions, improvements: adv.improvements,
     reference: (dryRun || partial) ? ((previous && previous.reference) || {}) : adv.reference,
@@ -557,13 +605,46 @@ async function evaluate() {
   console.log('  turns: ' + M.measured + ' measured of ' + M.questions + (Object.keys(M.unmeasured).length ? ' · not measured: ' + Object.entries(M.unmeasured).map(([k, n]) => k + ' ×' + n).join(', ') : ''));
   console.log('  probes: ' + M.misresolution.probesMeasured + ' measured · misresolved: ' + (M.misresolution.probes.join(', ') || 'none'));
   if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
-  if (M.answers.graded) console.log('  answers right ' + M.answers.correct + '/' + M.answers.graded + ' (wrong ' + M.answers.incorrect + ', not stated ' + M.answers.absent + ')' + (M.answers.rubric.graded ? ' · grader pass ' + M.answers.rubric.pass + '/' + M.answers.rubric.graded : ''));
   { const I = initiativeOf(turns); if (I.graded) console.log('  initiative (0-2, beside the verdict): mean ' + I.mean.toFixed(2) + ' over ' + I.graded + ' · words only where more was invited: ' + (I.wordsOnlyWhereMoreWasInvited.join(', ') || 'none')); }
   if (M.measured) console.log('  reach ' + M.reach.reached + '/' + M.reach.of + ' · zero-op ' + M.zeroOpTurns.length + ' · cut ' + M.cutTurns.n + ' · same call again ' + M.secondOfSameOp.total + ' · over budget ' + M.overBudgetTurns.length);
   if (adv.regressions.length) console.log('  regressions: ' + adv.regressions.map((x) => x.key).join(', '));
   console.log('  report: ' + join(outDir, 'atlas-eval.md'));
   if (dryRun) process.exit(fatal ? 1 : 0);
   process.exit(verdict === 'ok' ? 0 : verdict === 'regressed' ? 3 : 1);
+}
+
+export function compareEffortReports(auto, fixed) {
+  if (auto?.effortComparison?.policy !== 'auto' || fixed?.effortComparison?.policy !== 'high-fixed') {
+    throw new Error('Compare an auto report with a high-fixed report, in that order.');
+  }
+  const build = (r) => typeof r.build === 'string' ? r.build : r.build?.sha || r.build?.commit;
+  if (!build(auto) || build(auto) !== build(fixed) || auto.url !== fixed.url) {
+    throw new Error('Both reports must cover the same site and build.');
+  }
+  if (auto.dryRun || fixed.dryRun) throw new Error('Use reports from measured runs.');
+  if (!auto.effortComparison.conditions || auto.effortComparison.conditions !== fixed.effortComparison.conditions) {
+    throw new Error('Requests, images, goal definitions, grader settings and watchdog conditions must match.');
+  }
+  const by = new Map(fixed.turns.map((t) => [t.id, t]));
+  if (by.size !== fixed.turns.length || new Set(auto.turns.map((t) => t.id)).size !== by.size || auto.turns.length !== by.size) {
+    throw new Error('Both reports must contain the same unique questions.');
+  }
+  const pairs = auto.turns.map((a) => {
+    const b = by.get(a.id);
+    if (!b || a.text !== b.text || a.lang !== b.lang || a.deliverables && b.deliverables &&
+        JSON.stringify(a.deliverables.rows.map(({ kind, why }) => [kind, why])) !== JSON.stringify(b.deliverables.rows.map(({ kind, why }) => [kind, why]))) {
+      throw new Error('The request or its deliverable criteria differ for ' + a.id + '.');
+    }
+    const read = (t) => ({
+      firstUsefulMs: t.effort?.firstUsefulMs ?? null, totalMs: t.effort?.totalMs ?? null, outcomeMs: t.effort?.outcomeMs ?? null, totalCostMicros: t.effort?.costMicros ?? null,
+      observedCostMicros: t.effort?.observedCostMicros ?? null, achievedTargets: t.deliverables?.present ?? null,
+      requestedTargets: t.deliverables?.rows.length ?? null, unobservedTargets: t.deliverables?.unobserved ?? null,
+    });
+    const x = read(a), y = read(b);
+    const delta = Object.fromEntries(Object.keys(x).map((k) => [k, x[k] != null && y[k] != null ? x[k] - y[k] : null]));
+    return { id: a.id, auto: x, highFixed: y, delta };
+  });
+  return { build: build(auto), url: auto.url, pairs };
 }
 
 /* ── the alarm: ONE issue, rewritten with the latest verdict, closed when a run is clean ──────────
@@ -666,7 +747,13 @@ async function offlineAll() {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (has('--alarm')) alarm();
+  if (has('--compare-effort')) {
+    const p = argv.indexOf('--compare-effort');
+    try {
+      const [auto, fixed] = argv.slice(p + 1, p + 3).map((path) => JSON.parse(readFileSync(path, 'utf8')));
+      console.log(JSON.stringify(compareEffortReports(auto, fixed), null, 2));
+    } catch (e) { console.error('atlas-eval: ' + e.message); process.exitCode = 2; }
+  } else if (has('--alarm')) alarm();
   else if (has('--replay')) process.exit(await replayAll());
   else if (has('--offline')) process.exit(await offlineAll());
   else if (has('--validate')) {

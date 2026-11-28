@@ -90,11 +90,11 @@ function turnPages(turn) {
 const canonUrl = makeAtlasEvidence().canonicalizeUrl;
 const sourceKey = (u) => { const c = canonUrl(u); return c && c.ok ? c.key : String(u == null ? '' : u); };
 /* one entry per source by that identity — the first spelling kept */
-const oneEachSource = (list) => { const seen = new Set(); return (list || []).filter((x) => { const k = x && x.url ? sourceKey(x.url) : ''; if (!k || seen.has(k)) return false; seen.add(k); return true; }); };
+const oneEachSource = (list) => { const seen = new Set(); return (list || []).filter((x) => { const k = x && x.url ? JSON.stringify([sourceKey(x.url), x.sourceVersion || '']) : ''; if (!k || seen.has(k)) return false; seen.add(k); return true; }); };
 /* (atlas-completion-verdict) the text this session read at an address, whole — or null when it holds none, holds only a citation, or holds a cut
    copy (an excerpt missing from a cut copy may be in the part not read). A checker's excerpt is looked for in it (js/atlas-orchestrate.js verifyOutcome). */
-function heldTextOf(url) {
-  const e = webEvidence.lookup(url);
+function heldTextOf(ref, turn) {
+  const e = webEvidence.documentForTurn(ref, turn);
   if (!e || (e.kind !== 'page' && e.kind !== 'render')) return null;
   const p = e.value && e.value.r && e.value.r.page;
   return p && !p.textTruncated && e.text ? String(e.text) : null;
@@ -102,7 +102,7 @@ function heldTextOf(url) {
 function keepTurnPages(turn, list) {
   if (!turn) return;
   const pages = turnPages(turn);
-  (list || []).forEach((x) => { if (x && x.url && !pages.some((q) => sourceKey(q.url) === sourceKey(x.url))) pages.push({ url: x.url, title: x.title || '', publisher: x.publisher || '', retrievedAt: x.retrievedAt || '' }); });
+  (list || []).forEach((x) => { if (x && x.url && !pages.some((q) => sourceKey(q.url) === sourceKey(x.url) && q.sourceVersion === x.sourceVersion)) pages.push({ url: x.url, title: x.title || '', publisher: x.publisher || '', retrievedAt: x.retrievedAt || '', sourceVersion: x.sourceVersion }); });
 }
 
 /* ══ (world-objects) RESOLVING «THAT EARTHQUAKE / THIS VOLCANO / THAT COMPANY» TO ONE REAL-WORLD OBJECT ═══════════════
@@ -523,7 +523,7 @@ export default [
           const sysR=personaPrompt('the research-mapping engine of the IntMap world map')/* (#R285) */+dateLine+' No web-search or function-calling tool is attached to this request — do NOT call tools or functions, and do NOT search the web. The action/type names elsewhere are plain data, not callable functions. Use ONLY the evidence records provided below. Return STRICT JSON only (no prose, no code fence): {"title":str,"overview":str,"items":[{"name":str,"locationName":str,"country":str,"summary":str,"date":"YYYY-MM-DD"|null,"evidenceIds":[str,...]}]}. HARD RULES: each item = ONE concrete, real OCCURRENCE or ENTITY that the evidence supports — for incident topics that means ONE specific incident (what happened, where, when, figures if reported). Every item MUST cite at least one evidenceId (e.g. "e3") from the evidence below; do NOT invent incidents, dates, casualties, place names, sources or URLs that are not in the evidence. Do NOT merge separate incidents into one item unless the evidence explicitly says they are the same incident. Give "locationName" (the specific city/place the evidence indicates) and "country" — do NOT output coordinates; the app resolves the real position from locationName + country. "summary" = 1-2 factual sentences in '+langR+' using only evidence details (date, actors, figures). "date" = the incident date if the evidence gives one, else null. NEVER emit region-level generalities, statistics-as-items, or trends as items. If the evidence supports fewer items than requested, return only those it supports — an EMPTY items array is preferable to a fabricated or generalised item. NEVER state an item count in the title or overview. "overview" = 2-4 sentence synthesis in '+langR+' (patterns are allowed in the overview, never in the items). "title" in '+langR+'.'
             +(wantN?(' The user asked for up to '+wantN+' items — return that many ONLY if the evidence genuinely supports that many distinct real ones.'):'')
             +(ctx&&isFinite(ctx.lng)?(' Focus area: '+(ctx.name||plc)+'.'):'');
-          let jr=null; try{ jr=aiParseJSON(await askAI('[TOPIC]\n'+topic+'\n\n[EVIDENCE RECORDS — cite these ids in evidenceIds; use ONLY these, do not go beyond them]\n'+evBlock,sysR,null,{task:'map_report',webMode:'off',requestedCount:(wantN||undefined)})); }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
+          let jr=null; try{ jr=aiParseJSON(await askAI('[TOPIC]\n'+topic+'\n\n[EVIDENCE RECORDS — cite these ids in evidenceIds; use ONLY these, do not go beyond them]\n'+evBlock,sysR,null,{...modelCallKey(dctx,K),signal:dctx?.signal,task:'map_report',webMode:'off',requestedCount:(wantN||undefined)})); }catch(e){ return R(false, warn(esc((e&&e.message)||'AI error'))); }
           /* validate: keep only items that cite a REAL evidence id and name a place (no fabricated evidenceIds). */
           let raw=(jr&&Array.isArray(jr.items))?jr.items.filter(it=>it&&it.name&&it.locationName&&Array.isArray(it.evidenceIds)&&it.evidenceIds.some(id=>evById[id])):[];
           if(wantN&&raw.length>wantN) raw=raw.slice(0,wantN);
@@ -590,7 +590,7 @@ export default [
           let evid=String(a.evidenceMode||'').toLowerCase(); if(!/^(historical|live|mixed)$/.test(evid)) evid=(mode==='historical'?'historical':mode==='mixed'?'mixed':'live');
           const semTarget=_lnorm(place||topic);
           /* 1) TEXT (independent of the map) */
-          const research=await _buildResearchAnswer({topic,place,mode,year,evid});
+          const research=await _buildResearchAnswer({topic,place,mode,year,evid},dctx);
           /* 2) MAP (independent, non-fatal) */
           let mapRes={rendered:false,method:'',name:(place||topic),pinCount:0,pinsDrawn:false,hasExtent:false,pinIdx:[]};
           try{ mapRes=await _tryMapResearch(place||topic, research.items, {mode,year,act:a}); }catch(_){}
@@ -646,7 +646,7 @@ export default [
             return R(paintFactions(sc.factions)>0, h); }
           /* fallback: build the faction set for ANY era via AI, then paint onto modern borders */
           const sysH=personaPrompt('working here as the historical-geography engine of the IntMap world map')/* (#R285) was "a historical-geography engine" — a third character */+'Build a political/alliance map for the exact historical moment the user names. Output ONLY strict JSON (no prose/fence): {"title":str,"factions":[{"name":str,"color":"#rrggbb","countries":[ISO3,...]},...],"note":str}. Map the powers of that date onto MODERN ISO3 codes (an empire → every modern country in its territory; e.g. Austria-Hungary → AUT,HUN,CZE,SVK,SVN,HRV,BIH,…). 2-6 factions, distinct colors. "note" must say it is approximate on modern borders. Title, faction names & note in '+_langLine()+'.';
-          let jr=null; try{ jr=aiParseJSON(await askAI('Historical political/alliance/power map for: '+era,sysH,null,{})); }catch(_){}
+          let jr=null; try{ jr=aiParseJSON(await askAI('Historical political/alliance/power map for: '+era,sysH,null,{...modelCallKey(dctx,K),signal:dctx?.signal})); }catch(_){}
           if(!jr||!Array.isArray(jr.factions)||!jr.factions.length) return R(false, warn(L('Could not build that historical map — try naming the war/year more specifically','その歴史地図を作成できませんでした。戦争名や年をより具体的に指定してください','Konnte diese historische Karte nicht erstellen','Не удалось построить эту историческую карту','No se pudo construir ese mapa histórico')));
           const groups=jr.factions.slice(0,6).map(f=>({name:String(f.name||''),color:(parseColor(f.color)||'#8a8f98'),codes:(Array.isArray(f.countries)?f.countries.map(c=>String(c).toUpperCase()):[])}));
           let n=paintFactions(groups); for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); n=paintFactions(groups); }
@@ -844,7 +844,7 @@ export default [
              {n,c,k} — so the coordinate and provenance `normalizeAnswer` had just merged in were
              discarded ONE LINE before the pinning step that needed them, and the name was resolved
              again from scratch. `_env.places` are already GeoObjects; hand them over whole. */
-          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),placesDeclared:true,citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title,publisher:r.publisher||''}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
+          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),placesDeclared:true,citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title,publisher:r.publisher||''})),signal:dctx?.signal}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT complete: the answer is said to be
              provisional, so leads are never presented as confirmed direct evidence (the Central-Asia failure).
              ⚠ (atlas-completion) WHAT IS SAID IS READ OFF WHAT HAPPENED — the search's own outcome (RES.web) and what
@@ -1163,9 +1163,11 @@ export default [
     schema: () => ({ type: 'object', required: ['tasks'], properties: { tasks: list({ type: 'object', properties: { id: str(), kind: one(...CONTRACT_KINDS),   /* the substrate's own list of kinds, not a copy of it */ goal: str(), returns: str(), model: str(), capability: str(), args: obj(), verify: bool(), tools: list(str()), images: list(str()), maxOutput: int(), inputs: list({ type: 'object', required: ['from'], properties: { from: str() } }) } }, 1), fresh: bool(), wait: one('all', 'any') } }),
     async run(a, dctx, K) {
       const R = K.R, L = K.L, esc = K.esc, warn = K.warn;
+      const markSink = runMarkSink.current;
+      const lateSink = lateCostSink.current;
       const tasks = Array.isArray(a && a.tasks) ? a.tasks : [];
       if (!tasks.length) return R(false, warn(L('No task was given to delegate.', '委譲する仕事が指定されていません。')), { meta: { status: 'failed', code: 'no_tasks' } });
-      const parent = String(K._curTurnKey || '');
+      const parent = String(dctx?.turnKey || K._curTurnKey || '');
       if (!parent) return R(false, warn(L('Delegation needs a running Atlas turn.', '委譲は Atlas のターンの中でだけ行えます。')), { meta: { status: 'failed', code: 'no_turn' } });
       /* (delegation-limits) THE SERVER'S POLICY, BEFORE ANYTHING IS SPENT. ai-proxy refuses a worker past its policy anyway; asking it
          would cost a round trip per excess task and leave Atlas to discover the number from the wreckage (measured 2026-11-19: three
@@ -1274,7 +1276,7 @@ export default [
       try {
         /* "wait":"any" — answer as soon as one task has brought findings; "all" (the default) — when every task has ended */
         /* (atlas-child-loop-reuse) the instant the first usable piece arrived, for the turn's record (atlas-run-ledger.js runMarkSink) — read now, so a later turn is never handed it */
-        { const markSink = runMarkSink.current; if (typeof markSink === 'function') entry.run.handles.forEach((h) => h.promise.then((r) => { if (r && (r.state === 'done' || r.state === 'partial')) { try { markSink('firstUsefulData'); } catch (_) { /* a record never breaks the work */ } } }, () => {})); }
+        { if (typeof markSink === 'function') entry.run.handles.forEach((h) => h.promise.then((r) => { if (r && (r.state === 'done' || r.state === 'partial')) { try { markSink('firstUsefulData'); } catch (_) { /* a record never breaks the work */ } } }, () => {})); }
         if (a.wait === 'any') await new Promise((resolve) => {
           const hs = entry.run.handles; let left = hs.length;
           if (!left) return resolve();
@@ -1296,7 +1298,7 @@ export default [
           const toCheck = results.filter((r, i) => entry.eligible(r, i));   /* (atlas-claim-check) a task whose claims a program decided has no checker, and still has its verdicts */
           if (toCheck.length) {
             const vres = results.map((r, i) => fu[i]).filter(Boolean);
-            verification = verifyOutcome(toCheck.map((r) => ({ of: r, by: fu[results.indexOf(r)] || null, det: entry.det(r) })), { heldText: heldTextOf });
+            verification = verifyOutcome(toCheck.map((r) => ({ of: r, by: fu[results.indexOf(r)] || null, det: entry.det(r) })), { heldText: (source) => heldTextOf(source, parent) });
             verification.costUsd = vres.reduce((m, r) => m + (Number(r.costUsd) || 0), 0);
             verification.calls = vres.reduce((m, r) => m + (Number(r.calls) || 0), 0);
           }
@@ -1312,7 +1314,7 @@ export default [
          else would — so when it ends, its cost goes to the turn that left it (the sink is read now: a later turn is never handed it). `reported` keeps it
          from being counted twice if a second ask does return it first. */
       if (pendingIds.length) {
-        const sink = lateCostSink.current;   /* no sink (no loop is counting): the cost stays with whichever answer returns the worker */
+        const sink = lateSink;   /* no sink (no loop is counting): the cost stays with whichever answer returns the worker */
         entry.reported = entry.reported || new Set();
         if (typeof sink === 'function') entry.run.handles.filter((h) => pendingIds.includes(h.id)).forEach((h) => {
           h.promise.then((r) => {
@@ -1335,6 +1337,7 @@ export default [
       }
       const saves = entry.saves();
       const done = results.filter((r) => r.state === 'done' || r.state === 'partial').length;
+      const complete = results.length === tasks.length && results.every((r) => r.state === 'done');
       /* a result answered from a task of THIS list (reused) is that task's own result again — its cost is counted once, with the task that ran */
       /* (delegate-streaming) a list asked about twice (wait:"any", then again for the rest) reports each task's cost in ONE of the two answers: the ledger the turn reads sums them */
       entry.reported = entry.reported || new Set();
@@ -1390,17 +1393,29 @@ export default [
       const noteHtml = notes.length ? '<div style="margin-top:4px;opacity:.7;">' + notes.map((n) => '<div>' + esc(n) + '</div>').join('') + '</div>' : '';
       const html = '<div class="atl-deleg" style="font-size:12px;line-height:1.5;"><div style="font-weight:600;margin-bottom:2px;">'
         + esc(L('Researched in parallel', '並行して調査')) + ' — ' + esc(L(done + ' of ' + results.length + ' returned findings', results.length + ' 件中 ' + done + ' 件が結果を返しました')) + '</div><ul style="margin:2px 0 0 16px;padding:0;">' + rows + '</ul>' + noteHtml + '</div>';
+      const previewFindings = 40;
+      /* The run stores the originals independently of this preview. The tool result adds the rest
+         after the preview so the parent's normal result budget and read_result can page it. */
+      const delegatedMaterial = Object.fromEntries(results
+        .filter((r) => r.dataRef || r.findings.length > previewFindings)
+        .map((r) => [r.id, { data: r.dataRef ? D.workspace.read(r.id)?.data : undefined,
+          findings: r.findings.length > previewFindings ? r.findings.slice(previewFindings) : undefined }]));
       return R(done > 0, html, { meta: {
-        status: done === results.length ? 'completed' : (done ? 'partial' : 'failed'),
-        code: done === results.length ? undefined : (pendingIds.length ? 'tasks_still_running' : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings')),
+        status: complete ? 'completed' : (done ? 'partial' : 'failed'),
+        code: complete ? undefined : (pendingIds.length ? 'tasks_still_running' : (done ? 'some_tasks_ended_otherwise' : (results[0] && results[0].code) || 'no_findings')),
         progressKey: pendingIds.length ? 'pending:' + pendingIds.join(',') : undefined,   /* (atlas-early-results) asking again after another task arrived is not the same answer */
         pending: pendingIds.length ? pendingIds : undefined,   /* (delegate-streaming) tasks still running: the same list asked again waits for them */
         produced: done ? ['explanation'] : undefined,
-        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, resumed: r.resumed || undefined, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, notFound: r.notFound, evidence: r.evidence, data: r.data, dataRef: r.dataRef, costUsd: r.costUsd, calls: r.calls, ms: r.ms, arrivedSecAgo: entry.arrivedAt.has(r.id) ? Math.round((Date.now() - entry.arrivedAt.get(r.id)) / 1000) : undefined })),
+        delegated: results.map((r) => ({ id: r.id, state: r.state, code: r.code, detail: r.detail, reused: r.reused || undefined, resumed: r.resumed || undefined, summary: r.summary,
+          dataRef: r.dataRef, artifact: r.dataRef ? undefined : r.artifact, findingCount: r.findings.length, findings: r.findings.slice(0, previewFindings),
+          rest: Object.hasOwn(delegatedMaterial, r.id) ? 'details.delegatedMaterial' : undefined,
+          gaps: r.gaps, sources: r.sources, notFound: r.notFound, evidence: r.evidence, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms, arrivedSecAgo: entry.arrivedAt.has(r.id) ? Math.round((Date.now() - entry.arrivedAt.get(r.id)) / 1000) : undefined })),
+        delegationRun: dKey,
         delegatedCostUsd: cost + checkUsdNew,   /* the checkers are children too: the ledger the turn reads must hold what the card says */
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */
         resume: store ? { key: dKey, resumed: results.filter((r) => r.resumed).length, from: prior ? prior.at : undefined, saved: saves > 0 } : undefined,
+        delegatedMaterial: Object.keys(delegatedMaterial).length ? delegatedMaterial : undefined,
       } });
     },
   },

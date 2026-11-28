@@ -28,7 +28,7 @@ test('atlas-goal-verifier: a text answer to a request the reader finds unmet is 
 });
 
 test('atlas-goal-verifier: met, not observed and a throw all accept the turn as it was — not observed is not unmet', async () => {
-  for (const [name, verify, check] of [['met', async () => ({ unmet: [] }), 'met'], ['null', async () => null, 'unobserved'], ['throw', async () => { throw new Error('timeout'); }, 'unobserved']]) {
+  for (const [name, verify, check] of [['met', async () => ({ unmet: [], met: [{ need: 'State the length', how: 'The answer gives 777 km' }] }), 'met'], ['null', async () => null, 'unobserved'], ['throw', async () => { throw new Error('timeout'); }, 'unobserved']]) {
     const model = scripted([{ text: 'La Seine fait 777 km.', toolCalls: [] }]);
     const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER, verify });
     assert.equal(model.count(), 1, name);

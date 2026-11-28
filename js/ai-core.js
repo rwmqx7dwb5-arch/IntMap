@@ -8,6 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
+import { observeAtlasProviderCall } from './atlas-run-ledger.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -344,8 +345,11 @@ export function aiCore(HOST){
     try{ const b=new Uint8Array(12); crypto.getRandomValues(b); for(const x of b) s+=x.toString(16).padStart(2,'0'); }catch(_){ s+=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2); }
     return s;
   }
-  async function aiCallServerFull(prompt, system, imgs, opts){
-    const callId=(opts&&opts.callId)?String(opts.callId):aiNewCallId();
+  function aiCallServerFull(prompt, system, imgs, opts){
+    const callId=opts?.callId?String(opts.callId):aiNewCallId();
+    return observeAtlasProviderCall(opts, callId, (tracked) => aiCallServerRequest(prompt, system, imgs, opts, callId, tracked));
+  }
+  async function aiCallServerRequest(prompt, system, imgs, opts, callId, tracked){
     const cfg=window.INTMAP_AI_PROXY||{};
     /* Attach the Supabase session JWT + anon apikey so the function can identify the user + enforce quota. */
     const headers=await aiAuthHeaders();
@@ -393,6 +397,7 @@ export function aiCore(HOST){
          the body (so an over-quota caller's body is never parsed). ⚠ AND IT IS NOT TRUSTED: the
          server binds it to the account, caps how many calls one key may carry and expires it. */
       if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
+      if(tracked) headers['x-intmap-call']=callId;
       /* (atlas-delegation) a worker's call names the reader turn that opened it — js/atlas-delegate.js; ai-proxy decides how it is paid for */
       if(opts.parentTurnId) headers['x-intmap-parent-turn']=String(opts.parentTurnId).slice(0,120);
       /* (model-options) the model Atlas asked THIS worker to run on; ai-proxy honours it only when it is one of the offered, priced models */

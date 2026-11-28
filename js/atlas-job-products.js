@@ -49,6 +49,7 @@ async function datasetsOfJob(f, readOutput, existing) {
   for (const t of (f && f.tasks) || []) {
     if (!(t.state === 'done' || t.state === 'partial') || !t.output) continue;
     const o = t.output;
+    if (o.kind === 'json') continue;
     const from = { job: f.id, task: t.id, url: o.sources[0] || undefined, urls: o.sources, output: o.id, version: o.version };
     const note = 'background job ' + f.id + ' · piece ' + t.id + ' · output ' + o.id + ' v' + o.version + (o.sources.length ? ' · from ' + o.sources.join(' ') : '') + (t.stale ? ' · computed under an earlier version of the request' : '');
     const name = clip('dataset — ' + t.id + (t.title ? ' — ' + t.title : ''), 100);

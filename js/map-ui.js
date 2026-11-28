@@ -3777,6 +3777,8 @@ export function geojsonUpload(HOST){
       const draw=opts?.draw!==false;
       const tell=draw?toast:()=>{};
       const describe=opts?.inspect||opts?.source;
+      const source=opts?.source?{url:opts.source}:{};
+      if(opts?.source&&/^[a-f0-9]{64}$/i.test(opts.sourceSha256||'')) source.sha256=opts.sourceSha256.toLowerCase();
       let readGeoFile=null;
       /* on demand: nothing about reading a dropped file belongs in the startup bundle */
       try{ readGeoFile=(await import('./geo-import.js')).GEO_IMPORT.readGeoFile; }
@@ -3791,13 +3793,13 @@ export function geojsonUpload(HOST){
            because a grid cannot be painted until its extremes have been measured, and measuring
            them is the registry's job. */
         if(r.grid){
-          const grid=await registerRaster(r,label,{draw,tell,inspect:opts?.inspect,source:opts?.source});
+          const grid=await registerRaster(r,label,{draw,tell,inspect:opts?.inspect,source});
           out.push({ok:grid.ok,grid:true,label,format:r.format,why:grid.why,datasetId:grid.id||null,
             description:describe?importDescription(grid.id):undefined});
           continue;
         }
         const put=draw?addFC(r.fc,label,r):null;
-        const did=await registerDataset(r,label,f,put?.n,{tell,source:opts?.source});
+        const did=await registerDataset(r,label,f,put?.n,{tell,source});
         /* ⚠ `n` IS THE MAP LAYER'S SERIAL (addFC's `put.n`), NOT A COUNT — a reader that took it for «rows» told Atlas a 47-feature file had 1 row, and a
            registration that failed (`did` null) came back ok with nothing to say so. The count is what was read (`features`), and whether the analysis
            registry accepted the file is stated (`registered`) rather than left to a toast the caller never sees. */
@@ -3862,7 +3864,7 @@ export function geojsonUpload(HOST){
         const spec={
           kind:'raster', title:label, crs:'EPSG:4326', sourceCrs:(stated?code:null),
           width:g.width, height:g.height, grid:g.grid, bands:g.bands, read:(i)=>g.read(i),
-          provenance:{kind:'import',file:label,format:r.format,readAt:new Date().toISOString(),...(source?{url:source}:{})},
+          provenance:{kind:'import',file:label,format:r.format,readAt:new Date().toISOString(),...source},
         };
         if(inspect) spec.provenance.inspection=window.IntMapGisRaster.describeBands(spec);
         rec=window.IntMapData.add(spec);
@@ -3928,7 +3930,7 @@ export function geojsonUpload(HOST){
            passed on rather than re-derived here: js/gis-datasets.js verifies it against the features
            and refuses it by name if it does not hold, and this path has no knowledge to add. */
         const rec=window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null, time:r.time||null,
-          provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now(), ...(source?{url:source}:{}) } });
+          provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now(), ...source } });
         if(!rec||!rec.id){
           try{ console.warn('[upload] the dataset registry returned no record for',label); }catch(_){}
           tell(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));

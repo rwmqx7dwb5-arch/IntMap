@@ -28,11 +28,17 @@ const FAKE_SESSION = {
 const INVENTED = '4,321';   /* a number no tool returns: it must stay unmarked */
 let page, diag, turnBodies, echoed;
 
-/* the value a model would repeat: the first four-digit-or-longer figure in what the query tool handed back */
+/* Read the first elevation stated by the query. Coordinates, timestamps and other calls are not evidence for this figure. */
 function valueFrom(body) {
-  const outs = (Array.isArray(body.input) ? body.input : []).filter((it) => it && it.type === 'function_call_output').map((it) => String(it.output || ''));
-  for (const o of outs) { const m = /"(?:observed|facts|text|summary)"[\s\S]*?(\d{1},?\d{3})/.exec(o) || /(\d,\d{3}|\d{4})\s*m\b/.exec(o); if (m) return m[1]; }
-  return null;
+  const query = body.input?.find((item) => item.type === 'function_call_output' && item.call_id === 'c1_0');
+  if (!query) return null;
+  const text = String(query.output || '');
+  try {
+    const result = JSON.parse(text);
+    const column = result.details?.provenance?.find((p) => p.kind === 'number' && p.unit === 'm');
+    if (Number.isFinite(column?.values?.[0])) return column.values[0].toLocaleString('en-US');
+  } catch (_) { /* a shortened tool response still carries the visible elevation column */ }
+  return /\b(\d{1,3}(?:,\d{3})+|\d{4,})\s*m\b/.exec(text)?.[1] || null;
 }
 
 test.beforeAll(async ({ browser }) => {

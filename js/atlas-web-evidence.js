@@ -89,13 +89,15 @@ export function makeWebEvidence(opt) {
           sourcesByTurn.set(turn, sources);
           if (sourcesByTurn.size > MAX_ENTRIES) sourcesByTurn.delete(sourcesByTurn.keys().next().value);
         }
-        const previous = sources.get(key);
-        if (!previous || previous.version < e.version) {
-          sources.set(key, { version: e.version, source: { url: s.url, title: s.title || '', publisher: '', retrievedAt: new Date(e.fetchedAt).toISOString() } });
-        }
+        const isDocument = e.kind === 'page' || e.kind === 'render';
+        const sourceKey = isDocument ? JSON.stringify([key, e.id]) : key;
+        if (!sources.has(sourceKey)) sources.set(sourceKey, {
+          url: s.url, title: s.title || '', publisher: '', retrievedAt: new Date(e.fetchedAt).toISOString(),
+          ...(isDocument ? { sourceVersion: e.id } : {}),
+        });
       }
     }
-    if (!c.worker) markTurn('evidence_used');
+    if (!c.worker) markTurn('evidence_used', turn);
   }
   function evict() {
     while (byId.size > MAX_ENTRIES) {
@@ -149,7 +151,7 @@ export function makeWebEvidence(opt) {
       if (!result || !result.ok) return { entry: null, result };
       const turn = String(p.turn || result.turn || '');
       const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', lang: result.lang || '', fetchedTurn: turn, text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
-      markTurn('evidence_arrived');
+      markTurn('evidence_arrived', turn);
       use(entry, { turn, worker: p.worker });
       return { entry, result };
     })();
@@ -225,9 +227,19 @@ export function makeWebEvidence(opt) {
       turn's fetch keeps its own time). opts.use: the caller hands these to the turn's answer, which is the turn using them (evidence_used). */
   function turnSources(turn, opts) {
     const sources = sourcesByTurn.get(String(turn || ''));
-    const out = sources ? Array.from(sources.values(), ({ source }) => ({ ...source })) : [];
-    if (out.length && opts && opts.use) markTurn('evidence_used');
+    const out = sources ? Array.from(sources.values(), (source) => ({ ...source })) : [];
+    if (out.length && opts && opts.use) markTurn('evidence_used', turn);
     return out;
+  }
+
+  function documentForTurn(ref, turn) {
+    const direct = byId.get(String(ref || ''));
+    if (direct && (direct.kind === 'page' || direct.kind === 'render')) return direct;
+    const key = urlKey(ref);
+    if (!key) return null;
+    const versions = new Set(turnSources(turn).filter((entry) => entry.sourceVersion && urlKey(entry.url) === key)
+      .map((entry) => entry.sourceVersion));
+    return versions.size === 1 ? byId.get(versions.values().next().value) || null : null;
   }
 
   function list(o2) {
@@ -249,7 +261,7 @@ export function makeWebEvidence(opt) {
      to wait for the next arrival rather than for one an earlier answer already satisfied. One turn at a time: a new turn starts empty. */
   let shownTurn = null, shownKeys = new Set();
   function shown(turn) { if (shownTurn !== turn) { shownTurn = turn; shownKeys = new Set(); } return shownKeys; }
-  return { shown, acquire, find, note, lookup, read, list, turnSources, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); sourcesByTurn.clear(); } };
+  return { shown, acquire, find, note, lookup, read, list, turnSources, documentForTurn, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); sourcesByTurn.clear(); } };
 }
 
 /** the page's ONE store (the parent turn and every delegated child run in this page) */

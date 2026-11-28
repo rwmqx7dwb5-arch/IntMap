@@ -27,7 +27,7 @@ const safeUrl = (u) => window.IntMapSafe.url(u);   /* the one read of the global
 const host = (u) => { try { return new URL(u).host; } catch (_) { return ''; } };
 /* (atlas-completion-verdict) which turn a read is for, and whether it is the parent's own or a delegated worker's (js/atlas-console.js runReadCapability,
    source 'atlas-worker'): the evidence store records the turn as one that USED the record, and only the parent's use is the turn's evidence_used */
-const readFor = (dctx, K) => ({ turn: String((K && K._curTurnKey) || ''), worker: !!(dctx && dctx.source === 'atlas-worker') });
+const readFor = (dctx, K) => ({ turn: String(dctx?.turnKey || K?._curTurnKey || '').split('~')[0], worker: !!(dctx && dctx.source === 'atlas-worker') });
 
 /* (atlas-delegation-efficiency) A FILE THAT DOWNLOADED BUT IS NOT A DATASET IS STILL READ. The door's bytes were in hand and were dropped the moment
    the dataset reader said no, so Atlas was told 'unreadable' about a file it had in its hands (measured 2026-11-25: a downloaded JSON, then five more
@@ -91,6 +91,7 @@ export default [
       const D = door(K.HOST);
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE, tier: 'real-browser' };
       const r = await D.render(a, dctx && dctx.signal, readFor(dctx, K));
+      if (dctx?.signal?.aborted) return R(false, '', { meta: { code: 'aborted' } });
       if (r && r.handoff) {
         const say = handoffText(r.handoff, L);
         return R(false, warn(esc(say) + (r.handoff.url ? ' <a href="' + esc(safeUrl(r.handoff.url)) + '" target="_blank" rel="noopener noreferrer">' + esc(host(r.handoff.url)) + '</a>' : '')),
@@ -196,7 +197,7 @@ export default [
         const say = (d && d.say) || sayFor(code, L);
         return R(false, warn(esc(say)), { meta: { code }, exec: { web: Object.assign(web, { code, say, page: d && d.page }) } });
       }
-      const t = await D.toDataset(d.file, a.label, { draw, inspect: !draw, source: d.meta.url });
+      const t = await D.toDataset(d.file, a.label, { draw, inspect: !draw, source: d.meta.url, sourceSha256: d.meta.sha256 });
       if (!t.ok && t.code === 'not_registered' && t.layer != null) {
         /* drawn on the map, but no dataset exists: said as a failure with what DID happen, so the next step does not plan on a dataset id it was never given */
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(' and drew ' + (t.rows != null ? t.rows + ' feature(s) ' : '') + 'on the map, but the analysis registry did not accept it, so there is no dataset to analyse.', ' 地図には ' + (t.rows != null ? t.rows + ' 件 ' : '') + '描きましたが、分析用データセットとして登録されませんでした。分析に使えるデータセットはありません。'))),
@@ -210,11 +211,14 @@ export default [
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(', but IntMap could not read it as data (' + t.code + ').', ' が、データとして読み取れませんでした(' + t.code + ')。'))),
           { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }, await textExcerpt(d.file)) } });
       }
+      const version = typeof window !== 'undefined' ? window.IntMapData?.versionOf?.(t.datasetId) : null;
+      const datasetsCreated = version ? [{ id: t.datasetId, version }] : undefined;
       return R(true, note(L('Added the dataset ', 'データセットを追加しました: ') + '<b>' + esc(t.label) + '</b>' + (t.rows != null ? ' — ' + t.rows + L(' rows', ' 行') : '') + ' · ' + esc(host(d.meta.url))),
-        { exec: { web: Object.assign(web, { file: d.meta, dataset: { ...t.description, id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });
+        { meta: { datasetsCreated }, exec: { web: Object.assign(web, { file: d.meta, dataset: { ...t.description, id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });
     },
   },
   {
+    independentRead: true,
     row: ['web.search',                 'webSearch',      'searchTheWeb,parallelSearch,searchSeveral,lookUpOnline,webLookup',          'research', 'none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
     ui: { none: '2026-11-26' },
     doc: [
@@ -243,7 +247,7 @@ export default [
           catch (e) { return { ok: false, error: e }; }
           const text = String((env && env.text) || '').trim(), meta = (env && env.meta) || {};
           const ran = meta.webUsed === true;
-          return { ok: !!text && ran, notRun: !!text && !ran, query: x.q, lang: x.lang, turn: K._curTurnKey, text, sources: env && env.citations, value: { webSearches: meta.webSearches || 0, webSources: meta.webSources == null ? undefined : meta.webSources }, why: meta.webFailure };
+          return { ok: !!text && ran, notRun: !!text && !ran, query: x.q, lang: x.lang, turn: readFor(dctx, K).turn, text, sources: env && env.citations, value: { webSearches: meta.webSearches || 0, webSources: meta.webSources == null ? undefined : meta.webSources }, why: meta.webFailure };
         }, Object.assign({ refresh: a.refresh === true }, readFor(dctx, K)));
         if (got.entry) {
           const e = got.entry;
@@ -256,7 +260,7 @@ export default [
       };
       /* (atlas-early-results) "wait":"any" — answer at the NEXT question to arrive that an earlier answer of this turn has not carried; the rest keep
          running in the store (a later call for them JOINS the search, it does not start another). The default waits for every question, as before. */
-      const turnKey = String(K._curTurnKey || '');
+      const turnKey = readFor(dctx, K).turn;
       const shown = webEvidence.shown(turnKey);
       const runs = asks.map((x) => { const t0 = Date.now(); const p = one1(x).then((r) => { x.at = Date.now(); return r; }); p.catch(() => {}); return { x, p, t0 }; });
       const settledOf = new Map();

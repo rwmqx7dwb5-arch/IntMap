@@ -22,6 +22,8 @@ import { droneRun } from './atlas-cap-routing.js';
 import { icon } from './icons.js';
 import { shapeBasisOf } from './atlas-shape-resolve.js';   /* (eval-shape-grading) every shape the highlight leaves carries its basis — the one rule, js/atlas-shape-resolve.js */   /* (icon-system) the one icon set — js/icons.js */
 
+import { mapAuthorship } from './atlas-shape-resolve.js';
+
 export default [
   {
     row: ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
@@ -56,7 +58,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { dataset: str(), band: int(0, null), spec: obj() }, required: ['dataset'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L;
-      { await window.IntMapLazy.need('gisCore'); const _GD=window.IntMapGis&&window.IntMapGis.atlas; if(!_GD) return R(false, warn(L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gd=await _GD.draw(a); return _gd.ok ? R(true,_gd.html,{meta:{gis:{dataset:_gd.dataset.id,drawn:true},datasetsRead:_gd.datasetsRead}}) : R(false, warn(_gd.html), _gd.datasetsRead?{meta:{datasetsRead:_gd.datasetsRead}}:undefined); }   /* (atlas-completion-verdict) `datasetsRead` — what the draw opened (js/gis-atlas.js withReads) */   /* (#R743) the second door: drawing a dataset is a separate promise from making one, because an observer that measures the map must be declared by something that always moves it. */   /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE — 「読める」 に対する 「作らせられる」. The ops, their declarations, the input resolution and the reply are js/gis-atlas.js, which sits inside the gisCore chunk BECAUSE THE OPS DECLARE THEMSELVES: a list of ops written here would be invisible to the op added to DECL tomorrow. This line is the door and the argument binding, because the file it sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). */
+      { await window.IntMapLazy.need('gisCore'); const _GD=window.IntMapGis&&window.IntMapGis.atlas; if(!_GD) return R(false, warn(L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gd=await _GD.draw(a); return _gd.ok ? R(true,_gd.html,{meta:{gis:{dataset:_gd.dataset.id,drawn:true},datasetsRead:_gd.datasetsRead,datasetsCreated:_gd.datasetsCreated}}) : R(false, warn(_gd.html), {meta:{datasetsRead:_gd.datasetsRead,datasetsCreated:_gd.datasetsCreated}}); }   /* (atlas-completion-verdict) `datasetsRead` — what the draw opened (js/gis-atlas.js withReads) */   /* (#R743) the second door: drawing a dataset is a separate promise from making one, because an observer that measures the map must be declared by something that always moves it. */   /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE — 「読める」 に対する 「作らせられる」. The ops, their declarations, the input resolution and the reply are js/gis-atlas.js, which sits inside the gisCore chunk BECAUSE THE OPS DECLARE THEMSELVES: a list of ops written here would be invisible to the op added to DECL tomorrow. This line is the door and the argument binding, because the file it sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). */
     },
   },
   {
@@ -108,7 +110,7 @@ export default [
           if(!id&&(a.kind||a.index!=null)){ const ls=O.list().filter(o=>!a.kind||o.kind===String(a.kind)); const idx=(a.index!=null?(+a.index-1):(ls.length-1)); if(ls[idx]) id=ls[idx].id; }
           if(!id) return R(false, warn(L('Which object? Give its id (see the map-object list).','どのオブジェクト？idを指定してください。','Welches Objekt? id angeben.','Какой объект? Укажите id.','¿Qué objeto? Indica su id.')));
           if(op==='get'){ const d=O.getObj&&O.getObj(id); return R(!!d, d?note(esc(d.kind+' · '+d.name)+' <span style="color:var(--text-muted);">id='+esc(d.id)+'</span>'):warn(L('No object on the map has that id — it may already be gone','そのidのオブジェクトは地図上にありません（すでに消えている可能性があります）')+': '+esc(id)),d?{objectIds:[d.id],object:d}:null); }
-          if(op==='set'||op==='style'){ const r=O.set?O.set(id,{color:a.color,width:a.width,opacity:a.opacity,name:a.name||a.to,hidden:a.hidden}):{ok:false,reason:'unavailable'};
+          if(op==='set'||op==='style'){ const r=O.set?O.set(id,{color:a.color,width:a.width,opacity:a.opacity,name:a.name||a.to,hidden:a.hidden},mapAuthorship(dctx).author):{ok:false,reason:'unavailable'};
             if(r.reason==='not_found') return R(false, warn(L('No object on the map has that id — it may already be gone','そのidのオブジェクトは地図上にありません（すでに消えている可能性があります）')+': '+esc(id)));
             const said=Object.keys(r.applied||{}).map(k=>k+'='+r.applied[k]).join(', '), no=(r.unsupported||[]).concat(r.invalid||[]);
             const txt=(r.ok?('✓ set · '+esc(id)+' · '+esc(said)):'')+(no.length?((r.ok?' — ':'')+esc(L('This object cannot take','このオブジェクトでは変更できません'))+': '+esc(no.join(', '))+(r.object&&r.object.editable?(' ('+esc(L('it can take','変更できるのは'))+': '+esc(r.object.editable.join(', '))+')'):'')):'');
@@ -116,7 +118,7 @@ export default [
           let ok=false;
           if(op==='remove'||op==='delete') ok=O.remove(id);
           else if(op==='focus'||op==='zoom') ok=O.focus(id);
-          else if(op==='rename') ok=O.rename(id,a.name||a.to||'');
+          else if(op==='rename') ok=O.rename(id,a.name||a.to||'',mapAuthorship(dctx).author);
           return R(ok, ok?note('✓ '+op+' · '+esc(id)):warn(L('No object on the map has that id — it may already be gone','そのidのオブジェクトは地図上にありません（すでに消えている可能性があります）','Kein Objekt mit dieser id auf der Karte','На карте нет объекта с таким id','Ningún objeto del mapa tiene ese id')+': '+esc(id))); }   /* ⚠ (#R736) the failure arm printed the BARE INTERNAL ID and nothing else — measured in production, the reader was shown 「⚠ r_1789464310159_keui」 */
     },
   },
@@ -887,7 +889,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { action: one('open', 'add', 'edit', 'remove', 'title', 'show', 'hide', 'list', 'link', 'export', 'analyze', 'new', 'collect', 'keep', 'draw'),
       kind: one('pin', 'line', 'area'), points: list(list()), place: str(), places: list(str()), name: str(), note: str(), color: str(), id: str(), title: str(), format: one('geojson', 'geopackage') } }),
-    async run(a, dctx, K) { return myMapRun(a, K); },
+    async run(a, dctx, K) { return myMapRun(a, K, mapAuthorship(dctx)); },
   },
   {
     row: ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
@@ -1050,7 +1052,7 @@ export default [
    Every result that changes the map carries `meta.want` (js/atlas-capabilities.js `myMap`): the state it set out to
    reach, so a feature that did not land is not called done. */
 const MM_COLORS = { red: 0, orange: 1, yellow: 2, green: 3, blue: 4, purple: 5, '赤': 0, 'オレンジ': 1, '橙': 1, '黄': 2, '緑': 3, '青': 4, '紫': 5 };
-async function myMapRun(a, K) {
+async function myMapRun(a, K, actor) {
   const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
   let M = null; try { await window.IntMapLazy.need('myMap'); M = window.IntMapMyMap; } catch (_) { M = null; }
   if (!M || typeof M.state !== 'function') return R(false, warn(esc(L('My map could not be loaded', 'マイマップを読み込めませんでした'))));
@@ -1080,14 +1082,14 @@ async function myMapRun(a, K) {
     }
     /* a name that did not resolve is not dropped from a line in silence — the line would join the wrong places */
     if (unresolved.length) return R(false, warn(esc(L('Could not find', '見つかりませんでした')) + ': ' + esc(unresolved.join(', '))));
-    const r = M.add({ kind, coords: pts, name: a.name != null ? a.name : (a.place || ''), note: a.note, color: colorOf(a.color) });
+    const r = M.add({ kind, coords: pts, name: a.name != null ? a.name : (a.place || ''), note: a.note, color: colorOf(a.color) }, actor);
     if (!r.ok) return fail(L('Could not add to my map', 'マイマップに追加できませんでした'), r);
     try { M.zoomTo(r.id); } catch (_) { }
     return R(true, note('✓ ' + esc(L('Added to my map', 'マイマップに追加しました'))) + listHtml(), { want: { shown: 'own', has: [r.id] }, objectIds: ['mm_' + r.id] });
   }
   if (act === 'edit') {
     const o = {}; if (a.name != null) o.name = a.name; if (a.note != null) o.note = a.note; if (a.color != null) o.color = colorOf(a.color);
-    const r = M.edit(String(a.id || ''), o); if (!r.ok) return fail(L('Could not edit', '編集できませんでした'), r);
+    const r = M.edit(String(a.id || ''), o, actor.author); if (!r.ok) return fail(L('Could not edit', '編集できませんでした'), r);
     const f = M.state().features.find((x) => x.id === r.id) || {}; const w = {}; Object.keys(o).forEach((k) => { w[k] = f[k]; });
     return R(true, note('✓ ' + esc(L('My map item updated', 'マイマップの項目を更新しました'))) + listHtml(), { want: { features: { [r.id]: w } } });
   }

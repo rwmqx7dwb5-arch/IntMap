@@ -200,6 +200,49 @@ test('④ through data.gis a url: ref is a registered raster dataset; a feature 
 /* ⑤ a PROJECTED file (UTM 54N, 100 m pixels) is read through the window. ⚠ Two witnesses, one
    independent of js/gis-crs.js: a pixel's easting maps to a longitude by the UTM definition itself
    (central meridian 141°E sits at easting 500000), and the rest are compared to the crs module. */
+test('STAC acquisition derives coverage and pixel quality from two actual GeoTIFFs', async () => {
+  const { w } = await boot();
+  const { makeGisDatasets } = await import('../js/gis-datasets.js');
+  const { makeGisAtlas } = await import('../js/gis-atlas.js');
+  const data = makeGisDatasets();
+  const layers = { acquireFields: () => ['bounds', 'width', 'height', 'band', 'signal'] };
+  const atlas = makeGisAtlas({ data, layers, warp: w.IntMapGisWarp, crs: w.IntMapGisCrs });
+  const base = 'https://fixtures.test/stac', dtype = 'image/tiff; application=geotiff; profile=cloud-optimized';
+  const left = server(buildCog(null, { x0: 126.88, y0: 40, px: PX }));
+  const right = server(buildCog(null, { x0: 132.5, y0: 40, px: PX }));
+  const observe = '2024-04-12T12:00:00Z', bbox = [131, 38, 135, 39];
+  const scene = (id, bounds, cloud) => ({ id, bbox: bounds, properties: { datetime: observe, gsd: 1000, 'eo:cloud_cover': cloud },
+    assets: { data: { href: 'https://fixtures.test/' + id + '.tif', type: dtype } } });
+  const prevFetch = globalThis.fetch;
+  const files = { '/west.tif': left, '/east.tif': right };
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(url).pathname;
+    if (path === '/stac/collections/imagery') return Response.json({ id: 'imagery' });
+    if (path === '/stac/search') return Response.json({ features: [
+      scene('cloudy', bbox, 92), scene('west', [131, 38, 133, 39], 5), scene('east', [133, 38, 135, 39], 6),
+    ] });
+    const file = files[path];
+    assert.ok(file, String(url));
+    return { ...await file.fetch(url, init), ok: true };
+  };
+  try {
+    assert.equal((await atlas.remote({ action: 'add', kind: 'stac', url: base, id: 'test-cog' })).ok, true);
+    const r = await atlas.remote({ action: 'acquire', ref: 'test-cog/imagery', bounds: bbox, width: 40, height: 10, maxCloud: 10, strict: true });
+    assert.equal(r.state.analysis, 'ready-partial', JSON.stringify(r.parts.map((p) => p.state)));
+    assert.deepEqual(r.parts.map((part) => part.item).filter(Boolean), ['west', 'east']);
+    assert.deepEqual(r.coverage.missingBounds, [[132, 38, 133, 39]]);
+    assert.equal(r.coverage.fraction, 0.75);
+    assert.equal(r.parts[0].validPixelFraction, 0.5);
+    assert.equal(r.parts[1].validPixelFraction, 1);
+    const ds = data.get(r.parts[0].id);
+    assert.deepEqual([...ds.read(0)].map(Number.isFinite).slice(0, 20), [...Array(10).fill(true), ...Array(10).fill(false)]);
+    assert.equal(ds.provenance.observation.datetime, observe);
+    assert.equal(ds.time.start, Date.parse(observe));
+    assert.deepEqual(r.datasetsCreated, r.datasets.map((id) => ({ id, version: data.versionOf(id) })));
+    assert.ok(left.calls > 1 && right.calls > 1);
+  } finally { globalThis.fetch = prevFetch; }
+});
+
 test('⑤ a UTM file is read: only its tiles, on the right ground, and the central meridian is where UTM says', async () => {
   const { w, cog } = await boot();
   const X0 = 470000, Y0 = 4100000, PXM = 100;

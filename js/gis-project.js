@@ -769,7 +769,7 @@ export function makeGisProject() {
         } catch (_) { }
       }
 
-      const rebuilt = [], reused = [], failed = [];
+      const rebuilt = [], reused = [], failed = [], datasetsCreated = [];
       let stopped = false;
       /* The chain's own progress, around each op's. A reader watching 「3 / 7 · 12,400 / 40,000」 is
          told two different things — which step, and where inside it — and only the first of those is
@@ -812,7 +812,13 @@ export function makeGisProject() {
           : runStep({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
             { signal: sig, onProgress: (inner) => report(i, step, inner) }))
           .then((res) => {
-            if (res && res.ok) { rebuilt.push(step.id); if (res.fromCache) reused.push(step.id); return; }
+            if (res && res.ok) {
+              rebuilt.push(step.id);
+              if (res.fromCache) reused.push(step.id);
+              const version = reg.versionOf?.(step.id);
+              if (version != null) datasetsCreated.push({ id: step.id, version });
+              return;
+            }
             stopped = true;
             const why = (res && res.why) || 'op-failed';
             failed.push({ id: step.id, why: why, detail: (res && res.detail) || null });
@@ -823,7 +829,7 @@ export function makeGisProject() {
             failed.push({ id: step.id, why: 'op-failed', detail: errText(e) });
             restore(held, 'op-failed');
           });
-      }), Promise.resolve()).then(() => ({ ok: failed.length === 0, rebuilt, reused, failed }));
+      }), Promise.resolve()).then(() => ({ ok: failed.length === 0, rebuilt, reused, failed, datasetsCreated }));
     }
 
     /* Sync, so a panel can grey a button out before any promise. It answers the question it can
