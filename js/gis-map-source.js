@@ -231,7 +231,7 @@ export async function processMapSource(record, spec, { signal, show, getGIS }) {
     }
     if (signal?.aborted) return fail('cancelled');
     const dataset = gis.data.add({ title: spec.label || meta.name, features: placed.features,
-      sourceCrs: fit.transform.crs, time: spec.period ? { kind: 'constant', start: spec.period.start, end: spec.period.end } : undefined,
+      sourceCrs: spec.crs || null, time: spec.period ? { kind: 'constant', start: spec.period.start, end: spec.period.end } : undefined,
       provenance: { kind: 'map-reconstruction', source: source.url || source.attachment, sourceSha256: source.sha256 || null,
         licence: spec.licence || null, retrievedAt: source.retrievedAt, mapSource: source, recipe, quality,
         ...(spec.period && { temporalCoverage: spec.period }) } });

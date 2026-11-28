@@ -352,6 +352,8 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
   expect(evidence.a.exec.mapSource.quality.reference.results[0].iou).toBeCloseTo(1, 7);
   expect(evidence.a.exec.mapSource.quality.positional.independent.rmseM).toBeLessThan(0.001);
   expect(evidence.a.exec.mapSource.dataset.time.kind).toBe('constant');
+  expect(evidence.a.exec.mapSource.dataset.sourceCrs).toBeNull();
+  expect(evidence.a.exec.mapSource.dataset.provenance.recipe.transform.crs).toBe('EPSG:4326');
   expect(evidence.a.exec.mapSource.dataset.provenance.sourceSha256).toBe(evidence.area.source.sha256);
   expect(evidence.measurement).toBe(true);
   expect(evidence.l.ok, JSON.stringify(evidence.l)).toBe(true);
