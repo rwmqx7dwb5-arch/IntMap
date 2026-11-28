@@ -1,7 +1,7 @@
 /* Linework is extracted in the same top-left viewport as the source preview.
  * Filled or clipped artwork can be traced as rendered pixels instead. */
 
-export const KERNEL_VERSION = 'map-linework-2';
+export const KERNEL_VERSION = 'map-linework-3';
 const IDENTITY = [1, 0, 0, 1, 0, 0];
 const mul = ([a, b, c, d, x, y], [e, f, g, h, u, v]) =>
   [a*e+c*f, b*e+d*f, a*g+c*h, b*g+d*h, a*u+c*v+x, b*u+d*v+y];
@@ -52,15 +52,37 @@ function pdfLines(data, transform, close) {
   return lines;
 }
 
+const sameValues = (expected, actual) => Array.isArray(expected) && expected.length === actual.length
+  && expected.every((value, index) => Math.abs(value - actual[index]) < 1e-6);
+function within(lines, width, height) {
+  const epsilon = 32*Number.EPSILON*Math.max(width, height);
+  return lines?.length && lines.every(line => line.length >= 2 && line.every(([x, y]) =>
+    Number.isFinite(x+y) && x >= -epsilon && y >= -epsilon && x <= width + epsilon && y <= height + epsilon));
+}
+
 export function pdfLinework(list, ops, viewport, legend) {
-  const shapes = [];
-  const stack = [];
-  const stroke = new Set([ops.stroke, ops.closeStroke, ops.fillStroke, ops.eoFillStroke, ops.closeFillStroke, ops.closeEOFillStroke]);
+  const shapes = [], stack = [];
+  const strokes = new Set([ops.stroke, ops.closeStroke, ops.fillStroke, ops.eoFillStroke, ops.closeFillStroke, ops.closeEOFillStroke]);
   const closes = new Set([ops.closeStroke, ops.closeFillStroke, ops.closeEOFillStroke]);
-  const colors = new Map();
-  legend.forEach((v, i) => { if (!colors.has(v.color.toLowerCase())) colors.set(v.color.toLowerCase(), i); });
-  let state = { matrix: viewport.transform, color: '#000000', unsupported: false };
-  let skipped = 0;
+  const fills = new Set([ops.fillStroke, ops.eoFillStroke, ops.closeFillStroke, ops.closeEOFillStroke]);
+  const styleCounts = new Map();
+  const byColor = new Map();
+  legend?.forEach((rule, index) => {
+    const key = (rule.stroke || rule.color).toLowerCase();
+    if (!byColor.has(key)) byColor.set(key, []);
+    byColor.get(key).push({ rule, index });
+  });
+  let state = { matrix: viewport.transform, color: '#000000', dashArray: [], dashOffset: 0, strokeWidth: 1, unsupported: false };
+  const visible = { unmatched: 0, ambiguous: 0, unsupported: 0 };
+  const changed = (entries) => {
+    for (const [key, value] of entries || []) {
+      if (key === 'LW') state.strokeWidth = value;
+      else if (key === 'D') {
+        state.dashArray = Array.from(value?.[0] || []);
+        state.dashOffset = value?.[1] || 0;
+      } else if ((key === 'CA' && value !== 1) || (key === 'SMask' && value)) state.unsupported = true;
+    }
+  };
   for (let i = 0; i < list.fnArray.length; i++) {
     const op = list.fnArray[i], args = list.argsArray[i] || [];
     if (op === ops.save) stack.push({ ...state });
@@ -72,75 +94,192 @@ export function pdfLinework(list, ops, viewport, legend) {
     } else if (op === ops.paintFormXObjectEnd || op === ops.endGroup) state = stack.pop() || state;
     else if (op === ops.setStrokeRGBColor) state.color = typeof args[0] === 'string' ? args[0].toLowerCase() : null;
     else if ([ops.setStrokeColor, ops.setStrokeColorN, ops.setStrokeGray, ops.setStrokeCMYKColor, ops.setStrokeTransparent].includes(op)) state.color = null;
-    else if (op === ops.setGState && args[0]?.some(([k, v]) => (k === 'CA' && v !== 1) || (k === 'SMask' && v))) state.unsupported = true;
-    else if (op === ops.constructPath && stroke.has(args[0]) && colors.has(state.color)) {
-      const lines = !state.unsupported && args[1]?.[0] && pdfLines(args[1][0], state.matrix, closes.has(args[0]));
-      if (!lines || lines.some((line) => line.some(([x, y]) => !Number.isFinite(x+y) || x < 0 || y < 0 || x > Math.ceil(viewport.width) || y > Math.ceil(viewport.height)))) {
-        skipped++;
-      } else {
-        for (const coordinates of lines) if (coordinates.length >= 2) shapes.push({ classIndex: colors.get(state.color), type: 'LineString', coordinates });
+    else if (op === ops.setLineWidth) state.strokeWidth = args[0];
+    else if (op === ops.setDash) changed([['D', args]]);
+    else if (op === ops.setGState) changed(args[0]);
+    else if (op === ops.constructPath && strokes.has(args[0])) {
+      const { color, dashArray, dashOffset, strokeWidth } = state;
+      const dash = dashArray.length ? 'dashed' : 'solid';
+      const paintedFill = fills.has(args[0]);
+      if (!legend) {
+        const style = { color, dash, dashArray, dashOffset, strokeWidth, paintedFill, supported: !state.unsupported };
+        const key = JSON.stringify(style);
+        if (!styleCounts.has(key)) styleCounts.set(key, { ...style, elements: 0 });
+        styleCounts.get(key).elements++;
+        continue;
       }
+      const candidates = (byColor.get(color) || []).filter(({ rule }) =>
+        (rule.dash == null || rule.dash === dash)
+        && (rule.dashArray == null || sameValues(rule.dashArray, dashArray))
+        && (rule.strokeWidth == null || Math.abs(rule.strokeWidth - strokeWidth) < 1e-6)
+        && (rule.paintedFill == null || rule.paintedFill === paintedFill));
+      if (!candidates.length) { visible.unmatched++; continue; }
+      if (candidates.length > 1) { visible.ambiguous++; continue; }
+      const lines = !state.unsupported && args[1]?.[0]
+        && pdfLines(args[1][0], state.matrix, closes.has(args[0]))?.filter(line => line.length >= 2);
+      if (!within(lines, Math.ceil(viewport.width), Math.ceil(viewport.height))) { visible.unsupported++; continue; }
+      for (const coordinates of lines) shapes.push({ classIndex: candidates[0].index, type: 'LineString', coordinates });
     }
   }
-  return { shapes, skipped };
+  if (!legend) {
+    const styles = [...styleCounts.values()];
+    const strokeColors = [...new Set(styles.map(style => style.color).filter(Boolean))];
+    const limit = 32; // Model-facing inspection preview. Extraction still evaluates every operator.
+    return { strokeColors: strokeColors.slice(0, limit), strokeStyles: styles.slice(0, limit),
+      omitted: Math.max(0, styles.length - limit) };
+  }
+  return { shapes, skipped: visible.unsupported, unclassified: visible };
 }
 
-const TOKEN = /[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/gi;
-const LINE_COMMAND = /^[mlhvz]$/i;
-function linearPath(d) {
-  if (d.replace(TOKEN, '').replace(/[,\s]/g, '')) return null;
-  const tokens = d.match(TOKEN) || [];
-  const lines = [];
-  let command, x = 0, y = 0, line;
-  for (let i = 0; i < tokens.length;) {
-    if (LINE_COMMAND.test(tokens[i])) command = tokens[i++];
-    if (!command || /^[a-z]$/i.test(tokens[i] || '') && !/^z$/i.test(command)) return null;
-    const c = command.toLowerCase();
-    const rel = command === c;
-    if (c === 'z') {
-      if (!line?.length) return null;
-      [x, y] = line[0];
-      if (!same(line.at(-1), line[0])) line.push([x, y]);
-      command = null; continue;
+const NUMBER = /[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/iy;
+const SVG_COMMAND = /^[MLHVCSQTAZ]$/i;
+const ARITY = { m:2, l:2, h:1, v:1, c:6, s:4, q:4, t:2, a:7 };
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const ELEMENTS = 'path,line,polygon,polyline,rect';
+const NON_PAINTED = 'defs,clipPath,mask,symbol,pattern,marker';
+const INHERITED = ['fill', 'stroke', 'fill-rule', 'fill-opacity', 'stroke-opacity', 'color', 'visibility'];
+
+function svgArc(node, start, values, end, transform, out) {
+  const arc = node.ownerDocument.createElementNS(SVG_NS, 'path');
+  arc.setAttribute('d', 'M' + start.join(' ') + ' A' + values.slice(0, 5).join(' ') + ' ' + end.join(' '));
+  const length = arc.getTotalLength();
+  const at = distance => {
+    const p = arc.getPointAtLength(distance);
+    return move(transform, [p.x, p.y]);
+  };
+  const sample = (left, right, a, b, depth) => {
+    const center = (left + right)/2;
+    const c = at(center);
+    const middle = mid(a, b);
+    if (depth === 12 || Math.hypot(c[0]-middle[0], c[1]-middle[1]) <= 0.25) out.push(b);
+    else {
+      sample(left, center, a, c, depth+1);
+      sample(center, right, c, b, depth+1);
     }
-    const first = Number(tokens[i++]), second = c === 'h' || c === 'v' ? 0 : Number(tokens[i++]);
-    if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
-    if (c === 'h') x = first + (rel ? x : 0);
-    else if (c === 'v') y = first + (rel ? y : 0);
-    else { x = first + (rel ? x : 0); y = second + (rel ? y : 0); }
-    if (c === 'm') { line = []; lines.push(line); command = rel ? 'l' : 'L'; }
-    if (!line) return null;
-    line.push([x, y]);
+  };
+  for (let i = 0; i < 4; i++) {
+    const left = i*length/4, right = (i+1)*length/4;
+    sample(left, right, i === 0 ? move(transform, start) : out.at(-1),
+      i === 3 ? move(transform, end) : at(right), 0);
+  }
+}
+
+function svgPath(node, transform) {
+  const d = node.getAttribute('d') || '';
+  const lines = [];
+  let i = 0, command, previous, handle, xy = [0, 0], start, line;
+  const whitespace = () => { while (i < d.length && /[\s,]/.test(d[i])) i++; };
+  const point = ([x, y], relative) => relative ? [x+xy[0], y+xy[1]] : [x, y];
+  const mapped = p => move(transform, p);
+  const mirror = p => [2*xy[0]-p[0], 2*xy[1]-p[1]];
+  while (true) {
+    whitespace();
+    if (i === d.length) break;
+    if (SVG_COMMAND.test(d[i])) command = d[i++];
+    if (!command) return null;
+    const c = command.toLowerCase(), relative = command === c;
+    if (c !== 'm' && !line) return null;
+    if (c === 'z') {
+      if (!same(line.at(-1), line[0])) line.push(line[0]);
+      xy = start;
+      command = null;
+    } else {
+      const values = [];
+      for (let j = 0; j < ARITY[c]; j++) {
+        whitespace();
+        NUMBER.lastIndex = i;
+        const token = c === 'a' && (j === 3 || j === 4) ? (/^[01]$/.test(d[i]) ? d[i] : null) : NUMBER.exec(d)?.[0];
+        if (!token || !Number.isFinite(+token)) return null;
+        i += token.length;
+        values.push(+token);
+      }
+      const end = c === 'h' ? [values[0] + (relative ? xy[0] : 0), xy[1]]
+        : c === 'v' ? [xy[0], values[0] + (relative ? xy[1] : 0)] : point(values.slice(-2), relative);
+      if (c === 'm') {
+        line = [mapped(end)];
+        lines.push(line);
+        start = end;
+        command = relative ? 'l' : 'L';
+      } else if (c === 'a') {
+        if (values[0] < 0 || values[1] < 0) return null;
+        if (values[0] === 0 || values[1] === 0) line.push(mapped(end));
+        else if (!same(xy, end)) svgArc(node, xy, values, end, transform, line);
+      } else if (c === 'c' || c === 's') {
+        const first = c === 'c' ? point(values.slice(0, 2), relative) : /[cs]/.test(previous) ? mirror(handle) : xy;
+        handle = point(values.slice(-4, -2), relative);
+        bezier(line, mapped(xy), mapped(first), mapped(handle), mapped(end));
+      } else if (c === 'q' || c === 't') {
+        handle = c === 'q' ? point(values.slice(0, 2), relative) : /[qt]/.test(previous) ? mirror(handle) : xy;
+        const toCubic = p => [(p[0]+2*handle[0])/3, (p[1]+2*handle[1])/3];
+        bezier(line, mapped(xy), mapped(toCubic(xy)), mapped(toCubic(end)), mapped(end));
+      } else line.push(mapped(end));
+      xy = end;
+    }
+    previous = c;
   }
   return lines;
 }
 
-function svgLine(node) {
+function svgLines(node, transform) {
   const a = (name) => node.getAttribute(name);
-  if (node.localName === 'path') return linearPath(a('d') || '');
-  if (node.localName === 'line') return [[[+(a('x1') || 0), +(a('y1') || 0)], [+(a('x2') || 0), +(a('y2') || 0)]]];
-  if (!['polygon', 'polyline'].includes(node.localName)) return null;
-  const points = (a('points') || '').match(TOKEN) || [];
-  if (points.length < 4 || points.length % 2 || points.some((p) => !Number.isFinite(+p))) return null;
+  if (node.localName === 'path') return svgPath(node, transform);
+  if (node.localName === 'line') return [[['x1','y1'], ['x2','y2']].map(keys => move(transform, keys.map(key => +(a(key) || 0))))];
+  if (node.localName === 'rect') {
+    const [x,y,w,h] = ['x','y','width','height'].map(key => +(a(key) || 0));
+    if (!(w > 0 && h > 0) || +(a('rx') || 0) !== 0 || +(a('ry') || 0) !== 0) return null;
+    return [[[x,y], [x+w,y], [x+w,y+h], [x,y+h], [x,y]].map(p => move(transform,p))];
+  }
+  const points = (a('points') || '').trim().match(/[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/gi) || [];
+  if (points.length < 4 || points.length % 2 || points.some(p => !Number.isFinite(+p))) return null;
   const line = [];
-  for (let i = 0; i < points.length; i += 2) line.push([+points[i], +points[i+1]]);
-  if (node.localName === 'polygon') line.push(line[0]);
+  for (let i = 0; i < points.length; i += 2) line.push(move(transform, [+points[i], +points[i+1]]));
+  if (node.localName === 'polygon' && !same(line.at(-1), line[0])) line.push(line[0]);
   return [line];
 }
 
-function matrixOfSvg(node, root) {
-  let matrix = IDENTITY;
+function svgProperties(node, root, palette) {
+  let matrix = IDENTITY, unsupported = false;
+  const ids = [], paint = {};
   for (let el = node; el; el = el.parentElement) {
-    if (['clip-path', 'mask', 'style', 'filter', 'display', 'visibility'].some((a) => el.hasAttribute(a))) return null;
-    if (el !== root && el.localName === 'svg') return null;
+    if (el.id) ids.push(el.id);
+    const style = name => el.style?.getPropertyValue(name)?.trim() || el.getAttribute(name);
+    for (const name of INHERITED) {
+      const value = style(name);
+      if (value && value !== 'inherit') paint[name] ??= value;
+    }
+    if (style('display') === 'none' || Number(style('opacity') ?? 1) === 0) return null;
+    if (['clip-path', 'mask', 'filter'].some(name => style(name) && style(name) !== 'none')
+      || el.style?.getPropertyValue('transform') || el.style?.getPropertyValue('d')
+      || el !== root && el.localName === 'svg') unsupported = true;
     const transforms = el.transform?.baseVal;
     for (let i = (transforms?.numberOfItems || 0) - 1; i >= 0; i--) {
       const { a, b, c, d, e, f } = transforms.getItem(i).matrix;
       matrix = mul([a, b, c, d, e, f], matrix);
     }
-    if (el === root) return matrix;
+    if (el === root) {
+      if (['hidden','collapse'].includes(paint.visibility)) return null;
+      const color = (value, fallback) => palette?.(value?.toLowerCase() === 'currentcolor' ? paint.color || '#000000' : value || fallback);
+      return { ids, matrix, unsupported, fill: Number(paint['fill-opacity'] ?? 1) === 0 ? null : color(paint.fill, '#000000'),
+        stroke: Number(paint['stroke-opacity'] ?? 1) === 0 ? null : color(paint.stroke, 'none'),
+        fillRule: paint['fill-rule'] || 'nonzero' };
+    }
   }
   return null;
+}
+
+function paintReader() {
+  // CSS parses named colours, short hex and rgb() without attaching the untrusted SVG to the document.
+  const c = document.createElement('canvas').getContext('2d');
+  const resolved = new Map();
+  return value => {
+    if (!resolved.has(value)) {
+      c.fillStyle = '#000001'; c.fillStyle = value;
+      const first = c.fillStyle;
+      c.fillStyle = '#000002'; c.fillStyle = value;
+      resolved.set(value, c.fillStyle === first && /^#[a-f0-9]{6}$/i.test(first) ? first.toLowerCase() : null);
+    }
+    return resolved.get(value);
+  };
 }
 
 function svgViewport(root, size) {
@@ -165,27 +304,121 @@ export function svgLandmarks(root, size) {
     if (node.namespaceURI !== root.namespaceURI || node.closest('defs,clipPath,mask,symbol,pattern,marker')) continue;
     const name = node.querySelector(':scope > title')?.textContent?.trim() || node.getAttribute('aria-label') || node.id;
     const center = ['cx','cy'].map(key => Number(node.getAttribute(key) || 0));
-    const matrix = name && center.every(Number.isFinite) && matrixOfSvg(node, root);
-    if (matrix) marks.push({ name, pixel: move(mul(viewport, matrix), center) });
+    const shape = name && center.every(Number.isFinite) && svgProperties(node, root);
+    if (shape && !shape.unsupported) marks.push({ name, pixel: move(mul(viewport, shape.matrix), center) });
   }
   return marks;
+}
+
+const signedArea = path => path.slice(1).reduce((area, [x,y], i) => area + path[i][0]*y - path[i][1]*x, 0);
+function contains(ring, [x, y]) {
+  let inside = false;
+  for (let i = 1; i < ring.length; i++) {
+    const [a,b] = ring[i-1], [c,d] = ring[i];
+    if ((b > y) !== (d > y) && x < a + (c-a)*(y-b)/(d-b)) inside = !inside;
+  }
+  return inside;
+}
+
+function ringBounds(ring) {
+  return ring.reduce(([l,t,r,b], [x,y]) => [Math.min(l,x), Math.min(t,y), Math.max(r,x), Math.max(b,y)],
+    [Infinity, Infinity, -Infinity, -Infinity]);
+}
+
+function boundsOverlap([l,t,r,b], [x,y,u,v]) {
+  return l <= u && x <= r && t <= v && y <= b;
+}
+
+const angleSide = (a,b,p) => Math.sign((b[0]-a[0])*(p[1]-a[1]) - (b[1]-a[1])*(p[0]-a[0]));
+function intersectRings(left, right) {
+  for (let i = 1; i < left.length; i++) {
+    const a = left[i-1], b = left[i], bounds = ringBounds([a,b]);
+    for (let j = 1; j < right.length; j++) {
+      const c = right[j-1], d = right[j];
+      if (!boundsOverlap(bounds, ringBounds([c,d]))) continue;
+      if (angleSide(a,b,c)*angleSide(a,b,d) <= 0 && angleSide(c,d,a)*angleSide(c,d,b) <= 0) return true;
+    }
+  }
+  return false;
+}
+
+function filledRings(lines, fillRule) {
+  const rings = [];
+  for (const points of lines) {
+    const ring = points.filter((point, i) => i === 0 || !same(point, points[i-1]));
+    if (ring.length < 2) return null;
+    if (!same(ring.at(-1), ring[0])) ring.push(ring[0]);
+    const area = signedArea(ring);
+    if (ring.length < 4 || !area) return null;
+    const bounds = ringBounds(ring);
+    // Intersecting subpaths need a planar overlay to preserve SVG winding.
+    // Hold back those elements until they can be recovered without guessing.
+    if (rings.some(other => boundsOverlap(bounds, other.bounds) && intersectRings(ring, other.ring))) return null;
+    rings.push({ ring, bounds, area, winding: 0, polygon: null });
+  }
+  rings.sort((a,b) => Math.abs(b.area) - Math.abs(a.area));
+  const polygons = [];
+  for (const [i, item] of rings.entries()) {
+    const parent = rings.slice(0,i).findLast(r => contains(r.ring, item.ring[0]));
+    const outside = parent?.winding ?? 0;
+    item.winding = fillRule === 'evenodd' ? 1-outside : outside+Math.sign(item.area);
+    if (!outside && item.winding) {
+      item.polygon = [item.ring];
+      polygons.push(item.polygon);
+    } else if (outside && !item.winding) {
+      parent.polygon.push(item.ring);
+    } else item.polygon = parent?.polygon;
+  }
+  return polygons;
 }
 
 export function svgLinework(root, size, legend) {
   const { width, height } = size;
   const viewport = svgViewport(root, size);
   const shapes = [];
-  let skipped = 0;
-  legend.forEach(({ elementIds }, classIndex) => {
-    for (const id of elementIds || []) {
-      const node = root.ownerDocument.getElementById(id);
-      const matrix = node?.namespaceURI === root.namespaceURI ? matrixOfSvg(node, root) : null;
-      const raw = matrix && svgLine(node);
-      const lines = raw && raw.map((line) => line.map((p) => move(mul(viewport, matrix), p)));
-      if (!lines?.length || lines.some((line) => line.length < 2 || line.some(([a, b]) =>
-        !Number.isFinite(a+b) || a < 0 || b < 0 || a > width || b > height))) { skipped++; continue; }
-      for (const coordinates of lines) shapes.push({ classIndex, type: 'LineString', coordinates });
+  const summaries = new Map(), elementIds = new Set(), foundIds = new Set();
+  const unclassified = { unmatched: 0, ambiguous: 0, unsupported: 0, missingSelectors: 0 };
+  const palette = paintReader();
+  const rules = legend?.map((rule, classIndex) => ({ rule, classIndex }));
+  const stylesheet = root.querySelector('style') || [...root.ownerDocument.childNodes]
+    .some(node => node.nodeType === 7 && node.target === 'xml-stylesheet');
+  for (const node of root.querySelectorAll(ELEMENTS + ',use,circle,ellipse')) {
+    if (node.namespaceURI !== SVG_NS || node.closest(NON_PAINTED)) continue;
+    const attributes = svgProperties(node, root, palette);
+    if (!attributes) continue;
+    const { ids, matrix, fill, stroke, fillRule, unsupported } = attributes;
+    if (!legend) {
+      for (const id of ids) elementIds.add(id);
+      const key = JSON.stringify([ids, fill, stroke, fillRule]);
+      if (!summaries.has(key)) summaries.set(key, { elementIds: ids, fill, stroke, fillRule, elements: 0 });
+      summaries.get(key).elements++;
+      continue;
     }
-  });
-  return { shapes, skipped };
+    for (const id of ids) foundIds.add(id);
+    const matching = rules.filter(({ rule }) =>
+      (!rule.elementIds?.length || rule.elementIds.some(id => ids.includes(id)))
+      && (rule.fill == null || stylesheet || rule.fill.toLowerCase() === fill)
+      && (rule.stroke == null || stylesheet || rule.stroke.toLowerCase() === stroke));
+    if (!matching.length) { unclassified.unmatched++; continue; }
+    if (stylesheet && matching.some(({rule}) => rule.fill != null || rule.stroke != null || rule.geometry === 'Polygon')) {
+      unclassified.unsupported++; continue;
+    }
+    if (matching.length > 1) { unclassified.ambiguous++; continue; }
+    const { rule, classIndex } = matching[0];
+    const type = rule.geometry || 'LineString';
+    const lines = !unsupported && node.matches(ELEMENTS) && svgLines(node, mul(viewport, matrix));
+    if (!within(lines, width, height)) { unclassified.unsupported++; continue; }
+    const paths = type === 'Polygon' ? fill && filledRings(lines, fillRule) : lines;
+    if (!paths?.length) { unclassified.unsupported++; continue; }
+    for (const coordinates of paths) shapes.push({ classIndex, type, coordinates,
+      ...(ids.length && { sourceElementId: ids[0] }), sourcePaint: type === 'Polygon' ? fill : stroke });
+  }
+  if (!legend) {
+    const ids = [...elementIds], groups = [...summaries.values()];
+    const limit = 32; // Model-facing preview only.
+    return { elementIds: ids.slice(0, limit), groups: groups.slice(0, limit), stylesheet: !!stylesheet,
+      omitted: Math.max(0, ids.length - limit), groupsOmitted: Math.max(0, groups.length - limit) };
+  }
+  unclassified.missingSelectors = new Set(legend.flatMap(rule => rule.elementIds || []).filter(id => !foundIds.has(id))).size;
+  return { shapes, skipped: unclassified.unsupported + unclassified.missingSelectors, unclassified };
 }

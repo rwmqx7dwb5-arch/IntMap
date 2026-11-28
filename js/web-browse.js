@@ -211,7 +211,7 @@ function makeWebBrowse(HOST) {
   /* fetchFile({ref|url}) → { ok, file:File, meta } — the bytes of ONE file, as the page's file door takes them */
   async function download(a, signal) {
     if (a.ref) a = Object.assign({}, a, { ref: untag(a.ref) });
-    const r = await call({ action: 'download', url: a.url, ref: a.ref, state }, signal);
+    const r = await call({ action: 'download', url: a.url, ref: a.ref, ...(a.revalidate === true && { revalidate: true }), state }, signal);
     if (r && r.state) state = r.state;
     if (!r || !r.ok || !r.file) return r || { ok: false, code: 'upstream_unreachable' };
     const bin = atob(r.file.b64);

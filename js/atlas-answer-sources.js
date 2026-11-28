@@ -34,6 +34,7 @@
  * ==========================================================================*/
 
 import { compareQuantity } from './atlas-evidence.js';
+import { numberEvidence } from './atlas-number-evidence.js';
 import { IntMapLang } from './lang-registry.js';
 import { collectObstacles, fitOverlay } from './geo-engine.js';
 /* (safe-output-single-module) the ONE URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
@@ -120,6 +121,7 @@ export function makeAtlasAnswerSources(deps) {
       if (old) {
         if (it.values) old.values.push(...it.values);
         if (it.facts) old.facts.push(...it.facts);
+        if (it.quantities?.length) (old.quantities ||= []).push(...it.quantities);
         return;
       }
       const x = Object.assign({}, it, { n: items.length + 1 }); seen[k] = x; items.push(x);
@@ -133,7 +135,7 @@ export function makeAtlasAnswerSources(deps) {
         add({ kind: p.kind, what: p.what, of: p.of, unit: p.unit || '', source, licence: p.licence || '', url: p.url || '',
           origin: p.origin || '', values: Array.isArray(p.values) ? p.values.filter((v) => typeof v === 'number' && isFinite(v)) : [],
           facts: Array.isArray(p.facts) ? p.facts.filter((f) => f && Number.isFinite(f.value)) : [],
-          date: p.date || '', version: p.version || '', at: p.at || null });
+          date: p.date || '', version: p.version || '', at: p.at || null, quantities: numberEvidence(p) });
       });
       /* (atlas-float-typography) A FIGURE WHOSE TOOL STATED NO BASIS IS NOT LISTED. It used to get a row 「Drawn by Atlas — no data source was recorded」, one per
          shape («説明の図 1»): a source list line that names no source tells the reader nothing and is not a source. A tool that DOES state one
@@ -218,6 +220,33 @@ export function makeAtlasAnswerSources(deps) {
    */
   function linkNumbers(html, items, id) {
     const nums = (items || []).filter((i) => i.kind === 'number' && i.values && i.values.length);
+    const references = new Map();
+    for (const item of items || []) for (const quantity of item.quantities || []) references.set(quantity.id, { item, quantity });
+    if (String(html || '').includes('[[num:')) {
+      const tokens = String(html).split(/(<[^>]*>)/);
+      let ignored = 0, preceding = '';
+      for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].startsWith('<')) {
+          const tag = /^<\s*(\/)?\s*([a-z0-9]+)/i.exec(tokens[i]);
+          if (tag && SKIP[tag[2].toLowerCase()]) ignored = Math.max(0, ignored + (tag[1] ? -1 : 1));
+          if (!tag || !INLINE_STYLE.test(tag[2])) preceding = '';
+          continue;
+        }
+        if (ignored) { preceding = ''; continue; }
+        const text = tokens[i];
+        tokens[i] = text.replace(/\s*\[\[num:([a-z0-9-]+)\]\]/gi, (all, key, offset) => {
+          const ref = references.get(key);
+          if (!ref) return '';
+          const before = preceding + text.slice(0, offset);
+          const token = numbersIn(before).at(-1);
+          const unit = normalized(say(ref.quantity.unit)).trim();
+          const suffix = token ? normalized(before.slice(token.index + token.length)).trim() : '';
+          return token && sameAt(token, ref.quantity.value) && suffix === unit ? mark([ref.item], id) : '';
+        });
+        preceding = text;
+      }
+      html = tokens.join('');
+    }
     if (!nums.length) return html;
     const parts = String(html || '').split(/(<[^>]*>)/);
     let skip = 0, contextBefore = '';
@@ -254,6 +283,7 @@ export function makeAtlasAnswerSources(deps) {
           if (!citation) return;
           let e = citation.end - offset;
           while (e < seg.length && !PHRASE_END.test(seg[e])) e++;
+          if (e === seg.length && /^<sup class="atl-srcn">/.test(parts[i + 1] || '')) return;
           const at = ends.find((x) => x.e === e);
           if (at) {
             if (!at.hit.includes(citation.item)) at.hit.push(citation.item);

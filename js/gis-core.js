@@ -248,9 +248,21 @@ function mount(scope, HOST, CONTEXT) {
          said ok:true while nothing reached the map, so the reader was told their result was drawn and
          then told 'no-such-layer' when they asked to colour it. js/map-ui.js hands back the item it
          made, or null when it could not make one — «描けた» is now a fact somebody measured. */
-      const put = GU.add({ type: 'FeatureCollection', features: ds.features() }, ds.title, null, { datasetId: ds.id });
+      const features = ds.features();
+      const quality = ds.provenance?.quality;
+      const fromSource = quality?.classification;
+      const originalClasses = fromSource?.classes;
+      const sourceSpec = originalClasses?.length ? {field: fromSource.field, classes: originalClasses} : null;
+      const spec = (opts?.spec?.field || opts?.spec?.classes != null) ? opts.spec : sourceSpec;
+      let legend = null;
+      if (spec?.field || spec?.classes != null) {
+        const classified = GU.classify(features.filter(f=>f.geometry).map(f=>f.properties?.[spec.field]), spec, data, spec===sourceSpec);
+        if (!classified.ok) return classified;
+        legend = classified.legend;
+      }
+      const put = GU.add({ type: 'FeatureCollection', features }, ds.title, null, { datasetId: ds.id, spec: legend ? spec : null, legend, sourceQuality: ds.provenance?.mapSource ? ds.provenance : null });
       if (!put) return { ok: false, why: 'draw-not-rendered', detail: { id: ds.id } };
-      return { ok: true, sid: put.sid };
+      return { ok: true, sid: put.sid, legend: put.legend || null, quality: quality || null };
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 

@@ -1,15 +1,17 @@
 /* Atlas's document-map input. The browser decodes or renders public bytes
  * locally. The GIS registry receives only georeferenced, validated features. */
-import { KERNEL_VERSION as REGISTRATION_VERSION, mapRegistration, referenceLandmarks, matchMapLandmarks, legendPixels, traceMapPixels, placeMapShapes, compareMapAreas } from './gis-map-registration.js';
+import { KERNEL_VERSION as REGISTRATION_VERSION, mapRegistration, validLegendIdentity, classifyOutput, referenceLandmarks, matchMapLandmarks, legendPixels, traceMapPixels, placeMapShapes, compareMapAreas } from './gis-map-registration.js';
 import { KERNEL_VERSION as LINEWORK_VERSION, pdfLinework, svgLinework, svgLandmarks } from './gis-map-linework.js';
 
-const KERNEL_VERSION = 'map-source-2';
+const KERNEL_VERSION = 'map-source-3';
 const MAX_SIDE = 2048; // Four million RGBA cells fit in 16 MiB. Report the actual sampling size.
 const MAX_BYTES = 8 * 1024 * 1024; // Existing attachment PDF size order, and above the public relay's 6 MiB.
 const MIME = Object.freeze({ svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
   webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', bmp: 'image/bmp', pdf: 'application/pdf' });
 const fail = (why, detail) => ({ ok: false, why, ...(detail && { detail }) });
 const uploads = new Map();
+const fileHashes = new WeakMap();
+const localSources = new WeakMap();
 const inFlight = new Map();
 let bytesHeld = 0;
 const MAX_HELD_BYTES = 32 * 1024 * 1024; // Unregistered download bytes held for reuse in this page only.
@@ -21,19 +23,50 @@ function readableMapType(file) {
   return Object.hasOwn(MIME, ext) ? MIME[ext] : '';
 }
 
-export function rememberMapSource(record, key) {
+async function sha256(bytes) {
+  if (!globalThis.crypto?.subtle) return null;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+function mapFileHash(file) {
+  if (!fileHashes.has(file)) fileHashes.set(file, file.arrayBuffer().then(sha256));
+  return fileHashes.get(file);
+}
+
+const address = (value) => {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    url.hash = '';
+    return url.href;
+  } catch (_) { return null; }
+};
+
+export async function rememberMapSource(record, key) {
   const { file, meta } = record;
   const type = readableMapType(file);
   if (!type || file.size > MAX_BYTES) return null;
-  const id = meta.sha256 ? 'map-source:' + meta.sha256 + ':' + meta.url : 'map-source:' + meta.url;
-  if (!uploads.has(id)) {
-    uploads.set(id, { ...record, id, key, retrievedAt: new Date().toISOString() });
-    bytesHeld += file.size;
-    while (bytesHeld > MAX_HELD_BYTES) {
-      const old = uploads.keys().next().value;
-      bytesHeld -= uploads.get(old).file.size;
-      uploads.delete(old);
-    }
+  const observedHash = await mapFileHash(file);
+  const declaredHash = /^[a-f0-9]{64}$/i.test(meta.sha256 || '') ? meta.sha256.toLowerCase() : null;
+  const hash = observedHash || declaredHash;
+  if (declaredHash && observedHash && declaredHash !== observedHash) return null;
+  if (!hash) return null;
+  const url = address(meta.url);
+  const id = 'map-source:' + hash + ':' + (url || (meta.attachment ?? file.name));
+  const previous = uploads.get(id);
+  const aliases = new Set(previous?.aliases);
+  if (key) aliases.add(key);
+  if (url) aliases.add(url);
+  uploads.delete(id);
+  const now = new Date().toISOString();
+  uploads.set(id, { ...record, meta: { representation: 'original-bytes', ...meta, sha256: hash }, id, aliases,
+    retrievedAt: now, firstRetrievedAt: previous?.firstRetrievedAt || now });
+  bytesHeld += file.size - (previous?.file.size || 0);
+  while (bytesHeld > MAX_HELD_BYTES) {
+    const old = uploads.keys().next().value;
+    bytesHeld -= uploads.get(old).file.size;
+    uploads.delete(old);
   }
   return id;
 }
@@ -51,6 +84,7 @@ function localFile(record) {
     const bytes = decodeBase64(record.b64);
     return new File([bytes], record.name, { type: MIME.pdf });
   }
+  if (record.originalFile?.size <= MAX_BYTES && readableMapType(record.originalFile)) return record.originalFile;
   if (record.kind === 'text' && record.name.toLowerCase().endsWith('.svg') && !record.truncated) {
     return new File([record.text], record.name, { type: MIME.svg });
   }
@@ -63,31 +97,79 @@ function localFile(record) {
   return null;
 }
 
+async function attachmentSource(attachment) {
+  if (attachment && localSources.has(attachment)) return localSources.get(attachment);
+  const file = localFile(attachment);
+  if (!file) return fail('map-attachment-unavailable');
+  if (file.size > MAX_BYTES) return fail('map-file-too-large', { maxBytes: MAX_BYTES });
+  const hash = await mapFileHash(file);
+  const receivedAt = new Date().toISOString();
+  const record = { ok: true, file, id: hash ? 'map-source:attachment:' + hash + ':' + attachment.name : null,
+    retrievedAt: receivedAt, firstRetrievedAt: receivedAt,
+    meta: { name: file.name, type: file.type, bytes: file.size, attachment: attachment.name, sha256: hash,
+      representation: file === attachment.originalFile || attachment.kind === 'doc' ? 'original-bytes'
+        : attachment.kind === 'image' ? 'conversation-image' : 'decoded-text' } };
+  localSources.set(attachment, record);
+  return record;
+}
+
 export async function resolveMapSource(spec, args, settings) {
-  if ([spec.attachment, spec.source, args.ref, args.url].filter(Boolean).length !== 1) return fail('map-source-choice-required');
-  if (spec.attachment) {
-    const attachment = settings.attachment(spec.attachment);
-    const file = localFile(attachment);
-    return file ? { ok: true, file, meta: { name: file.name, type: file.type, bytes: file.size, attachment: attachment.name,
-      representation: attachment.kind === 'image' ? 'conversation-image' : attachment.kind === 'text' ? 'decoded-text' : 'original-bytes' } }
-      : fail('map-attachment-unavailable');
+  const legacyUrl = address(spec.source);
+  const sourceId = spec.sourceId || (legacyUrl ? null : spec.source);
+  const suppliedUrl = address(spec.sourceUrl || legacyUrl || args.url);
+  const ref = args.ref;
+  const requestedHash = typeof spec.sourceSha256 === 'string' ? spec.sourceSha256.toLowerCase() : null;
+  if ((spec.source && spec.sourceId) || (spec.sourceUrl && args.url) || (legacyUrl && (spec.sourceUrl || args.url))
+    || (ref && (suppliedUrl || sourceId)) || (spec.attachment && (suppliedUrl || ref || sourceId))
+    || (!spec.attachment && !sourceId && !suppliedUrl && !ref)
+    || ((spec.sourceUrl || args.url) && !suppliedUrl)
+    || (requestedHash && !/^[a-f0-9]{64}$/.test(requestedHash))) return fail('map-source-choice-required');
+  const matches = (record) => record && (!sourceId || record.id === sourceId)
+    && (!requestedHash || record.meta.sha256 === requestedHash)
+    && (!suppliedUrl || record.aliases?.has(suppliedUrl) || address(record.meta.url) === suppliedUrl);
+  const checked = record => matches(record) ? record : fail('map-source-version-mismatch', {
+    expected: { id: sourceId || null, sha256: requestedHash, url: suppliedUrl },
+    received: { id: record.id || null, sha256: record.meta.sha256 ?? null, url: record.meta.url ?? null },
+  });
+  const attachmentName = sourceId?.match(/^map-source:attachment:[a-f0-9]{64}:(.*)$/s)?.[1];
+  if (spec.attachment || attachmentName) {
+    const record = await attachmentSource(settings.attachment?.(spec.attachment || attachmentName));
+    return record.ok ? checked(record) : record;
   }
-  if (spec.source) return uploads.get(spec.source) || fail('map-source-unavailable');
-  const key = args.ref || args.url;
-  const reusable = args.url || String(args.ref || '').includes('@');
-  const old = reusable && [...uploads.values()].find((v) => v.key === key || v.meta.url === key);
-  if (old) return old;
-  const underway = reusable && inFlight.get(key);
-  if (underway) return underway;
-  const acquire = (async () => {
-    const d = await settings.download();
-    if (!d?.ok) return d || fail('upstream_unreachable');
-    const id = rememberMapSource(d, key);
-    return id ? uploads.get(id) : d;
-  })();
-  if (!reusable) return acquire;
-  inFlight.set(key, acquire);
-  try { return await acquire; } finally { inFlight.delete(key); }
+  const key = suppliedUrl || ref;
+  const pinned = sourceId ? uploads.get(sourceId) : null;
+  if (pinned && !spec.revalidate) return checked(pinned);
+  const embeddedUrl = sourceId?.match(/^map-source:[a-f0-9]{64}:(https?:.+)$/i)?.[1];
+  const url = suppliedUrl || address(pinned?.meta.url || embeddedUrl);
+  const acquireKey = url || ref;
+  const reusable = !!url || String(ref || '').includes('@');
+  if (reusable && !spec.revalidate && !sourceId) {
+    // Newest observed bytes win. Explicit pins can still find previous versions.
+    const old = [...uploads.values()].reverse().find(v => v.aliases.has(key) && matches(v));
+    if (old) return old;
+  }
+  if (!acquireKey) return fail('map-source-unavailable');
+  let underway = reusable && inFlight.get(acquireKey);
+  if (!underway) {
+    underway = (async () => {
+      const d = await settings.download(url ? { url, revalidate: !!spec.revalidate } : { ref, revalidate: !!spec.revalidate });
+      if (!d?.ok) return d || fail('upstream_unreachable');
+      const id = await rememberMapSource(d, acquireKey);
+      if (id) return uploads.get(id);
+      const hash = await mapFileHash(d.file);
+      if (/^[a-f0-9]{64}$/i.test(d.meta.sha256 || '') && hash && d.meta.sha256.toLowerCase() !== hash) {
+        return fail('map-source-version-mismatch', { expected: { sha256: d.meta.sha256 }, received: { sha256: hash } });
+      }
+      return { ...d, aliases: new Set([acquireKey]), meta: { representation: 'original-bytes', ...d.meta, sha256: hash || d.meta.sha256 } };
+    })();
+    if (reusable) inFlight.set(acquireKey, underway);
+  }
+  try {
+    const record = await underway;
+    return record.ok ? checked(record) : record;
+  } finally {
+    if (inFlight.get(acquireKey) === underway) inFlight.delete(acquireKey);
+  }
 }
 
 function canvas(w, h) {
@@ -126,49 +208,42 @@ async function withPdf(file, spec, signal, consume) {
     return await consume(c, { page: number, pages: pdf.numPages, nativeWidth: initial.width, nativeHeight: initial.height },
       async (legend) => {
         const list = await page.getOperatorList({ annotationMode: AnnotationMode.DISABLE });
-        if (legend) return pdfLinework(list, OPS, viewport, legend);
-        const strokes = new Set(['#000000']);
-        list.fnArray.forEach((op, i) => {
-          const color = list.argsArray[i]?.[0];
-          if (op === OPS.setStrokeRGBColor && /^#[0-9a-f]{6}$/i.test(color || '')) strokes.add(color);
-        });
-        return { strokeColors: [...strokes].slice(0, 32), omitted: Math.max(0, strokes.size - 32) };
+        return pdfLinework(list, OPS, viewport, legend);
       });
   } finally { await get.destroy(); }
+}
+
+async function parseSvg(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const header = new TextDecoder().decode(bytes.subarray(0, 256));
+  const declared = header.match(/^\s*<\?xml\s+[^?]*\bencoding\s*=\s*(['"])([^'"]+)\1/i)?.[2];
+  const encoding = bytes[0] === 0xff || bytes[0] === 0x3c && bytes[1] === 0 ? 'utf-16le'
+    : bytes[0] === 0xfe || bytes[0] === 0 && bytes[1] === 0x3c ? 'utf-16be' : declared || 'utf-8';
+  const doc = new DOMParser().parseFromString(new TextDecoder(encoding).decode(bytes), 'image/svg+xml');
+  return doc.documentElement instanceof globalThis.SVGSVGElement ? doc.documentElement : null;
 }
 
 async function withImage(file, type, spec, consume) {
   if (spec.page != null && spec.page !== 1) return fail('map-page-out-of-range', { pages: 1 });
   const img = new Image();
   const objectUrl = URL.createObjectURL(file.slice(0, file.size, type));
-  let c;
   try {
     img.src = objectUrl;
-    await img.decode();
+    const [root] = await Promise.all([type === MIME.svg ? parseSvg(file) : null, img.decode()]);
     const { naturalWidth, naturalHeight } = img;
     if (!naturalWidth || !naturalHeight) return fail('map-empty-image');
-    const scale = scaleFor(naturalWidth, naturalHeight);
-    c = canvas(Math.max(1, Math.round(naturalWidth*scale)), Math.max(1, Math.round(naturalHeight*scale)));
+    const box = root?.viewBox?.baseVal;
+    const absolute = name => /^\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[a-z]{2})?\s*$/i.test(root?.getAttribute(name) || '');
+    const useViewBox = box?.width > 0 && box?.height > 0 && !absolute('width') && !absolute('height');
+    const [samplingWidth, samplingHeight] = useViewBox ? [box.width, box.height] : [naturalWidth, naturalHeight];
+    const scale = scaleFor(samplingWidth, samplingHeight);
+    const c = canvas(Math.max(1, Math.round(samplingWidth*scale)), Math.max(1, Math.round(samplingHeight*scale)));
     context(c).drawImage(img, 0, 0, c.width, c.height);
-    const size = { page: 1, pages: 1, nativeWidth: naturalWidth, nativeHeight: naturalHeight };
-    let parsed;
-    const svg = () => parsed ??= file.text().then(text => {
-      const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
-      return doc.documentElement instanceof globalThis.SVGSVGElement ? doc.documentElement : null;
-    });
+    const size = { page: 1, pages: 1, nativeWidth: naturalWidth, nativeHeight: naturalHeight,
+      ...(useViewBox && { samplingBasis: 'svg-viewBox' }) };
     const viewport = { ...size, width: c.width, height: c.height };
-    return await consume(c, size, type === MIME.svg ? async (legend) => {
-      const root = await svg();
-      if (!root) return null;
-      if (!legend) {
-        const ids = [...root.querySelectorAll('line[id], polygon[id], polyline[id], path[id]')].map((node) => node.id);
-        return { elementIds: ids.slice(0, 32), omitted: Math.max(0, ids.length - 32) };
-      }
-      return svgLinework(root, viewport, legend);
-    } : null, type === MIME.svg ? async () => {
-      const root = await svg();
-      return root ? svgLandmarks(root, viewport) : [];
-    } : null);
+    return await consume(c, size, root ? async (legend) => svgLinework(root, viewport, legend) : null,
+      root ? async () => svgLandmarks(root, viewport) : null);
   } finally { URL.revokeObjectURL(objectUrl); }
 }
 
@@ -213,6 +288,25 @@ async function automaticControls(c, info, spec, gis, structuralMarks, readVisual
     datasetRead: gis.data.readRecord(reference.id, 'map-source-landmarks', true) };
 }
 
+function positionalEvidence(check, automatic, spec, errors) {
+  const manual = automatic ? (spec.check || []).length : check.length;
+  const groups = {};
+  for (const [i, tie] of check.entries()) {
+    const basis = i < manual ? (tie.evidence === 'independent-observation' ? tie.evidence : 'separately-supplied')
+      : automatic.provenance.method === 'visual-landmark-estimates' ? 'shared-visual-reading' : 'svg-marker-coordinates';
+    if (!groups[basis]) groups[basis] = { errorsM: [], pixelBounds: [...tie.pixel, ...tie.pixel] };
+    const group = groups[basis], [x, y] = tie.pixel, [left, top, right, bottom] = group.pixelBounds;
+    group.errorsM.push(errors[i]);
+    group.pixelBounds = [Math.min(x, left), Math.min(y, top), Math.max(x, right), Math.max(y, bottom)];
+  }
+  for (const row of Object.values(groups)) {
+    row.count = row.errorsM.length;
+    row.rmseM = Math.sqrt(row.errorsM.reduce((sum, error) => sum + error**2, 0) / row.count);
+    row.maxM = row.errorsM.reduce((max, error) => Math.max(max, error), 0);
+  }
+  return groups;
+}
+
 async function processMapSource(record, spec, { signal, show, getGIS, readVisualMarks }) {
   const { file, meta } = record;
   const type = readableMapType(file);
@@ -220,10 +314,10 @@ async function processMapSource(record, spec, { signal, show, getGIS, readVisual
   if (file.size > MAX_BYTES) return fail('map-file-too-large', { maxBytes: MAX_BYTES });
   if (signal?.aborted) return fail('cancelled');
   const source = { ...meta, ...(record.id && { id: record.id }), mediaType: type, retrievedAt: record.retrievedAt || null };
-  if (!source.sha256 && globalThis.crypto?.subtle) {
-    const digest = await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-    source.sha256 = [...new Uint8Array(digest)].map((n) => n.toString(16).padStart(2, '0')).join('');
-  }
+  source.sha256 ||= await mapFileHash(file);
+  source.firstRetrievedAt = record.firstRetrievedAt || null;
+  source.sourceId = record.id || null;
+  source.sourceUrl = meta.url || null;
   const consume = async (c, info, readLinework, structuralMarks) => {
     const size = { ...info, width: c.width, height: c.height, origin: 'top-left', units: 'pixels' };
     if (spec.action === 'inspect') {
@@ -244,16 +338,23 @@ async function processMapSource(record, spec, { signal, show, getGIS, readVisual
       control, check, transform: fit.transform, ...(automatic && { landmarks: automatic.provenance }) };
     let shapes, extraction;
     if (spec.method === 'linework') {
-      if (!readLinework || spec.crop || spec.reference) return fail('map-linework-input-unsupported');
-      const valid = Array.isArray(spec.legend) && spec.legend.length && spec.legend.every((l) =>
-        typeof l.label === 'string' && l.label.trim()
-        && (type === MIME.svg ? Array.isArray(l.elementIds) && l.elementIds.length : /^#[0-9a-f]{6}$/i.test(l.color || '')));
+      if (!readLinework || spec.crop || (type === MIME.pdf && spec.reference)) return fail('map-linework-input-unsupported');
+      const hex = value => /^#[0-9a-f]{6}$/i.test(value || '');
+      const valid = Array.isArray(spec.legend) && spec.legend.length && spec.legend.every((l) => l &&
+        (type === MIME.svg ? (Array.isArray(l.elementIds) && l.elementIds.length) || hex(l.fill) || hex(l.stroke)
+          : hex(l.stroke || l.color) && l.geometry !== 'Polygon'));
       if (!valid) return fail('map-linework-selector-required');
-      const r = await readLinework(spec.legend);
+      if (!validLegendIdentity(spec.legend)) return fail('map-invalid-legend');
+      recipe.legend = spec.legend.map(row => ({ ...row, color: row.color ?? row.fill ?? row.stroke }));
+      const r = await readLinework(recipe.legend);
       if (!r) return fail('map-vector-unreadable');
       ({ shapes } = r);
+      const observedPaint = recipe.legend.map(() => new Set());
+      for (const shape of shapes) if (shape.sourcePaint) observedPaint[shape.classIndex].add(shape.sourcePaint);
+      recipe.legend = recipe.legend.map((rule, i) => ({ ...rule,
+        color: rule.color ?? (observedPaint[i].size === 1 ? observedPaint[i].values().next().value : null) }));
       extraction = { method: 'vector_extraction', selected: shapes.length, skipped: r.skipped,
-        selection: type === MIME.svg ? 'svg-element-id' : 'pdf-stroke-color' };
+        unclassified: r.unclassified, selection: type === MIME.svg ? 'svg-structure' : 'pdf-stroke-attributes' };
     } else {
       const image = context(c).getImageData(0, 0, c.width, c.height);
       const mask = legendPixels(image, spec.legend, spec.crop);
@@ -266,11 +367,16 @@ async function processMapSource(record, spec, { signal, show, getGIS, readVisual
     }
     if (signal?.aborted) return fail('cancelled');
     const placed = placeMapShapes(gis.geometry, fit, shapes, recipe.legend);
+    const classification = classifyOutput(recipe.legend, shapes, placed.features, extraction);
+    const checkEvidence = positionalEvidence(check, automatic, spec, fit.quality.independent?.errorsM || []);
     const quality = { positional: { ...fit.quality, transformModel: fit.transform.model, controlEnvelope: fit.calibrationHull,
-      ...(automatic && { controlSource: automatic.provenance }) }, extraction, geometry: placed.validation, coverageStatus: 'unknown', reference: null };
+      checkEvidence, independentlyCheckedErrorM: checkEvidence['independent-observation']?.rmseM ?? null,
+      ...(automatic && { controlSource: automatic.provenance }) }, classification, extraction,
+      geometry: placed.validation, coverageStatus: 'unknown', reference: null };
     if (!placed.features.length) return fail('map-no-verified-geometry', quality);
     const datasetReads = automatic ? [automatic.datasetRead] : [];
     if (spec.reference) {
+      if (placed.features.some(f => f.geometry.type !== 'Polygon')) return fail('map-linework-input-unsupported');
       const reference = gis.data.get(spec.reference.dataset);
       if (!reference) return fail('map-reference-not-found');
       await gis.geometry.ready();
@@ -280,14 +386,26 @@ async function processMapSource(record, spec, { signal, show, getGIS, readVisual
       datasetReads.push(gis.data.readRecord(reference.id, 'map-source-comparison', true));
     }
     if (signal?.aborted) return fail('cancelled');
+    const bodySha256 = await sha256(new TextEncoder().encode(JSON.stringify(placed.features)));
+    if (signal?.aborted) return fail('cancelled');
+    const inputVersions = datasetReads.map(({ id, version, op }) => ({ id, version, op }));
+    if (spec.reference) recipe.reference = { ...spec.reference };
+    const provenanceSha256 = source.sha256 && bodySha256 ? await sha256(new TextEncoder().encode(JSON.stringify({
+      sourceSha256: source.sha256, address: source.url || source.attachment, representation: source.representation,
+      licence: spec.licence || null, period: spec.period ?? null, recipe, inputVersions, bodySha256,
+    }))) : null;
+    if (signal?.aborted) return fail('cancelled');
+    const output = { sha256: bodySha256, fingerprintOf: 'sha256/geojson-feature-array-json-v1', provenanceSha256, classification };
     const dataset = gis.data.add({ title: spec.label || meta.name, features: placed.features,
       sourceCrs: spec.crs || null, time: spec.period ? { kind: 'constant', start: spec.period.start, end: spec.period.end } : undefined,
       provenance: { kind: 'map-reconstruction', source: source.url || source.attachment, sourceSha256: source.sha256 || null,
-        licence: spec.licence || null, retrievedAt: source.retrievedAt, mapSource: source, recipe, quality,
+        licence: spec.licence || null, retrievedAt: source.retrievedAt, mapSource: source, recipe, quality, output,
+        inputs: [...new Set(inputVersions.map(input => input.id))], inputVersions,
         ...(spec.period && { temporalCoverage: spec.period }) } });
-    const description = gis.data.describe(dataset.id);
+    const created = gis.data.readRecord(dataset.id, 'map-source-reconstruction', true);
+    const description = { ...gis.data.describe(dataset.id), version: created.version };
     return { ok: true, source, dataset: description, quality, datasetsRead: datasetReads,
-      datasetsCreated: [gis.data.readRecord(dataset.id, 'map-source-reconstruction', true)] };
+      output: { id: created.id, version: created.version, ...output }, datasetsCreated: [created] };
   };
   try {
     if (type === MIME.pdf) return await withPdf(file, spec, signal, consume);
@@ -317,8 +435,8 @@ const SOURCE_REASONS = Object.freeze({
   'map-landmark-reference-invalid': (L) => L('Choose a point dataset with a field that names its landmarks.', '地物名の列がある地点データセットを指定してください。'),
   'map-landmark-reference-too-wide': (L) => L('Narrow the reference to at most 48 uniquely named landmarks in the source area.', '参照先を原図内にある固有名の地点48件以下に絞ってください。'),
   'map-landmark-matches-insufficient': (L) => L('Too few distinct landmarks could be matched to fit and check the map.', '原図の変換と検証に必要な数の対応点を見つけられませんでした。'),
-  'map-linework-input-unsupported': (L) => L('Use an SVG or PDF for linework. Cropping and reference-area comparison use the palette method.', '線の抽出には SVG か PDF を指定してください。切り出しと参照面との比較には凡例色による抽出を使います。'),
-  'map-linework-selector-required': (L) => L('Name the SVG element IDs or PDF stroke colours for the lines to extract.', '抽出する線の SVG 要素 ID または PDF の線色を指定してください。'),
+  'map-linework-input-unsupported': (L) => L('Use an SVG or PDF for linework. Use the palette method for cropping. Area comparison requires polygons.', '線の抽出には SVG か PDF を指定してください。切り出しには凡例色による抽出を使います。面積の比較には面形状が必要です。'),
+  'map-linework-selector-required': (L) => L('Select SVG elements or groups by ID or paint, or PDF lines by stroke colour and style.', 'SVG の要素・グループの ID や色、または PDF の線色と線種を指定してください。'),
   'map-no-verified-geometry': (L) => L('The selection produced no geometries that passed validation. Check the source, selection, and alignment.', '指定した範囲・凡例と位置合わせから、幾何検査に通る形状が得られませんでした。原図と指定を確認してください。'),
   'map-page-out-of-range': (L) => L('Choose a page number that exists in the source.', '原図に存在するページ番号を指定してください。'),
   'map-positional-tolerance-exceeded': (L) => L('A held-out point exceeded the specified positional tolerance.', '独立検証点の位置誤差が指定された上限を超えました。'),
@@ -331,6 +449,7 @@ const SOURCE_REASONS = Object.freeze({
   'map-residual-unavailable': (L) => L('The positional error could not be measured for the given points and coordinate system.', '指定した点と座標参照系では位置誤差を測定できませんでした。'),
   'map-source-choice-required': (L) => L('Specify one source URL, page link, cached source ID, or attachment.', '原図の URL・ページ内リンク・取得済み原図 ID・添付のいずれか 1 つを指定してください。'),
   'map-source-unavailable': (L) => L('That source map is no longer held on this page. Open its original URL again.', 'このページに原図が保持されていません。元の URL を開き直してください。'),
+  'map-source-version-mismatch': (L) => L('The bytes obtained do not match the requested source version.', '取得した原図は指定された版と一致しません。'),
   'map-source-unreadable': (L) => L('The browser could not read this source map.', 'ブラウザーで原図を読み取れませんでした。'),
   'map-vector-unreadable': (L) => L('Vector geometry could not be read from this document.', 'この文書からベクター形状を読み取れませんでした。'),
   cancelled: (L) => L('The map extraction was cancelled.', '原図の抽出を中止しました。'),
@@ -346,11 +465,11 @@ export async function readMapSource(a, dctx, K, D, web, handoffText, callKey) {
   const spec = a.mapSource;
   const signal = dctx?.signal;
   const r = await resolveMapSource(spec, a, { attachment: (name) => K.ATTACH_LOG?.find(K._curTurn, name),
-    download: () => D.download(a, signal) });
+    download: (request) => D.download(request, signal) });
   if (!r.ok) {
     const code = r.handoff ? 'handoff_' + r.handoff.kind : r.why || r.code || 'upstream_unreachable';
     const say = r.handoff ? handoffText(r.handoff, L) : (mapSourceReason(code, L) || r.say || L('Could not obtain the source map.', '原図を取得できませんでした。'));
-    return R(false, warn(esc(say)), { meta: { code }, exec: { web: { ...web, code, handoff: r.handoff, page: r.page } } });
+    return R(false, warn(esc(say)), { meta: { code }, exec: { web: { ...web, code, handoff: r.handoff, page: r.page }, ...(r.detail && { mapSource: r }) } });
   }
   const V = K.VFRAMES;
   const result = await processMapSource(r, spec, { signal,
@@ -365,9 +484,13 @@ export async function readMapSource(a, dctx, K, D, web, handoffText, callKey) {
     } : null,
     async getGIS() { await window.IntMapLazy.need('gisCore'); return window.IntMapGis; } });
   const { datasetsRead, datasetsCreated, ...mapSource } = result;
-  const meta = { datasetsRead, datasetsCreated, ...(!result.ok && { code: result.why }) };
+  const missing = result.quality?.classification?.missingClassIds.length;
+  const meta = { datasetsRead, datasetsCreated, ...(!result.ok && { code: result.why }),
+    ...(result.ok && missing && { status: 'partial', code: 'map-source-classes-missing' }) };
   const message = result.ok ? (result.dataset
-    ? L('Registered the extracted geometry.', '抽出した地理形状を登録しました。')
+    ? (missing ? L('Registered the extracted geometry. Some requested legend classes have no registered features.',
+      '抽出した地理形状を登録しました。指定した凡例区分の一部には登録地物がありません。')
+      : L('Registered the extracted geometry.', '抽出した地理形状を登録しました。'))
     : L('Read the source map.', '原図を読み取りました。'))
     : mapSourceReason(result.why, L) || L('A GIS operation could not finish the extraction.', 'GIS 演算を終了できず、原図を抽出できませんでした。');
   return R(result.ok, (result.ok ? note : warn)(esc(message)), { meta, exec: { web, mapSource } });

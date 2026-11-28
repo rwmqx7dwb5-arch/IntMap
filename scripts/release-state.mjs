@@ -30,6 +30,7 @@
  *      node scripts/release-state.mjs --json     # 同じものを JSON で
  *      node scripts/release-state.mjs --check    # 食い違いがあれば exit 1 / 測れなければ exit 2
  *      node scripts/release-state.mjs --web      # 面を指定（--web / --edge / --db, 併用可）
+ *      node scripts/release-state.mjs --function who-don --check   # 指定した Edge Function を照合（複数指定可）
  *      node scripts/release-state.mjs --diff who-don   # その関数の実際の差分を出す
  *
  *  ⚠ これは **CI のゲートではない**（`npm test` に入れない）。3 面とも資格情報とネットワークを
@@ -240,8 +241,11 @@ const measureWeb = async () => {
 
 /* --------- 面 2: Edge Functions */
 
-const measureEdge = () => {
-  const roster = edgeRoster(ROOT);
+const downloadFunction = (slug, dest) => run('supabase', ['functions', 'download', slug, '--project-ref', REF, '--workdir', dest, '--use-api'], { timeout: 120_000 });
+
+const measureEdge = (selected = []) => {
+  const all = edgeRoster(ROOT);
+  const roster = selected.length ? selected : all;
   if (!REF) return { state: 'unknown', why: 'src/vendor.js から Supabase の project ref を読めなかった', roster };
   let listed;
   try {
@@ -264,9 +268,10 @@ const measureEdge = () => {
       const dest = path.join(tmp, slug);
       mkdirSync(dest, { recursive: true });
       try {
-        run('supabase', ['functions', 'download', slug, '--project-ref', REF, '--workdir', dest], { timeout: 120_000 });
+        downloadFunction(slug, dest);
       } catch (e) {
-        rows.push({ slug, state: 'unknown', why: String(e.message).split('\n')[0], version: meta.version });
+        const reason = String(e.stderr || '').match(/"code"\s*:\s*"([A-Za-z0-9_-]+)"/)?.[1];
+        rows.push({ slug, state: 'unknown', why: reason || '配備されたソースを取得できなかった', version: meta.version });
         continue;
       }
       const cmp = compareTrees(path.join(dest, 'supabase/functions'), path.join(ROOT, 'supabase/functions'), git);
@@ -277,7 +282,7 @@ const measureEdge = () => {
         ...cmp,
       });
     }
-    for (const [slug] of deployed) if (!roster.includes(slug)) rows.push({ slug, state: 'not-in-repo' });
+    for (const [slug] of deployed) if (!selected.length && !all.includes(slug)) rows.push({ slug, state: 'not-in-repo' });
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 
   const bad = rows.filter((r) => r.state === 'differs' || r.state === 'not-deployed' || r.state === 'not-in-repo');
@@ -303,7 +308,7 @@ const showDiff = (slug) => {
   const tmp = mkdtempSync(path.join(tmpdir(), 'intmap-release-'));
   try {
     mkdirSync(path.join(tmp, slug), { recursive: true });
-    run('supabase', ['functions', 'download', slug, '--project-ref', REF, '--workdir', path.join(tmp, slug)]);
+    downloadFunction(slug, path.join(tmp, slug));
     const base = path.join(tmp, slug, 'supabase/functions');
     for (const rel of walk(base)) {
       const a = path.join(base, rel), b = path.join(ROOT, 'supabase/functions', rel);
@@ -330,7 +335,8 @@ const report = (r) => {
     if (e.state === 'unknown' && e.why) console.log(`  ? Edge        ${e.why}`);
     else {
       const bad = e.rows.filter((x) => x.state !== 'identical');
-      console.log(`  ${mark[e.state] || '?'} Edge        ${e.rows.length} 本中 ${e.rows.length - bad.length} 本が本番と一致`);
+      const unobserved = bad.filter(x => x.state === 'unknown').length;
+      console.log(`  ${mark[e.state] || '?'} Edge        一致 ${e.rows.length - bad.length} · 差分 ${bad.length - unobserved} · 判定不能 ${unobserved}`);
       for (const x of bad) {
         const d = (x.differs || []).map((f) => `${f.file} (+${f.plus}/-${f.minus}${f.commentsOnly ? '・コメントのみ' : ''})`).join(', ');
         console.log(`      ${mark[x.state] || '?'} ${x.slug.padEnd(16)} ${x.state}${x.version ? ` v${x.version}` : ''}${d ? ' · ' + d : ''}${x.why ? ' · ' + x.why : ''}`);
@@ -351,12 +357,21 @@ const report = (r) => {
 
 const main = async () => {
   const diffSlug = valueOf('--diff');
+  const selected = [...new Set(ARGS.flatMap((arg, i) => arg === '--function' ? [ARGS[i+1]] : []))];
+  const roster = edgeRoster(ROOT);
+  const unknown = [...selected, ...(flag('--diff') ? [diffSlug] : [])].filter(slug => !roster.includes(slug));
+  if (unknown.length) {
+    console.error('Unknown Edge Function: ' + unknown.map(slug => slug || '(missing name)').join(', '));
+    process.exitCode = 2;
+    return;
+  }
   if (diffSlug) { showDiff(diffSlug); return; }
 
   const out = {};
-  if (WANT.has('web')) out.web = await measureWeb();
-  if (WANT.has('edge')) out.edge = measureEdge();
-  if (WANT.has('db')) out.db = measureDb();
+  const defaultFaces = !selected.length;
+  if (WANT.has('web') && (defaultFaces || flag('--web'))) out.web = await measureWeb();
+  if (selected.length || WANT.has('edge')) out.edge = measureEdge(selected);
+  if (WANT.has('db') && (defaultFaces || flag('--db'))) out.db = measureDb();
 
   if (flag('--json')) console.log(JSON.stringify(out, null, 2));
   else report(out);

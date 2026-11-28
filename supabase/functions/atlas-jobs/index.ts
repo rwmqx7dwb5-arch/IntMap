@@ -143,11 +143,14 @@ const money = {
     const inTok = Math.ceil(chars / 3) + (web ? WEB_READ_TOKENS : 0) + Math.max(0, Math.floor(images)) * IMAGE_READ_TOKENS;
     return Math.ceil(inTok * p.input + outputTokens(maxOutput, modelFor()) * p.output);
   },
-  actual(usage: unknown, model: string) { return costMicros(model || modelFor(), usage, "openai"); },
+  actual(usage: unknown, model: string) { return usage && priceOf(model || modelFor()).known ? costMicros(model || modelFor(), usage, "openai") : null; },
 };
 
 class ModelError extends Error {
   code: string; status: number; timeout: boolean; retryAfterSeconds?: number;
+  costUnknown = false;
+  effort?: string;
+  model?: string;
   constructor(code: string, message: string, status = 0, timeout = false, retryAfterSeconds?: number) { super(message); this.code = code; this.status = status; this.timeout = timeout; this.retryAfterSeconds = retryAfterSeconds; }
 }
 
@@ -162,11 +165,12 @@ async function classifyFailure(res: Response): Promise<{ len: number; verdict: R
 /* One worker request to the provider. OpenAI Responses only — the provider this project runs (AI_PROVIDER=openai); another
    provider fails the task `provider_unsupported` by name rather than running unmetered. A 403/404 model_not_found walks
    FALLBACK_CHAIN one step each, as ai-proxy does. */
-async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal; maxOutput?: number; startedAt?: number; images?: string[] }) {
+async function callModel(system: string, prompt: string, o: { web: boolean; signal?: AbortSignal; maxOutput?: number; startedAt?: number; images?: string[]; effort?: string }) {
   if ((env("AI_PROVIDER") || "openai").toLowerCase() !== "openai") throw new ModelError("provider_unsupported", "Durable jobs run on the OpenAI provider only.");
   const key = env("OPENAI_API_KEY");
   if (!key) throw new ModelError("provider_unavailable", "The AI provider is not configured.", 503);
   const chain = [modelFor(), ...FALLBACK_CHAIN.filter((m) => m !== modelFor())];
+  const effort = o.effort || "medium";
   for (let i = 0; i < chain.length; i++) {
     let res: Response;
     try {
@@ -176,15 +180,16 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
         body: JSON.stringify({
           model: chain[i], instructions: system,
           input: [{ role: "user", content: [{ type: "input_text", text: prompt }, ...(o.images || []).map((u) => ({ type: "input_image", image_url: u }))] }],
-          max_output_tokens: outputTokens(o.maxOutput, chain[i]), reasoning: { effort: "medium" }, store: false,
+          max_output_tokens: outputTokens(o.maxOutput, chain[i]), reasoning: { effort }, store: false,
           ...(o.web ? { tools: [{ type: "web_search" }] } : { text: { format: { type: "json_object" } } }),
         }),
       }, { ceiling: CEILING, timeoutMs: providerBudgetMs(true, o.startedAt, Date.now()) });   /* what is left of THIS invocation's window; a retry or a fallback step takes from the same budget */
     } catch (e) {
       const c = String((e as { code?: string })?.code || "");
       if (c === "spend_ceiling" || c === "share_ceiling") throw new ModelError("spend_ceiling", "The project-wide daily AI ceiling was reached.", 503);
-      if (c === "timeout") throw new ModelError("provider_unavailable", "The AI provider timed out.", 503, true);
-      throw new ModelError("provider_unavailable", "Could not reach the AI provider.", 503);
+      const timeout = c === "timeout";
+      throw Object.assign(new ModelError("provider_unavailable", timeout ? "The AI provider timed out." : "Could not reach the AI provider.", 503, timeout),
+        { costUnknown: timeout || ["unreachable", "too_large", "redirect"].includes(c), effort, model: chain[i] });
     }
     if (!res.ok) {
       const { len, verdict } = await classifyFailure(res);   // the provider's body is never kept: a verdict and a length
@@ -192,7 +197,8 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
       /* (atlas-jobs-reliability) a per-MINUTE rate limit is not a quota: the runner waits it out and asks again; billing / spend limit / per-day, and 402, end the task refused */
       if (verdict && verdict.kind === "rate") throw new ModelError("provider_rate_limit", `The AI provider is rate-limiting requests (${res.status}, ${len} bytes).`, res.status, false, verdict.retryAfterSeconds ?? retryAfterHeader(res.headers));
       if (res.status === 429 || res.status === 402 || (verdict && verdict.kind === "quota")) throw new ModelError("provider_quota", `The AI provider refused (${res.status}, ${len} bytes).`, res.status);
-      throw new ModelError("provider_unavailable", `The AI provider answered ${res.status} (${len} bytes).`, res.status);
+      throw Object.assign(new ModelError("provider_unavailable", `The AI provider answered ${res.status} (${len} bytes).`, res.status),
+        { costUnknown: res.status >= 500, effort, model: chain[i] });
     }
     const j = await res.json();
     const out: Array<Record<string, unknown>> = Array.isArray(j?.output) ? j.output : [];
@@ -205,8 +211,8 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
     }
     const u = j?.usage || {};
     return {
-      text, citations, model: chain[i],
-      usage: (() => { const whole = Number(u.input_tokens) || 0, cached = Math.min(whole, Number(u?.input_tokens_details?.cached_tokens) || 0); return { input: whole - cached, cached_read: cached, output: Number(u.output_tokens) || 0 }; })(),   /* costMicros reads `input` as the uncached remainder */
+      text, citations, model: chain[i], effort,
+      usage: Number.isFinite(u.input_tokens) && Number.isFinite(u.output_tokens) ? (() => { const whole = u.input_tokens, cached = Math.min(whole, Number(u?.input_tokens_details?.cached_tokens) || 0); return { input: whole - cached, cached_read: cached, output: u.output_tokens }; })() : null,
     };
   }
   throw new ModelError("provider_unavailable", "No model of the chain answered.", 503);
@@ -276,7 +282,7 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const caps = makeServerCaps();
   const plan = planJob(probe ? continuationProbeTasks() : body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
-  if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
+  if (!plan.ok) return json({ ...plan, error: "bad_plan", code: plan.error, ...(plan.error === "capability_unsupported_on_server" || plan.error === "browser_input_required" ? { available: caps.catalogue() } : {}) }, 400);
 
   /* (atlas-jobs-reliability) THE IMAGES A WORKER TASK NAMES arrive with the job, resolved by the page ({ name: [data URL] }); a name with no image, a thing that is
      not an image, or more than a job may carry is refused by name BEFORE the job exists — never dropped, never trimmed. */
@@ -362,7 +368,7 @@ async function revise(req: Request, body: Record<string, unknown>): Promise<Resp
   for (const k of keep) if (!ids.has(k)) return json({ error: "bad_plan", code: "keep_unknown", at: k }, 400);
   const caps = makeServerCaps();
   const plan = planJob(Array.from(byId.values()), { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
-  if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
+  if (!plan.ok) return json({ ...plan, error: "bad_plan", code: plan.error, ...(plan.error === "capability_unsupported_on_server" || plan.error === "browser_input_required" ? { available: caps.catalogue() } : {}) }, 400);
   const want = new Set(revised.map((c) => String(c.id)));
   const send = (plan.tasks as Array<{ id: string; key: string; contract: unknown; deps: string[] }>).filter((t) => want.has(t.id));
   if (send.length !== want.size) return json({ error: "bad_plan", code: "duplicate_work", message: "A revised piece is the same work as another piece of the job." }, 400);

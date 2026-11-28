@@ -485,12 +485,13 @@ function takeCookies(state, host, headers) {
 }
 
 /* ── the one fetch: every hop judged, one deadline ─────────────────────────────────────────────────── */
-async function hop(url, state, deps, signal, readBody, maxBytes) {
+async function hop(url, state, deps, signal, readBody, maxBytes, revalidate = false) {
   let current = browseUrlAllowed(url);
   if (!current) throw new RelayError("not_allowed", 400);
   for (let n = 0; ; n++) {
     if (!(await deps.resolvesPublic(current.hostname, { signal }))) throw new RelayError(signal.aborted ? "upstream_timeout" : "not_allowed", signal.aborted ? 503 : 400);
     const headers = { "user-agent": deps.userAgent, accept: "text/html,application/xhtml+xml,text/csv,application/json;q=0.9,*/*;q=0.5", "accept-language": "ja,en;q=0.8" };
+    if (revalidate) headers["cache-control"] = "no-cache";
     const ck = cookieHeader(state, current.hostname);
     if (ck) headers.cookie = ck;
     let res;
@@ -616,7 +617,7 @@ export async function browse(input, deps) {
     }
 
     if (action === "download") {
-      const r = await hop(target, state, deps, signal, true, LIMITS.fileBytes);
+      const r = await hop(target, state, deps, signal, true, LIMITS.fileBytes, a.revalidate === true);
       if (!r.res.ok) return fail("upstream_status", { status: r.res.status });
       const type = r.type || "application/octet-stream";
       if (/^text\/html/i.test(type)) {

@@ -322,8 +322,8 @@ test('R742 ④: the evidence brings no ceiling back with it', () => {
    module, so the checks above are measured against behaviour rather than against spelling. The
    relative import is rewritten to an absolute URL because a data: module has no directory. */
 const MUT_SRC = read('js/atlas-state.js').replace(
-  "from './atlas-view-ground.js'",
-  'from ' + JSON.stringify(pathToFileURL(join(ROOT, 'js/atlas-view-ground.js')).href));
+  /from ['"]\.\/(.*?)['"]/g,
+  (_, file) => 'from ' + JSON.stringify(pathToFileURL(join(ROOT, 'js', file)).href));
 
 async function mutant(find, replace) {
   assert.ok(MUT_SRC.includes(find), 'the mutation did not apply — this check measured nothing: ' + find);

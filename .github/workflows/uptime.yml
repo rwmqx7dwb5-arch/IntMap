@@ -25,14 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
-      # (domain-portable) the address is supabase/functions/_shared/site-origin.js; scripts/site-url.mjs
+      # (domain-portable) the address is supabase/functions/_shared/site-origin.js; the module itself
       # prints it and needs nothing but node (package.json for the module type), so a sparse checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           sparse-checkout: |
             package.json
-            scripts/site-url.mjs
             supabase/functions/_shared/site-origin.js
           sparse-checkout-cone-mode: false
       - name: Probe production URL
@@ -40,10 +39,19 @@ jobs:
         env:
           URL: ${{ vars.PROD_URL }}
         run: |
-          URL="${URL:-$(node scripts/site-url.mjs)}"   # before set +e: no address is a failed run, not a probe of ""
+          if [ -z "$URL" ]; then
+            URL=$(node --input-type=module -e "import { SITE_URL } from './supabase/functions/_shared/site-origin.js'; console.log(SITE_URL)")
+          fi
+          test -n "$URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           set +e
           code=$(curl -sS -o body.html -w '%{http_code}' -L --max-time 30 "$URL")
+          curl_exit=$?
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "status=transport_error" >> "$GITHUB_OUTPUT"
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           ok=1
           [ "$code" = "200" ] || ok=0
           grep -q 'id="map"' body.html || ok=0
@@ -61,6 +69,7 @@ jobs:
           URL: ${{ steps.probe.outputs.url }}
         with:
           script: |
+            if (!process.env.OK) { core.warning('The monitor did not reach the HTTP probe.'); return; }
             const ok = process.env.OK === '1';
             const status = process.env.STATUS || '?';
             const url = process.env.URL;
@@ -91,7 +100,8 @@ jobs:
                     `- HTTP status: ${status}`,
                     `- Detected (UTC): ${now}`,
                     `- Run: ${runUrl}`, '',
-                    'Response was missing the app shell (`id="map"`), returned non-200, or hit a Pages 404.',
+                    status === 'transport_error' ? 'The monitor could not complete the HTTP request.'
+                      : 'Response was missing the app shell (`id="map"`), returned non-200, or hit a Pages 404.',
                     'This issue will auto-close on the next successful check. See `docs/INCIDENT-RESPONSE.md`.',
                   ].join('\n') });
                 core.info('Opened new incident issue.');
@@ -111,7 +121,7 @@ jobs:
       - name: Fail the run if the probe failed
         if: steps.probe.outputs.ok != '1'
         run: |
-          echo "::error::Production probe failed (HTTP ${{ steps.probe.outputs.status }})."
+          echo "::error::Production probe failed (${{ steps.probe.outputs.status || 'probe_not_run' }})."
           exit 1
 
   # ── (#R769) The CORS relay ladder ────────────────────────────────────────────────────────────

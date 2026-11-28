@@ -141,8 +141,8 @@ export function makeMsgTools(CTX){
       const bar=document.createElement('div'); bar.className='atl-msgt';
       const rtSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
       bar.appendChild(copyBtn(aiEl));   /* (#R296) the same button the reader's own message gets */
-      if(q){ const rt=document.createElement('button'); rt.innerHTML=rtSvg+'<span>'+L('Retry','再試行','Erneut','Повторить','Reintentar')+'</span>'; rt.title=L('Run this request again','この指示をもう一度実行','Erneut ausführen','Выполнить снова','Ejecutar de nuevo');
-        rt.onclick=()=>{ try{ CTX.run(q); }catch(_){} };
+      if(q){ const rt=document.createElement('button'), resume=aiEl.__atlResume; rt.innerHTML=rtSvg+'<span>'+L('Retry','再試行','Erneut','Повторить','Reintentar')+'</span>'; if(resume) rt.querySelector('span').textContent=L('Continue','続ける'); rt.title=resume?L('Continue this request','この依頼の残りを続ける'):L('Run this request again','この指示をもう一度実行','Erneut ausführen','Выполнить снова','Ejecutar de nuevo');
+        rt.onclick=()=>{ try{ if(resume && CTX.resume) CTX.resume(resume); else CTX.run(q); }catch(_){} };
         bar.appendChild(rt); }
       /* ⚠⚠ (#R543) …AND, WHEN THIS REPLY DREW ON THE MAP, THE VIEW IT DREW IN. The overlay snapshot
          and its chip have existed since #R118: «show that answer's shapes again» already worked.

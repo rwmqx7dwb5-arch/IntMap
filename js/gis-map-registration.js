@@ -1,7 +1,7 @@
 /* Source-space fitting and feature recovery. Bytes and browser rendering live
  * in gis-map-source.js. Raw document coordinates never enter the GIS registry. */
 
-export const KERNEL_VERSION = 'map-registration-2';
+export const KERNEL_VERSION = 'map-registration-3';
 
 const pointOK = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
 const groundOK = (p) => pointOK(p) && Math.abs(p[0]) <= 180 && Math.abs(p[1]) <= 90;
@@ -201,13 +201,42 @@ function fitMapRegistration(crs, size, options) {
   return { ok: true, locate, quality, calibrationBounds, calibrationHull: controlHull(control.map((t) => t.pixel)), transform };
 }
 
+const classIdOf = rule => rule.id ?? rule.label;
+
+export function validLegendIdentity(rules) {
+  const ids = new Set(), labels = new Set();
+  return rules.every(rule => {
+    if (typeof rule?.label !== 'string' || !rule.label.trim() || labels.has(rule.label)) return false;
+    const id = classIdOf(rule);
+    if (typeof id !== 'string' || !id.trim() || ids.has(id)) return false;
+    ids.add(id);
+    labels.add(rule.label);
+    return true;
+  });
+}
+
+export function classifyOutput(legend, shapes, features, extraction) {
+  const rows = legend.map(rule => ({ id: classIdOf(rule), label: rule.label, color: rule.color ?? null,
+    selectedShapes: 0, registeredFeatures: 0 }));
+  const byId = new Map(rows.map(row => [row.id, row]));
+  for (const shape of shapes) rows[shape.classIndex].selectedShapes++;
+  for (const feature of features) byId.get(feature.properties.classId).registeredFeatures++;
+  const palette = extraction.method === 'raster_digitization';
+  return { field: 'classId', classes: rows,
+    missingClassIds: rows.filter(row => !row.registeredFeatures).map(row => row.id),
+    unclassified: palette ? { unit: 'pixels', unmatched: extraction.unmatched, ambiguous: extraction.ambiguous,
+      transparent: extraction.transparent } : {
+      unit: extraction.selection === 'pdf-stroke-attributes' ? 'paint-operations' : 'svg-elements',
+      ...extraction.unclassified } };
+}
+
 export function legendPixels(image, rules, crop = [0, 0, image.width, image.height]) {
   const { width, height, data } = image;
   const [left, top, right, bottom] = crop;
   if (crop.length !== 4 || !crop.every(Number.isInteger) || left < 0 || top < 0
     || right > width || bottom > height || left >= right || top >= bottom) return fail('map-invalid-crop');
   if (!Array.isArray(rules) || !rules.length || rules.length > 32) return fail('map-legend-required');
-  const classNames = new Set();
+  if (!validLegendIdentity(rules)) return fail('map-invalid-legend');
   const legend = [];
   for (const c of rules) {
     let color = c?.color;
@@ -220,10 +249,8 @@ export function legendPixels(image, rules, crop = [0, 0, image.width, image.heig
       if (data[i+3] !== 255) return fail('map-invalid-swatch');
       color = '#' + [...data.slice(i, i+3)].map((v) => v.toString(16).padStart(2, '0')).join('');
     }
-    if (typeof c?.label !== 'string' || !c.label.trim() || classNames.has(c.label)
-      || typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color)
+    if (typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color)
       || (c.tolerance != null && (!Number.isFinite(c.tolerance) || c.tolerance < 0 || c.tolerance > 255))) return fail('map-invalid-legend');
-    classNames.add(c.label);
     legend.push({ ...c, color });
   }
   const palette = legend.map((r) => {
@@ -315,8 +342,9 @@ export function placeMapShapes(geometry, registration, shapes, legend) {
     if (extrapolated) outsideControlEnvelope++;
     const repaired = s.type === 'Polygon' ? geometry.repair(geom, { winding: true }) : null;
     features.push({ type: 'Feature', geometry: repaired?.geometry || geom, properties: {
-      class: legend[s.classIndex].label, color: legend[s.classIndex].color ?? null, extrapolated,
+      class: legend[s.classIndex].label, classId: classIdOf(legend[s.classIndex]), color: legend[s.classIndex].color ?? null, extrapolated,
       ...(s.pixels != null && { sourcePixels: s.pixels }),
+      ...(s.sourceElementId && { sourceElementId: s.sourceElementId }),
     } });
   }
   return { features, validation: { valid: features.length, invalid, outsideControlEnvelope, issues: Object.fromEntries(issues) } };

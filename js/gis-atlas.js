@@ -1118,7 +1118,7 @@ export function makeGisAtlas(core) {
       if (!d.ok) return said(fail(d.why, Object.assign({ id: r.id }, d.detail || {})));
       return said({
         ok: true, drawn: true, dataset: datasetRow(ds), sid: d.sid || null,
-        band: (d.band == null) ? null : d.band,
+        band: (d.band == null) ? null : d.band, legend: d.legend || null, quality: d.quality || null,
         html: '<div class="atlas-gis-result">' + esc(L('Drawn on the map', '地図に描きました')) + ': '
           + esc(ds.title) + ' · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>',
       });

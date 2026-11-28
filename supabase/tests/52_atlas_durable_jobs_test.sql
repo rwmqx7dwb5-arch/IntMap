@@ -3,8 +3,8 @@
 --  supabase/migrations/20261123130000_atlas_durable_jobs.sql
 --    ① the tables: columns, RLS on, owner-only read, no client write;
 --    ② create: idempotent on (reader, idem), never refused for the concurrency fences (a job past them waits), refused when the stop switch is off;
---    ③ claim / lease: one runner at a time, a lapsed lease is taken over, a stale reservation counts as spent;
---    ④ the cost fence: a reservation past the cap is refused, settle moves it to spent;
+--    ③ claim / lease: one runner at a time, a lapsed lease is taken over; stale reservations still count against the cap;
+--    ④ the cost fence: a reservation past the cap is refused; settlement distinguishes measured and unknown costs;
 --    ⑤ a task finishes once; the second finish changes nothing;
 --    ⑥ the reader's controls: cancel (idempotent, owner only), amend (read back by the checkpoint, may drop tasks);
 --    ⑦ the stop switch ends a job at its next checkpoint and stops every claim;
@@ -96,11 +96,18 @@ select is(public.atlas_job_reserve((select job_id from _j), 'runner-2', 1), fals
 select is(public.atlas_job_settle((select job_id from _j), 'runner-1', 600000, 250000), true, 'settle replaces the reservation with what was billed');
 select is((select spent_micros from public.atlas_jobs where id = (select job_id from _j)), 250000::bigint, '… spent is what was billed');
 select is((select reserved_micros from public.atlas_jobs where id = (select job_id from _j)), 0::bigint, '… and nothing stays reserved');
+select is(public.atlas_job_reserve((select job_id from _j), 'runner-1', 100000), true, 'a request whose provider cost will be unknown reserves first');
+select is(public.atlas_job_settle((select job_id from _j), 'runner-1', 100000, null), true, 'an unknown cost can release the reservation');
+select is((select unknown_cost_calls from public.atlas_jobs where id = (select job_id from _j)), 1, 'the unknown request is counted separately');
+select is((select spent_micros from public.atlas_jobs where id = (select job_id from _j)), 250000::bigint, 'the previously confirmed amount stays known');
+select is((select reserved_micros from public.atlas_jobs where id = (select job_id from _j)), 0::bigint, 'the reservation is released even without a price');
 select is(public.atlas_job_reserve((select job_id from _j), 'runner-1', 300000), true, 'a reservation the dead runner never settles…');
 -- the runner dies: its lease lapses
 update public.atlas_jobs set lease_until = now() - interval '1 second' where id = (select job_id from _j);
 select is((select count(*)::int from public.atlas_job_claim('runner-2', 60, (select job_id from _j))), 1, 'a lapsed lease is taken over');
-select is((select spent_micros from public.atlas_jobs where id = (select job_id from _j)), 550000::bigint, '… and what the dead runner had reserved is counted as spent');
+select is((select spent_micros from public.atlas_jobs where id = (select job_id from _j)), 250000::bigint, '… confirmed spend excludes the expired reservation');
+select is((select unreconciled_micros from public.atlas_jobs where id = (select job_id from _j)), 300000::bigint, '… the expired allowance is reported separately');
+select is(public.atlas_job_reserve((select job_id from _j), 'runner-2', 500000), false, '… and it still counts against the cap');
 select is((select reserved_micros from public.atlas_jobs where id = (select job_id from _j)), 0::bigint, '… not reserved');
 
 -- ── ⑤ a task finishes once ───────────────────────────────────────────────────

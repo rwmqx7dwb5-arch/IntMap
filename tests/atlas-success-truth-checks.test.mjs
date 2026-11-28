@@ -72,7 +72,9 @@ test('② 地図を描く呼び出しが走り（観測できず）、門が受�
   const out = await AGENT.runTurn({ model, tools: TOOLS, messages: USER,
     execute: async () => ({ ok: false, status: 'unobserved', unobservedModes: ['map'], message: 'ran; could not be seen' }) });
   assert.equal(out.unmet.filter((u) => u.kind === 'output').length, 0);
-  assert.equal(out.completion, 'complete');
+  assert.equal(out.completion, 'unobserved');
+  assert.equal(out.stopped, 'goal_unobserved');
+  assert.equal(out.trace.outputGate, 0, 'an unobserved drawing is not repeated');
 });
 
 test('⑧ 一度確認された不足は、次の検証が無応答でも解消されない（20 行要求に 8 行）', async () => {

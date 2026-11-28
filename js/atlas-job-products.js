@@ -27,9 +27,20 @@ export function productsOfJob(f) {
   const out = [];
   for (const t of (f && f.tasks) || []) {
     if (!(t.state === 'done' || t.state === 'partial') || !t.summary) continue;
+    if (t.research?.count) out.push({
+      kind: 'table', name: clip('research — ' + t.id + (t.title ? ' — ' + t.title : ''), 100),
+      content: {
+        columns: ['subject', 'subjectRef', 'attribute', 'value', 'unit', 'year', 'at', 'period', 'source', 'sourceVersion', 'retrievedAt', 'evidenceId'],
+        rows: t.facts.map((fact) => [fact.subject?.name, fact.subject?.ref || fact.subject?.ids, fact.attribute, fact.value, fact.unit, fact.year,
+          fact.at, fact.period, fact.source, fact.sourceVersion, fact.retrievedAt, fact.evidenceId]),
+      },
+      from: { job: f.id, task: t.id, output: t.research.id, version: t.research.version, urls: (t.sources || []).map((x) => x.url).filter(Boolean) },
+    });
     const src = (t.sources || []).filter((x) => x && x.url).map((x) => '- ' + (x.title ? x.title + ' — ' : '') + x.url).join('\n');
+    const searched = (t.notFound || []).map((x) => '- ' + x.looked + (x.where ? ' — ' + x.where : '')).join('\n');
     const text = t.summary + (t.gaps && t.gaps.length ? '\n\nNot established:\n' + t.gaps.map((g) => '- ' + g).join('\n') : '') + (src ? '\n\nSources:\n' + src : '')
-      + (t.parked ? '\n\nSaved for the map (applied when the page was open): ' + t.parked.capability : '');
+      + (searched ? '\n\nSearched without finding:\n' + searched : '')
+      + (t.parked ? '\n\nMap application on this device: ' + (t.application || 'pending') + ' — ' + t.parked.capability : '');
     out.push({ kind: 'answer', name: clip(t.id + ' — ' + (t.title || t.kind), 100), content: { text: clip(text, 200000) }, note: 'background job ' + f.id + ' · piece ' + t.id + (t.state === 'partial' ? ' (partly)' : '') });
   }
   if (f && f.result) out.push({ kind: 'document', name: 'Combined result', content: { format: 'markdown', text: clip(f.result, 400000) }, note: 'background job ' + f.id + ' · combined' });
@@ -145,7 +156,7 @@ export function noteJobStarted(wm, f) {
   try { wm.open(jobOwedText(f), 'job'); } catch (_) { /* memory is context, never a gate */ }
 }
 export function noteJobEnded(wm, f) {
-  if (!wm || typeof wm.resolve !== 'function' || !f) return;
+  if (!wm || typeof wm.resolve !== 'function' || !f || f.tasksError || f.applicationsPending) return;
   try { wm.resolve(jobOwedText(f)); } catch (_) { /* memory is context, never a gate */ }
 }
 export const jobOwedText = (f) => 'Background job ' + f.id + (f.title ? ' "' + clip(f.title, 80) + '"' : '') + ' is running on the server — read it with jobs.status when it has ended';

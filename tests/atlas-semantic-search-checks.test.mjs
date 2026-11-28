@@ -286,3 +286,39 @@ test('atlas-semantic-search ⑤ atlas-embed: login required, an unknown catalogu
     globalThis.fetch = realFetch;
   }
 });
+
+test('the same tab recovers after two catalogue storage failures without duplicate seeds', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  const previousWindow = globalThis.window;
+  globalThis.window = { SUPABASE_URL: 'https://stub.supabase.test', SUPABASE_ANON_KEY: 'anon' };
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  });
+  let seeds = 0;
+  let indexed = false;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    const { op } = JSON.parse(init.body);
+    if (op === 'search') return Response.json(indexed
+      ? { state: 'ok', model: 'fixture', sims: {} } : { state: 'catalog_unknown' });
+    seeds++;
+    if (seeds === 3) indexed = true;
+    return Response.json({ state: indexed ? 'ok' : 'store_unavailable' });
+  });
+  const session = { access_token: 'stub' };
+  const caps = makeAtlasCapabilities({ DB: { auth: { getSession: async () => ({ data: { session } }) } } });
+  caps.bindRuntime({ docs: makeAtlasCatalogText({}, {}) });
+  const search = () => caps.searchFused('戻る');
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  assert.equal((await search()).semantic.reason, 'catalog_indexing');
+  await settle();
+  assert.equal((await search()).semantic.reason, 'catalog_indexing');
+  await settle();
+  assert.equal((await search()).semantic.reason, 'catalog_seed_store_unavailable');
+  assert.equal(seeds, 2);
+  t.mock.timers.setTime(Date.now() + 60_000);
+  await Promise.all([search(), search()]);
+  await settle();
+  assert.equal(seeds, 3);
+  assert.equal((await search()).basis, 'lexical+semantic');
+});

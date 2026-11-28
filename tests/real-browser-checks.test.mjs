@@ -129,6 +129,9 @@ test('a runtime result requires a public anonymous GET and its successful geogra
   const docs = '<title>Survey</title><main>Harbor survey catalogue</main>';
   const requests = [
     ['public', dataUrl + '/geometry', 'GET', 200, {}],
+    ['json-map', dataUrl + '/survey-data', 'GET', 200, {}, 'application/json', '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null,"properties":{"token":"BODY_ONLY"}}]}'],
+    ['json-other', dataUrl + '/summary.json', 'GET', 200, {}, 'application/json', '{"title":"Survey"}'],
+    ['json-large', dataUrl + '/large.json', 'GET', 200, {}, 'application/json', null, 1_000_000],
     ['missing', dataUrl + '/gone', 'GET', 404, {}],
     ['cookie', dataUrl + '/login', 'GET', 200, { Cookie: 'fixture=private' }],
     ['no-wire', dataUrl + '/no-confirmation', 'GET', 200, null],
@@ -148,6 +151,7 @@ test('a runtime result requires a public anonymous GET and its successful geogra
       'Page.getFrameTree': { frameTree: { frame: { id: 'main', url: pageUrl } } },
       'Page.navigate': { loaderId: 'main-loader' },
       'Runtime.evaluate': { result: { value: docs } },
+      'Network.getResponseBody': { body: requests.find(([key]) => key === params?.requestId)?.[6] },
     }[method];
     queueMicrotask(() => {
       socket.onmessage({ data: JSON.stringify({ id, result }) });
@@ -158,10 +162,11 @@ test('a runtime result requires a public anonymous GET and its successful geogra
       if (method === 'Fetch.continueRequest' || method === 'Fetch.failRequest') {
         const key = params.requestId;
         observed.push([key, method]);
-        const [, url, , status, headers] = requests.find(([candidate]) => candidate === key);
+        const [, url, , status, headers, mimeType = 'application/geo+json', , size = 180] = requests.find(([candidate]) => candidate === key);
         if (method === 'Fetch.continueRequest') {
-          event('Network.responseReceived', { requestId: key, response: { status, url, mimeType: 'application/geo+json' } });
+          event('Network.responseReceived', { requestId: key, type: 'XHR', response: { status, url, mimeType } });
           if (headers) event('Network.requestWillBeSentExtraInfo', { requestId: key, headers });
+          event('Network.loadingFinished', { requestId: key, encodedDataLength: size });
         }
         if (observed.length === requests.length) {
           for (const name of ['load', 'networkIdle']) event('Page.lifecycleEvent', { frameId: 'main', loaderId: 'main-loader', name });
@@ -174,8 +179,12 @@ test('a runtime result requires a public anonymous GET and its successful geogra
   });
   assert.equal(r.ok, true);
   assert.equal(r.page.title, 'Survey');
-  assert.deepEqual(r.page.assets, [{ href: dataUrl + '/geometry', kind: 'geojson', via: 'network-response' }]);
-  assert.deepEqual(r.page.assetObservation, { status: 'observed', matches: 1 });
+  assert.deepEqual(r.page.assets, [
+    { href: dataUrl + '/geometry', kind: 'geojson', via: 'network-response' },
+    { href: dataUrl + '/survey-data', kind: 'geojson', via: 'network-response' },
+  ]);
+  assert.deepEqual(r.page.assetObservation, { status: 'partial', matches: 2, unverifiedJson: 1 });
+  assert.doesNotMatch(JSON.stringify(r), /BODY_ONLY/);
   assert.deepEqual(observed.filter(([, method]) => method === 'Fetch.failRequest').map(([id]) => id).sort(), ['private', 'signed', 'write']);
 });
 

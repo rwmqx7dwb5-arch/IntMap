@@ -138,6 +138,32 @@ function ledger(state) {
   });
 }
 
+test('screen capture binds map coordinates to the render tick while overlays are assembled', async () => {
+  const { doc, GE } = fakeDom();
+  globalThis.document = doc;
+  const prior = globalThis.html2canvas;
+  let lng = 0;
+  const capture = makeViewCapture({ GE, L: en => en, snapshot: () => ({
+    camera: { lat: 0, lng, zoom: 3 },
+    viewport: { west: lng - 1, south: -1, east: lng + 1, north: 1 },
+  }) });
+  globalThis.html2canvas = async (_element, options) => {
+    lng = 50;
+    options.onclone(doc);
+    return doc.createElement('canvas');
+  };
+  try {
+    const result = await capture.captureFrame({include:'screen'});
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.facts.center, {lat:0,lng:0});
+    assert.equal(result.facts.bbox.west, -1);
+    assert.equal(result.facts.overlays, 'unobserved');
+  } finally {
+    if (prior === undefined) delete globalThis.html2canvas;
+    else globalThis.html2canvas = prior;
+  }
+});
+
 const SNAP = {
   camera: { lat: 35.68, lng: 139.77, zoom: 5.82, bearing: 12, pitch: 40, base: 'satellite', projection: 'globe' },
   viewport: { west: 129.3, south: 31.1, east: 145.8, north: 45.7 },

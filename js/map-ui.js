@@ -3148,7 +3148,7 @@ export function geojsonUpload(HOST){
     const SCALES=new Map();
     function scaleOf(key){ const k=String(key==null?'':key).trim(); if(!k) return null;
       let sc=SCALES.get(k); if(!sc){ sc={cats:[],cuts:null,base:null}; SCALES.set(k,sc); } return sc; }
-    function classify(values,spec,rules){
+    function classify(values,spec,rules,sourceLegend=false){
       const R=rules||(function(){ try{ return window.IntMapData; }catch(_){ return null; } })();
       if(!R||typeof R.isEmpty!=='function'||typeof R.typeColumn!=='function'||typeof R.asNumber!=='function') return {ok:false,why:'data-unavailable'};
       const field=(spec&&spec.field)?String(spec.field):'';
@@ -3160,13 +3160,28 @@ export function geojsonUpload(HOST){
          属性そのものが無い地物に対して MapLibre の ['to-string',['get',f]] が返すのがそれ。 */
       const missKeys=new Set(['']); let missing=0; const present=[];
       for(const v of vals){ if(R.isEmpty(v)){ missing++; if(typeof v==='string') missKeys.add(v); } else present.push(v); }
-      if(!present.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+      if(!present.length && !spec.classes) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
       const base=(spec&&spec.color)||PALETTE[0];
       const legend={field,mode,method:null,classes:[],other:null,
         missing:{color:MISSING_COL,count:missing,keys:Array.from(missKeys)},collapsed:0,total:vals.length};
       if(mode==='categorical'){
         const counts=new Map();
         for(const v of present){ const k=String(v); counts.set(k,(counts.get(k)||0)+1); }
+        if(spec.classes!=null){
+          const known=new Set();
+          if(!Array.isArray(spec.classes)||!spec.classes.length) return {ok:false,why:'invalid-classes',detail:{field}};
+          for(const c of spec.classes){
+            const id=(typeof c?.id==='string'||Number.isFinite(c?.id))?String(c.id):'';
+            const color=/^#[0-9a-f]{6}$/i.test(c?.color||'')?c.color:sourceLegend&&c?.color==null?MISSING_COL:null;
+            if(!id.trim()||known.has(id)||typeof c.label!=='string'||!c.label.trim()||!color) return {ok:false,why:'invalid-classes',detail:{field,id}};
+            known.add(id);
+            legend.classes.push({id,keys:[id],label:c.label,color,count:counts.get(id)||0});
+          }
+          const other=[...counts].filter(([id])=>!known.has(id));
+          if(other.length) legend.other={color:OTHER_COL,distinct:other.length,count:other.reduce((sum,[,n])=>sum+n,0)};
+          legend.method='declared';
+          return {ok:true,legend};
+        }
         let keys;
         if(Array.isArray(spec.values)&&spec.values.length) keys=spec.values.map(String).filter(k=>counts.has(k));
         else keys=Array.from(counts.keys()).sort((a,b)=>(counts.get(b)-counts.get(a))||(a<b?-1:a>b?1:0));
@@ -3303,6 +3318,7 @@ export function geojsonUpload(HOST){
       if(why==='no-field') return IntMapLang.t(HOST.lang,"No column was chosen","列が選ばれていません");
       if(why==='no-features') return IntMapLang.t(HOST.lang,"This layer holds no features to colour","このレイヤーには着色できる地物がありません");
       if(why==='paint-failed') return IntMapLang.t(HOST.lang,"The map could not apply this colouring","この着色を地図に適用できませんでした");
+      if(why==='invalid-classes') return IntMapLang.t(HOST.lang,"Give each class a unique ID, a label and a hex colour","区分ごとに固有のID、名前、16進数の色を指定してください");
       if(why==='mode-unknown') return IntMapLang.t(HOST.lang,"Unknown colouring mode","不明な着色方式です");
       return IntMapLang.t(HOST.lang,"This column could not be coloured","この列で着色できませんでした");
     }
@@ -3483,6 +3499,7 @@ export function geojsonUpload(HOST){
     }
     function addFC(fc,name,r,opts){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
+      const legend=opts?.legend||null, paint=legend?paintExpr(legend):col;
       try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
       /* ⚠ (#R739) THE CATCH USED TO SWALLOW ALL THREE, AND SILENCE IS NOT AN OUTCOME. A renderer that
@@ -3492,9 +3509,9 @@ export function geojsonUpload(HOST){
          'no-such-layer'). Counting what was actually added is what lets the caller be told. */
       let drawn=0;
       for(const spec of [
-        {id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},
-        {id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},
-        {id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},
+        {id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':paint,'fill-opacity':0.22}},
+        {id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':paint,'line-width':2.2}},
+        {id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':paint,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},
       ]){ try{ GE().layers.add(spec,before); drawn++; }catch(_){} }
       /* ⚠ NOT ONE of the three means the shapes are not on the map, whatever the source says. Leaving
          the source behind would make the next import's id collide with a ghost, so it goes too. */
@@ -3505,7 +3522,7 @@ export function geojsonUpload(HOST){
       }
       /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
          attributes, and a second copy of a 200,000-feature import would double what the tab costs. */
-      items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:null,legend:null}); renderList(); fit(fc);
+      items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:opts?.spec||null,legend,sourceQuality:opts?.sourceQuality}); renderList(); fit(fc);
       /* (atlas-controls-receipts) CLAIMED under the effect key the operations that add it write ('map.object' — geo.shadeAreas, a GIS result): a layer added here is a surface
          the renderer can report, so the turn that added it records it (by source id), and that reply's switch turns exactly this layer off — one upload is not another's. */
       try{ GE().render.claim(sid,'map.object',{ clear:()=>removeItem(n) }); }catch(_){}
@@ -3536,7 +3553,7 @@ export function geojsonUpload(HOST){
       if(r&&r.format==='pmtiles'&&r.stats&&r.stats.zoom!=null) msg+=' · z'+r.stats.zoom+' · '+IntMapLang.t(HOST.lang,"tiles","タイル")+' '+r.stats.tiles;
       if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
       toast(msg);
-      return {n,sid};
+      return {n,sid,legend};
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
       /* ⚠ (#R749) A GRID IS NOT THREE LAYERS AND A GeoJSON SOURCE. Removing a raster by the vector
@@ -3546,7 +3563,7 @@ export function geojsonUpload(HOST){
       PARTS.forEach(p=>{ const l=it.sid+p.sfx; try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
-    const esc=window.IntMapSafe.html;   /* the one encoder: this copy stripped < > & and left " in double-quoted attributes */
+    const IntMapSafe=window.IntMapSafe, esc=IntMapSafe.html;
     const nfmt=(v)=>{ try{ return Number(v).toLocaleString(IntMapLang.locale(HOST.lang),{maximumFractionDigits:3}); }catch(_){ return String(v); } };
     /* ══ (#R738) 凡例 — 地図が塗ったのと同じ snapshot を読む ════════════════════════════════════
        ⚠ item.legend is the object paintExpr() was built from. Recomputing the classes here would be
@@ -3572,8 +3589,39 @@ export function geojsonUpload(HOST){
       if(lg.collapsed>0) out.push(note(IntMapLang.t(HOST.lang,"Tied values merged classes","同値が多く区分が統合されました")+' (−'+lg.collapsed+')'));
       return out.join('');
     }
+    function sourceQuality(it){
+      const p=it.sourceQuality;
+      const q=p?.quality, position=q?.positional;
+      if(!p?.mapSource||!q) return '';
+      const sourceLabel=IntMapLang.pick(()=>HOST.lang), c=q.classification;
+      const rows=[];
+      const checkedMapSourceHref=IntMapSafe.url(p.mapSource.url||p.sourceUrl||'');
+      const sourceName=esc(p.mapSource.name||sourceLabel('Source map','原図'));
+      if(checkedMapSourceHref) rows.push('<a href="'+esc(checkedMapSourceHref)+'" target="_blank" rel="noopener noreferrer">'+sourceName+'</a>');
+      else rows.push(sourceName);
+      if(p.retrievedAt) rows.push(esc(sourceLabel('Retrieved','取得日時')+' · '+p.retrievedAt));
+      if(p.mapSource.sha256) rows.push('<code>'+esc(p.mapSource.sha256)+'</code>');
+      if(c?.classes?.length){
+        const missing=c.classes.filter(v=>!v.registeredFeatures);
+        rows.push(esc(sourceLabel('Classes with geometry','形状を取得した区分')+' '+(c.classes.length-missing.length)+'/'+c.classes.length));
+        if(missing.length) rows.push(esc(sourceLabel('Missing classes','未収録区分')+' · '+missing.map(v=>v.label).join(', ')));
+      }
+      const addCheck=(label,checks)=>rows.push(esc(label+' '+checks.count+' · RMSE '+nfmt(checks.rmseM)+' m · '+sourceLabel('Maximum','最大')+' '+nfmt(checks.maxM)+' m'));
+      const heldOut=position?.independent, independent=position?.checkEvidence?.['independent-observation'];
+      if(heldOut) addCheck(sourceLabel('Held-out check points','位置合わせから外した検証点'),heldOut);
+      if(independent) addCheck(sourceLabel('Independently verified points','別途確認した検証点'),independent);
+      else rows.push(esc(sourceLabel('Independent positional check unavailable','独立した位置精度は未確認')));
+      if(q.coverageStatus==='unknown') rows.push(esc(sourceLabel('Spatial coverage unverified','地域全体の網羅性は未確認')));
+
+      if(position?.maxAllowedM != null) rows.push(esc(sourceLabel('Tolerance','許容値')+' '+nfmt(position.maxAllowedM)+' m'));
+      if(p.recipe?.method) rows.push(esc(sourceLabel('Extraction','抽出方法')+' · '+p.recipe.method));
+      const size=p.recipe?.viewport;
+      if(size?.width&&size?.height) rows.push(esc(sourceLabel('Source dimensions','処理寸法')+' · '+size.width+' × '+size.height));
+      if(p.output?.sha256) rows.push('<code>'+esc(p.output.sha256)+'</code>');
+      return '<details style="font-size:10px;padding-left:18px;overflow-wrap:anywhere"><summary>'+esc(sourceLabel('Source and accuracy','出典と精度'))+'</summary>'+rows.map(row=>'<div>'+row+'</div>').join('')+'</details>';
+    }
     function renderList(){ if(!listEl) return;
-      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)).join('');
+      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)+sourceQuality(it)).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
     /* ══ (#R576) WHY THE FILE COULD NOT BE READ, IN THE READER'S LANGUAGE ═══════════════════
        js/geo-import.js returns a CODE. The sentences are here because a decoder has no business
@@ -3980,6 +4028,25 @@ export function geojsonUpload(HOST){
        the part worth measuring on its own, and js/gis-core.js needs a door for a grid. */
     /* (data-studio) `handle` is the file door itself (the studio's drop, picker and paste come through it), and `maxClasses`
        the classifier's own bound — so a control that offers a number of classes offers the number the classifier keeps. */
+    let classPopup=null;
+    GE().events.on('click', e=>{
+      if(HOST.toolMode||GE().events.clickClaimed(e)) return;
+      const declared=items.filter(it=>it.legend?.method==='declared');
+      if(!declared.length) return;
+      const layers=declared.flatMap(it=>PARTS.map(p=>it.sid+p.sfx).filter(id=>GE().layers.has(id)));
+      if(!layers.length) return;
+      const hit=GE().coords.queryRenderedFeatures(e.point,{layers})[0];
+      const it=declared.find(x=>x.sid===hit?.source||PARTS.some(p=>x.sid+p.sfx===hit?.layer?.id));
+      if(!it) return;
+      const id=String(hit.properties?.[it.legend.field]??'');
+      const category=it.legend.classes.find(c=>c.id===id);
+      const label=category?.label||IntMapLang.t(HOST.lang,"Unclassified","未分類");
+      GE().events.claimClick(e);
+      classPopup?.remove();
+      const body=document.createElement('div'), title=document.createElement('strong'), detail=document.createElement('div');
+      title.textContent=label; detail.textContent=it.name+(category?' · '+category.id:''); body.append(title,detail);
+      classPopup=GE().ui.attach(GE().ui.popup({maxWidth:'280px'}).setLngLat(e.lngLat).setDOMContent(body));
+    });
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,
       find, link, style, styleOf, styleReason, classify, resetScales:()=>SCALES.clear(), classifyRaster, handle:handleFiles, maxClasses:MAX_CLASSES, _items:items };
   })();

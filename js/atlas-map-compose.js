@@ -996,7 +996,7 @@ export function makeAtlasMapCompose(deps) {
     function relPub(r) { return { id: relId(r), ...r.provenance, ...r.range, from: r.fromName, to: r.toName, fromId: r.from, toId: r.to, fromN: r.fromN, toN: r.toN, type: r.type, label: r.label, basis: r.basis, via: r.via.slice(),
       km: r.km != null ? Math.round(r.km) : null, sea: Object.assign({}, r.sea) }; }
     /* what the bubble is allowed to keep about a record — no functions, no engine handles */
-    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, country: r.country, item: r.item, bbox: r.bbox || null, note: r.note || '', role: r.role, color: r.color, lng: r.lng, lat: r.lat, ...(r.asOf ? { asOf: r.asOf, validity: r.modernRef ? 'modern_reference' : 'dated_record', source: r.source } : null), spellings: r.spellings.slice() }; }
+    function pub(r) { return { id: r.id, n: r.n, name: r.name, canonical: r.canonical, kind: r.kind, country: r.country, item: r.item, representation: 'point', bbox: r.bbox || null, note: r.note || '', role: r.role, color: r.color, lng: r.lng, lat: r.lat, ...(r.asOf ? { asOf: r.asOf, validity: r.modernRef ? 'modern_reference' : 'dated_record', source: r.source } : null), spellings: r.spellings.slice() }; }
 
     /**
      * recordsFor(results) — the compose records carried by a set of dispatch results (the bubble's

@@ -144,7 +144,48 @@ export function makeAtlasTurnContinuity() {
       }
     }
 
-    const API = { ASK_TYPES, isAsk, questionOf, optionsOf, actionLabel, askRecords, markCancelled };
+    function checkpoint(out, plan, turnId, question, previous) {
+      if (out.completion !== 'partial' && !out.unmet?.length) return null;
+      return {
+        planId: plan?.thisTurn ? plan.id : undefined,
+        turnId: previous?.turnId ?? turnId,
+        request: plan?.thisTurn && plan.request ? plan.request : previous?.request || question,
+        mapReceipts: out.mapReceipts,
+        unmet: out.unmet,
+      };
+    }
+
+    function drawingPresent(rows, ids) {
+      const live = new Set((rows || []).filter((row) => !row.edited?.at).map((row) => row.id));
+      return ids.length > 0 && ids.every((id) => live.has(id));
+    }
+
+    function resumeRequest(text, prior) {
+      if (!prior?.request) return text;
+      return prior.request + '\n\n' + text + ' Resume the original request' + (prior.planId ? ' using plan ' + prior.planId : '') +
+        '. Keep observed work, finish the outstanding deliverables, and verify before declaring completion.';
+    }
+
+    function unfinishedHtml(items, L, esc) {
+      if (!items?.length) return '';
+      const states = { pending: L('pending', '未着手'), failed: L('failed', '失敗'), partial: L('partially complete', '一部完了'),
+        stopped: L('stopped', '停止'), waiting: L('waiting', '待機中'), unobserved: L('unconfirmed', '未確認') };
+      const modes = { chart: L('the chart','グラフ','das Diagramm','диаграмма','el gráfico'),
+        map: L('the map','地図','die Karte','карта','el mapa'),
+        mixed: L('the map or chart','地図またはグラフ','Karte oder Diagramm','карта или диаграмма','el mapa o gráfico') };
+      const rows = items.map((item) => {
+        const name = item.kind === 'step' ? L('plan step ','計画の手順 ','Planschritt ','шаг плана ','paso del plan ')+item.n+' 「'+String(item.title||'')+'」'
+          : item.need || item.title || modes[item.mode] || item.mode;
+        const reason = states[item.state] || L('unfinished', '未完了');
+        // A machine code belongs in diagnostics. A plain-language explanation already supplied by verification belongs here.
+        const explanation = item.why && /\s/.test(item.why) ? item.why : '';
+        return '<li>' + esc(name) + ' · ' + esc(reason) + (explanation ? ' · ' + esc(explanation) : '') + '</li>';
+      });
+      return '<div class="atl-unmet" style="margin-top:6px;color:var(--text-muted);font-size:11.5px;">' +
+        esc(L('Not done in this turn: ','このターンで完了していないもの: ','In diesem Zug nicht erledigt: ','Не выполнено в этом ходе: ','No completado en este turno: ')) + '<ul style="margin:2px 0;padding-inline-start:18px;">' + rows.join('') + '</ul></div>';
+    }
+
+    const API = { ASK_TYPES, isAsk, questionOf, optionsOf, actionLabel, askRecords, markCancelled, checkpoint, drawingPresent, resumeRequest, unfinishedHtml };
     return API;
   })();
 }
