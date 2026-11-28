@@ -56,7 +56,7 @@ export const LIMITS = Object.freeze({
    archives that carry them. A LINK is a file candidate when its path ends in one of these, when it
    carries the `download` attribute, or when a segment of its path is the word download (`/download/`, `file-download`). That is a fact about
    the link, not a list of portals. */
-export const FILE_EXTENSIONS = Object.freeze(["csv", "tsv", "txt", "json", "geojson", "kml", "kmz", "gpx", "zip", "gpkg", "xlsx", "xls", "tif", "tiff", "shp", "pdf"]);
+export const FILE_EXTENSIONS = Object.freeze(["csv", "tsv", "txt", "json", "geojson", "kml", "kmz", "gpx", "zip", "gpkg", "xlsx", "xls", "tif", "tiff", "shp", "pdf", "svg", "png", "jpg", "jpeg", "webp", "avif", "gif", "pmtiles", "fgb", "parquet", "pbf", "mvt"]);
 
 export function browseUrlAllowed(raw) {
   let u;
@@ -136,6 +136,109 @@ function stripComments(s) {
   }
 }
 
+/* A lead says where the publisher pointed. Downloading, reading a service and
+   checking geographic content are separate observations. No submitted forms,
+   followed scripts or invented endpoint addresses are needed for discovery. */
+function geographicKind(url, mime = "") {
+  const type = mime.split(";")[0].trim().toLowerCase();
+  const typed = {
+    "application/geo+json": "geojson", "application/vnd.google-earth.kml+xml": "kml",
+    "application/vnd.mapbox-vector-tile": "vector-tile", "application/pdf": "pdf",
+    "image/svg+xml": "svg", "text/csv": "csv",
+  }[type];
+  const path = url.pathname.toLowerCase();
+  const query = new URLSearchParams([...url.searchParams].map(([k, v]) => [k.toLowerCase(), v.toLowerCase()]));
+  const service = query.get("service");
+  if (["wfs", "wms", "wmts", "wcs", "ogcapi"].includes(service)) return service;
+  if (/\/(?:feature|map|image)server(?:\/|$)/.test(path)) return "arcgis-rest";
+  if (/\/collections(?:\/|$)/.test(path)) return "ogc-collections";
+  if (/\/(?:wfs|wms|wmts|wcs)(?:\/|$)/.test(path)) return /\/(wfs|wms|wmts|wcs)(?:\/|$)/.exec(path)[1];
+  const grid = /(?:\{|%7b)(?:tilematrix|tilerow|tilecol|z)(?:\}|%7d)/i;
+  if (grid.test(url.href)) return "tile-template";
+  if (/(?:\{|%7b)[a-z][a-z0-9_]*(?:\}|%7d)/i.test(url.href)) return "url-template";
+  return typeof typed === "string" ? typed : (fileKind({ href: url.href }) || (type.startsWith("image/") ? "image" : ""));
+}
+
+/* Scan quoted strings as data. Hex/Unicode escapes are decoded without
+   evaluating code. Expressions and unresolved placeholders stay leads. */
+function* scriptStrings(script) {
+  for (const m of script.matchAll(/"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/gs)) {
+    const raw = m[1] ?? m[2];
+    if (!raw || raw.length > 2040) continue;
+    const unescaped = raw.replace(/\\(?:u([0-9a-f]{4})|x([0-9a-f]{2})|(["'/\\]))/gi, (_, u, x, ch) =>
+      ch ?? String.fromCharCode(parseInt(u || x, 16)));
+    if (/[\\<>"'\u0000-\u001f]/.test(unescaped)) continue;
+    const value = decodeEntities(unescaped);
+    if (/^(https?:\/\/|\.{0,2}\/)/i.test(value) || /\.[a-z0-9]{2,8}(?:[?#].*)?$/i.test(value)) yield value;
+  }
+}
+
+/* Tokenize the discovery surface without constructing a filtered HTML string.
+   Script and style consume raw text through their own end tag. The scanner
+   visits the inert template subtree only to find its closing tag. */
+function* assetTags(html) {
+  const tags = /<(\/?)([a-z][\w:-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+  let depth = 0, match;
+  while ((match = tags.exec(html))) {
+    const closing = !!match[1], tag = match[2].toLowerCase();
+    if (tag === "template") {
+      depth = closing ? Math.max(0, depth - 1) : depth + 1;
+      continue;
+    }
+    if (closing) continue;
+    if (tag === "script" || tag === "style") {
+      const end = tag === "script" ? /<\/script(?=[\s/>])[^>]*>/gi : /<\/style(?=[\s/>])[^>]*>/gi;
+      end.lastIndex = tags.lastIndex;
+      const close = end.exec(html);
+      const content = html.slice(tags.lastIndex, close?.index ?? html.length);
+      tags.lastIndex = close ? end.lastIndex : html.length;
+      if (tag === "script" && !depth) yield [tag, attrsOf(match[3]), content];
+      continue;
+    }
+    if (!depth && ["link", "iframe", "img", "object", "embed", "source"].includes(tag)) yield [tag, attrsOf(match[3]), ""];
+  }
+}
+
+function geographicAssets(html, baseUrl, links, scripts = null) {
+  const out = new Map();
+  const add = (raw, via, mime, text, advertisedKind) => {
+    if (!raw || out.size >= LIMITS.files) return;
+    let u;
+    try { u = browseUrlAllowed(new URL(raw, baseUrl)); } catch (_) { return; }
+    if (!u) return;
+    const kind = geographicKind(u, mime) || advertisedKind;
+    if (!kind) return;
+    const name = squash(text || "").slice(0, 120);
+    const seen = out.get(u.href);
+    if (seen) {
+      if (name && !seen.text) seen.text = name;
+      return;
+    }
+    out.set(u.href, { href: u.href, kind, via, ...(name ? { text: name } : {}) });
+  };
+  if (!scripts) {
+    for (const raw of scriptStrings(html)) add(raw, "script-literal", "", "");
+    return [...out.values()];
+  }
+  for (const l of links) add(l.href, "link", "", l.text, l.file);
+  for (const [tag, a, content] of assetTags(stripComments(html))) {
+    if (tag === "script") {
+      if (a.src && scripts.size < LIMITS.links) {
+        try {
+          const u = browseUrlAllowed(new URL(a.src, baseUrl));
+          if (u) scripts.add(u.href);
+        } catch (_) { /* invalid declared source */ }
+      }
+      for (const literal of scriptStrings(content)) {
+        add(literal.replace(/^pmtiles:\/\/(?=https?:\/\/)/i, ""), "inline-config", "", "");
+      }
+    } else if (tag !== "link" || !/\bicon\b/i.test(a.rel || "")) {
+      add(a.href || a.src || a.data, tag, a.type, a.alt || a.title);
+    }
+  }
+  return [...out.values()];
+}
+
 /* ── parse: HTML → the page's structure ──────────────────────────────────────────────────────────────
    → { title, text, links:[{text,href,file?}], forms:[{method,action,enctype,fields:[…],buttons:[…],password}],
        captcha, blank } — and nothing in it that a reader of the page could not see. */
@@ -158,7 +261,14 @@ export function parseHtml(html, baseUrl) {
   let anchor = null, form = null, select = null, option = null, textarea = null, button = null, label = null;
   let scriptsSeen = (src.match(/<script\b/gi) || []).length;
 
-  const base = baseUrl ? new URL(baseUrl) : null;
+  const baseHref = /<base\b([^>]+)>/i.exec(stripComments(src));
+  let base = baseUrl ? new URL(baseUrl) : null;
+  if (baseHref) {
+    try {
+      const u = new URL(attrsOf(baseHref[1]).href || "", base);
+      if (browseUrlAllowed(u)) base = u;
+    } catch (_) { /* ignore an unreadable base declaration */ }
+  }
   const resolve = (h) => { try { return base ? new URL(h, base) : new URL(h); } catch (_) { return null; } };
   const addText = (t) => {
     if (skip) return;
@@ -265,7 +375,9 @@ export function parseHtml(html, baseUrl) {
   /* a page that says almost nothing and links almost nowhere (the same measure as `blank`, without the script and form conditions):
      only such a page can be a WALL. A footer widget or a header sign-in box on a page whose body was read is not one. */
   const bare = text.length < 200 && uniq.length < 5;
-  return { title, text, links: uniq, forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank, bare };
+  const scripts = new Set();
+  const assets = geographicAssets(src, base?.href, uniq, scripts);
+  return { title, text, links: uniq, scripts: [...scripts], assets, forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank, bare };
 }
 
 /* "csv" | "…" | "" — the format a link points at, from the link alone */
@@ -313,6 +425,8 @@ export function snapshotOf(page, o) {
     text: page.text.length > chars ? page.text.slice(0, chars) : page.text,
     textTruncated: page.text.length > chars ? page.text.length : undefined,
     files: fileLinks.slice(0, LIMITS.files),
+    ...(page.assets?.length ? { assets: page.assets } : {}),
+    ...(page.scripts?.length ? { scripts: page.scripts } : {}),
     links: plain.slice(0, LIMITS.links),
     linksOmitted: Math.max(0, plain.length - LIMITS.links) || undefined,
     navLinks: navLinks.slice(0, 15),
@@ -483,6 +597,22 @@ export async function browse(input, deps) {
       for (const [k, v] of pairs) u.searchParams.append(k, v);
       target = u.toString();
     } else return fail("bad_action");
+
+    if (action === "open" && a.assetContext) {
+      const base = browseUrlAllowed(a.assetContext);
+      if (!base) return fail("bad_url");
+      const r = await hop(target, state, deps, signal, true, LIMITS.pageBytes);
+      if (!r.res.ok) return fail("upstream_status", { status: r.res.status });
+      if (!/^(?:application|text)\/(?:x-)?(?:java|ecma)script\b/i.test(r.type)
+        && !(/\.(?:m?js)$/i.test(r.url.pathname) && /^(?:text\/plain|application\/octet-stream)\b/i.test(r.type))) {
+        return fail("not_a_script");
+      }
+      const assets = geographicAssets(decodeBody(r.bytes, r.type), base.href, []);
+      // The published script is itself evidence. Its scan must not replace
+      // the record for the document that declared it or its active refs.
+      return { ok: true, state, status: r.res.status, scriptUrl: r.url.href,
+        page: { title: r.url.pathname.split("/").at(-1), text: "", assets } };
+    }
 
     if (action === "download") {
       const r = await hop(target, state, deps, signal, true, LIMITS.fileBytes);
