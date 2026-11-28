@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { makeRunLedger, runLine, makeRunHistory } from '../js/atlas-run-ledger.js';
-import { reusableCode, fingerprintRecord, reuseKey, makeResultReuse } from '../js/atlas-result-reuse.js';
+import { reusableCode, fingerprintInput, reuseKey, makeResultReuse } from '../js/atlas-result-reuse.js';
 import { normaliseContract, contractKey, requestKey } from '../js/atlas-delegate.js';
 import { delegationModelOptions, delegationModelHint } from '../supabase/functions/ai-proxy/config.ts';
 import { createHash } from 'node:crypto';
@@ -113,19 +113,20 @@ test('a task\'s own model is part of its contract, its identity and its request 
 });
 
 /* ── result reuse ──────────────────────────────────────────────────────────────────────────────────── */
-const rec = (feats, extra) => Object.assign({ id: 'd1', kind: 'vector', count: feats.length, fields: [{ name: 'v', type: 'number' }], features: () => feats }, extra);
+const input = (v, id = 'd1') => JSON.stringify([{ id, kind: 'vector', features: [{ properties: { v } }] }]);
 
-test('reuse key follows the DATA\'s content, not its id', async () => {
-  const f1 = await fingerprintRecord(rec([{ properties: { v: 1 } }]), sha);
-  const f2 = await fingerprintRecord(rec([{ properties: { v: 1 } }], { id: 'other-id' }), sha);
-  const f3 = await fingerprintRecord(rec([{ properties: { v: 2 } }]), sha);
-  assert.equal(f1, f2, 'same content under another id is the same input');
+test('reuse key follows the exact input accessible to the runtime', async () => {
+  const f1 = await fingerprintInput(input(1), sha);
+  const f2 = await fingerprintInput(input(1), sha);
+  const f3 = await fingerprintInput(input(2), sha);
+  assert.equal(f1, f2, 'the same payload yields the same fingerprint');
   assert.notEqual(f1, f3, 'an edited value is a different input');
+  assert.notEqual(f1, await fingerprintInput(input(1, 'other-id'), sha), 'Python can also read the dataset ID');
   const k = (fp, code) => reuseKey({ kind: 'compute.run', spec: { code }, inputs: [fp], conditions: { r: 1 } }, sha);
   assert.equal(await k(f1, 'x=1'), await k(f2, 'x=1'));
   assert.notEqual(await k(f1, 'x=1'), await k(f1, 'x=2'), 'different code, different key');
   assert.equal(await reuseKey({ kind: 'k', spec: {}, inputs: [null] }, sha), null, 'an input that cannot be fingerprinted yields no key');
-  assert.equal(await fingerprintRecord(rec([{ properties: { v: 'x'.repeat(50) } }]), sha, 10), null, 'too large to hash: no fingerprint');
+  assert.equal(await fingerprintInput(input('x'.repeat(50)), sha, 10), null, 'too large to hash: no fingerprint');
 });
 
 test('code that can answer differently from the same key is not reusable', () => {

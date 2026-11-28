@@ -3182,7 +3182,7 @@ export function atlasConsole(HOST){
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
         let rec=null; for(let i=list.length-1;i>=before&&!rec;i--){ if(list[i]&&list[i].act===action) rec=list[i]; }   /* ⚠ (atlas-turn-engine) THIS action's record, found by identity. It was `list[list.length-1]` — the last record filed, which is this action's only while one call runs at a time; js/atlas-agent.js now runs the calls of one reply together when their conflict keys do not overlap, and another call may file its record between this one's and this line */
         if(!rec) return {ok:false,error:'not_run',message:'the turn was superseded'};
-        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:rec.act?.__exec||null, objectIds:rec.act?.__result?.objectIds, unresolved:rec.act?.__result?.unresolved }; try{ if(debug&&_asked) debug.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
+        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null, objectIds:rec.act?.__result?.objectIds, unresolved:rec.act?.__result?.unresolved }; try{ if(debug&&_asked) debug.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
       _turnRunAction=_runOne;
       const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
       _liveTools=_tools; const _sys=SYS(_tools); const _c0=_agentCtx(initialMap); try{ WM.beginTurn(turn,q); }catch(_){}

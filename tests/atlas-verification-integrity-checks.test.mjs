@@ -66,7 +66,8 @@ test('follow-up verification reads the earlier user request, fixed conditions, a
 test('an inconclusive read accepts the answer without claiming that the goal was verified', async () => {
   const out = await AGENT.runTurn({ model: async () => answer, tools: TOOLS, execute: async () => ({ ok: true }), messages: [user],
     verify: async () => ({ unmet: [], met: [{ need: 'comparison shown', how: 'answer' }], unconfirmed: [{ need: 'red line only' }] }) });
-  assert.equal(out.completion, 'complete');
+  assert.equal(out.completion, 'unobserved');
+  assert.equal(out.stopped, 'goal_unobserved');
   assert.equal(out.trace.goalCheck, 'unobserved');
   assert.deepEqual(out.trace.goalUnconfirmed.map((need) => need.need), ['red line only']);
   assert.equal(out.trace.goalLedger.met[0].need, 'comparison shown');
@@ -75,7 +76,8 @@ test('an inconclusive read accepts the answer without claiming that the goal was
 test('a blank verification verdict does not record the goal as observed', async () => {
   const out = await AGENT.runTurn({ model: async () => answer, tools: TOOLS, execute: async () => ({ ok: true }), messages: [user],
     verify: async () => ({ unmet: [], met: [] }) });
-  assert.equal(out.completion, 'complete');
+  assert.equal(out.completion, 'unobserved');
+  assert.equal(out.stopped, 'goal_unobserved');
   assert.equal(out.trace.goalCheck, 'unobserved');
 });
 

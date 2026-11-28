@@ -863,10 +863,15 @@ export default [
     schema: () => ({ type: 'object', properties: { points: list(list(), 2), places: list(str(), 2), color: str(), width: num(0), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintLines = K.paintLines, GE = K.GE, note = K.note, esc = K.esc;
       { /* (#R72) free line drawing — AI-supplied coordinates or place names */
-          const { segments, unresolved } = await drawingPoints(a, geocode, dctx?.signal);
+          const { points, segments, unresolved } = await drawingPoints(a, geocode, dctx?.signal);
           const missing = unresolved.map(({ index, target }) => typeof target === 'string' ? target : String(index + 1));
           const detail = { unresolved: missing, pointsUnresolved: unresolved, geometries: [] };
-          if (!segments.length) return R(false, warn(L('Need at least two adjacent resolved points','連続して解決できた地点が2点以上必要です')), { exec: detail });
+          if (!segments.length) {
+            const need = points.length < 2
+              ? L('Need at least two points','2点以上必要です','Mindestens zwei Punkte nötig','Нужно минимум две точки','Se necesitan al menos dos puntos')
+              : L('Need at least two adjacent resolved points','連続して解決できた地点が2点以上必要です');
+            return R(false, warn(need), { exec: detail });
+          }
           const pts = segments.flat();
           const col=a.color?parseColor(a.color):null;
           /* ⚠⚠⚠ (#R747) A LINE IS ITS COURSE, NOT ITS CAPTION — the rule `addPin` and `_radiusFromPoint`
@@ -897,9 +902,14 @@ export default [
     schema: () => ({ type: 'object', properties: { points: list(list(), 3), places: list(str(), 3), color: str(), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintPolys = K.paintPolys, GE = K.GE, note = K.note, esc = K.esc;
       { const { points: pts, unresolved } = await drawingPoints(a, geocode, dctx?.signal);
-          if (unresolved.length || pts.length < 3) return R(false, warn(L('A polygon needs at least three points and all requested vertices must resolve','ポリゴンには3点以上が必要で、指定された全頂点を解決する必要があります')), {
-            meta: { code: 'vertices_unresolved' }, exec: { unresolved: unresolved.map(({ index, target }) => typeof target === 'string' ? target : String(index + 1)), pointsUnresolved: unresolved },
-          });
+          if (unresolved.length || pts.length < 3) {
+            const need = pts.length < 3
+              ? L('Need at least three points','3点以上必要です','Mindestens drei Punkte nötig','Нужно минимум три точки','Se necesitan al menos tres puntos')
+              : L('Every requested polygon vertex must resolve','ポリゴンの指定頂点はすべて解決する必要があります');
+            return R(false, warn(need), {
+              meta: { code: 'vertices_unresolved' }, exec: { unresolved: unresolved.map(({ index, target }) => typeof target === 'string' ? target : String(index + 1)), pointsUnresolved: unresolved },
+            });
+          }
           if(pts[0][0]!==pts[pts.length-1][0]||pts[0][1]!==pts[pts.length-1][1]) pts.push([pts[0][0],pts[0][1]]);
           const colP=a.color?parseColor(a.color):null;
           const _pgKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' '); let _pgObj=K._hlPolys.find(p=>p&&p.key===_pgKey); if(_pgObj){ _pgObj.color=colP||undefined; if(String(a.label||'')) _pgObj.name=String(a.label||''); } else { _pgObj={geo:{type:'Polygon',coordinates:[pts]},provenance:mapAuthorship(dctx),key:_pgKey,color:colP||undefined,name:String(a.label||'')}; K._hlPolys.push(_pgObj); }   /* ⚠ (#R760) THE RING IS THE IDENTITY, AND A REDRAW OF IT IS A RESTYLING — the rule #R747 gave the line, which drawPolygon never got: measured locally, two identical `map.drawPolygon` calls left TWO polygons stacked on the map and both were reported `ok`, so nothing anywhere said the second one was the first one again */
