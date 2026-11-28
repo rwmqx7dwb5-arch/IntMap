@@ -12,7 +12,8 @@
  *      Google Earth's own choice), then left, above, below.
  *    · `collectObstacles` — what is already on screen, DISCOVERED not listed: every visible element that is
  *      position:fixed/absolute and either interactive, holds an interactive control, or carries text — floating
- *      buttons, panels, map controls, the credit row, other open popups. A wrapper that is only a layer (it covers
+ *      buttons, panels, map controls, the credit row, other open popups. A painted surface can also register its
+ *      box explicitly with `data-overlay-obstacle`, including when its content handles pointer events. A wrapper that is only a layer (it covers
  *      nearly the whole map, or has pointer-events:none) is looked THROUGH, never counted. Nothing here names an id or
  *      a class, so a control added next year is avoided without anybody remembering to add it to a list.
  *

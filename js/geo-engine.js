@@ -36,6 +36,7 @@ import { placeOpenedOverlay } from './popup-placement.js';
 function placeRendererPopup(popup, host) {
   const el = popup?.getElement?.();
   if (el?.classList?.contains('maplibregl-popup')) {
+    el.setAttribute('data-overlay-obstacle', '');
     const mapHost = host?.closest?.('#map-container') || host;
     requestAnimationFrame(() => placeOpenedOverlay(el, mapHost));
   }

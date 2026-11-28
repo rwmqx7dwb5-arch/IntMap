@@ -101,6 +101,14 @@ test('a non-positioned element is not an obstacle itself (its children are asked
   assert.equal(got.length, 1);
 });
 
+test('a visible surface participates even when its content owns the pointer events', () => {
+  const rect = R(200, 100, 520, 300);
+  const surface = el({ pos: 'static', pe: 'none', rect });
+  surface.hasAttribute = name => name === 'data-overlay-obstacle';
+  const root = { children: [surface], ownerDocument: { body: { children: [] } } };
+  assert.deepEqual(collectObstacles(root, bounds, [], deps), [rect]);
+});
+
 test('map-ui wires the placement and the pin; the tools host with one section draws no heading', () => {
   const src = readFileSync(new URL('../js/map-ui.js', import.meta.url), 'utf8');
   assert.match(src, /from '\.\/popup-placement\.js'/);
