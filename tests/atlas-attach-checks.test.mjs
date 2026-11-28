@@ -221,7 +221,7 @@ test('R540 ③: the attached content has its own channel, with its own bound', (
      while the client stacked four files of 60,000 characters. The overflow was thrown away with
      nothing said to the reader or the model — the #R285 failure, one channel over. */
   assert.ok(!/_fileBlock/.test(CONSOLE_SRC), 'the prompt-concatenation is gone');
-  assert.match(CONSOLE_SRC, /files:_atts\.files,docs:_atts\.docRefs\?undefined:_atts\.docs,docRefs:_atts\.docRefs/, 'the agent turn carries both channels');
+  assert.match(CONSOLE_SRC, /files:turnTextFiles\(_atts\.recalledFiles,_heldFiles\.concat\(_atts\.files\)\),\s*docs:_atts\.docRefs\?undefined:_atts\.docs,docRefs:_atts\.docRefs/, 'the agent turn carries both channels');
   assert.match(read('js/ai-core.js'), /body\.files=opts\.files/, 'and js/ai-core.js puts them on the wire');
   const promptCap = +(/const MAX_PROMPT = ([\d_]+)/.exec(PROXY) || [])[1].replace(/_/g, '');
   const filesCap = +(/const MAX_FILES_TEXT = ([\d_]+)/.exec(PROXY) || [])[1].replace(/_/g, '');

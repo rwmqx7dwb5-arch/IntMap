@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { runInNewContext } from 'node:vm';
 import * as objectOpacity from '../js/object-opacity.js';
+import { geometryRange } from '../js/map-feature-geometry.js';
 
 const root = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8').replace(/\r\n/g, '\n');
@@ -81,7 +82,7 @@ test('Objects reads the live opacity of drawn surfaces and applies it to uploade
   };
   const window = { GeoJSONUpload: { _items: [{ n: 1, sid: 'grid', kind: 'raster', alpha: rasterAlpha }] } };
   runInNewContext(`(function ${tools.slice(tools.indexOf('export function objectList(') + 'export function '.length)})({ lang: 'en' })`, {
-    window, IntMapGeoEngine: engine, IntMapLang: { pick: () => (en) => en }, icon: () => '', everyTick: () => {}, setTimeout: () => {}, ...objectOpacity,
+    window, IntMapGeoEngine: engine, IntMapLang: { pick: () => (en) => en }, icon: () => '', everyTick: () => {}, setTimeout: () => {}, geometryRange, ...objectOpacity,
   });
   const objects = window.IntMapObjects;
   assert.equal(objects.getObj('surface:area').opacity, 0.4);

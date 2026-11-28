@@ -20,7 +20,7 @@ import { str, int } from './atlas-caps.js';
 import { ATTACH_LOG } from './atlas-file-view.js';
 import { ATL_FILE } from './atlas-attach.js';
 
-export function recallTextWindow(rec, offset, queued, limits = ATL_FILE.LIMITS) {
+function recallTextWindow(rec, offset, queued, limits = ATL_FILE.LIMITS) {
   const remaining = limits.textTotal - queued.reduce((n, f) => n + f.text.length, 0);
   const max = Math.min(limits.textPerFile, remaining);
   const wrapper = ATTACH_LOG.wrap(rec, '');

@@ -462,7 +462,8 @@ export function atlasConsole(HOST){
             .sort((x,y)=>((+y.importance||0)-(+x.importance||0)))[0];
             if(wat) out={geo:wat.geojson,name:(wat.display_name||nm).split(',')[0],nameEn:(wat.namedetails&&(wat.namedetails['name:en']||wat.namedetails.int_name))||'',sourceId:osmFeatureId(wat),transformation:'Nominatim polygon_threshold 0.0008°'}; } } }catch(_){}
       if(!out){ try{ const ll=await geocode(nm); if(ll&&isFinite(ll.lng)){ const d2=3.2; const bb='('+(ll.lat-d2).toFixed(2)+','+(ll.lng-d2).toFixed(2)+','+(ll.lat+d2).toFixed(2)+','+(ll.lng+d2).toFixed(2)+')';
-        const safe=String(nm).trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+        // Escape the regex and the enclosing Overpass string in one pass.
+        const safe=String(nm).trim().replace(/[.*+?^${}()|[\]\\"]/g, (ch)=>ch==='\\'?'\\\\\\\\':ch==='"'?'\\"':'\\\\'+ch);
         const q2='[out:json][timeout:30];way["waterway"~"^(river|canal|stream)$"]["name"~"^'+safe+'$",i]'+bb+';out meta geom 300;';
         const j2=await overpassRaw(q2).catch(()=>null);
         if(j2&&Array.isArray(j2.elements)&&j2.elements.length){ const coords=[], ids=[]; j2.elements.forEach(el=>{ if(el.geometry&&el.geometry.length>1){ coords.push(el.geometry.map(g=>[g.lon,g.lat])); if(el.id!=null) ids.push(el.type+'/'+el.id); } });

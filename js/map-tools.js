@@ -26,7 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
-import { geometryRange, osmFeatureId, userMapClick } from './map-feature-geometry.js';
+import { geometryRange, osmFeatureId } from './map-feature-geometry.js';
 import { fillFromAlpha, alphaFromFill, opacityPaint, opacityAlpha } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 import { countryShapeOnMap, OFM_FRONTIER_MINZOOM } from './frontier-fit.js';   /* the one shape of a country on the map — mask, edge and highlight are drawn from it */
@@ -1363,7 +1363,6 @@ export function objectList(HOST){
   const removePin=HOST.removePin, refreshTool=HOST.refreshTool, makeDraggable=HOST.makeDraggable, isMobile=HOST.isMobile;
   window.IntMapObjects=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
-    GE().events.on('click', (event) => { if(event.originalEvent?.isTrusted) userMapClick.record(event.lngLat); });
     const OL=IntMapLang.pick(()=>HOST.lang);
     const UPLOAD_LINE_W=2.2;   /* the width js/map-ui.js gives a new upload */
     const labels={};   /* labels: rename side-store for objects with no native name. (atlas-controls-receipts) a hidden object is read off its layers, not kept in a side table */

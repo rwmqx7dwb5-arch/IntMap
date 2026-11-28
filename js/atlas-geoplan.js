@@ -80,9 +80,8 @@ export function normalizeGeo(raw) {
     const comp = pick(n.completeness, COMPLETENESS);
     if (n.completeness != null && n.completeness !== '' && !comp) bad.push({ path: 'needs[' + i + '].completeness', value: n.completeness, accepted: COMPLETENESS });
     const source = { kind, ref: str(src.ref) || null };
-    for (const field of ['format', 'scope']) {
-      if (str(src[field])) source[field] = str(src[field]).toLowerCase();
-    }
+    if (str(src.format)) source.format = str(src.format).toLowerCase();
+    if (str(src.scope)) source.scope = str(src.scope).toLowerCase();
     spec.needs.push({ id: str(n.id) || ('need' + (i + 1)), what: str(n.what), source, completeness: comp,
       resolution: normResolution(n.resolution), time: n.time != null && n.time !== '' ? str(n.time) : null });
   });

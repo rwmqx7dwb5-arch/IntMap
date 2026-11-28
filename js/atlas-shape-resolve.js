@@ -187,7 +187,7 @@ async function ext(nm, deps) {
 }
 
 /** Half of the length along the parts, without adding segments between disconnected parts. */
-export function lineMidpoint(geometry) {
+function lineMidpoint(geometry) {
   const parts = geometry?.type === 'LineString' ? [geometry.coordinates] : geometry?.type === 'MultiLineString' ? geometry.coordinates : [];
   if (!Array.isArray(parts)) return null;
   const lines = parts.filter((points) => Array.isArray(points) && points.length >= 2 &&

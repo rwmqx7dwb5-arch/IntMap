@@ -54,7 +54,8 @@ test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', ()
      #R158 concatenated it into `prompt`, which ai-proxy slices at MAX_PROMPT — so the assertion below
      was true of a path that silently threw the content away. The block is built server-side now, once,
      for all three providers. */
-  ok('files:_atts.files,docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs', 'the attachments travel as their own channels');
+  ok('files:turnTextFiles(_atts.recalledFiles,_heldFiles.concat(_atts.files))', 'the current text windows and files travel as one channel');
+  ok('docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs', 'documents have their own channels');
   ok('if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;', 'js/ai-core.js puts them on the wire');
   gone("fi.type='file'; fi.accept='image/*'; fi.multiple=true;", 'the image-only picker restriction is removed');
   ok('function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'files are sent with the message');

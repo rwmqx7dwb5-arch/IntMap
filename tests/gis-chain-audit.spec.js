@@ -23,6 +23,11 @@ test('the four GIS chains reach their end through the shipped doors', async ({ a
   await page.route(/https:\/\/api\.open-meteo\.com\/v1\/forecast\?.*/, (route) => {
     const u = new URL(route.request().url());
     const lats = (u.searchParams.get('latitude') || '').split(',');
+    const lngs = (u.searchParams.get('longitude') || '').split(',');
+    // The app also fetches weather for its widgets while the window is being read.
+    if (u.searchParams.get('current') !== 'temperature_2m'
+      || !lats.every((lat) => Number(lat) > 30 && Number(lat) < 46)
+      || !lngs.every((lng) => Number(lng) > 129 && Number(lng) < 146)) return route.fallback();
     asked.push(lats.length);
     const one = (i) => ({ latitude: +lats[i], current: { temperature_2m: 10 + i % 7 } });
     const body = lats.length > 1 ? lats.map((_, i) => one(i)) : one(0);

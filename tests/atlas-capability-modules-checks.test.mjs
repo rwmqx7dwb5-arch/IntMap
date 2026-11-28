@@ -84,7 +84,7 @@ test('atlas-capability-modules ②: the shipped dispatch is one lookup — every
   let fellBack = 0;
   const unknown = async (a, dctx, k) => { fellBack++; assert.equal(k, K, 'the fallback receives K too'); return { ok: false }; };
   const R = (ok, html) => ({ ok: !!ok, html });
-  const dispatch = new Function('CAPS', 'CAP_RUN', 'unknownAction', 'R', 'capDeps', 'return ' + text)(CAPS, RUN, unknown, R, () => K);
+  const dispatch = new Function('CAPS', 'CAP_RUN', 'unknownAction', 'R', 'mapCapDeps', 'HOST', '_currentOutline', 'return ' + text)(CAPS, RUN, unknown, R, () => K, {}, () => null);
   let n = 0;
   for (const c of CAPS.all()) {
     for (const sp of c.aliases) {
@@ -165,6 +165,7 @@ test('atlas-capability-modules ④: one new file is a new capability — in the 
       fs.mkdirSync(path.join(scratch, path.dirname(f)), { recursive: true });
       fs.copyFileSync(path.join(ROOT, f), path.join(scratch, f));
     }
+    fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(scratch, 'node_modules'), 'junction');
     /* THE ONE FILE: a namespace nobody has, one entry, written the way every entry is written */
     fs.writeFileSync(path.join(scratch, 'js/atlas-cap-probe.js'), [
       "import { str } from './atlas-caps.js';",
@@ -210,7 +211,7 @@ test('atlas-capability-modules ⑤: the generated files agree with the entries, 
      no other: still no entry module, no run (an atlas-cap* / atlas-caps* import is exactly the defect) */
   const capImports = capAst.body.filter((s) => s.type === 'ImportDeclaration').map((s) => s.source.value);
   assert.deepEqual(capImports.filter((v) => /atlas-cap/.test(v)), [], 'the eager registry imports no entry, no run');
-  assert.deepEqual(capImports.sort(), ['./chronos.js', './geo-engine.js'], 'the eager registry imports only the shared clock and engine — no entry, no run');
+  assert.deepEqual(capImports.sort(), ['./atlas-skills.js', './chronos.js', './geo-engine.js'], 'the eager registry imports the skill reader, shared clock and engine');
   const b = capSrc.indexOf('/* ⚠ GENERATED ROWS — BEGIN'), e = capSrc.indexOf('/* ⚠ GENERATED ROWS — END */');
   assert.ok(b > 0 && e > b, 'the generated region is where the rows are');
   const region = capSrc.slice(capSrc.indexOf('var T = ', b) + 'var T = '.length, capSrc.lastIndexOf(';', e));

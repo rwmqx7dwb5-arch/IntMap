@@ -5,7 +5,7 @@ import { makeWebEvidence, queryKey } from '../js/atlas-web-evidence.js';
 import webCapabilities from '../js/atlas-cap-web.js';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { makeAtlasCatalogText } from '../js/atlas-catalog-text.js';
-import attachCapabilities, { recallTextWindow, turnAttachmentImages, turnTextFiles } from '../js/atlas-cap-attach.js';
+import attachCapabilities, { turnAttachmentImages, turnTextFiles } from '../js/atlas-cap-attach.js';
 import { ATTACH_LOG } from '../js/atlas-attach-log.js';
 import { makeAtlasVerify } from '../js/atlas-verify.js';
 import { CASES, runCase } from './helpers/ai-proxy-contract-cases.mjs';
@@ -108,7 +108,9 @@ test('requested text windows reserve capacity before history and count the exter
   const submitted = turnTextFiles(recalled, history);
   assert.deepEqual(submitted, recalled);
   assert.equal(submitted.reduce((n, file) => n + file.text.length, 0), MAX_FILES_TEXT);
-  assert.equal(recallTextWindow(wanted, offset, recalled).next, offset, 'an unsent window never advances the cursor');
+  const full = await recall.run({ name: wanted.name, offset }, {}, kernel);
+  assert.equal(full.ok, false);
+  assert.equal(full.exec.next, offset, 'an unsent window never advances the cursor');
   assert.equal(turnTextFiles(recalled.slice(0, 1), history)[1].name, 'past-0');
 });
 
@@ -135,7 +137,7 @@ test('the proxy reports actual window ends and image positions after enforcing i
   assert.deepEqual(receipt.images.map((img) => [img.position, img.name]), [[1, 'image-42'], [2, 'image-67'], [3, 'view frame 1'], [4, 'view frame 2']]);
   assert.equal(receipt.omittedImages, 2);
   assert.deepEqual(receipt.textWindows[0], { name: 'field notes', offset: 12, end: 18, next: 18, total: 24, more: true });
-  const request = mixed.calls.find((c) => c.url.includes('api.openai.com')).body;
+  const request = mixed.calls.find((c) => new URL(c.url).hostname === 'api.openai.com').body;
   assert.match(JSON.stringify(request), /ATTACHMENT RECEIPT/);
   const parts = request.input.flatMap((item) => Array.isArray(item.content) ? item.content : []);
   assert.deepEqual(parts.filter((part) => part.type === 'input_image').map((part) => part.image_url), [png, otherPhoto, ...frames.slice(0, 2)]);

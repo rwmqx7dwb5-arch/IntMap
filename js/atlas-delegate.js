@@ -250,7 +250,7 @@ export function makeDelegation(o) {
       return { id, reused: false, resumed: false, promise: entry.promise, cancel() {} };
     }
     const resumeNow = (prior) => {
-      note('task.resumed', id, { from: prior.id || '', costUsd: Number(prior.costUsd) || 0, calls: Number(prior.calls) || 0 });
+      note('task.resumed', id, { from: prior.result.id || '', costUsd: Number(prior.result.costUsd) || 0, calls: Number(prior.result.calls) || 0 });
       /* what the first run spent was spent then; this run spent nothing, so the spend read off this log stays true */
       return finish(id, t0, Object.assign({}, prior.result, { data: prior.result.dataRef ? prior.payload : prior.result.data, costUsd: 0, calls: 0 }));
     };

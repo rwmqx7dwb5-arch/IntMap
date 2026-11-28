@@ -71,7 +71,7 @@ test('atlas-completion ③: a PLAN step observed failed makes the answered turn 
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute, messages: USER, plan });
   assert.equal(out.stopped, 'answered', 'stopped is unchanged — the plan is read into completion, not into stopped');
   assert.equal(out.completion, 'partial');
-  assert.deepEqual(out.unmet, [{ kind: 'step', n: 2, title: 'draw', state: 'failed' }]);
+  assert.deepEqual(out.unmet, [{ kind: 'goal', need: 'draw · {"x":"q"}', state: 'failed', why: 'failed' }]);
 
   /* the same plan, every step observed completed → complete */
   const plan2 = makeAtlasPlan();
