@@ -8,7 +8,7 @@
  * pattern over the question text decides this (no-ad-hoc-hardcoding.md). The reader's answer is kept and shown first; what it read is
  * handed to the agent loop as context, together with the images themselves, so nothing about the existing reading is lost or redone.
  * Pure: no DOM, no network. */
-export const VISION_CONTINUE_RULE = 'CONTINUATION: set "continueWithTools":true ONLY when the request goes beyond what the image itself shows — it asks you to check, measure, look up, compare or map something against external data, the web or IntMap\'s own layers (elevation, land cover, statistics, news, other sources). Then give in "answer" what you read and concluded FROM THE IMAGE so far (the work continues in a tool-using step that receives your reading and the images). Leave it out when reading, transcribing, solving or explaining the image fully answers the request.\n';
+export const VISION_CONTINUE_RULE = 'CONTINUATION: set "continueWithTools":true ONLY when the request goes beyond what the image itself shows — it asks you to check, measure, look up, compare or map something against external data, the web or IntMap\'s own layers (elevation, land cover, statistics, news, other sources). Then give in "answer" what you read and concluded FROM THE IMAGE so far, and in "nextAction" briefly describe what the request still needs the tools to do. Leave these continuation fields out when reading, transcribing, solving or explaining the image fully answers the request.\n';
 
 export function wantsContinue(d) { return !!(d && d.continueWithTools === true); }
 
@@ -21,6 +21,7 @@ export function agentContext(d) {
     + 'class: ' + String(d.contentClass || '?') + '\n'
     + (d.transcription ? 'transcription: ' + String(d.transcription).slice(0, 4000) + '\n' : '')
     + 'reading: ' + String(d.answer || '').slice(0, 6000) + '\n'
+    + (d.nextAction ? 'remaining work described by the image reader: ' + String(d.nextAction).slice(0, 500) + '\n' : '')
     + (places.length ? 'places named: ' + places.join('; ') + '\n' : '')
     + (d.focusPlace ? 'focus: ' + String(d.focusPlace) + '\n' : '')
     + (unsure.length ? 'uncertain: ' + unsure.join('; ') + '\n' : '');
