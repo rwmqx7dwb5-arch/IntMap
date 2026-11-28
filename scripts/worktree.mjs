@@ -124,6 +124,11 @@ function changeLaunch(entry, name = entry?.name) {
   };
 }
 
+export function upsertLaunch(path, entry, name) {
+  if (!entry && !existsSync(path)) return Promise.resolve(false);
+  return updateSettings(path, changeLaunch(entry, name));
+}
+
 function portsNamedInLaunchJson(master) {
   const dirs = [master, ...q(['worktree', 'list', '--porcelain']).split('\n')
     .filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9).trim())];
@@ -767,11 +772,11 @@ async function makeNew(slug) {
       if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
       const name = previewName(slug);
       const abs = (p) => join(dir, p).replace(/\\/g, '/');
-      await updateSettings(join(dir, '.claude', 'launch.json'), changeLaunch({
+      await upsertLaunch(join(dir, '.claude', 'launch.json'), {
         name, runtimeExecutable: 'node',
         runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
         port, url: `http://127.0.0.1:${port}`,
-      }));
+      });
       updateSettingsLocked(launch, changeLaunch({
         name, runtimeExecutable: 'node',
         runtimeArgs: [abs('scripts/serve.mjs'), '--root', abs('dist'), '--port', String(port)],
@@ -906,7 +911,7 @@ async function done() {
     const m = /^wt-(.+)$/.exec(basename(here));
     if (m) {
       try {
-        if (await updateSettings(join(master, '.claude', 'launch.json'), changeLaunch(null, previewName(m[1])))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
+        if (await upsertLaunch(join(master, '.claude', 'launch.json'), null, previewName(m[1]))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
       } catch (e) { console.log('  ⚠ 原本の launch.json を直せなかった: ' + e.message); }
     }
   }

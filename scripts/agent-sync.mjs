@@ -34,7 +34,6 @@
  *      node scripts/agent-sync.mjs --write   # rewrite the rendered copies
  */
 import { readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
-import { updateSettings } from './lib/local-settings.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crlfBytes } from './eol.mjs';
@@ -365,6 +364,7 @@ if (!problems.some((p) => p.startsWith('frontmatter-yaml'))) ok('frontmatter-yam
 
 /* ── apply, or compare ────────────────────────────────────────────────────────────────── */
 {
+  const updateSettings = WRITE ? (await import('./lib/local-settings.mjs')).updateSettings : null;
   /* A rendered file left behind after its source is deleted is the same defect as a stale one:
      Claude Code would keep offering a role nothing describes any more. */
   const owned = (dir, ext) => (existsSync(join(ROOT, dir)) ? walk(dir).filter((f) => f.endsWith(ext)) : []);
