@@ -15,6 +15,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
 import { importModule } from './helpers/import-module.mjs';
+import * as overlayPlacement from '../js/popup-placement.js';
 
 /* (module-graph) js/gis-sources.js and js/gis-layers.js IMPORT the renderer contract now, so the fake map a
    boot builds is handed in at that import edge (it used to be read off window.IntMapGeoEngine). gis-layers
@@ -537,7 +538,7 @@ describe('§ #R756 · the supplier executes what it claims', () => {
        renderer and language shim handed in at its import edges; the factory is run per boot, which is
        what builds a fresh registry. */
     const { layerRegistry } = await importModule('js/map-ui.js', {
-      mocks: { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine }, 'js/lang-registry.js': { IntMapLang: w.IntMapLang } },
+      mocks: { 'js/geo-engine.js': { ...overlayPlacement, IntMapGeoEngine: w.IntMapGeoEngine }, 'js/lang-registry.js': { IntMapLang: w.IntMapLang } },
     });
     layerRegistry({
       lang: 'en', mapType: 'flat', proj: 'mercator', globalData: null, toolMode: null,

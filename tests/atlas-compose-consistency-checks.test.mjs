@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import * as overlayPlacement from '../js/popup-placement.js';
 
 const geo = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
 
@@ -74,7 +75,7 @@ test('② a category keeps its colour across maps; numeric maps of one compariso
   globalThis.document = { createElement: stubEl, body: { appendChild() {} }, getElementById: () => null, addEventListener() {} };
   await import('../js/safe-html.js'); w.IntMapSafe = globalThis.IntMapSafe;
   const rules = (await import('../js/gis-datasets.js')).makeGisDatasets();
-  const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine } } });
+  const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { ...overlayPlacement, IntMapGeoEngine: w.IntMapGeoEngine } } });
   geojsonUpload({ lang: 'en', imToast() {} });
   const UP = w.GeoJSONUpload;
   const colourOf = (lg, k) => lg.classes.find((c) => c.keys[0] === k).color;
