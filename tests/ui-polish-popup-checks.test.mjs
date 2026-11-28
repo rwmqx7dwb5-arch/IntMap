@@ -5,11 +5,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { choosePlacement, collectObstacles, optionsFor } from '../js/popup-placement.js';
+import { choosePlacement, collectObstacles, fitOverlay, optionsFor } from '../js/popup-placement.js';
 
 const bounds = { left: 0, top: 0, right: 1200, bottom: 800 };
 const size = { w: 200, h: 120 };
 const R = (l, t, r, b) => ({ left: l, top: t, right: r, bottom: b });
+
+test('a stack can clear the existing UI by moving on both axes', () => {
+  const frame = R(0, 0, 360, 280);
+  const desired = R(20, 24, 140, 124);
+  const obstacles = [R(0, 0, 170, 280), R(170, 0, 360, 108)];
+  assert.deepEqual(fitOverlay(desired, frame, obstacles, 4), R(174, 112, 294, 212));
+});
+
+test('an anchored popup can slide when none of its four nominal sides fits', () => {
+  const point = { x:180, y:140 };
+  const p = choosePlacement({
+    point, bounds:R(0, 0, 400, 300), size:{w:90,h:70}, pin:{w:18,h:24},
+    obstacles:[R(170, 0, 190, 300), R(0, 90, 400, 165)],
+  });
+  assert.ok(p.rect.top >= 165 || p.rect.bottom <= 90);
+  assert.ok(p.rect.left >= 190 || p.rect.right <= 170);
+});
 
 test('open ground: the popup opens on the right of the pin, centred on it', () => {
   const p = choosePlacement({ point: { x: 600, y: 400 }, size, bounds, obstacles: [] });
@@ -84,9 +101,17 @@ test('a non-positioned element is not an obstacle itself (its children are asked
   assert.equal(got.length, 1);
 });
 
+test('a visible surface participates even when its content owns the pointer events', () => {
+  const rect = R(200, 100, 520, 300);
+  const surface = el({ pos: 'static', pe: 'none', rect });
+  surface.hasAttribute = name => name === 'data-overlay-obstacle';
+  const root = { children: [surface], ownerDocument: { body: { children: [] } } };
+  assert.deepEqual(collectObstacles(root, bounds, [], deps), [rect]);
+});
+
 test('map-ui wires the placement and the pin; the tools host with one section draws no heading', () => {
   const src = readFileSync(new URL('../js/map-ui.js', import.meta.url), 'utf8');
-  assert.match(src, /from '\.\/popup-placement\.js'/);
+  assert.match(src, /import \{[^}]*\bchoosePlacement\b[^}]*\} from '\.\/geo-engine\.js'/);
   assert.match(src, /_standPin\(lngLat,name\)/);
   assert.match(src, /anchor:_pl\.anchor,offset:_pl\.offset/);
   assert.match(src, /bare=secs\.length===1/);

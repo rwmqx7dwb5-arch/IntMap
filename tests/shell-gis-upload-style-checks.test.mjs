@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import * as overlayPlacement from '../js/popup-placement.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -95,7 +96,7 @@ async function boot() {
   await import('../js/safe-html.js'); w.IntMapSafe = globalThis.IntMapSafe;
   const { makeGisDatasets } = await import('../js/gis-datasets.js');
   const rules = makeGisDatasets();          /* the app's one typing rule — handed to the classifier */
-  const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: R.api } } });
+  const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { ...overlayPlacement, IntMapGeoEngine: R.api } } });
   geojsonUpload({ lang: 'en', imToast: (m) => toasts.push(m) });
   console.warn = origWarn;
   booted = { w, R, rules, toasts, warned, UP: w.GeoJSONUpload };

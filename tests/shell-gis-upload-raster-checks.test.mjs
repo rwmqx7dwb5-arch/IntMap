@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { importModule, swappable, langRegistry } from './helpers/import-module.mjs';
+import * as overlayPlacement from '../js/popup-placement.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -138,7 +139,7 @@ async function bootUpload(opts) {
      once and MOUNTED again on each fresh window, with the renderer swapped in behind its import edge —
      which is also the closer reproduction of the app, where one module is mounted once against one
      live renderer. */
-  if (!FACTORY) FACTORY = (await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: ENGINE.value } } })).geojsonUpload;
+  if (!FACTORY) FACTORY = (await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { ...overlayPlacement, IntMapGeoEngine: ENGINE.value } } })).geojsonUpload;
   FACTORY({ lang: 'en', imToast: (m) => toasts.push(m) });
   console.warn = origWarn;
   return { w, R, toasts, UP: w.GeoJSONUpload, raster: w.IntMapGisRaster };

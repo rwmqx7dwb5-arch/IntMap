@@ -1307,15 +1307,15 @@ export function weatherEC(HOST){
     function addLayer(cfg){ return addSlot(cfg,cfg._s|0); }
     function setVisSlot(cfg,s,on){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
     function setVis(cfg,on){ setVisSlot(cfg,cfg._s|0,on); if(!on) setVisSlot(cfg,1-(cfg._s|0),false); }
-    function setOpSlot(cfg,s,op){ const lid=cfg.id+'-'+s;
-      try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'line-opacity',op); }
-        else if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',op); }catch(_){} }
-    function setOp(cfg,op){ setOpSlot(cfg,cfg._s|0,op); }
+    function setOpSlot(cfg,s,op,options){ const lid=cfg.id+'-'+s;
+      try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'line-opacity',op,options); }
+        else if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',op,options); }catch(_){} }
+    function setOp(cfg,op,options){ setOpSlot(cfg,cfg._s|0,op,options); }
     function setOpacity(cfg,op){
       if(!Number.isFinite(op)) return;
       const value=Math.max(0,Math.min(1,op)), changed=state[cfg.id].op!==value;
       state[cfg.id].op=value;
-      setOp(cfg,value);
+      setOp(cfg,value,{immediate:true});
       const row=document.getElementById('ec-op-'+cfg.id), legend=boxes[cfg.id];
       const slider=legend?.querySelector('.ec-oplg'), label=legend?.querySelector('.dl-op-val');
       if(row&&row.valueAsNumber!==value) row.value=String(value);

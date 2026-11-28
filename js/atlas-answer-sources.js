@@ -35,6 +35,7 @@
 
 import { compareQuantity } from './atlas-evidence.js';
 import { IntMapLang } from './lang-registry.js';
+import { collectObstacles, fitOverlay } from './geo-engine.js';
 /* (safe-output-single-module) the ONE URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
 import './safe-html.js';
 
@@ -441,7 +442,7 @@ const CSS = '.atl-srcs{margin-top:var(--atl-zone-gap,10px);padding-top:6px;borde
   + '.atl-scard-t{font-weight:600;font-size:13.5px;line-height:1.4;}'
   + '.atl-scard-d{color:var(--text-muted);font-size:11.5px;margin-top:2px;}'
   + '.atl-scard-s{margin-top:5px;color:var(--text-main);opacity:.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}'
-  + '.atl-scard-open{color:inherit;text-underline-offset:.18em;}'
+  + '.atl-scard .atl-scard-open{color:inherit;text-decoration:none;}'
   + '.atl-menu>summary{display:inline-block;list-style:none;border:1px solid var(--glass-border,rgba(128,128,128,.25));border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--text-muted);font-weight:600;}'
   + '.atl-menu>summary::-webkit-details-marker{display:none;}'
   + 'sup.atl-srcn a{color:var(--accent,#0a84ff);text-decoration:none;font-size:0.78em;font-weight:650;margin-left:1px;}';
@@ -570,9 +571,14 @@ export function attachSources(ctx) {
     cardEl.hidden = false;
     const r = chip.getBoundingClientRect(), cw = Math.min(320, window.innerWidth - 16);
     cardEl.style.width = cw + 'px';
-    cardEl.style.left = Math.max(8, Math.min(window.innerWidth - cw - 8, r.left)) + 'px';
     const below = r.bottom + 8, h = cardEl.offsetHeight;
-    cardEl.style.top = (below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 8) : below) + 'px';
+    const bounds = { left:8, top:8, right:window.innerWidth - 8, bottom:window.innerHeight - 8 };
+    const top = below + h > bounds.bottom ? r.top - h - 8 : below;
+    const mapHost = document.getElementById('map-container') || document.body;
+    const obstacles = collectObstacles(mapHost, bounds, [cardEl]);
+    const fit = fitOverlay({ left:r.left, top, right:r.left + cw, bottom:top + h }, bounds, [...obstacles, r], 4);
+    cardEl.style.left = fit.left + 'px';
+    cardEl.style.top = fit.top + 'px';
   }
   function bind(bubble, question) {
     style();

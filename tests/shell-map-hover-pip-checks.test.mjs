@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import * as overlayPlacement from '../js/popup-placement.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -64,7 +65,7 @@ async function shippedPip() {
     layers: { has: () => false, get: () => null, getLayout: () => 'none', sourceData: () => null },
     coords: { project: () => null, queryRenderedFeatures: () => [] },
     render: { canvas: () => null }, events: { on() {}, onLayer() {} }, camera: {} };
-  const M = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine } } });
+  const M = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { ...overlayPlacement, IntMapGeoEngine: engine } } });
   assert.equal(typeof M.layerRegistry, 'function',
     'js/map-ui.js no longer exports the layerRegistry factory');
   M.layerRegistry({ lang: 'en', canDraw: () => false, demElevAt: () => null });

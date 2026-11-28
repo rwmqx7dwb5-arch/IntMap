@@ -8,6 +8,8 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 
+import { clearOverlayTranslation, placeOpenedOverlay } from './geo-engine.js';
+
 export function windowManager(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
      moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
@@ -71,6 +73,36 @@ export function windowManager(HOST){
          replacing the native bottom-right-only `resize:both` grab-mark.
      makeDraggable auto-registers its panel; bigger windows (Atlas, Compare) also add edge-resize. ================= */
   const __winReg=new Set();
+  const __openWindows=new WeakSet();
+  let __openObserver;
+  /* Store the opening position in the same coordinates the drag and resize paths use.
+     Moving both insets preserves an auto-stretched size and lets a responsive sheet own its edges. */
+  function shiftWindow(el,dx,dy){
+    if(!dx&&!dy) return;
+    const cs=getComputedStyle(el);
+    for(const [near,far,delta] of [['left','right',dx],['top','bottom',dy]]){
+      if(!delta) continue;
+      const start=parseFloat(cs[near]), end=parseFloat(cs[far]);
+      if(Number.isFinite(start)) el.style[near]=(start+delta)+'px';
+      if(Number.isFinite(end)) el.style[far]=(end-delta)+'px';
+    }
+  }
+  function watchOpening(panel){
+    if(typeof ResizeObserver!=='function') return;
+    __openObserver??=new ResizeObserver(entries=>{
+      for(const {target:el,contentRect:r} of entries){
+        if(!r.width||!r.height){ __openWindows.delete(el); continue; }
+        if(__openWindows.has(el)||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
+        const position=getComputedStyle(el).position;
+        if(position!=='fixed'&&position!=='absolute') continue;
+        if(position==='fixed'&&el.offsetWidth>=document.documentElement.clientWidth) continue;
+        __openWindows.add(el);
+        placeOpenedOverlay(el,document.getElementById('map-container'),4,shiftWindow);
+        _geoBump();
+      }
+    });
+    __openObserver.observe(panel);
+  }
   /* ══ ⚠⚠⚠ (#R258) THIS IS WHY THE SIDEBAR COULD NOT COME BACK TO THE FRONT ════════════════════════
      「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
        した場合はまた左サイドバーを前部に。」— reported in #R253, #R254, #R255 and again now. The
@@ -104,7 +136,8 @@ export function windowManager(HOST){
      the document orders every registered window a pointerdown lands inside. `bringToFront` keeps its
      name — 33 call sites across 22 files, and IM_HOST publishes it — and is that owner's `order`. */
   function bringToFront(el){ try{ window.IntMapStack.order(el); }catch(_){} }
-  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
+  function registerWindow(el,options){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
+    if(options?.place!==false) watchOpening(el);
     /* (#R238) a window that appears while the dock is on goes straight into it — see below.
        (#R239) …and is watched, so that switching it off later takes it back out again. */
     if(__dockOn) try{ _watchEl(el); _dockOne(el); }catch(_){} }
@@ -299,6 +332,8 @@ export function windowManager(HOST){
     try{ if(document.body.classList.contains('ws-mode')) return false; }catch(_){}
     const host=_dockHost(); if(!host) return false;
     try{
+      clearOverlayTranslation(el);
+      __openWindows.delete(el);
       __docked.set(el,{ parent:el.parentNode, next:el.nextSibling, css:el.getAttribute('style')||'' });
       /* ⚠⚠⚠ (#R239b) WATCH IT BEFORE IT MOVES, NOT AFTER. Measured on production: a legend that was
          already switched on when the mode was turned on stayed in the tab after its layer was

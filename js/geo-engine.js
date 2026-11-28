@@ -31,6 +31,21 @@ import { pickRenderMethod } from './render-plan.js';
 import { makeCommandCensus } from './geo-command-log.js';
 import { makeClickOwnership } from './click-ownership.js';
 import { readGlyph, keepGlyph } from './glyph-store.js';
+import { choosePlacement, clearOverlayTranslation, collectObstacles, fitOverlay, measureHtml, optionsFor, overlayTranslation, placeOpenedOverlay, translateOverlay } from './popup-placement.js';
+/* Keep the placement functions with the renderer that is already loaded. Both the eager map
+   shell and lazy cards use this entry, so a small shared helper adds no startup request. */
+export { choosePlacement, clearOverlayTranslation, collectObstacles, fitOverlay, measureHtml,
+  optionsFor, overlayTranslation, placeOpenedOverlay, translateOverlay };
+
+function placeRendererPopup(popup, host) {
+  const el = popup?.getElement?.();
+  if (el?.classList?.contains('maplibregl-popup')) {
+    el.setAttribute('data-overlay-obstacle', '');
+    const mapHost = host?.closest?.('#map-container') || host;
+    requestAnimationFrame(() => placeOpenedOverlay(el, mapHost));
+  }
+  return popup;
+}
 /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
    A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
    later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
@@ -2008,7 +2023,7 @@ function _redrawLocalGlyphs(m,cover){
         return true;
       }catch(_){ return false; }
     },
-    setDynamicImageOpacity(id,v){ const m=_m(); try{ if(m&&m.getLayer(id+'-lyr')) m.setPaintProperty(id+'-lyr','raster-opacity',v); return true; }catch(_){ return false; } },
+    setDynamicImageOpacity(id,v){ try{ this.setPaint(id+'-lyr','raster-opacity',v); return true; }catch(_){ return false; } },
     setDynamicImageCoords(id,c){ const m=_m(); try{ const s=m&&m.getSource(id); if(s&&s.setCoordinates){ s.setCoordinates(c); return true; } }catch(_){} return false; },
     hasDynamicImage(id){ const m=_m(); return !!(m&&m.getSource(id)); },
     removeDynamicImage(id){
@@ -2026,9 +2041,15 @@ function _redrawLocalGlyphs(m,cover){
        already hold this?" costs one property read off an object we fetched anyway — no clone,
        no second lookup. MapLibre would refuse the repeat one frame later regardless (see the
        header); the tally is what says whether getting there first is worth anything. */
-    setPaint(id,p,v){ const m=_m(); if(!m) return; const Y=m.getLayer(id);
+    setPaint(id,p,v,o){ const m=_m(); if(!m) return; const Y=m.getLayer(id);
       if(!Y) return absent(_cmd,'paint',id);
       if((CMD.on||CMD.skip.paint)&&skipProp(_cmd,'paint',id,Y.getPaintProperty?Y.getPaintProperty(p):undefined,v)) return;
+      /* An opacity value selected by the reader should reach the next frame. Preserve deliberate
+         cross-fades (such as new imagery arriving) when the painter declares its own transition. */
+      if(p.endsWith('-opacity')||p==='hillshade-exaggeration'){
+        const key=p+'-transition', transition=Y.getPaintProperty?.(key);
+        if(!transition||(o?.immediate&&(transition.duration!==0||transition.delay!==0))) m.setPaintProperty(id,key,{duration:0,delay:0});
+      }
       const _t=t0(); m.setPaintProperty(id,p,v); t1(_cmd,'paint',_t); },
     /* `o` is MapLibre's StyleSetterOptions, passed through untouched. Its one member, `validate`,
        is documented as «a performance optimization that should only be used if you have previously
@@ -2038,7 +2059,7 @@ function _redrawLocalGlyphs(m,cover){
       if(!Y) return absent(_cmd,'layout',id);
       if((CMD.on||CMD.skip.layout)&&skipProp(_cmd,'layout',id,Y.getLayoutProperty?Y.getLayoutProperty(p):undefined,v)) return;
       const _t=t0(); m.setLayoutProperty(id,p,v,o); t1(_cmd,'layout',_t); },
-    setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) m.setPaintProperty(id,p,v); },
+    setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) this.setPaint(id,p,v); },
     on(e,c){ const m=_m(); if(m) m.on(e,c); }, off(e,c){ const m=_m(); if(m) m.off(e,c); }, once(e,c){ const m=_m(); if(m) m.once(e,c); },
     /* (#R160) Phase-2 contract broadening — the common camera getters, zoom controls, render + feature-state ops
        that call sites still reach for on the raw map. Each is a 1:1 pass-through (byte-identical behaviour), so
@@ -2859,7 +2880,7 @@ function _redrawLocalGlyphs(m,cover){
         (function poll(){ if(!_drawWaiters.length) return; listen(); if(!drain()) setTimeout(poll,150); })();
       });
     },
-    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>{ if(_looking) _looking(id); return A().hasLayer(id); }, add:(d,b)=>{ const w=_was(d&&d.id); const r=A().addLayer(d,b); try{ if(d) _shown(d.id,!(d.layout&&d.layout.visibility==='none'),w); }catch(_){} return r; }, remove:id=>{ const w=_was(id); const r=A().removeLayer(id); _shown(id,false,w); return r; }, setVisible:(id,v)=>{ const w=_was(id); const r=A().setVisible(id,v); _shown(id,!!v,w); return r; }, isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>{ const w=p==='visibility'&&_was(id); const r=A().setLayout(id,p,v,o); if(p==='visibility') _shown(id,v!=='none',w); return r; }, setOpacity:(id,v)=>A().setOpacity(id,v),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>{ if(_looking) _looking(id); return A().hasLayer(id); }, add:(d,b)=>{ const w=_was(d&&d.id); const r=A().addLayer(d,b); try{ if(d) _shown(d.id,!(d.layout&&d.layout.visibility==='none'),w); }catch(_){} return r; }, remove:id=>{ const w=_was(id); const r=A().removeLayer(id); _shown(id,false,w); return r; }, setVisible:(id,v)=>{ const w=_was(id); const r=A().setVisible(id,v); _shown(id,!!v,w); return r; }, isVisible:id=>A().isVisible(id), setPaint:(id,p,v,o)=>A().setPaint(id,p,v,o), setLayout:(id,p,v,o)=>{ const w=p==='visibility'&&_was(id); const r=A().setLayout(id,p,v,o); if(p==='visibility') _shown(id,v!=='none',w); return r; }, setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
@@ -2976,9 +2997,9 @@ function _redrawLocalGlyphs(m,cover){
       /* (#R179) an ADDITIONAL view as a scoped engine, and renderer UI attached to THIS view */
       createSubView:o=>A().createSubView?A().createSubView(o):null,
       addMarker:(o,ll)=>A().addMarker?A().addMarker(o,ll):null,
-      addPopup:(o,ll,html)=>A().addPopup?A().addPopup(o,ll,html):null,
+      addPopup:(o,ll,html)=>placeRendererPopup(A().addPopup?.(o,ll,html),A().getContainer?.()),
       /* (#R180) attach a popup/marker the caller built itself — see the adapter */
-      attach:o=>A().attach?A().attach(o):o },
+      attach:o=>{ const a=A(), attached=a.attach?a.attach(o):o; return typeof attached?.isOpen==='function'?placeRendererPopup(attached,a.getContainer?.()):attached; } },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
     render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main; the ceiling was retired in #R795) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; const sync=()=>{ try{ if(!d&&typeof A().redraw==='function') A().redraw(); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } /* (layer-click-polish) a HIDDEN page has no rAF, so no tick will come — draw one synchronously (maplibre `redraw()`, Cesium `scene.render()`); 'render' fires inside it and fn reads a real buffer. The timer's last step does the same before giving up. dev-notes 2026-11-18-layer-click-polish */ if(typeof document!=='undefined'&&document.hidden) sync(); setTimeout(()=>{ sync(); f(false); }, Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
       /* the one 「is it on the map」 question every verdict asks, and the claims it answers about — see surfacesDrawn above */

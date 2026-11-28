@@ -22,7 +22,7 @@ import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js'; import { dimPixel } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule — Köppen and WorldCover */
-import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js';
+import { IntMapGeoEngine, clearOverlayTranslation, collectObstacles, fitOverlay, overlayTranslation, translateOverlay } from './geo-engine.js'; import * as bus from './bus.js';
 import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
@@ -849,6 +849,7 @@ export function dataLayers(HOST){
       const HANDLE='.dl-drag,.kl-drag,h4,.tp-header';
       const begin=(cx,cy)=>{
         const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
+        clearOverlayTranslation(el);
         const ox=cx-startRect.left, oy=cy-startRect.top;
         /* Pin to the current on-screen spot BEFORE releasing the CSS bottom/right anchor, so the
            legend never flashes to a default corner when the drag starts (esp. on mobile, #10). Use
@@ -3286,7 +3287,7 @@ export function dataLayers(HOST){
         H.push(r?r.height:0); W.push(r?r.width:0); NAT.push(Math.max(r?r.height:0,sh)); });
       /* the boxes the stack must stay clear of, read in the same pass (viewport coordinates; made
          container-relative below, once the container's own box is known) */
-      const OWN_R=[], SEEN=new Map(); ownPlaced.forEach(el=>{ try{ const r=el.getBoundingClientRect(); if(r){ SEEN.set(el,{w:r.width,h:r.height}); if(r.width>0&&r.height>0) OWN_R.push(r); } }catch(_){} });
+      const OWN_R=[], SEEN=new Map(); ownPlaced.forEach(el=>{ try{ const r=el.getBoundingClientRect(); if(r){ SEEN.set(el,{w:r.width,h:r.height}); if(r.width>0&&r.height>0) OWN_R.push({el,r}); } }catch(_){} });
       /* Every card is watched, and told the size this pass read, so the observer can tell a size this
          pass already placed from a size that changed since (see `watchLegendSize`). A card that is not
          on screen has no box — `display:none` — so its size is known without asking the page; a
@@ -3297,25 +3298,8 @@ export function dataLayers(HOST){
          `el.style.top` is a CSSOM read and costs no layout, and a remembered copy would go stale the
          moment anything else touched the box (a drag restoring `cssText`, the dock, a theme rebuild). */
       const put=(el,prop,v)=>{ try{ if(el.style[prop]===v) return; }catch(_){} el.style[prop]=v; };
-      /* ══ ⚠⚠⚠ (#R740) A LEGEND IS PLACED INSIDE ITS CONTAINER, OR IT IS NOT PLACED ═══════════════
-         MEASURED in production (1440×900, Atlas asked for 「ヨーロッパの気温をGFSモデルで表示して、
-         等圧線も重ねて。風のパーティクルも」): four legends 106 / 337 / 303 / 252 px tall stacked to
-         1,028 px inside a 900 px map, and the cursor just kept counting — `data-legend-eq` was
-         written at y=-291 with its BOTTOM edge at -185, i.e. the earthquake legend was not clipped,
-         it was entirely off the top of the screen, and the pressure legend's title, date and opacity
-         slider went with it. The reader could not touch either one. All three branches below shared
-         the defect: each adds heights to a cursor that no container height ever bounds. (The
-         `data-grow-down` arm already carried `Math.max(8, …)` — the overflow was known; only the arm
-         that expresses the slot as a `top` was looking at it.)
-         ⚠ CLAMPING IS NOT THE ANSWER. Pinning the overflow to the edge stacks boxes ON TOP of one
-         another, which is the defect #R276 fixed (a legend the tiler could not see sat on the one
-         below it — visible, and unreadable). So the stack WRAPS: when the next legend would leave
-         the container, the cursor returns to its origin and the column steps sideways by the
-         MEASURED width of the column just filled — never by a guessed one, because legends are not
-         all one width (a generic legend is 178 px, the ECMWF boxes are wider).
-         ⚠ The rule is attached to the FACT — a legend sits inside its container — not to a branch or
-         to an id, so one placer serves the desktop dock, the workspace dock and the phone dock, and
-         serves every legend that exists as well as every one that does not exist yet. */
+      /* (#R740) Four legends once stacked to 1,028 px in a 900 px map, putting two controls outside it.
+         When the next card leaves the container, wrap by the width of the measured column. */
       /* (#R499) the container's box comes from js/runtime.js §5's observer — it changes when the
          WINDOW changes, and this pass is requested thirty-one-plus times per session for other reasons. */
       const mcBox=(()=>{ try{ const mc=document.getElementById('map-container'); if(!mc) return null;
@@ -3323,7 +3307,20 @@ export function dataLayers(HOST){
       const mcH=(mcBox&&mcBox.height)||window.innerHeight||0;
       const mcW=(mcBox&&mcBox.width)||window.innerWidth||0;
       const mcL=(mcBox&&+mcBox.left)||0, mcT=(mcBox&&+mcBox.top)||0;
-      const OWN=OWN_R.map(r=>({x0:r.left-mcL,x1:r.right-mcL,y0:r.top-mcT,y1:r.bottom-mcT}));
+      const host=document.getElementById('map-container');
+      const mapBounds={left:mcL,top:mcT,right:mcL+mcW,bottom:mcT+mcH};
+      const live=!!host?.ownerDocument?.documentElement;
+      const chrome=live ? collectObstacles(host,mapBounds,[...visible,...ownPlaced]) : [];
+      const OWN_BOXES=OWN_R.map(({el,r})=>{
+        if(!live) return r;
+        const t=overlayTranslation(el), x=t?.x||0, y=t?.y||0;
+        const preferred={left:r.left-x,right:r.right-x,top:r.top-y,bottom:r.bottom-y};
+        const fit=fitOverlay(preferred,mapBounds,chrome,4);
+        translateOverlay(el,fit.left-preferred.left,fit.top-preferred.top);
+        chrome.push(fit);
+        return fit;
+      });
+      const OWN=OWN_BOXES.map(r=>({x0:r.left-mcL,x1:r.right-mcL,y0:r.top-mcT,y1:r.bottom-mcT}));
       /* The three docks differ by three numbers and nothing else. They are stated once here because
          the ceiling below has to know where the cursor starts before the branches run — the numbers
          themselves are the ones the three branches have always used. */
@@ -3388,35 +3385,23 @@ export function dataLayers(HOST){
         try{ ensureLegendMinimize(el,true); }catch(_){}
         el.dataset.legFold='1'; folded=true;
       }
-      /* Heights measured before the fold are no longer this stack's heights. The re-entry reads them
-         once more and places from the new ones; `_refold` makes it exactly one re-entry, and it only
-         happens on the call that actually folded something. */
+      /* Folding changes the measured heights. Re-enter once to place the new sizes. */
       if(folded&&!_refold) return placeLegends(true);
-      /* One column-wrapping placer for all three docks. `start` is the cursor's origin measured from
-         the anchored edge (bottom for the two desktop docks, top on phones), `gap` the spacing the
-         dock has always used, `base` its left margin. Nothing in here reads the DOM. */
-      /* ⚠ A SLOT THAT WOULD LAND ON A LEGEND KEEPING ITS OWN PLACE (`OWN`) is not taken: the column is
-         done at that height, and the next one starts past that legend's right edge — measured, like
-         every other column step. So Köppen's column holds whatever fits under Köppen and nothing on
-         it, and a Köppen the reader stretches (its grip resizes it; the size observer re-places the
-         stack) pushes what no longer fits into the next column. `fromTop` is the phone dock's anchor,
-         where no legend keeps its own place; the rule is written for both anchors all the same. */
+      /* All docks share a column budget. The phone counts from the top, and the two desktop docks
+         count from the bottom. Start the next column beyond any legend keeping its own place. */
       const hitOwn=(left,w,off,h,gap,fromTop)=>{ if(!OWN.length) return null;
         const y0=fromTop?off:mcH-off-h, y1=y0+h;
         for(const o of OWN){ if(left<o.x1+gap&&left+w>o.x0-gap&&y0<o.y1+gap&&y1>o.y0-gap) return o; }
         return null; };
       const flow=(start,gap,base,edgeW=mcW,fromTop=false)=>{
         const out=[]; let off=start, colX=0, colW=0;
+        const obstacles=chrome.slice();
+        const bounds={left:mcL+8,top:mcT+8,right:mcL+edgeW-8,bottom:mcT+mcH-8};
         const room=Math.max(48,mcH-start-8);
         for(let i=0;i<visible.length;i++){
           const el=visible[i], w=W[i]||0;
-          /* A legend taller than a whole column cannot be made to fit by moving it. It is given the
-             column's height and its own scroller, so its title, its close button and its controls
-             are on screen and the rest of it is reachable — the alternative is a box whose top edge
-             is off the map with no way to get at what is up there.
-             ⚠ The release test asks the CONTENT height, not the rendered one: once our `max-height`
-             is on, the rendered height IS `room`, so a rendered-height test would drop the clamp and
-             the next call would put it straight back. */
+          /* Cap tall legends to the column's height and keep the cap while the content still
+             overflows. Measuring only the capped height would make the scroller flicker. */
           let cap=0;
           if(H[i]>room) cap=room; else if(el.dataset.legCap&&NAT[i]>room) cap=room;
           const h=cap||H[i];
@@ -3440,7 +3425,15 @@ export function dataLayers(HOST){
              finds nothing to move. The PLACE is the same place (`right` = the edge the clamp
              stopped it at); a box too wide to fit at all keeps `left = base` as before. */
           const at=base+colX, edge=edgeW-w-8;
-          out.push({off,left:Math.min(at,Math.max(base,edge)),right:(at>edge&&edge>base)?mcW-edgeW+8:null,cap,h});
+          const left=Math.min(at,Math.max(base,edge));
+          const p={off,left,right:(at>edge&&edge>base)?mcW-edgeW+8:null,cap,h};
+          if(chrome.length&&w>0&&h>0&&!docked(el)){
+            const x=mcL+left, y=mcT+(fromTop?off:mcH-off-h);
+            const fitted=fitOverlay({left:x,top:y,right:x+w,bottom:y+h},bounds,obstacles,4);
+            p.shift=[fitted.left-x,fitted.top-y];
+            obstacles.push(fitted);
+          }
+          out.push(p);
           colW=Math.max(colW,w); off+=h+gap;
         }
         return out;
@@ -3452,8 +3445,8 @@ export function dataLayers(HOST){
         if(cap){ put(el,'maxHeight',cap+'px'); put(el,'overflowY','auto'); el.dataset.legCap='1'; }
         else if(el.dataset.legCap){ put(el,'maxHeight',''); put(el,'overflowY',''); delete el.dataset.legCap; }
       };
-      /* the horizontal half of a slot: by its left edge, or — stopped at the container's edge — by that edge */
-      const side=(el,p)=>{ if(p.right!=null){ put(el,'left','auto'); put(el,'right',p.right+'px'); } else { put(el,'left',p.left+'px'); put(el,'right','auto'); } };
+      const side=(el,p)=>{ if(p.right!=null){ put(el,'left','auto'); put(el,'right',p.right+'px'); } else { put(el,'left',p.left+'px'); put(el,'right','auto'); }
+        if(live) translateOverlay(el,...(p.shift||[0,0])); };
       if(ws){
         /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
            オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
@@ -4919,6 +4912,10 @@ export function dataLayers(HOST){
        families (js/world-packs.js, js/industry-web.js) render their controls INTO this box rather
        than into a second window of their own. Same function every legend already goes through. */
     window._tileLegends=tileLegends;
+    bus.on('intmap-atlas-float-visibility',()=>{
+      document.getElementById('map-container')?.querySelectorAll('[data-overlay-obstacle]').forEach(el=>watchLegendSize(el));
+      tileLegends();
+    });
     /* (#R108/#R109) re-localize every VISIBLE data-layer legend on a language change ("言語設定を変更したとき、すでに
        表示済みのレイヤーの凡例はその言語に切り替わらない"). ROOT CAUSE of the R108 miss: the common legends are
        DEDICATED `.data-legend` built once by makeLegend (NOT `.generic-legend`), so the old selector matched nothing.

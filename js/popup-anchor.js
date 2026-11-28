@@ -28,7 +28,7 @@
  *  Not for: a panel that is deliberately a screen panel (the country card, the right-docked aircraft
  *  / satellite / volcano / quake cards) — those do not describe a point, so they do not take one.
  * ==========================================================================*/
-import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapGeoEngine, collectObstacles, fitOverlay } from './geo-engine.js';
 
 let serial = 0;
 
@@ -91,7 +91,7 @@ export function anchorToLngLat(el, at, opts) {
   if (el.__imAnchor) el.__imAnchor.release();
 
   const key = 'popup-anchor#' + (++serial);
-  let off = null, wrote = null, hidByUs = false, released = false, first = true;
+  let off = null, wrote = null, hidByUs = false, released = false, first = true, shiftX = 0, shiftY = 0;
 
   function setHidden(h) {
     if (h === hidByUs) return;
@@ -123,11 +123,19 @@ export function anchorToLngLat(el, at, opts) {
        does not follow. Following starts only for a place the reader can currently see. */
     const follow = ok && !(first && away);
     if (follow) {
-      L = Math.max(minL, Math.min(px + dx, maxL));
-      T = Math.max(minT, Math.min(py + dy, maxT));
+      L = Math.max(minL, Math.min(px + dx + shiftX, maxL));
+      T = Math.max(minT, Math.min(py + dy + shiftY, maxT));
     } else {
       /* the place cannot be projected (no renderer yet) or is not in view: docked to the right, as before */
       L = maxL; T = Math.max(minT, Math.min(o.dockedTop == null ? 96 : o.dockedTop, maxT));
+    }
+    const host = first && el.ownerDocument?.getElementById('map-container');
+    if (host) {
+      const bounds = { left:minL, top:minT, right:right - M, bottom:Math.min(F.bottom, vp.h) - M };
+      const preferred = { left:L, top:T, right:L + w, bottom:T + h };
+      const fit = fitOverlay(preferred, bounds, collectObstacles(host, bounds, [el]), 4);
+      shiftX = fit.left - L; shiftY = fit.top - T;
+      L = fit.left; T = fit.top;
     }
     const sl = Math.round(L - F.origin.left), st = Math.round(T - F.origin.top);
     el.style.left = sl + 'px'; el.style.top = st + 'px';
