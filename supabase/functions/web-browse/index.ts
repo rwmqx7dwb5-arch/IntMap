@@ -66,6 +66,31 @@ async function sha256(bytes) {
    capacity WEB_RENDER_BURST (default 10), refill WEB_RENDER_PER_MIN (default 6). They expire the first time a real reader meets `capped`
    or the first invoice shows the real unit cost. Secrets: CF_BROWSER_ACCOUNT_ID + CF_BROWSER_API_TOKEN (Cloudflare Browser Rendering). */
 const RENDER_READER_PER_MIN = 4;
+async function openNetworkSocket(url, headers, signal) {
+  // Hosted Edge runtimes cannot all set headers on the global WebSocket.
+  const { default: NetworkWebSocket } = await import("ws");
+  signal.throwIfAborted();
+  return await new Promise((resolve, reject) => {
+    const ws = new NetworkWebSocket(url, { headers, handshakeTimeout: 8000, maxPayload: 8 * 1024 * 1024 });
+    const abort = () => ws.terminate();
+    signal.addEventListener("abort", abort, { once: true });
+    const fail = (code) => {
+      signal.removeEventListener("abort", abort);
+      reject(Object.assign(new Error(code), { code }));
+    };
+    ws.once("error", () => fail("render_unreachable"));
+    ws.once("unexpected-response", (_, res) => {
+      const status = res.statusCode;
+      fail(status === 401 || status === 403 ? "render_auth" : status === 429 ? "render_busy" : "render_failed");
+      ws.terminate();
+    });
+    ws.once("open", () => {
+      signal.removeEventListener("abort", abort);
+      resolve(ws);
+    });
+  });
+}
+
 async function renderTier(req) {
   const off = env("WEB_RENDER_DISABLED").toLowerCase();
   if (off === "1" || off === "true") return reply({ error: "disabled" }, 503);
@@ -85,7 +110,7 @@ async function renderTier(req) {
   }
   if (!input || typeof input !== "object") return reply({ error: "bad_request" }, 400);
   try {
-    return reply(await render(input, { resolvesPublic, cfg }), 200);
+    return reply(await render(input, { resolvesPublic, cfg, openNetworkSocket }), 200);
   } catch (e) {
     return relayFail(e, { ...CORS, "cache-control": "no-store" });
   }

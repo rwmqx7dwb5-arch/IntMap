@@ -161,7 +161,7 @@ export function cdpClient(socket) {
     },
     on(method, f) { (listeners.get(method) || listeners.set(method, []).get(method)).push(f); },
     once(method, ms) { return new Promise((resolve) => { const t = setTimeout(() => resolve(null), ms); const f = (p) => { clearTimeout(t); resolve(p); }; this.on(method, f); }); },
-    close() { closed = true; try { socket.close(); } catch (_) { /* already gone */ } },
+    close() { dead("socket closed"); try { socket.close(); } catch (_) { /* already gone */ } },
   };
 }
 

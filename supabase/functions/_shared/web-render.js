@@ -9,7 +9,8 @@
 //  THE CONTRACT WITH THE LIGHT TIER. The answer is the same shape web-browse's snapshot already has
 //  (`page.text / links / files / forms`, parsed by the SAME parser from the RENDERED DOM), plus `screenshot`.
 //  The browsing state is the light tier's state, so `render` → `web.browse click` / `web.fetchFile` compose.
-//  Nothing in the client names the provider.
+//  Network discovery uses a fresh provider browser and adds matching public
+//  responses to those same geographic leads. The client names no provider.
 //
 //  WHAT THIS TIER NEVER DOES (a fact about the request, not a list of sites):
 //   · READ-ONLY. The only thing sent is "load this URL and report". No click, no typing, no form submission,
@@ -33,7 +34,8 @@
 // ============================================================================
 
 import { RelayError } from "./relay-guard.js";
-import { browseUrlAllowed, parseHtml, snapshotOf, refTable, handoffOf, cleanState, decodeBody } from "./web-browse.js";
+import { browseUrlAllowed, parseHtml, snapshotOf, refTable, handoffOf, cleanState, decodeBody, LIMITS } from "./web-browse.js";
+import { observeRender } from "./web-render-network.js";
 
 /* Bounds for ONE render. Each is an ESTIMATE (no live provider was measured — there is no contract yet):
    screenshot JPEG at 1280x800 q70 is typically 80–400 KB; the vision channel carries 3 images per call
@@ -89,9 +91,11 @@ export function renderOptions(input) {
   const viewport = RENDER_LIMITS.viewports[a.viewport === "mobile" ? "mobile" : "desktop"];
   return {
     viewport: { width: viewport.width, height: viewport.height },
+    mobile: a.viewport === "mobile",
     waitUntil: a.wait === "load" ? "load" : "networkidle2",
     fullPage: a.fullPage === true,
     screenshot: a.screenshot !== false,
+    networkAssets: a.networkAssets === true,
     textChars: a.textChars,
   };
 }
@@ -99,7 +103,7 @@ export function renderOptions(input) {
 function bytesOfB64(b64) { return Math.floor((b64.length * 3) / 4) - (b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0); }
 
 /* render(input, deps) → { ok, state, page?, screenshot?, handoff?, code?, say?, viaBrowser:true }
-   input : { state?, url?, wait?:'load'|'networkidle', viewport?:'desktop'|'mobile', fullPage?, screenshot?, textChars? }
+   input : { state?, url?, wait?:'load'|'networkidle', viewport?:'desktop'|'mobile', fullPage?, screenshot?, textChars?, networkAssets? }
            (url omitted → the page the light tier has open)
    deps  : { resolvesPublic(host,{signal}), fetch?, cfg:{provider?,accountId,token} } — the shell supplies the world */
 export async function render(input, deps) {
@@ -115,23 +119,39 @@ export async function render(input, deps) {
   try {
     if (!(await deps.resolvesPublic(target.hostname, { signal }))) return fail("not_allowed");
     const o = renderOptions(a);
-    let res;
-    try {
-      res = await (deps.fetch || fetch)(chosen.p.endpoint(deps.cfg), { method: "POST", headers: chosen.p.headers(deps.cfg), body: JSON.stringify(chosen.p.body(target, o)), redirect: "error", signal });
-    } catch (_e) { return fail(signal.aborted ? "upstream_timeout" : "render_unreachable"); }
-    if (res.status === 401 || res.status === 403) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_auth"); }
-    if (res.status === 429) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_busy"); }
-    if (!res.ok) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_failed", { status: res.status }); }
-    let j = null;
-    try { j = await res.json(); } catch (_) { j = null; }
-    const got = chosen.p.read(j);
-    if (!got) return fail("render_failed");
+    let got;
+    if (o.networkAssets) {
+      if (!deps.openNetworkSocket) return fail("render_unreachable");
+      try { got = await observeRender(target, o, { ...deps, signal, limits: RENDER_LIMITS }); }
+      catch (e) {
+        return fail(signal.aborted ? "upstream_timeout" : (e.code || "render_unreachable"));
+      }
+      if (got.code) return fail(got.code);
+    } else {
+      let res;
+      try {
+        res = await (deps.fetch || fetch)(chosen.p.endpoint(deps.cfg), { method: "POST", headers: chosen.p.headers(deps.cfg), body: JSON.stringify(chosen.p.body(target, o)), redirect: "error", signal });
+      } catch (_e) { return fail(signal.aborted ? "upstream_timeout" : "render_unreachable"); }
+      if (res.status === 401 || res.status === 403) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_auth"); }
+      if (res.status === 429) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_busy"); }
+      if (!res.ok) { try { await res.body?.cancel(); } catch (_) { /* headers were enough */ } return fail("render_failed", { status: res.status }); }
+      let j = null;
+      try { j = await res.json(); } catch (_) { j = null; }
+      got = chosen.p.read(j);
+      if (!got) return fail("render_failed");
+    }
 
     const htmlBytes = new TextEncoder().encode(got.html);
     if (htmlBytes.length > RENDER_LIMITS.htmlBytes) return fail("upstream_too_large");
-    const page = parseHtml(decodeBody(htmlBytes, "text/html; charset=utf-8"), target.toString());
-    const ho = handoffOf(page, 200, null, target.toString());
-    state.url = target.toString(); state.page = refTable(page);
+    const url = got.url || target.href;
+    const page = parseHtml(decodeBody(htmlBytes, "text/html; charset=utf-8"), url);
+    const ho = handoffOf(page, got.status || 200, null, url);
+    if (!ho && got.assets) {
+      const actual = new Set(got.assets.map(({ href }) => href));
+      page.assets = [...got.assets, ...page.assets.filter(({ href }) => !actual.has(href))].slice(0, LIMITS.files);
+      page.assetObservation = { status: got.coverage, matches: got.assets.length };
+    }
+    state.url = url; state.page = refTable(page);
 
     let screenshot;
     if (o.screenshot && got.shotB64) {

@@ -190,6 +190,22 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 呼び手の `?u=` を受ける 5 本（`news-relay` / `gdelt-relay` / `sv-cov` / `quotes-relay` / `alerts-relay`）の転送先のオリジンは `allowedUpstream()` 1 本が判定する——https のみ（`alerts-relay`
 だけは CMA のため http も許し、ホストごとの規則で絞る）・userinfo 無し・既定ポートのみ・ホストは一覧と完全一致。その先（パス・クエリ鍵）は各関数の規則。
 
+#### 実行時の地理データを観測する
+
+`web.render {networkAssets:true}` は、初回表示中にページが取得する地理データを観測する。
+通常の描画と同じ JWT 門、停止スイッチ、呼び出し上限を使い、同じ Cloudflare 設定で
+[Browser Run の CDP 接続](https://developers.cloudflare.com/browser-run/cdp/) を開く。
+1 回限りの新規ブラウザーに利用者の操作セッション、Cookie、ヘッダー、資格情報を渡さない。
+監視対象のページと子ターゲットの HTTP リクエストは CDP で一時停止し、読み取り用メソッドと
+公開 URL・DNS を判定してから続ける。DNS 判定は接続先 IP の固定を伴わない。
+
+実際に送られたヘッダーと成功応答を対応させ、Cookie・認証ヘッダーを伴う取得、署名付き URL、
+内容を判定できないクエリは候補から外す。戻り値は候補の URL、形式、経路 `network-response`。
+リクエストヘッダーや応答本文は返さない。`page.assetObservation` は観測した候補数と、観測上限に
+達したかを伝える。初回表示の通信を対象とし、操作後の通信や観測時間外の通信は範囲外になる。
+通信審査を有効化できない子ターゲットは一時停止したままとし、結果を `partial` として返す。
+Atlas は URL を既存の `web.fetchFile` や GIS の取得口に渡せる。
+
 ### 6.3 環境変数（Edge Functions の secrets）
 
 - 自動注入: `SUPABASE_URL`、新しい鍵 `SUPABASE_SECRET_KEYS` / `SUPABASE_PUBLISHABLE_KEYS`（`sb_secret_…` / `sb_publishable_…`）、旧 JWT `SUPABASE_SERVICE_ROLE_KEY` /
