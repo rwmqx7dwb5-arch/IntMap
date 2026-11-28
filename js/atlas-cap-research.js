@@ -1209,7 +1209,7 @@ export default [
       const sessionInput = () => readsMap ? {
         map: K.ASTATE?.snapshot({ only: ['camera', 'time', 'activeLayers', 'objects'] }),
         points: K.HOST?.measurePoints || [],
-        circles: (K.HOST?.radiusItems || []).map(({ center, radiusKm }) => ({ center, radiusKm })),
+        circles: (K.HOST?.radiusItems || []).map((circle) => ({ center: circle.center, radiusKm: circle.radiusKm })),
       } : null;
       const keyOfInput = () => delegationKey(tasks, (names) => imagesShown(names, executorImages), sessionInput());
       const dKey = keyOfInput();

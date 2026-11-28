@@ -774,7 +774,7 @@ export async function ask(req: Request): Promise<Response> {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", reasoningEffort: out.reasoningEffort || null, modelChosenBy: !tier.model && devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+      meta: { provider, model, modelServed: out.served || "", ...(callId && out.reasoningEffort ? { reasoningEffort: out.reasoningEffort } : {}), modelChosenBy: !tier.model && devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-completion) whether the answer ENDED, in the provider's own words (providers/*.ts incompleteReason) —
            the text above is kept whole either way; js/atlas-agent.js reads these two as the reply's `finish` */
         status: out.incompleteReason ? "incomplete" : "complete", incompleteReason: out.incompleteReason || null,

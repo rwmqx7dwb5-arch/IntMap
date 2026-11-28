@@ -81,6 +81,7 @@ test('line painting retains adjacent sections and polygon painting refuses an un
     assert.equal(line.exec.status, 'partial');
     assert.deepEqual(line.objectIds, ['id-1', 'id-4']);
     assert.deepEqual(K._hlLines.map((l) => l.geo.coordinates.map(([lng]) => lng)), [[1, 2], [4, 5]]);
+    assert.deepEqual(line.meta.painted.lines, K._hlLines.map((section) => section.key));
     assert.equal(K._hlLines[0].provenance.turnId, 3);
     const polygon = await find('map.drawPolygon').run({ places: ['1', '2', 'missing', '4'] }, context, K);
     assert.equal(polygon.ok, false);

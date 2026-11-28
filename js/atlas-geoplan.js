@@ -172,7 +172,8 @@ async function probeNeed(need, spec, deps) {
     const states = Object.values(matches);
     const outside = states.includes('outside') || states.includes('misses');
     const unknown = states.includes('unstated') || states.includes('unreadable');
-    const state = outside ? 'unavailable' : unknown ? 'unknown' : matches.spatial === 'overlaps' ? 'partial' : 'available';
+    const allowsSample = need.completeness === 'sample' || need.completeness === 'any';
+    const state = outside ? 'unavailable' : unknown ? 'unknown' : matches.spatial === 'overlaps' && !allowsSample ? 'partial' : 'available';
     return { state, completeness: matches.spatial === 'overlaps' ? 'stated-partial' : 'unstated',
       detail: outside ? 'held-data-does-not-meet-conditions' : unknown ? 'held-data-conditions-unverified' : 'in-intmap',
       ref: row.ref || need.source.ref, undeclared: und, matches };

@@ -56,7 +56,7 @@ test('① no regex literal in the repository has lost its backslash, and the rul
 test('② «could not see» is not «not met»: an unconfirmed reading bounces nothing and lists nothing (A)', async () => {
   const r = await drive(() => ({ unmet: [], unconfirmed: [{ need: 'all prefectures', why: 'the record does not list what the map holds' }] }));
   assert.equal(r.bounces, 0);
-  assert.equal(r.out.completion, 'complete');
+  assert.equal(r.out.completion, 'unobserved');
   assert.deepEqual(r.out.unmet, []);
   assert.equal(r.out.trace.goalUnconfirmed.length, 1, 'kept for the evaluation');
   /* …and the reader's own answer is split by what it says it saw, an answer that says nothing staying a finding as before */
