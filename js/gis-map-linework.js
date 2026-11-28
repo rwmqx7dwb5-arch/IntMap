@@ -1,5 +1,7 @@
 /* Linework is extracted in the same top-left viewport as the source preview.
  * Filled or clipped artwork can be traced as rendered pixels instead. */
+
+export const KERNEL_VERSION = 'map-linework-1';
 const IDENTITY = [1, 0, 0, 1, 0, 0];
 const mul = ([a, b, c, d, x, y], [e, f, g, h, u, v]) =>
   [a*e+c*f, b*e+d*f, a*g+c*h, b*g+d*h, a*u+c*v+x, b*u+d*v+y];

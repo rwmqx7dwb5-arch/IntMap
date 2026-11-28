@@ -1,6 +1,8 @@
 /* Source-space fitting and feature recovery. Bytes and browser rendering live
  * in gis-map-source.js. Raw document coordinates never enter the GIS registry. */
 
+export const KERNEL_VERSION = 'map-registration-1';
+
 const pointOK = (p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite);
 const groundOK = (p) => pointOK(p) && Math.abs(p[0]) <= 180 && Math.abs(p[1]) <= 90;
 const fail = (why, detail) => ({ ok: false, why, ...(detail && { detail }) });

@@ -30,6 +30,15 @@ test('finds declared geometry routes, a source map, and a tile template on an un
   assert.ok(!s.assets.some((v) => /127\.0\.0\.1|discard/.test(v.href)));
 });
 
+test('discovery reads raw script text and skips inert templates', () => {
+  const page = parseHtml(`<script>let image = "./matches.geojson";</script data-extra>
+    <template><template><img src="discard.png"></template><script src="/discard.js"></script></template>
+    <style>.x { content: '<img src="also-discard.png">'; }</style>
+    <img src="scan.png"><script src="/viewer.js"></script>`, 'https://ocean.example.org/');
+  assert.deepEqual(page.assets.map((item) => item.kind).sort(), ['geojson', 'png']);
+  assert.deepEqual(page.scripts, ['https://ocean.example.org/viewer.js']);
+});
+
 test('scans a declared external bundle without running it and grounds relative literals at the document', async () => {
   const documentUrl = 'https://ocean.example.org/releases/survey/';
   const scriptUrl = 'https://cdn.example.org/maps/external.mjs';

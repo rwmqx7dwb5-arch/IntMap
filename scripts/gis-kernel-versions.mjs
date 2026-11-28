@@ -313,6 +313,10 @@ export const KERNELS = {
      a different cut, a different route or a different loss. */
   'js/gis-network.js': { version: 'network-1', sha256: '116dc959977eaca475dbeb31652d5429a9b6d99b9d298dc7154c1327d167946d' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
+  /* Source-map document decoding, affine calibration and extraction are independently versioned in the dataset recipe. */
+  'js/gis-map-source.js': { version: 'map-source-1', sha256: '707239078b5891de2d343b68c66c0376e6850a98009aac8376ffae54f133c6ef' },
+  'js/gis-map-registration.js': { version: 'map-registration-1', sha256: '2a1544e7ef49b150d06ed3ac8c7fe2932f295e24b75857ff94e0b3b19ffbf4d4' },
+  'js/gis-map-linework.js': { version: 'map-linework-1', sha256: '4ffcbf59ebe6ae02796c52297a6c892dbc4e8c69fd17ff6ffd38bc2b1bcbb224' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a

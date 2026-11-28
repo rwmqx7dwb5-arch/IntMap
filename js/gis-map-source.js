@@ -1,8 +1,9 @@
 /* Atlas's document-map input. The browser decodes or renders public bytes
  * locally. The GIS registry receives only georeferenced, validated features. */
-import { mapRegistration, legendPixels, traceMapPixels, placeMapShapes, compareMapAreas } from './gis-map-registration.js';
-import { pdfLinework, svgLinework } from './gis-map-linework.js';
+import { KERNEL_VERSION as REGISTRATION_VERSION, mapRegistration, legendPixels, traceMapPixels, placeMapShapes, compareMapAreas } from './gis-map-registration.js';
+import { KERNEL_VERSION as LINEWORK_VERSION, pdfLinework, svgLinework } from './gis-map-linework.js';
 
+const KERNEL_VERSION = 'map-source-1';
 const MAX_SIDE = 2048; // Four million RGBA cells fit in 16 MiB. Report the actual sampling size.
 const MAX_BYTES = 8 * 1024 * 1024; // Existing attachment PDF size order, and above the public relay's 6 MiB.
 const MIME = Object.freeze({ svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
@@ -13,7 +14,7 @@ const inFlight = new Map();
 let bytesHeld = 0;
 const MAX_HELD_BYTES = 32 * 1024 * 1024; // Unregistered download bytes held for reuse in this page only.
 
-export function readableMapType(file) {
+function readableMapType(file) {
   const type = file.type?.split(';')[0].trim().toLowerCase();
   if (Object.values(MIME).includes(type)) return type;
   const ext = String(file.name || '').split('.').at(-1).toLowerCase();
@@ -98,9 +99,12 @@ const scaleFor = (w, h) => Math.min(1, MAX_SIDE / Math.max(w, h));
 function context(c) { return c.getContext('2d', { willReadFrequently: true }); }
 
 async function withPdf(file, spec, signal, consume) {
-  const [{ getDocument, GlobalWorkerOptions, OPS, AnnotationMode }, { default: workerUrl }] = await Promise.all([
-    import('pdfjs-dist/build/pdf.mjs'), import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+  // Load PDF.js and its own worker as prebuilt modules. Compiling the library
+  // into the app moved seven private-field helpers into the boot chunk.
+  const [{ default: engineUrl }, { default: workerUrl }] = await Promise.all([
+    import('pdfjs-dist/build/pdf.min.mjs?url'), import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
   ]);
+  const { getDocument, GlobalWorkerOptions, OPS, AnnotationMode } = await import(/* @vite-ignore */ engineUrl);
   GlobalWorkerOptions.workerSrc = workerUrl;
   const get = getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false, useWasm: false,
     useWorkerFetch: false, disableFontFace: true, maxImageSize: MAX_SIDE**2, stopAtErrors: true });
@@ -149,7 +153,7 @@ async function withImage(file, type, spec, consume) {
     const size = { page: 1, pages: 1, nativeWidth: naturalWidth, nativeHeight: naturalHeight };
     return await consume(c, size, type === MIME.svg ? async (legend) => {
       const doc = new DOMParser().parseFromString(await file.text(), 'image/svg+xml');
-      if (doc.documentElement.namespaceURI !== 'http://www.w3.org/2000/svg' || doc.documentElement.localName !== 'svg') return null;
+      if (!(doc.documentElement instanceof globalThis.SVGSVGElement)) return null;
       if (!legend) {
         const ids = [...doc.querySelectorAll('line[id], polygon[id], polyline[id], path[id]')].map((node) => node.id);
         return { elementIds: ids.slice(0, 32), omitted: Math.max(0, ids.length - 32) };
@@ -169,7 +173,7 @@ function preview(c, show, url) {
   return { frame: show(p.toDataURL('image/png'), { url, viewport: p.width + 'x' + p.height }), width: p.width, height: p.height };
 }
 
-export async function processMapSource(record, spec, { signal, show, getGIS }) {
+async function processMapSource(record, spec, { signal, show, getGIS }) {
   const { file, meta } = record;
   const type = readableMapType(file);
   if (!type) return fail('map-format-unsupported');
@@ -191,7 +195,8 @@ export async function processMapSource(record, spec, { signal, show, getGIS }) {
     if (spec.crs && !gis.crs.isWgs84(spec.crs)) await gis.crs.ready();
     const fit = mapRegistration(gis.crs, size, spec);
     if (!fit.ok) return fit;
-    const recipe = { page: size.page, viewport: size, crop: spec.crop ?? null, legend: spec.legend,
+    const recipe = { kernels: { source: KERNEL_VERSION, registration: REGISTRATION_VERSION,
+      ...(spec.method === 'linework' && { linework: LINEWORK_VERSION }) }, page: size.page, viewport: size, crop: spec.crop ?? null, legend: spec.legend,
       control: spec.control, check: spec.check || [], transform: fit.transform };
     let shapes, extraction;
     if (spec.method === 'linework') {

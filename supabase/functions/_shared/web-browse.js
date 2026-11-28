@@ -173,7 +173,33 @@ function* scriptStrings(script) {
   }
 }
 
-export function geographicAssets(html, baseUrl, links, scriptOnly = false) {
+/* Tokenize the discovery surface without constructing a filtered HTML string.
+   Script and style consume raw text through their own end tag. The scanner
+   visits the inert template subtree only to find its closing tag. */
+function* assetTags(html) {
+  const tags = /<(\/?)([a-z][\w:-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+  let depth = 0, match;
+  while ((match = tags.exec(html))) {
+    const closing = !!match[1], tag = match[2].toLowerCase();
+    if (tag === "template") {
+      depth = closing ? Math.max(0, depth - 1) : depth + 1;
+      continue;
+    }
+    if (closing) continue;
+    if (tag === "script" || tag === "style") {
+      const end = tag === "script" ? /<\/script(?=[\s/>])[^>]*>/gi : /<\/style(?=[\s/>])[^>]*>/gi;
+      end.lastIndex = tags.lastIndex;
+      const close = end.exec(html);
+      const content = html.slice(tags.lastIndex, close?.index ?? html.length);
+      tags.lastIndex = close ? end.lastIndex : html.length;
+      if (tag === "script" && !depth) yield [tag, attrsOf(match[3]), content];
+      continue;
+    }
+    if (!depth && ["link", "iframe", "img", "object", "embed", "source"].includes(tag)) yield [tag, attrsOf(match[3]), ""];
+  }
+}
+
+function geographicAssets(html, baseUrl, links, scripts = null) {
   const out = new Map();
   const add = (raw, via, mime, text, advertisedKind) => {
     if (!raw || out.size >= LIMITS.files) return;
@@ -190,20 +216,25 @@ export function geographicAssets(html, baseUrl, links, scriptOnly = false) {
     }
     out.set(u.href, { href: u.href, kind, via, ...(name ? { text: name } : {}) });
   };
-  if (scriptOnly) {
+  if (!scripts) {
     for (const raw of scriptStrings(html)) add(raw, "script-literal", "", "");
     return [...out.values()];
   }
-  const src = stripComments(html);
   for (const l of links) add(l.href, "link", "", l.text, l.file);
-  for (const m of src.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)) {
-    for (const literal of scriptStrings(m[1])) add(literal.replace(/^pmtiles:\/\/(?=https?:\/\/)/i, ""), "inline-config", "", "");
-  }
-  for (const m of src.replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "").matchAll(/<(link|iframe|img|object|embed|source)\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi)) {
-    const a = attrsOf(m[2]);
-    if (m[1].toLowerCase() === "link" && /\bicon\b/i.test(a.rel || "")) continue;
-    const tag = m[1].toLowerCase();
-    add(a.href || a.src || a.data, tag, a.type, a.alt || a.title);
+  for (const [tag, a, content] of assetTags(stripComments(html))) {
+    if (tag === "script") {
+      if (a.src && scripts.size < LIMITS.links) {
+        try {
+          const u = browseUrlAllowed(new URL(a.src, baseUrl));
+          if (u) scripts.add(u.href);
+        } catch (_) { /* invalid declared source */ }
+      }
+      for (const literal of scriptStrings(content)) {
+        add(literal.replace(/^pmtiles:\/\/(?=https?:\/\/)/i, ""), "inline-config", "", "");
+      }
+    } else if (tag !== "link" || !/\bicon\b/i.test(a.rel || "")) {
+      add(a.href || a.src || a.data, tag, a.type, a.alt || a.title);
+    }
   }
   return [...out.values()];
 }
@@ -345,13 +376,8 @@ export function parseHtml(html, baseUrl) {
      only such a page can be a WALL. A footer widget or a header sign-in box on a page whose body was read is not one. */
   const bare = text.length < 200 && uniq.length < 5;
   const scripts = new Set();
-  for (const m of stripComments(src).matchAll(/<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi)) {
-    const source = attrsOf(m[1]).src;
-    const u = source && resolve(source);
-    if (u && browseUrlAllowed(u)) scripts.add(u.href);
-    if (scripts.size >= LIMITS.links) break;
-  }
-  return { title, text, links: uniq, scripts: [...scripts], assets: geographicAssets(src, base?.href, uniq), forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank, bare };
+  const assets = geographicAssets(src, base?.href, uniq, scripts);
+  return { title, text, links: uniq, scripts: [...scripts], assets, forms: forms.filter((f) => f.fields.length || f.buttons.length), captcha, blank, bare };
 }
 
 /* "csv" | "…" | "" — the format a link points at, from the link alone */
@@ -581,7 +607,7 @@ export async function browse(input, deps) {
         && !(/\.(?:m?js)$/i.test(r.url.pathname) && /^(?:text\/plain|application\/octet-stream)\b/i.test(r.type))) {
         return fail("not_a_script");
       }
-      const assets = geographicAssets(decodeBody(r.bytes, r.type), base.href, [], true);
+      const assets = geographicAssets(decodeBody(r.bytes, r.type), base.href, []);
       // The published script is itself evidence. Its scan must not replace
       // the record for the document that declared it or its active refs.
       return { ok: true, state, status: r.res.status, scriptUrl: r.url.href,
