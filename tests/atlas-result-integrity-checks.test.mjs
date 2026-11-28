@@ -10,7 +10,7 @@ import { makeHeadlessGis } from '../supabase/functions/_shared/gis-headless.js';
 import { loadGis } from '../supabase/functions/_shared/gis-loader.js';
 import { fakeDb } from './helpers/atlas-job-runner-db.mjs';
 
-const naturalEarth = process.env.INTMAP_HANDOFF_NATURAL_EARTH;
+const naturalEarth = process.env.INTMAP_RESULT_TEST_NATURAL_EARTH;
 const url = naturalEarth
   ? 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/9380cca83db5f9aef52d5e762765100745f84b27/geojson/ne_110m_admin_0_countries.geojson'
   : 'https://example.test/published-observations.geojson';

@@ -751,7 +751,6 @@ export async function ask(req: Request): Promise<Response> {
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await observe("ok", { incomplete: out.incompleteReason || "" });   // (atlas-turn-observability)
-    await settle();
     const response = { status: 200, body: {
       text: out.text,
       /* /!\ (#R491) A GLOSS RETURNS NO `used`/`limit`, ON PURPOSE. js/ai-core.js mirrors those two
@@ -807,6 +806,7 @@ export async function ask(req: Request): Promise<Response> {
       citations: Array.isArray(out.citations) ? out.citations : [],
     } };
     await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: meteredCost, costComplete, web: !!out.webUsed, webSearches: out.webCount || 0 });
+    await settle();
     return response;
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)

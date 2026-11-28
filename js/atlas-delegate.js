@@ -45,7 +45,7 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, dataManifest, selectJobData, atJobDataPath, priorStands, failureWhy, resolveArgs, refsOf } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, dataManifest, jobDataVersion, selectJobData, atJobDataPath, priorStands, failureWhy, resolveArgs, refsOf } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, resolveArgs };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
@@ -823,7 +823,9 @@ export function makeWorkerExecutor(o) {
             const readArtifacts = new Map(), readSources = [];
             const resolved = resolveArgs(w.args, handoff, { annotate(value, source, from) {
               const a = source.artifact;
-              if (a) readArtifacts.set(from, { from, id: a.id, version: a.version });
+              if (a || (source.origin && value?.type === 'FeatureCollection')) readArtifacts.set(from, {
+                from, id: a?.id || source.origin.resultKey || from, version: a?.version || jobDataVersion(value),
+              });
               const inherited = a?.sources || source.origin?.sources || source.sources;
               if (Array.isArray(inherited)) readSources.push(...inherited);
               return value;
