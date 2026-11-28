@@ -141,6 +141,11 @@ test('the map centers in the visible strip beside Atlas and restores its center 
 });
 
 test('Atlas keeps the reading position while switching from the map to the tab and back', async () => {
+  // The preceding test exercises a sidebar style that can start with the sidebar collapsed.
+  await page.evaluate(() => {
+    if (document.getElementById('sidebar').classList.contains('collapsed')) document.getElementById('btn-toggle-sidebar').click();
+  });
+  await expect(page.locator('#sidebar')).not.toHaveClass(/\bcollapsed\b/);
   const chat = page.locator('#atlas-panel .atl-chat');
   await chat.evaluate((node) => {
     node.append(...Array.from({ length: 70 }, (_, index) => {
