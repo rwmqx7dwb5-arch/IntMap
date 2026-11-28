@@ -175,11 +175,20 @@ const translations = new WeakMap();
 
 export const overlayTranslation = el => translations.get(el);
 
+/** A placement is a layout write. Complete only its position transitions so another
+ * overlay opening in the same frame reads the rectangle just assigned. */
+export function finishOverlayMove(el, properties) {
+  for (const animation of el.getAnimations?.() || []) {
+    if (properties.includes(animation.transitionProperty)) animation.cancel();
+  }
+}
+
 /** The last automatic nudge is separate from the owner's position and the renderer's transform. */
 export function clearOverlayTranslation(el) {
   const translation = translations.get(el);
   if (!translation) return { x:0, y:0 };
   el.style.translate = translation.before;
+  finishOverlayMove(el, ['translate']);
   translations.delete(el);
   return translation;
 }
@@ -190,6 +199,7 @@ export function translateOverlay(el, x, y) {
   if (previous?.x === x && previous?.y === y) return;
   translations.set(el, { x, y, before:previous?.before ?? el.style.translate });
   el.style.translate = x + 'px ' + y + 'px';
+  finishOverlayMove(el, ['translate']);
 }
 
 export function placeOpenedOverlay(el, host, gap = 4, move = translateOverlay) {
