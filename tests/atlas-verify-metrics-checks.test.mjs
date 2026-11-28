@@ -150,13 +150,16 @@ test('the metrics migration: one row per turn, no text columns, admin-only read'
   assert.doesNotMatch(cols, /\b(question|answer|prompt|query|url|place)\b\s+text/i);
 });
 
-test('a capability run by a delegated worker asks the model under the worker\'s child key, with the reader\'s turn as parent', () => {
+test('a capability run by a delegated worker asks the model under the worker\'s child key, with the reader\'s turn as parent', async () => {
   const read = (f) => fs.readFileSync(new URL('../js/' + f, import.meta.url), 'utf8');
   assert.match(read('atlas-delegate.js'), /cap\.run\(w\.capability, resolved\.args, \{ signal: controller\.signal, turnKey: childKey \}\)/);
   assert.match(read('atlas-executor.js'), /turnKey: op\.turnKey/);
   assert.match(read('atlas-console.js'), /turnKey:\(o&&o\.turnKey\)\|\|undefined/);
   const r = read('atlas-cap-research.js');
-  assert.match(read('atlas-model-call-key.js'), /export const modelCallKey = \(dctx, K\) => \(dctx && dctx\.turnKey \? \{ turnId: dctx\.turnKey, parentTurnId: K\._curTurnKey \} : \{ turnId: K\._curTurnKey \}\)/);
+  const { modelCallKey } = await import('../js/atlas-model-call-key.js');
+  assert.deepEqual(modelCallKey({ turnKey: 'original~child' }, { _curTurnKey: 'next' }),
+    { turnId: 'original~child', parentTurnId: 'original' });
+  assert.deepEqual(modelCallKey({ turnKey: 'original' }, { _curTurnKey: 'next' }), { turnId: 'original' });
   assert.equal((r.match(/modelCallKey\(dctx,\s*K\)/g) || []).length, 3, 'every model-asking capability of research uses the one rule (brief, situation, longform)');
   assert.match(read('atlas-cap-web.js'), /\.\.\.modelCallKey\(dctx, K\)/, 'and so does web.search: a worker\'s search is the worker\'s call');
   assert.match(read('atlas-answer-pipeline.js'), /parentTurnId: opts\.parentTurnId \|\| undefined/);

@@ -80,7 +80,7 @@ test('③ a plan is drawn only in the turn that WROTE its steps — moving `curr
   L.declare({ goal: 'earlier question', steps: ['one', 'two'] });
   assert.equal(L.snapshot().declaredThisTurn, true);
   L.beginTurn();                                    /* the next question */
-  L.declare({ current: 2 });                        /* the model only moves the pointer of the old plan */
+  assert.equal(L.declare({ action: 'continue', planId: L.snapshot().id, current: 2 }).ok, true);
   const s = L.snapshot();
   assert.equal(s.thisTurn, true, 'the ledger still knows the plan was touched');
   assert.equal(s.declaredThisTurn, false, 'the earlier question\'s checklist counts as this question\'s');
@@ -123,7 +123,7 @@ test('⑤ what only a developer needs is a devNote — console always, the trace
 test('⑥ unobserved steps are skipped and explicitly missing work is surfaced', () => {
   const a = read('js/atlas-agent.js');
   assert.match(a, /st\.state === 'pending' \|\| st\.state === 'unobserved'\) return;/, 'a step with no attributed call, or one that ran and could not be seen, is not reported as unfinished');
-  assert.match(a, /const missing = \(st\.workItems \|\| \[\]\)\.filter\(\(o\) => o\.work && o\.state !== 'completed' && o\.state !== 'unobserved'\)/, 'only missing work attached to the step is surfaced');
+  assert.match(a, /\(st\.workItems \|\| \[\]\)\.filter\(\(o\) => o\.state !== 'completed' && o\.state !== 'unobserved'\)/, 'only missing work attached to the step is surfaced');
 });
 
 test('⑦ the coverage list a date change appends is for the model, not the page', () => {

@@ -76,7 +76,7 @@ test('① a read that threw is made again on request; the same failure twice is 
 test('① the server\'s worker loop asks the same rule (one rule, two loops)', () => {
   const src = readFileSync(new URL('../supabase/functions/_shared/atlas-job-runner.js', import.meta.url), 'utf8');
   assert.match(src, /priorStands\(prior,/, 'the server reuses an answer only while its reason holds');
-  assert.match(src, /why = !failed \? "" : \(out && out\.code === "twin_threw"\) \? "transient"/, 'a twin that threw is recorded as a failure of the moment');
+  assert.match(src, /why = !failed \? "" : code === "twin_threw" \? "transient"/, 'a twin that threw is recorded as a failure of the moment');
 });
 
 /* ── ② ───────────────────────────────────────────────────────────────────────────────────── */

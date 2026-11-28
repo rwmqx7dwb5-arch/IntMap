@@ -227,7 +227,7 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
 });
 test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner)', () => {
   /* kept as a spelling: the chips, the viewer and the dispatch are wired inside DOM closures (js/atlas-console.js, js/atlas-attach.js) that need the page */
-  assert.match(html, /async function _atlVisionTurn\(ai, q, imgs, gen, atts\)\{/, 'dedicated vision turn');
+  assert.match(html, /async function _atlVisionTurn\(ai, q, imgs, gen, atts, turnKey, ask\)\{/, 'dedicated vision turn');
   assert.match(html, /function _visionSYS\(\)\{/, 'vision system prompt (classify → transcribe → solve → verify → map-only-if-geo)');
   assert.match(html, /task:'vision_read',effortHint:'high',imageDetail:'high'/, 'vision call: vision_read task + high effort + detail:high');
   // run() routes images to the vision turn, NOT the generic planner
@@ -241,10 +241,9 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
      BYTE FOR BYTE — `const aiv=bubble('a',stageDots('read'))` — so wrapping that bubble to open a
      work trace failed a routing test while the routing was untouched. What #R540 states is a
      property with three parts, and each is asked for on its own below. */
-  /* (atlas-gis-first-arrival) THE BRANCH STILL ROUTES TO THE VISION TURN FIRST AND STILL RETURNS — unless the READER ITSELF asked for tools (`continueWithTools`), in which case it carries on into the agent loop with the reading and the images. So the branch ends at `_imgCtx=agentContext(_vd);` and the `return;` is inside it. */
-  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,900}?\breturn;[\s\S]{0,160}?_imgCtx=agentContext\(_vd\);\s*\}/.exec(html);
+  const visionBranch = /if\(imgs\.length\)\{(?:(?!AGENT\.runTurn)[\s\S])*?_imgCtx=agentContext\(reading\);\s*\}/.exec(html);
   assert.ok(visionBranch, 'run() has a branch for an attached image that returns');
-  assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*turnAttachmentImages\(null,_turnPhotos\)\s*,\s*gen\s*,\s*_atts\s*\)/,
+  assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*turnAttachmentImages\(null,_turnPhotos\)\s*,\s*gen\s*,\s*_atts,_turnKey,askAIJSONEnvelope\s*\)/,
     'it hands the image to the vision pipeline, with the files/docs channels riding along (R540)');
   assert.ok(html.indexOf(visionBranch[0]) < html.indexOf('AGENT.runTurn('),
     'and it does so BEFORE the planner, which is what 「routes to the vision turn, not the generic planner」 means');

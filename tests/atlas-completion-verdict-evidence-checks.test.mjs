@@ -127,7 +127,7 @@ test('⑧ evidence_used: the turn\'s own web.search records it; a worker\'s read
   const search = cap('web.search');
 
   let t = 0;
-  const rec = makeTurnRecorder({ now: () => t, emit: () => {} });
+  const rec = makeTurnRecorder({ turnKey: 'U1', now: () => t, emit: () => {} });
   t = 1500;
   await search.run({ queries: [{ q: 'first question' }] }, {}, KIT('U1', { askAIJSONEnvelope }));
   t = 9000;
@@ -136,7 +136,7 @@ test('⑧ evidence_used: the turn\'s own web.search records it; a worker\'s read
   assert.equal(row.evidence_used_ms, 1500, 'the parent ran the search: it had the source in hand the moment it arrived');
 
   t = 0;
-  const rec2 = makeTurnRecorder({ now: () => t, emit: () => {} });
+  const rec2 = makeTurnRecorder({ turnKey: 'U2', now: () => t, emit: () => {} });
   t = 2000;
   await search.run({ queries: [{ q: 'a worker question' }] }, { source: 'atlas-worker' }, KIT('U2', { askAIJSONEnvelope }));
   assert.equal(rec2.row({}).evidence_arrived_ms, 2000);
@@ -149,7 +149,7 @@ test('⑧ evidence_used: the turn\'s own web.search records it; a worker\'s read
   assert.equal(rec2.recordAnswer({ completion: 'complete', text: 'x' }, 'U2').evidence_used_ms, 3500, 'the first use only');
 
   t = 0;
-  const rec3 = makeTurnRecorder({ now: () => t, emit: () => {} });
+  const rec3 = makeTurnRecorder({ turnKey: 'U3', now: () => t, emit: () => {} });
   t = 300;
   await search.run({ queries: [{ q: 'only a worker asked this' }] }, { source: 'atlas-worker' }, KIT('U3', { askAIJSONEnvelope }));
   t = 700;

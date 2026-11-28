@@ -280,7 +280,7 @@ export async function ask(req: Request): Promise<Response> {
         const served = typeof reported?.model === 'string' ? reported.model
           : typeof reported?.modelVersion === 'string' ? reported.modelVersion : requested;
         // A dated revision of an available model uses its published base rate.
-        const priceKey = served.startsWith(requested + "-") && !priceOf(served).known ? requested : served;
+        const priceKey = priceOf(served).known ? served : served.replace(/-\d{4}-\d{2}-\d{2}$/, "");
         if (priceOf(priceKey).known) meteredCost += costMicros(priceKey, u, providerKind);
         else priced = false;
       }

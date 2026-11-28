@@ -117,7 +117,7 @@ test('D2 the console wires it: the reader may ask, run() continues into the agen
   assert.match(src, /continueWithTools:d\.continueWithTools===true/);
   assert.match(src, /\+VISION_CONTINUE_RULE/);
   assert.match(src, /turnAttachmentImages\(VFRAMES\.urls\(\),_atlRecallImgs\.concat\(_heldPhotos\),_turnPhotos\)/);
-  assert.match(src, /if\(!\(_vd&&gen===_runGen\)\) return;/, 'no flag, the turn ends at the reader as before');
+  assert.match(src, /if\(!wantsContinue\(reading\)\)\{[^}]*return;\s*\}\s*_imgCtx=agentContext\(reading\);/, 'no flag, the turn ends at the reader as before');
   assert.match(src, /messages:\[\{role:'user',content:q\+_imgCtx\}\]/);
   assert.match(src, /'\[REQUEST\]\\n'\+q\+\(_imgCtx\|\|''\)/);
 });

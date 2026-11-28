@@ -10,7 +10,8 @@ const src = readFileSync(new URL('../js/atlas-console.js', import.meta.url), 'ut
 const surface = readFileSync(new URL('../js/atlas-toolsurface.js', import.meta.url), 'utf8');
 
 test('the surface passes `turn` to runAction, and the console forwards it to the turn executor', () => {
-  assert.match(surface, /runAction\(built\.action, turn\)/);
+  assert.match(surface, /makeExecute\(tools, agent, run = runAction\)/);
+  assert.match(surface, /run\(built\.action, turn\)/);
   assert.match(src, /runAction:\(action,turn\)=>\(_turnRunAction\?_turnRunAction\(action,turn\)/,
     'dropping `turn` here silently disabled every turn fact');
 });

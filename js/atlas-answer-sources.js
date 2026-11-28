@@ -187,13 +187,12 @@ export function makeAtlasAnswerSources(deps) {
       const tail = after.trimStart();
       if (unit && !(normalized(tail).startsWith(normalized(unit)) &&
           !/[a-z\d²³]/i.test(tail.slice(unit.length, unit.length + 1)))) continue;
-      if (!matchesPeriod(item.date)) continue;
       const equivalent = item.facts?.length ? item.facts.filter((fact) => sameAt(token, fact.value)) : null;
       if (equivalent) {
-        const matchingFacts = equivalent.filter((fact) => matchesPeriod(fact.period) &&
-          (!namedPlaces.size || namedPlaces.has(fact.geography)));
+        const matchingFacts = equivalent.filter((fact) => matchesPeriod(fact.period || item.date) &&
+          (!fact.geography || namedPlaces.has(fact.geography)));
         if (new Set(matchingFacts.map((fact) => fact.subjectId || fact.geography || '')).size !== 1) continue;
-      } else if (!item.values.some((value) => sameAt(token, value))) continue;
+      } else if (!matchesPeriod(item.date) || !item.values.some((value) => sameAt(token, value))) continue;
       matches.push({ item, end: token.index + token.length + (unit ? after.length - tail.length + unit.length : 0) });
     }
     return matches.length === 1 ? matches[0] : null;

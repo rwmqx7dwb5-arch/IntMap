@@ -36,9 +36,10 @@ function valueFrom(body) {
   try {
     const result = JSON.parse(text);
     const column = result.details?.provenance?.find((p) => p.kind === 'number' && p.unit === 'm');
-    if (Number.isFinite(column?.values?.[0])) return column.values[0].toLocaleString('en-US');
-  } catch (_) { /* a shortened tool response still carries the visible elevation column */ }
-  return /\b(\d{1,3}(?:,\d{3})+|\d{4,})\s*m\b/.exec(text)?.[1] || null;
+    const fact = column?.facts?.[0];
+    if (fact?.geography && Number.isFinite(fact.value)) return { name: fact.geography, value: fact.value.toLocaleString('en-US') };
+  } catch (_) { /* a different result does not identify the observed volcano */ }
+  return null;
 }
 
 test.beforeAll(async ({ browser }) => {
@@ -59,7 +60,7 @@ test.beforeAll(async ({ browser }) => {
       if (n === 1) r = { turn: 'continuing', final_text: '調べます。', calls: [
         { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 5 } },
         { name: 'set_time', arguments: { year: 1900 } }] };
-      else { echoed = valueFrom(body); r = { turn: 'final', final_text: '最も高い火山の標高は ' + (echoed || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
+      else { echoed = valueFrom(body) || echoed; r = { turn: 'final', final_text: (echoed?.name || '?') + ' の標高は ' + (echoed?.value || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
       text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
       extra = { citations: [{ url: 'https://apnews.com/article/a1', title: 'Ceasefire talks continue' }], output: (r.calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: JSON.stringify(c.arguments) })), meta: { protocol: 2 } };
     }

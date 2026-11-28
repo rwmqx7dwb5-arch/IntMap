@@ -205,14 +205,15 @@ export function makeAtlasMetrics(HOST, CTX) {
       if (!past) list.forEach((r) => {
         const f = cs[r.code] && figure(cs[r.code], sp.key), p = f && f.src ? { source: f.src, licence: f.licence, url: f.url, year: f.y == null ? '' : String(f.y) } : null;
         if (!p || !p.source || typeof r.val !== 'number' || !isFinite(r.val)) return;
-        if (!by.has(p.source)) by.set(p.source, { p, values: [], years: [] });
-        const g = by.get(p.source); g.values.push(r.val);
+        if (!by.has(p.source)) by.set(p.source, { p, facts: [], years: [] });
+        const g = by.get(p.source);
+        g.facts.push({ subjectId: r.code, geography: r.name, period: p.year, value: r.val });
         const y = parseInt(p.year, 10); if (isFinite(y)) { g.years.push(y); years.push(y); }
       });
       const span = (ys) => { if (!ys.length) return ''; const lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys); return lo === hi ? String(lo) : (lo + '–' + hi); };
       const provenance = [];
       by.forEach((g) => provenance.push({ kind: 'number', what: label, of: LA('Countries', '国'), unit: '', source: g.p.source,
-        licence: g.p.licence || '', url: g.p.url || '', date: span(g.years), origin: 'raw', values: g.values }));
+        licence: g.p.licence || '', url: g.p.url || '', date: span(g.years), origin: 'raw', values: g.facts.map((fact) => fact.value), facts: g.facts }));
       const dataYear = span(years);
       const f = String(facet || 'ranking:top');
       let what = ''; try { what = lx(label); } catch (_) { what = sp.key; }
