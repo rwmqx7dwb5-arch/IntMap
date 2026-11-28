@@ -463,19 +463,14 @@ test('#R779 ① urls() は空のとき null を返す（[] ではない — こ�
   assert.equal(V.urls(), null, '空のとき [] を返すようになったら、呼び手の前提が全部変わる');
 });
 
-test('#R779 ② 呼び手はその null を受けても落ちず、空なら null のまま渡す', () => {
-  const src = (read('js/atlas-console.js') + '\n' + capsSource());
-  /* 実物の式をソースから取り出して評価する。⚠ 綴りを読むのではなく**走らせる**
-     （#R505: ソースを読む検査は評価順序も例外も見られない）。 */
-  const m = /const _atlTurnImgs=(\([\s\S]*?\}\s*);/.exec(src);
-  assert.ok(m, '_atlTurnImgs が見つからない — 名前を変えたなら、この検査も一緒に動かす');
-  // eslint-disable-next-line no-new-func
-  const fn = new Function('return ' + m[1])();
+test('#R779 ② 呼び手はその null を受けても落ちず、空なら null のまま渡す', async () => {
+  const { turnAttachmentImages: fn } = await import('../js/atlas-cap-attach.js');
+  const photo = { name: 'image-2', dataUrl: 'data:image/png;base64,A' };
   assert.equal(fn(null, []), null, 'フレーム無し・取り寄せ無しは null（画像は無い）');
-  assert.deepEqual(fn(null, ['data:image/png;base64,A']), ['data:image/png;base64,A'], '取り寄せた画像だけでも渡る');
-  assert.deepEqual(fn(['a'], ['b']), ['a', 'b'], 'フレームと取り寄せは並ぶ');
+  assert.deepEqual(fn(null, [photo]), [photo], '取り寄せた画像だけでも渡る');
+  assert.deepEqual(fn(['a'], [photo]).map((img) => img.name), [photo.name, 'view frame 1'], '取り寄せた写真がフレームより先');
   assert.equal(fn(null, null), null);
-  assert.deepEqual(fn(['a'], null), ['a']);
+  assert.deepEqual(fn(['a'], null), [{ name: 'view frame 1', dataUrl: 'a' }]);
 });
 
 test('#R779 ③ ターンの画像はその 1 か所からしか組まれない', () => {
@@ -484,6 +479,6 @@ test('#R779 ③ ターンの画像はその 1 か所からしか組まれない'
   const src = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.equal((src.match(/VFRAMES\.urls\(\)\.concat/g) || []).length, 0,
     'null を返す関数の戻り値に直接メソッドを生やしている — それがこのラウンドの欠陥そのもの');
-  assert.match(src, /_atlTurnImgs\(VFRAMES\.urls\(\),_atlRecallImgs\)/);
+  assert.match(src, /turnAttachmentImages\(VFRAMES\.urls\(\),_atlRecallImgs\.concat\(_heldPhotos\),_turnPhotos\)/);
 });
 }

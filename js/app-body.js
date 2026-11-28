@@ -92,6 +92,7 @@ import { legal } from './legal.js';
 import { annotations, layerHoverPopup, locate, railSeaOverlays, runwaySearch, terrain } from './map-extras.js';
 import { mapReadout } from './map-readout.js';
 import { arc3d, drawTool, isochrone, isolate, moveShape, objectList, outline, projView, seaRoute } from './map-tools.js';
+import { userMapClick } from './map-feature-geometry.js';
 import { mapTooltip } from './map-tooltip.js';
 import { geojsonUpload, labelPopup, layerPresets, layerRegistry, layerSidebar, share, ticker, viewHash } from './map-ui.js';
 import { mobileMapInput } from './mobile-map-input.js';
@@ -1680,7 +1681,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ===== Map event wiring ===== */
   if(GE().hasRenderer()){
-    GE().events.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
+    GE().events.on('click',(e)=>{
+      if(e.originalEvent?.isTrusted) userMapClick.record(e.lngLat);
+      handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point);
+    });
     /* (#R25 / #21) Double-tap / double-click zoom now respects the Zoom-sensitivity setting — this is the
        ONE zoom gesture whose amount we CAN tune on touch (MapLibre exposes no pinch-rate API, so continuous
        pinch stays 1:1 — a documented platform limit). The built-in doubleClickZoom is disabled in

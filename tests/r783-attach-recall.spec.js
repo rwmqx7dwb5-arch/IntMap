@@ -161,7 +161,7 @@ test('R783 ① 落とした画像と PDF は、そのターンのリクエスト
   /* この事実自体を検査が述べる（上の見出し）——画像つきの送信は agent のループに入らない */
   expect(b.task).toBe('vision_read');
   expect(Array.isArray(b.images) && b.images.length, '画像が vision チャネルに載っていない').toBe(1);
-  expect(b.images[0]).toBe(thumb);
+  expect(b.images[0]).toEqual({ name: 'image-1', dataUrl: thumb });
   expect(Array.isArray(b.docs) && b.docs.length, 'PDF が文書チャネルに載っていない').toBe(1);
   expect(b.docs[0].name).toBe('paper.pdf');
   expect(b.docs[0].mime).toBe('application/pdf');
@@ -196,7 +196,7 @@ test('R783 ③④ 取り寄せは中身を次の一手の目の前に置き、�
   expect(Array.isArray(b.docs) && b.docs.length, '取り寄せた PDF が次のリクエストに載っていない').toBe(1);
   expect(Buffer.from(b.docs[0].b64, 'base64').toString('latin1'), '取り寄せた PDF のバイトが違う').toBe(PDF_TEXT);
   expect(Array.isArray(b.images) && b.images.length, '取り寄せた画像が vision チャネルに載っていない').toBe(1);
-  expect(String(b.images[0]).startsWith('data:image/')).toBe(true);
+  expect(b.images[0]).toEqual({ name: 'image-1', dataUrl: expect.stringMatching(/^data:image\//) });
 
   /* ④ 同じ引数の二度目は「もう済んでいる」と述べられ、中身は 1 部しか載らない
      （.agents/rules/one-pass-or-a-reason.md §4 の 3 問目。⚠ 拒否ではなく、同じ答えを返す） */

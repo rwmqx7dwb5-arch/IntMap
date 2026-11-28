@@ -290,9 +290,9 @@ export async function ask(req: Request): Promise<Response> {
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
   // web policy per feature — instead of one MAX_TOKENS / one boolean for everything.
   let payload: {
-    prompt?: string; system?: string; images?: string[]; lang?: string;
+    prompt?: string; system?: string; images?: (string | { name?: string; dataUrl?: string })[]; lang?: string;
     /* (#R540) the two attachment channels — extracted text, and documents the provider parses */
-    files?: { name?: string; text?: string; truncated?: boolean }[];
+    files?: { name?: string; text?: string; truncated?: boolean; window?: { offset: number; length: number; total: number; prefix: number } }[];
     docs?: { name?: string; mime?: string; b64?: string }[];
     docRefs?: unknown;   /* (atlas-mainloop-reliability) references to documents an earlier call of the turn uploaded — doc-refs.ts */
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
@@ -391,7 +391,7 @@ export async function ask(req: Request): Promise<Response> {
   const effortHint = String(payload.effortHint || "").toLowerCase();
   const web = webMode === "auto" || webMode === "required";
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
-  const prompt = String(payload.prompt || "").slice(0, isGloss ? MAX_GLOSS_PROMPT : MAX_PROMPT);   /* (#R491) the cheap lane gets a cheap ceiling - a gloss is a phrase and the paragraph around it */
+  let prompt = String(payload.prompt || "").slice(0, isGloss ? MAX_GLOSS_PROMPT : MAX_PROMPT);   /* (#R491) the cheap lane gets a cheap ceiling - a gloss is a phrase and the paragraph around it */
   const system = String(payload.system || "").slice(0, MAX_SYSTEM);   // (#R285) its own bound — see MAX_SYSTEM
   /* ⚠ (atlas-native-tools) …AND WHAT THOSE TWO SLICES CUT IS RETURNED, not only done. The prompt's cut is the one
      that took this turn's results off the end of every Atlas step; it still exists for a one-string
@@ -413,16 +413,24 @@ export async function ask(req: Request): Promise<Response> {
      images each just under the single-image limit is four times the single-image limit, and the
      provider request carries every one of them. */
   const imgs: ImgPart[] = [];
+  const acceptedImages: { position: number; name: string }[] = [];
+  const offeredImages = Array.isArray(payload.images) ? payload.images : [];
+  const namedImages = offeredImages.some((d) => d && typeof d === "object" && typeof d.name === "string");
   {
     let total = 0;
-    for (const d of (Array.isArray(payload.images) ? payload.images : [])) {
+    for (const d of offeredImages) {
       if (imgs.length >= MAX_IMAGES) break;
-      const part = typeof d === "string" ? parseDataUrl(d) : null;
+      const dataUrl = typeof d === "string" ? d : d?.dataUrl;
+      const part = typeof dataUrl === "string" ? parseDataUrl(dataUrl) : null;
       if (!part) continue;
       const n = b64Bytes(part.b64);
-      if (total + n > MAX_IMAGES_BYTES) break;
+      if (total + n > MAX_IMAGES_BYTES) {
+        if (namedImages) continue;   // a later, smaller image can still fit
+        break;
+      }
       total += n;
       imgs.push(part);
+      if (namedImages) acceptedImages.push({ position: imgs.length, name: typeof d === "object" && typeof d.name === "string" ? d.name.slice(0, 200) : "" });
     }
   }
   /* ⚠ (#R540) THESE DO NOT SHARE THE PROMPT'S CEILING. That sharing is the whole bug: the client
@@ -430,19 +438,32 @@ export async function ask(req: Request): Promise<Response> {
      own items, bounds each item and stops on its own running total (the image loop's argument,
      applied to text and to documents). */
   const files: FilePart[] = [];
+  const acceptedWindows: { name: string; offset: number; end: number; next: number | null; total: number; more: boolean }[] = [];
   {
     let total = 0;
     for (const f of (Array.isArray(payload.files) ? payload.files : [])) {
       if (files.length >= MAX_FILES) break;
       if (!f || typeof f !== "object") continue;
       const raw = String(f.text || "");
-      const text = raw.slice(0, MAX_FILE_TEXT);
+      const w = f.window;
+      const windowed = w && [w.offset, w.length, w.total, w.prefix].every((n) => Number.isSafeInteger(n) && n >= 0)
+        && w.length <= w.total - w.offset && w.length <= raw.length - w.prefix;
+      const name = String(f.name || "file").slice(0, 200);
+      const remaining = MAX_FILES_TEXT - total;
+      const text = raw.slice(0, windowed ? Math.min(MAX_FILE_TEXT, remaining) : MAX_FILE_TEXT);
       if (!text) continue;                                   // an empty extraction is not an attachment
       if (total + text.length > MAX_FILES_TEXT) break;
       total += text.length;
       /* the client says whether IT cut the file; a cut made HERE is added to that claim rather than
          replacing it, because the model must be told about either one. */
-      files.push({ name: String(f.name || "file").slice(0, 200), text, truncated: f.truncated === true || raw.length > text.length });
+      const file = { name, text, truncated: f.truncated === true || raw.length > text.length };
+      if (windowed) {
+        const end = w.offset + Math.max(0, Math.min(w.length, text.length - w.prefix));
+        const more = end < w.total;
+        file.truncated ||= more;
+        acceptedWindows.push({ name, offset: w.offset, end, next: more ? end : null, total: w.total, more });
+      }
+      files.push(file);
     }
   }
   const docs: DocPart[] = [];
@@ -477,6 +498,15 @@ export async function ask(req: Request): Promise<Response> {
   if (isGloss && (imgs.length || docs.length || files.length || web)) {
     await refund();
     return await bail({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
+  }
+  const attachmentReceipt = !isGloss && (namedImages || acceptedWindows.length) ? {
+    ...(namedImages ? { images: acceptedImages, omittedImages: offeredImages.length - imgs.length } : {}),
+    ...(acceptedWindows.length ? { textWindows: acceptedWindows } : {}),
+  } : undefined;
+  if (attachmentReceipt) {
+    const content = "[ATTACHMENT RECEIPT — server-accepted items for this call. Image positions are one-based. Text windows use UTF-16 offsets with exclusive end. Use these ranges for reading progress.]\n" + JSON.stringify(attachmentReceipt);
+    if (turnReq) turnReq.items.push({ type: "message", role: "user", content });
+    else prompt += "\n\n" + content;
   }
 
   // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
@@ -734,6 +764,7 @@ export async function ask(req: Request): Promise<Response> {
            this function's own fence cut from the request — null when nothing was */
         protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,
         retries: retries || undefined,   /* (atlas-mainloop-reliability) how many times a transient provider failure was retried inside this request */
+        ...(attachmentReceipt ? { attachmentReceipt } : {}),
         ...(provider === "openai" && turnReq && docs.length > 0 && docs.every((d) => d.fileId) ?   /* all or none: the page replaces its whole document list by the references */ { docRefs: await signDocRefs(user.id, docs) } : {}),
         streamed: sink ? true : undefined,   /* (atlas-live-stream) this body is the `done` event of a stream */
         maxOutput: maxTokens,   /* (atlas-unbounded-turns) the visible-output budget this request ran with — the task's, or the one Atlas chose */

@@ -89,10 +89,36 @@ export function toRecord(col, cat) {
 
 /* a dataset this app already holds (js/gis-datasets.js) → the same shape. ⚠ What it states about itself is what
    MEASURING it gave (grid, time, count); a hand-made vector layer states no resolution and says so (null). */
-export function localRecord(ds) {
+const measuredVectors = new WeakMap();
+function vectorBounds(ds, geometry) {
+  if (!geometry || ds.chunkedCount != null || !ds.withGeometry || typeof ds.features !== 'function') return null;
+  if (!measuredVectors.has(ds)) {
+    const geometries = ds.features().map((f) => f?.geometry).filter(Boolean);
+    measuredVectors.set(ds, geometry.bbox({ type: 'GeometryCollection', geometries }));
+  }
+  return measuredVectors.get(ds);
+}
+
+export function datasetPlanningDetails(ds, raster, geometry) {
+  const p = ds.provenance || {};
+  const measured = ds.kind === 'raster' ? raster?.bboxOf(ds) : vectorBounds(ds, geometry);
+  const recorded = Array.isArray(p.bounds) && p.bounds.length >= 4 && p.bounds.slice(0, 4).every(isNum) ? p.bounds.slice(0, 4) : null;
   const g = ds && ds.grid;
-  const bbox = (ds && ds.provenance && Array.isArray(ds.provenance.bounds) && ds.provenance.bounds.length >= 4) ? [ds.provenance.bounds.slice(0, 4)] : null;
   const m = g && isNum(g.pixelLat) ? Math.abs(g.pixelLat) * 111320 : null;   /* 観測: 1 deg of meridian ≈ 111.32 km (js/gis-atlas.js pixelKmLat). 失効条件: an ellipsoid change */
+  return {
+    bounds: measured || recorded,
+    boundsBasis: measured ? 'measured' : recorded ? 'recorded' : null,
+    resolution: m ? { min: m, max: m, source: 'grid.pixelLat', unit: 'm' } : null,
+    format: p.format || null,
+    source: p.url || null,
+    quality: ds.kind === 'raster'
+      ? { inspected: p.inspection?.ok === true, bands: ds.bands || [], inspection: p.inspection || null }
+      : { rowsWithoutGeometry: ds.withGeometry == null ? null : ds.count - ds.withGeometry },
+  };
+}
+
+export function localRecord(ds, raster, geometry) {
+  const facts = datasetPlanningDetails(ds, raster, geometry);
   const t = ds && ds.time;
   const iv = t && (t.from != null || t.to != null) ? [[t.from == null ? null : String(t.from), t.to == null ? null : String(t.to)]] : null;
   const bandNames = Array.isArray(ds && ds.bands) ? ds.bands.map((b) => b && b.name).filter(Boolean) : [];
@@ -100,8 +126,8 @@ export function localRecord(ds) {
   return {
     ref: 'dataset:' + ds.id, catalog: 'this-session', kind: ds.kind || 'vector', id: String(ds.id),
     title: ds.title ? String(ds.title) : String(ds.id), description: '', keywords: bandNames.concat(fieldNames),
-    extent: { bbox: bbox, time: iv }, rights: { license: null, licenseUrl: null, providers: [] },
-    resolution: m ? { min: m, max: m, source: 'grid.pixelLat', unit: 'm' } : null, cloudCover: null,
+    extent: { bbox: facts.bounds ? [facts.bounds] : null, time: iv }, rights: { license: null, licenseUrl: null, providers: [] },
+    ...facts, cloudCover: null,
     origin: 'held', catalogLabel: 'Datasets held in this session', count: ds.count == null ? null : ds.count,
   };
 }
@@ -180,7 +206,9 @@ export function searchRecords(records, req, dep) {
       if (unproven.length) { dropped[unproven[0] === 'spatial' ? 'place' : unproven[0] === 'temporal' ? 'period' : unproven[0]]++; continue; }
     }
     const st = statedFacts(rec);
-    out.push(Object.assign({}, rec, { match: match, stated: st.stated, statedOf: st.of, score: ts }));
+    const overlapBounds = rec.origin === 'held' && box && rec.extent?.bbox ? dep.intersections?.(rec.extent.bbox, box) : null;
+    out.push(Object.assign({}, rec, { match: match, stated: st.stated, statedOf: st.of, score: ts },
+      rec.origin === 'held' ? { overlapBounds: overlapBounds || null } : null));
   }
   /* order: what was ASKED and is STATED first; then text; then candour; ties by title so the order is repeatable */
   const stateRank = (e) => (e.match.spatial === 'covers' ? 0 : e.match.spatial === 'overlaps' ? 1 : 2) * 3 + (e.match.temporal === 'overlaps' ? 0 : e.match.temporal === 'unstated' ? 1 : 2);

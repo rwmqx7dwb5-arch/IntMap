@@ -72,6 +72,17 @@
           "line:real": 1,
           "names": [
             "信濃川"
+          ],
+          "items": [
+            {
+              "id": "line_1",
+              "target": "信濃川",
+              "name": "信濃川",
+              "kind": "line",
+              "basis": "real",
+              "author": "atlas",
+              "source": "OpenStreetMap"
+            }
           ]
         }
       }

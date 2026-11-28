@@ -202,7 +202,7 @@ test('⑦ the live harness asks the earlier turns first on the same page, observ
   const snaps = [BEFORE, afterWith((it) => Object.assign(it[0], RED))];
   const page = {
     evaluate: async (fn, arg) => {
-      if (fn === H.PAGE.ask) { seq.push('ask:' + arg); turnNo++; return { ms: 5, err: '' }; }
+      if (fn === H.PAGE.ask) { seq.push('ask:' + arg.text); turnNo++; return { ms: 5, err: '' }; }
       if (fn === H.PAGE.observe) { seq.push('observe'); const text = turnNo === 1 ? Q7.earlier[0].text : Q7.text; return { turn: { question: text, status: 'answered', reply: 'ok', completion: 'complete', operations: [{ capabilityId: 'map.object', status: 'completed' }] }, steps: [], calls: [], snapshot: snaps[turnNo - 1] }; }
       return true;
     },

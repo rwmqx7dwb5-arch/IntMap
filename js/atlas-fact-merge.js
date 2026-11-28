@@ -11,15 +11,16 @@
  *    subject.ids      external identifiers ({ wikidata:'Q123', osm:'node/5' }) — two facts that share one are ONE object
  *    subject.name     a name in any script, when the worker has neither: it is RESOLVED, never compared as text
  *    attribute        what is stated («throughput», «operator», «population»)
- *    value / unit     the figure or word, and its unit (a different unit is reported, not converted)
+ *    value / unit     the reported figure or word, and its unit
  *    at               the moment the value is about (ISO date / year) — NOT when it was read
  *    source           the URL the worker read it from       retrievedAt   when it read it
  *    evidenceId       the Evidence record that vouches for it (js/atlas-evidence.js), when one exists
  *
  *  mergeFacts(results, { resolve }) groups the facts of every usable result by OBJECT and then by ATTRIBUTE and says, for
  *  each row, one of:
- *    agree     two or more workers stated the same value (same unit, same time)
- *    conflict  they stated different values — every observation is returned WITH its source and evidence id
+ *    agree     two or more workers stated the same value at the same time, on a common scale
+ *    conflict  they stated different values — every observation carries its original value, source and evidence id
+ *    pending   unit conversion was required but could not be established
  *    single    one worker stated it: nothing checked it (that is not agreement)
  *  and, on any row, `missingFrom`: workers that covered the object (stated something about it) but not this attribute.
  *
@@ -55,8 +56,8 @@ export function normalizeFact(f) {
   if (!subject.ref && !subject.ids && !subject.name) return null;
   const attribute = s(f.attribute, 80); if (!fold(attribute)) return null;
   const v = f.value;
-  const value = typeof v === 'number' ? (isFinite(v) ? v : undefined) : (typeof v === 'boolean' ? v : (typeof v === 'string' && v.trim() ? s(v, 300) : undefined));
-  if (value === undefined) return null;
+  const value = typeof v === 'string' && v.length > 300 ? s(v, 300) : v;
+  if (!(Number.isFinite(value) || typeof value === 'boolean' || (typeof value === 'string' && value.trim()))) return null;
   const out = Object.assign({ subject, attribute, value }, normalizeMeaning(f, geo.timeMs));   /* scope / basis / period / aggregation / column: only what was stated (js/atlas-fact-comparability.js) */
   const unit = s(f.unit, 40); if (unit) out.unit = unit;
   const at = geo.timeMs(f.at); if (at != null) out.at = typeof f.at === 'number' ? new Date(at).toISOString() : s(f.at, 40);
@@ -70,15 +71,15 @@ export function normalizeFact(f) {
 export function normalizeFacts(list) { return (Array.isArray(list) ? list : []).map(normalizeFact).filter(Boolean); }
 
 const idKeys = (subject) => Object.keys(subject.ids || {}).map((k) => k + ':' + subject.ids[k]);
-const valueKey = (f) => (typeof f.value === 'number' ? 'n:' + String(f.value) : typeof f.value === 'boolean' ? 'b:' + f.value : 's:' + fold(f.value)) + '|' + fold(f.unit);
+const valueKey = (f, folded) => JSON.stringify([folded && typeof f.value === 'string' ? fold(f.value) : f.value, f.unit]);
 
 /* mergeFacts(results, opts?) → { objects, counts, unresolved }
      results          makeDelegation().run() output; only usable results are read
      opts.resolve     (subject) → { ref, name? } | null, sync or async — «which object does this name / these ids denote»
      opts.semantics   js/gis-semantics.js (describe / comparable): facets of a fact that names the dataset column it came from
-     opts.units       js/gis-units.js (compare): whether two unit spellings are the same measurement
+     opts.units       js/gis-units.js: whether two units are convertible and how to convert them
      opts.ties        (ref) → { ties, validity }: the object's ties with the periods they held (js/world-graph-store.js tiesOf)
-     (all three optional; each only adds observations: js/atlas-fact-comparability.js)
+     (all three optional; see js/atlas-fact-comparability.js)
    Never throws on a resolver that throws: that subject is `resolved:false, resolveFailed:true` (observed, not guessed). */
 export async function mergeFacts(results, opts) {
   const o = opts || {};
@@ -116,7 +117,7 @@ export async function mergeFacts(results, opts) {
   keyOf.forEach((k, i) => { const r = find(k); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(i); });
 
   const objects = [];
-  const counts = { agree: 0, conflict: 0, single: 0, missing: 0 };
+  const counts = { agree: 0, conflict: 0, pending: 0, single: 0, missing: 0 };
   const unresolved = [], spans = [];
   groups.forEach((idx, root) => {
     const fs = idx.map((i) => obs[i]);
@@ -142,27 +143,30 @@ export async function mergeFacts(results, opts) {
     rows.forEach((row) => {
       const byValue = new Map();
       row.facts.forEach((f) => {
-        const k = valueKey(f);
+        const k = valueKey(f, false);
         if (!byValue.has(k)) byValue.set(k, { value: f.value, unit: f.unit, tasks: [], observations: [] });
         const v = byValue.get(k);
         if (v.tasks.indexOf(f.task) < 0) v.tasks.push(f.task);
-        v.observations.push({ task: f.task, name: f.subject.name, source: f.source, evidenceId: f.evidenceId, retrievedAt: f.retrievedAt });
+        v.observations.push({ task: f.task, name: f.subject.name, value: f.value, unit: f.unit,
+          source: f.source, evidenceId: f.evidenceId, retrievedAt: f.retrievedAt });
       });
       const values = Array.from(byValue.values());
       const tasks = Array.from(new Set(row.facts.map((f) => f.task)));
-      const units = new Set(values.map((v) => fold(v.unit)));
-      let status = values.length > 1 ? 'conflict' : (tasks.length >= 2 ? 'agree' : 'single');
+      const assessed = row.facts.length > 1 ? assessRow(row.facts, o) : null;
+      const numeric = assessed?.numeric;
+      let status = tasks.length > 1 ? 'agree' : 'single';
+      if (numeric?.state === 'pending') status = 'pending';
+      else if (numeric ? numeric.state === 'different' : new Set(values.map((v) => valueKey(v, true))).size > 1) status = 'conflict';
       const entry = { attribute: row.attribute, at: row.at, status, values, tasks };
       if (row.period) entry.period = row.period;
-      /* two workers stated this row: whether what they measured can be set side by side: an observation beside the status, never a change to it */
-      if (tasks.length >= 2) entry.comparability = assessRow(row.facts, { semantics: o.semantics, units: o.units });
-      if (status === 'conflict') {
-        if (units.size > 1) entry.unitMismatch = true;   /* 300 000 TEU and 3 Mt are not a disagreement, they are not comparable yet */
-        const nums = values.filter((v) => typeof v.value === 'number');
-        if (!entry.unitMismatch && nums.length === values.length) {
-          const hi = Math.max.apply(null, nums.map((v) => Math.abs(v.value))), lo = Math.min.apply(null, nums.map((v) => Math.abs(v.value)));
-          if (hi > 0) entry.relDiff = (hi - lo) / hi;
-        }
+      if (tasks.length >= 2) entry.comparability = assessed.comparability;
+      if (numeric?.state === 'pending') {
+        entry.unitMismatch = true;
+        entry.comparisonPending = numeric.why;
+      }
+      if (numeric?.state === 'different') {
+        entry.relDiff = numeric.relDiff;
+        if (numeric.unit != null) entry.comparisonUnit = numeric.unit;
       }
       const stated = attrTasks.get(fold(row.attribute));
       const miss = covered.filter((t) => !stated.has(t));
@@ -183,25 +187,24 @@ export async function mergeFacts(results, opts) {
   return { objects, counts, unresolved };
 }
 
-/* makeFactResolver({ find, findPersisted }) — the `resolve` mergeFacts takes, built from the two lookups IntMap already has:
-     find(query)             → world object | null   the session index (W.find: a ref, «wikidata:Q123», an exact or contained name)
-     findPersisted(query)    → Promise<object | null> the persistent graph (G.findPersisted, exact name / id)
-   An external id is asked first (it is a key; a name is a spelling), then the name. Neither finds → null: not guessed. */
+/* Search both stores for a verified external ID before searching by name. Name fallback is for
+   subjects that supplied no external ID. */
 export function makeFactResolver(deps) {
-  const d = deps || {};
-  const keyed = (sub) => Object.keys(sub.ids || {}).map((k) => k + ':' + sub.ids[k]);
+  const { find, findPersisted } = deps || {};
   return async function resolve(subject) {
-    const asks = keyed(subject).concat(subject.name ? [subject.name] : []);
-    for (const q of asks) {
-      const hit = typeof d.find === 'function' ? d.find(q) : null;
-      if (hit && hit.ref) return { ref: hit.ref, name: hit.name };
+    const ids = Object.entries(subject.ids || {});
+    for (const [scheme, id] of ids) {
+      const q = scheme + ':' + id;
+      const opts = { externalId: true };
+      const local = typeof find === 'function' ? find(q, opts) : null;
+      if (local?.ref && local.ids?.[scheme] === id) return { ref: local.ref, name: local.name };
+      const saved = typeof findPersisted === 'function' ? await findPersisted(q, opts) : null;
+      if (saved?.ref && saved.ids?.[scheme] === id) return { ref: saved.ref, name: saved.name };
     }
-    if (typeof d.findPersisted === 'function') {
-      for (const q of asks) {
-        const hit = await d.findPersisted(q);
-        if (hit && hit.ref) return { ref: hit.ref, name: hit.name };
-      }
-    }
-    return null;
+    if (ids.length || !subject.name) return null;
+    const local = typeof find === 'function' ? find(subject.name) : null;
+    if (local?.ref) return { ref: local.ref, name: local.name };
+    const saved = typeof findPersisted === 'function' ? await findPersisted(subject.name) : null;
+    return saved?.ref ? { ref: saved.ref, name: saved.name } : null;
   };
 }

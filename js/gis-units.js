@@ -84,7 +84,7 @@
  *  is for, what it refuses, and the three things it deliberately does not do.
  * ==========================================================================*/
 
-export function makeGisUnits() {
+export function makeGisUnits({ publish = true } = {}) {
   return (function () {
 
     /* dimension vector: length, mass, time, temperature, angle. Everything below is built from
@@ -147,7 +147,7 @@ export function makeGisUnits() {
       deg: { f: Math.PI / 180, d: dim(0, 0, 0, 0, 1) },
       /* dimensionless ratios. ⚠ '1' AND '' ARE NOT THE SAME THING: '' is 「述べていない」 and never
          reaches this table (see stated()); '1' is 「無次元だと述べた」. */
-      '1': { f: 1, d: dim() }, '%': { f: 0.01, d: dim() },
+      '1': { f: 1, d: dim() }, '%': { f: 0.01, d: dim() }, '‰': { f: 1e-3, d: dim() },
       ppm: { f: 1e-6, d: dim() }, ppb: { f: 1e-9, d: dim() },
     };
 
@@ -666,7 +666,7 @@ export function makeGisUnits() {
        now computed in exact integers (0 °C → 31.999999999999986 °F became 32), so a replayed
        temperature step can land one unit in the last place from where it did. `ftUS`, `tsubo` (坪),
        `mmHg` and `inHg` turn refusals into answers and move no existing one. */
-    const KERNEL_VERSION = 'units-3';
+    const KERNEL_VERSION = 'units-4';
     /* ⚠ ONLY THE CODES THAT LEAVE HERE AS `ok:false`. The `quantity-*` and `summing-*` codes below
        are VERDICTS a caller reads and reports in its own words — they are not this kernel refusing an
        op, and declaring them here would tell tests/geo-gis-datasets-checks.test.mjs #R729 ④ to look for a sentence in js/gis-panel.js
@@ -695,7 +695,7 @@ export function makeGisUnits() {
       version: () => KERNEL_VERSION,
       refusals: () => REFUSALS.slice(),
     };
-    try { window.IntMapGisUnits = API; } catch (_) { }
+    if (publish) { try { window.IntMapGisUnits = API; } catch (_) { } }
     return API;
   })();
 }

@@ -212,7 +212,9 @@ export function makeAtlasWorkingMemory(o) {
     if (st.turns.length > L.turns) st.turns.splice(0, st.turns.length - L.turns);
     /* a turn's owed items replace the previous turn's: what is unmet NOW is the truth, and what it no longer lists was met */
     st.open.forEach((x) => { if (x.state === 'open' && x.kind !== 'user' && x.kind !== 'job') x.state = 'resolved';   /* 'job': a background job is owed until it is read at its end (js/atlas-job-products.js), not until the next turn */ });
-    (Array.isArray(t.unmet) ? t.unmet : []).forEach((u) => open(u && u.kind === 'step' ? 'step ' + u.n + ' "' + s(u.title, 80) + '" ' + u.state : 'output ' + s(u && u.mode, 40) + ' not produced (' + s(u && u.code, 40) + ')', 'unmet', turnId));
+    (Array.isArray(t.unmet) ? t.unmet : []).forEach((u) => open(u?.kind === 'goal' ? s(u.need, 220)
+      : u?.kind === 'step' ? 'step ' + u.n + ' "' + s(u.title, 80) + '" ' + u.state
+        : 'output ' + s(u && u.mode, 40) + ' not produced (' + s(u && u.code, 40) + ')', 'unmet', turnId));
     (Array.isArray(t.unresolved) ? t.unresolved : []).forEach((u) => open(typeof u === 'string' ? u : textOf(u), 'unresolved', turnId));
     if (t.question && /[?？]\s*$/.test(String(t.reply || '').trim()) && t.awaiting) open('asked the reader: ' + s(t.reply, 300), 'user', turnId);
     Object.keys(t.decisions || {}).forEach((k) => decide(k, t.decisions[k], 'wctx', turnId));

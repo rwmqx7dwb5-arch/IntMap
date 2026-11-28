@@ -124,8 +124,8 @@ test('#R254 ① the population progress bar has no UI of its own, because its fr
   const sims = code(read('js/sims.js'));
   assert.doesNotMatch(sims, /areaKm2\s*>\s*95000/,
     'the single-request branch is back — a sub-cap sum has no fraction, and the bar would need a fake one again');
-  assert.match(sims, /Math\.sqrt\(\s*wSpan\s*\*\s*hSpan\s*\/\s*4\s*\)/,
-    'the cell side is no longer capped to about a 2×2 grid, so a small area is one request and reports nothing');
+  assert.match(sims, /done\+\+; if\(onProgress\)\{ try\{ onProgress\(Math\.min\(1, done\/cells\.length\)\)/,
+    'every finished cell reports its share, including a one-cell footprint');
 });
 
 /* ── ⑧ WHO IS IN FRONT ───────────────────────────────────────────────────────────────────────── */

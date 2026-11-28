@@ -7,6 +7,7 @@
    graph that cannot be read is `checked:false`, not "no change". */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { makeGisUnits } from '../js/gis-units.js';
 import { mergeFacts, normalizeFact } from '../js/atlas-orchestrate.js';
 
 const done = (id, facts) => ({ id, state: 'done', facts, findings: [], gaps: [], sources: [] });
@@ -103,4 +104,96 @@ test('normalizeFact keeps only what was stated: no default scope, basis, period 
   for (const k of ['scope', 'basis', 'period', 'aggregation', 'column']) assert.equal(k in f, false, k);
   const g = normalizeFact({ subject: { name: 'X' }, attribute: 'a', value: 1, scope: { kind: 'radius' }, period: { from: '2023' }, column: { dataset: 'd', field: 'f' } });
   assert.equal(g.scope, 'radius'); assert.deepEqual(g.column, { dataset: 'd', field: 'f' }); assert.equal(g.period.from, '2023');
+});
+
+test('signed observations compare numerically while keeping the reported spelling', async () => {
+  const merge = async (a, b) => row(await mergeFacts([done('a', [fact({ value: a, unit: 'm' })]), done('b', [fact({ value: b, unit: 'm' })])]));
+  const equal = await merge('−12.50', -12.5);
+  assert.equal(equal.status, 'agree');
+  assert.deepEqual(equal.values.flatMap((v) => v.observations.map((o) => o.value)), ['−12.50', -12.5]);
+  for (const a of [-17, '-17']) {
+    for (const b of [17, '+17']) {
+      const diff = await merge(a, b);
+      assert.equal(diff.status, 'conflict');
+      assert.equal(diff.relDiff, 2);
+    }
+  }
+});
+
+test('equivalent units compare after conversion, while distinct ratio symbols remain distinct evidence', async () => {
+  const compare = async (a, b) => row(await mergeFacts([done('a', [fact(a)]), done('b', [fact(b)])], { units: makeGisUnits() }));
+  const length = await compare({ value: '1', unit: 'km' }, { value: 1000, unit: 'm' });
+  assert.equal(length.status, 'agree');
+  assert.deepEqual(length.values.map((v) => [v.value, v.unit]), [['1', 'km'], [1000, 'm']]);
+  const equivalent = await compare({ value: '−3%', unit: undefined }, { value: -30, unit: '‰' });
+  assert.equal(equivalent.status, 'agree');
+  assert.deepEqual(equivalent.comparability.facets.unit.values.map((v) => v.value), ['%', '‰']);
+  const different = await compare({ value: 5, unit: '%' }, { value: 5, unit: '‰' });
+  assert.equal(different.status, 'conflict');
+  assert.ok(Math.abs(different.relDiff - 0.9) < 1e-15);
+  for (const unit of ['kg', 'unregistered-scale', undefined]) {
+    const unavailable = await compare({ value: 25, unit: 'm' }, { value: 25, unit });
+    assert.equal(unavailable.status, 'pending');
+    assert.equal(unavailable.unitMismatch, true);
+    assert.equal(unavailable.relDiff, undefined);
+  }
+});
+
+test('research.delegate compares units on a page that has not loaded GIS', async () => {
+  const cap = (await import('../js/atlas-cap-research.js')).default.find((c) => c.row[0] === 'research.delegate');
+  const previousWindow = globalThis.window;
+  globalThis.window = {};
+  const K = {
+    HOST: {}, R: (ok, html, extra) => ({ ok, html, ...extra }), L: (en) => en, esc: String, warn: String,
+    _curTurnKey: 'fact-comparison', turnSignal: () => undefined,
+    askAIJSONEnvelope: async (prompt) => {
+      const first = /first measurement/.test(prompt);
+      return { data: { summary: 'Read the station record.', facts: [
+        fact({ attribute: 'height', value: first ? 2000 : '2', unit: first ? 'm' : 'km' }),
+        fact({ attribute: 'offset', value: 12, unit: first ? 'm' : 'kg' }),
+      ] } };
+    },
+  };
+  try {
+    const result = await cap.run({ tasks: [{ goal: 'first measurement' }, { goal: 'second measurement' }], fresh: true }, {}, K);
+    const facts = result.meta.integrated.facts;
+    assert.equal(facts.counts.agree, 1);
+    assert.equal(facts.counts.pending, 1);
+    assert.match(result.html, /pending unit verification/);
+    assert.doesNotMatch(result.html, /differ in what they measure/);
+    assert.equal(globalThis.window.IntMapGisUnits, undefined);
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
+});
+
+test('a quantity with an unreadable inline unit is held when the other worker reports a known unit', async () => {
+  const units = makeGisUnits();
+  const compare = async (a, b) => row(await mergeFacts([
+    done('a', [fact({ value: a, unit: undefined })]),
+    done('b', [fact({ value: b, unit: undefined })]),
+  ], { units }));
+  for (const [a, b] of [['1 furlong', '1 km'], ['0.25 unseenScale', '25 m']]) {
+    const r = await compare(a, b);
+    assert.equal(r.status, 'pending');
+    assert.equal(r.comparisonPending, 'unit-conversion-unavailable');
+    assert.equal(r.relDiff, undefined);
+  }
+  for (const v of ['3 May', '3 may', '3 Sept', '2026-05-03', '3 people were counted', '3人がいた']) {
+    const r = await compare(v, '3 m');
+    assert.equal(r.status, 'conflict');
+    assert.equal(r.comparability.facets.unit.state, 'partial');
+    assert.equal(r.relDiff, undefined);
+  }
+  assert.equal((await compare('3', '3 May')).status, 'conflict');
+});
+
+test('when the unit module is unavailable, two different inline units leave comparison pending', async () => {
+  const r = row(await mergeFacts([
+    done('a', [fact({ value: '5 km', unit: undefined })]),
+    done('b', [fact({ value: '5000 m', unit: undefined })]),
+  ]));
+  assert.equal(r.status, 'pending');
+  assert.equal(r.relDiff, undefined);
 });

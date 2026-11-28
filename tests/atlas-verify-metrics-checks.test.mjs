@@ -152,7 +152,7 @@ test('the metrics migration: one row per turn, no text columns, admin-only read'
 
 test('a capability run by a delegated worker asks the model under the worker\'s child key, with the reader\'s turn as parent', () => {
   const read = (f) => fs.readFileSync(new URL('../js/' + f, import.meta.url), 'utf8');
-  assert.match(read('atlas-delegate.js'), /cap\.run\(w\.capability, w\.args, \{ signal: controller\.signal, turnKey: childKey \}\)/);
+  assert.match(read('atlas-delegate.js'), /cap\.run\(w\.capability, resolved\.args, \{ signal: controller\.signal, turnKey: childKey \}\)/);
   assert.match(read('atlas-executor.js'), /turnKey: op\.turnKey/);
   assert.match(read('atlas-console.js'), /turnKey:\(o&&o\.turnKey\)\|\|undefined/);
   const r = read('atlas-cap-research.js');

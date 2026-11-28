@@ -116,7 +116,7 @@ test('D2 the console wires it: the reader may ask, run() continues into the agen
   const src = readFileSync(join(ROOT, 'js/atlas-console.js'), 'utf8');
   assert.match(src, /continueWithTools:d\.continueWithTools===true/);
   assert.match(src, /\+VISION_CONTINUE_RULE/);
-  assert.match(src, /_imgCtx=agentContext\(_vd\); _atlRecallImgs=imgs;/);
+  assert.match(src, /turnAttachmentImages\(VFRAMES\.urls\(\),_atlRecallImgs\.concat\(_heldPhotos\),_turnPhotos\)/);
   assert.match(src, /if\(!\(_vd&&gen===_runGen\)\) return;/, 'no flag, the turn ends at the reader as before');
   assert.match(src, /messages:\[\{role:'user',content:q\+_imgCtx\}\]/);
   assert.match(src, /'\[REQUEST\]\\n'\+q\+\(_imgCtx\|\|''\)/);

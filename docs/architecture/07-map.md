@@ -218,6 +218,8 @@ GVP 番号による結合、USGS 自身の番号との突き合わせ、現在�
 地図にファイルを落とすか「地図データを読み込む」（`#btn-upload-geojson`）を押すと、`js/map-ui.js` の `geojsonUpload` が
 `js/geo-import.js` をその場で `import()` し、FeatureCollection を `ugj-<n>` という source と `-fill` / `-line` / `-pt` の 3 レイヤーにする。
 取り込んだレイヤーは**セッション限り**。
+Atlas のブラウザ子 AI は、この読み取り口から取得ファイルをセッションに登録して、後から明示的に表示できる。
+[GIS の取得と描画](../GIS-CORE.md#54-atlas-がこの層に処理を依頼する--jsgis-atlasjs-windowintmapgisatlas)を参照。
 
 **読める形式** — GeoJSON（FeatureCollection / Feature / 裸の geometry / `features` だけを持つ物）、KML、KMZ、GPX、CSV・TSV その他の
 区切り文字つきテキスト、セルに入った WKT と GeoJSON geometry、**Shapefile**（zip の中の `.shp`＋`.dbf`＋`.prj`＋`.cpg` を組で。

@@ -218,6 +218,18 @@ export function makeGisRemote(deps) {
       if (boxes.some((b) => overlapsBox(b, asked))) return 'overlaps';
       return 'outside';
     }
+    function extentIntersections(stated, asked) {
+      const out = [];
+      for (const b of stated.map(asBox).filter(Boolean)) {
+        const south = Math.max(b.s, asked.s), north = Math.min(b.n, asked.n);
+        if (south > north) continue;
+        for (const a of lonSpans(b)) for (const q of lonSpans(asked)) {
+          const west = Math.max(a[0], q[0]), east = Math.min(a[1], q[1]);
+          if (west <= east) out.push([west, south, east, north]);
+        }
+      }
+      return out;
+    }
     const ms = (s) => { const t = Date.parse(s); return isNum(t) ? t : null; };
     /* ⚠ A BARE YEAR / DATE IS THE WHOLE OF IT: "2023" is [2023-01-01, 2024-01-01), as everywhere here */
     function timeSpan(t) {
@@ -643,9 +655,9 @@ export function makeGisRemote(deps) {
         }
         let held = [];
         try { held = Array.isArray(o.local) ? o.local : (D.data && typeof D.data.list === 'function' ? D.data.list() : []); } catch (_) { held = []; }
-        for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds)); } catch (_) { } }
+        for (const ds of held) { try { if (ds && ds.id != null) recs.push(localRecord(ds, D.raster, D.geometry)); } catch (_) { } }
         const res = searchRecords(recs, { q: o.q, bbox: box, time: o.time, maxGsd: o.maxGsd, minGsd: o.minGsd, maxCloud: o.maxCloud, licensed: !!o.licensed, kinds: o.kinds, origins: o.origins, strict: !!o.strict },
-          { spatial: spatialRelation, temporal: temporalRelation });
+          { spatial: spatialRelation, temporal: temporalRelation, intersections: extentIntersections });
         return { res: res, report: report };
       };
       /* a catalogue answered: judge what has arrived so far. A candidate is tried only if the catalogue STATES it covers the window (and, when a

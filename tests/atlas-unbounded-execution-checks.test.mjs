@@ -98,11 +98,12 @@ test('⑥ the server refusing for money ends the turn as `budget`, with no furth
   assert.equal(out.stopped, 'transport');
 });
 
-test('⑦ the output gate hands back again while the reply moves, and stops when it does not', async () => {
+test('⑦ the output gate stops when the operation record does not advance', async () => {
   let n = 0;
   const model = scripted(() => (++n <= 5 ? { text: 'Draft ' + n + ' of the map answer.', toolCalls: [], answerMode: 'map' } : { text: 'Final draft.', toolCalls: [], answerMode: 'map' }));   /* then the same reply again: no progress */
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: okExec().execute, messages: user('q') });
-  assert.ok(out.trace.outputGate > 2, 'a changing reply is handed back more than the old ceiling allowed — ' + out.trace.outputGate);
+  assert.equal(out.trace.outputGate, 1, 'changing the wording gives no evidence of a change on the map');
+  assert.equal(out.stopped, 'output_unmet');
   /* …and the identical reply twice ends it */
   const same = scripted(() => ({ text: 'The map shows it.', toolCalls: [], answerMode: 'map' }));
   const o2 = await AGENT.runTurn({ model: same, tools: TOOLS, execute: okExec().execute, messages: user('q') });

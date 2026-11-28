@@ -287,11 +287,10 @@ test('R495 ④: every cap the engine applies is reported, and nothing in it asks
   assert.match(eng, /unapplied\.push\(tableName\(jt\)\)/, '…and by a join that could not run');
 });
 
-test('R495 ④: the planner really is cost-ordered — a network column is never asked about every row', () => {
+test('R495 ④: the planner orders filters by cost and keeps all three cost tiers', () => {
   /* kept as a spelling: the caps, the cost order and the borrowed fields are wiring inside js/atlas-query.js / js/gazetteer.js / js/precip-annual.js that only a network-backed run would exercise; the catalogue text is what the planner is shown */
   const eng = read('js/atlas-query.js');
   assert.match(eng, /\.sort\(\(a, b\) => a\._col\.cost - b\._col\.cost\)/, 'conditions are ordered by cost');
-  assert.match(eng, /if \(c\._col\.cost >= 2 && rows\.length > NET_CAP\)/, 'and a network column is bounded');
   /* the three cost tiers must all be IN USE — if every column became cost 0 the ordering would be a
      no-op and 147,924 rows would go to Open-Meteo one hundred at a time */
   assert.match(eng, /col\('pop',[^\n]*, 0, intrinsic\(/, 'pop is free');
@@ -460,7 +459,7 @@ const ORIGINS = ['raw', 'sampled', 'computed', 'network', 'derived'];
 const gzRow = (en, pop, iso2, gid, fcode, disp) =>
   ['city', [en], 10, 50, en, en, pop, iso2, gid, fcode, disp || '', 0];
 
-async function engine(rows, placeKinds) {
+async function engine(rows, placeKinds, fetchJSON) {
   const pick = () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a)); return f; };
   /* (module-graph) IMPORTED fresh, its factory read off the namespace; the language picker is handed at
      its import edge (js/lang-registry.js), the gazetteer rows stay on the window the module reads them from */
@@ -479,7 +478,7 @@ async function engine(rows, placeKinds) {
   const API = atlasQuery({ lang: 'en', addPin: () => null });
   /* the two country facts the engine asks its host for, and nothing else */
   API.bind({ countryStats: () => ({ CHN: { a2: 'CN', nameEn: 'China' }, IRQ: { a2: 'IQ', nameEn: 'Iraq' } }),
-    countryName: (s) => s.nameEn });
+    countryName: (s) => s.nameEn, fetchJSON });
   return API;
 }
 
@@ -494,6 +493,128 @@ const KINDS = {
   PPLQ: { kind: 'defunct', desc: 'abandoned populated place' },
   PPLW: { kind: 'defunct', desc: 'destroyed populated place' },
 };
+
+const pointCity = (id, lng, lat) => {
+  const row = gzRow('City ' + id, 100000, 'CA', String(id), 'PPL');
+  row[2] = lng;
+  row[3] = lat;
+  return row;
+};
+
+test('elevation ranking measures every candidate before applying the output limit, regardless of input order', async () => {
+  const cities = Array.from({ length: 407 }, (_, i) => pointCity(i + 1, i / 10, 50));
+  for (const [rows, withElevationFilter] of [[cities, false], [cities.slice().reverse(), false], [cities, true]]) {
+    const calls = [];
+    const api = await engine(rows, KINDS, async (url) => {
+      const lng = new URL(url).searchParams.get('longitude').split(',').map(Number);
+      calls.push(lng);
+      return { elevation: lng.map((x) => x * 100) };
+    });
+    const answer = await api.run({ from: 'cities', show: ['elevM'], order: { col: 'elevM' }, limit: 1,
+      where: withElevationFilter ? [{ col: 'elevM', op: '>=', value: 0 }] : [] });
+    assert.equal(answer.rows[0].v.elevM, 4060);
+    assert.equal(answer.rows[0].geonameId, '407');
+    assert.deepEqual(api.compact(answer).ranking, { column: 'elevM', candidates: 407, measured: 407, complete: true });
+    assert.equal(calls.flat().length, 407);
+    assert.ok(calls.every((batch) => batch.length <= 100));
+  }
+});
+
+test('an incomplete elevation response leaves its points unmeasured and labels the ranking as partial', async () => {
+  const api = await engine([pointCity(81, 3, 50), pointCity(82, 4, 50)], KINDS, async () => ({ elevation: [250] }));
+  const answer = await api.answer({ from: 'cities', order: { col: 'elevM' }, limit: 2 }, { pin: false });
+  assert.deepEqual(answer.result.ranking, { column: 'elevM', candidates: 2, measured: 0, complete: false });
+  assert.ok(answer.result.rows.every((row) => row.v.elevM == null));
+  assert.match(answer.html, /ranking is incomplete/i);
+});
+
+test('cheap column filters narrow the candidates before the elevation endpoint is called', async () => {
+  const cities = Array.from({ length: 418 }, (_, i) => pointCity(i + 1, i / 10, i % 17 === 0 ? 50 : 40));
+  const measured = [];
+  const api = await engine(cities, KINDS, async (url) => {
+    const latitudes = new URL(url).searchParams.get('latitude').split(',').map(Number);
+    measured.push(...latitudes);
+    return { elevation: latitudes.map((n) => n * 10) };
+  });
+  const answer = await api.run({ from: 'cities', where: [{ col: 'elevM', op: '>=', value: 100 }, { col: 'lat', op: '>', value: 45 }] });
+  assert.equal(answer.matched, 25);
+  assert.deepEqual(measured, Array(25).fill(50));
+});
+
+const earthquake = (id, lng, lat) => ({ id, geometry: { coordinates: [lng, lat, 8] }, properties: { mag: 5, time: 1760000000000 } });
+const quakeCovered = (query, event) => {
+  const [lng, lat] = event.geometry.coordinates;
+  const read = (key) => Number(query.get(key));
+  if (!query.has('maxradius')) {
+    return lng >= read('minlongitude') && lng <= read('maxlongitude') && lat >= read('minlatitude') && lat <= read('maxlatitude');
+  }
+  const phi = Math.PI / 180, from = read('latitude') * phi, to = lat * phi;
+  const cosine = Math.sin(from) * Math.sin(to) + Math.cos(from) * Math.cos(to) * Math.cos((lng - read('longitude')) * phi);
+  return Math.acos(Math.min(1, Math.max(-1, cosine))) / phi <= read('maxradius');
+};
+
+test('earthquake searches cover high latitude and the date line independently of distant candidates', async () => {
+  const high = pointCity(30, 20, 87), dateline = pointCity(31, 179.8, -18), distant = pointCity(32, 24, -42);
+  const events = [earthquake('polar', 34, 87), earthquake('wrapped', -179.8, -18), earthquake('other', 24, -42)];
+  for (const cities of [[high], [dateline], [distant, dateline, high]]) {
+    const requests = [];
+    const api = await engine(cities, KINDS, async (url) => {
+      const q = new URL(url).searchParams;
+      requests.push(q);
+      return { features: events.filter((event) => quakeCovered(q, event)) };
+    });
+    const answer = await api.run({ from: 'cities', near: [{ of: 'earthquakes', withinKm: 100, minMagnitude: 4 }] });
+    assert.deepEqual(answer.rows.map((row) => row.joins.earthquakes.nearest.id).sort(),
+      cities.map((row) => events[Number(row[8]) - 30].id).sort());
+    const search = api.compact(answer).earthquakeSearches[0];
+    assert.equal(requests.length, cities.length);
+    assert.deepEqual(search.coverage.map((x) => x.scope.longitude).sort(), cities.map((row) => row[2]).sort());
+    assert.ok(requests.every((q) => q.get('starttime') === search.window.startTime
+      && q.get('endtime') === search.window.endTime && q.get('minmagnitude') === '4'));
+    assert.equal(api.compact(answer).rows[0].joins.earthquakes.nearest.id, answer.rows[0].joins.earthquakes.nearest.id);
+    assert.equal(search.incomplete, 0);
+  }
+});
+
+test('a second location that fills the USGS event limit cannot hide an event at the first location', async () => {
+  const first = pointCity(37, -90, 20), second = pointCity(38, -65, 25);
+  for (const cities of [[first], [second, first]]) {
+    const api = await engine(cities, KINDS, async (url) => {
+      const q = new URL(url).searchParams, limit = Number(q.get('limit'));
+      const old = earthquake('first-event', -90, 20), busy = earthquake('busy-0', -65, 25);
+      const features = quakeCovered(q, busy)
+        ? Array.from({ length: limit }, (_, i) => ({ ...busy, id: 'busy-' + i })) : [];
+      if (quakeCovered(q, old)) features.push(old);
+      return { features: features.slice(0, limit) };
+    });
+    const answer = await api.run({ from: 'cities', near: [{ of: 'earthquakes', withinKm: 50 }] });
+    const row = answer.rows.find((r) => r.geonameId === '37');
+    assert.equal(row?.joins.earthquakes.nearest?.id, 'first-event');
+    assert.equal(row?.joins.earthquakes.complete, true);
+    assert.equal(answer.earthquakeSearches[0].incomplete, cities.length - 1);
+  }
+});
+
+test('an unanswered or capped earthquake request cannot prove absence at that location', async () => {
+  const cities = [pointCity(41, 1, 30), pointCity(42, 2, 30), pointCity(43, 3, 30), pointCity(44, 4, 30)];
+  const api = await engine(cities, KINDS, async (url, _budget, note) => {
+    const q = new URL(url).searchParams;
+    note.reason = 'ok';
+    if (q.get('longitude') === '1') return {};
+    if (q.get('longitude') === '2') {
+      return { features: Array.from({ length: Number(q.get('limit')) }, (_, i) => earthquake('capped-' + i, 2, 30)) };
+    }
+    if (q.get('longitude') === '4') return { features: [{}] };
+    return { features: [] };
+  });
+  const answer = await api.run({ from: 'cities', near: [{ of: 'earthquakes', withinKm: 10, require: false }] });
+  assert.deepEqual(answer.rows.map((row) => row.geonameId), ['43']);
+  assert.equal(answer.earthquakeSearches[0].incomplete, 3);
+  const coverage = answer.earthquakeSearches[0].coverage;
+  assert.deepEqual(coverage.map((x) => x.status).sort(), ['capped', 'complete', 'partial', 'unavailable']);
+  assert.equal(coverage.find((x) => x.status === 'unavailable').reason, 'invalid-or-missing-response');
+  assert.equal(coverage.find((x) => x.status === 'partial').missingRecords, 1);
+});
 
 /* ══ ① A SECTION OF A CITY IS NOT A CITY ═══════════════════════════════════════════════════════ */
 test('R620 ①: the cities table admits places and refuses parts of places and places that are gone', async () => {

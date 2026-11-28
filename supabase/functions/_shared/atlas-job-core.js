@@ -108,13 +108,13 @@ export function resolveArgs(args, inputs, o) {
       if (!src) { why = 'The argument "' + v + '" refers to task "' + m[1] + '", which is not one of its inputs (name it in "inputs").'; return v; }
       let cur = { data: src.data, summary: src.summary };
       for (const k of m[2].split('.').filter(Boolean)) {
-        if (cur == null || typeof cur !== 'object' || !(k in Object(cur))) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
+        if (cur == null || typeof cur !== 'object' || !Object.hasOwn(cur, k)) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
         cur = cur[k];
       }
       return annotate ? annotate(cur, src, m[1]) : cur;
     }
     if (Array.isArray(v)) return v.map(walk);
-    if (v && typeof v === 'object') { const r = {}; Object.keys(v).forEach((k) => { r[k] = walk(v[k]); }); return r; }
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([key, value]) => [key, walk(value)]));
     return v;
   };
   const out = walk(args == null ? {} : args);
@@ -218,7 +218,7 @@ export function workerSystem(persona) {
   'Do only the piece you are given. Use the web search tool when it is attached to find and verify current facts; prefer primary and official sources.',
   'Never invent a fact, a figure, a date, a source or a coordinate. Give coordinates only when you know them (a well-known city, port, strait or facility); otherwise leave them out and name the place.',
   'Write in the language the piece is written in.',
-  'When you may call IntMap capabilities, put every call that does not need another call\'s answer in the SAME request: they are run together and all their answers come back in your next request. Make a call wait for a later request only when its arguments depend on an answer you do not have yet.',
+  'When you may call IntMap capabilities, put every call that does not need another call\'s answer in the SAME request: they are run together and all their answers come back in your next request. When a dependency can be named by reference, you may include both calls in the same request. Wait for a later request when you need to inspect an answer before writing the next call.',
   'You return EVIDENCE, not a conclusion: Atlas weighs what you found against what the other workers found and decides; a verdict of yours would decide for it. Quote rather than paraphrase, and report what you looked for and did not find as plainly as what you found.',
   'Return ONE JSON object and nothing else: {"summary": string (what you did — what you looked for, where, and what came back; NOT an answer to the question), "findings": [{"claim": string (what the source states, as it states it), "source": string (the URL; the outlet or publication when there is no URL; or the id of the IntMap capability you called), "excerpt": string (the source\'s own words, verbatim, or the raw values the capability returned — the part the claim rests on), "date"?: string (the date the source gives), "place"?: string, "lat"?: number, "lon"?: number, "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "notFound": [{"looked": string (what you looked for), "where": string (the searches, sites or capabilities you looked in)}] (what you looked for and did not find), "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}. A finding without both "source" and "excerpt" is your own statement, and Atlas is told it carries no evidence.',
 ].join('\n');
@@ -246,8 +246,30 @@ function tableOf(data) {
   }
   return null;
 }
+export function dataManifest(id, data) {
+  const whole = JSON.stringify(data);
+  const rows = tableOf(data);
+  return { ref: '@' + id + ':data', version: digestOf(whole), chars: whole.length, count: rows?.length };
+}
+/* The published output may follow a worker's private transcript parts in the same task. Old outputs start at zero. */
+export async function readJobArtifactFeatures(db, table, jobId, taskId, output) {
+  const first = Number(output.first) || 0;
+  let query = db.from(table).select('part,body').eq('job_id', jobId).eq('task_id', taskId);
+  if (output.first != null) query = query.gte('part', first).lt('part', first + output.parts);
+  const { data, error } = await query.order('part');
+  const have = Array.isArray(data) ? data.length : 0;
+  const unavailable = { ok: false, code: 'output_incomplete', have, parts: output.parts };
+  if (error || have !== output.parts) return unavailable;
+  const features = [];
+  for (const [i, part] of data.entries()) {
+    if (part.part !== first + i || !Array.isArray(part.body?.features)) return unavailable;
+    if (output.first != null && part.body.version !== output.version) return unavailable;
+    for (const feature of part.body.features) features.push(feature);
+  }
+  return features.length === output.count ? { ok: true, features } : unavailable;
+}
 export function inputView(i, o) {
-  const whole = JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data });
+  const whole = JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data });
   if (whole.length <= INPUT_SHOW_CHARS) return { text: whole, ref: '', whole: null };
   const ref = 'input:' + String(i.from);
   const rows = tableOf(i.data);

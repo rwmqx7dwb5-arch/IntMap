@@ -258,7 +258,8 @@ export const KERNELS = {
      nine aggregation methods answer the same verdict for the same quantity as before. */
   /* (#W4) units-2 -> units-3: an affine conversion is computed in exact integers (0 °C is 32 °F, not
      31.999999999999986) and ftUS / tsubo / mmHg / inHg are new spellings. */
-  'js/gis-units.js': { version: 'units-3', sha256: '7ffbd900cc5fcceaf22896b2ea3f8a08a86a7df6ebce76bad73530a0548857d3' },
+  /* units-4 recognises per-mille as a fraction with a different scale from percent. */
+  'js/gis-units.js': { version: 'units-4', sha256: 'e72e294b2428a943a608a9d017a35c75b44290268fa1c82a63fff0a81e02cc35' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
     /* (#R783) HASH ONLY: the inverse mapping and the areal footprint boxes may now be computed in the

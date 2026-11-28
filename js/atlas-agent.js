@@ -40,7 +40,7 @@
 
 import { INPUT_LIMITS } from '../supabase/functions/_shared/atlas-input-limits.js';   /* (atlas-input-limits) this budget and ai-proxy's fence, from one object */
 import { atPath } from './atlas-working-memory.js';   /* (atlas-working-memory) one value at an address in an original result */
-import { makeRunLedger, runLine, makeRunHistory, peakConcurrency, lateCostSink, runMarkSink } from './atlas-run-ledger.js';   /* (job-cost-ledger) what this turn cost, in one record — observes, never decides */
+import { makeRunLedger, runLine, makeRunHistory, peakConcurrency, lateCostSink, runMarkSink, proxyUsage } from './atlas-run-ledger.js';
 import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
 
 export function makeAtlasAgent() {
@@ -244,7 +244,7 @@ export function makeAtlasAgent() {
       for (let i = ms.length - 1; i >= 0; i--) { const m = ms[i]; if (m && m.role === 'user') return typeof m.content === 'string' ? m.content : ''; }
       return '';
     }
-    function unmetOf(answerMode, produced, planSnap, ran) {
+    function unmetOf(answerMode, produced, planSnap, ran, verified) {
       const out = [];
       const asked = MODE_NEEDS[answerMode] || null;
       /* ⚠ THE SAME RULE THE OUTPUT GATE USES (`made`, below): a call that RAN and could not be seen is a call that was made. The gate accepted it
@@ -254,6 +254,12 @@ export function makeAtlasAgent() {
       }
       if (planSnap && planSnap.thisTurn && Array.isArray(planSnap.steps)) {
         planSnap.steps.forEach((st) => {
+          if (st && st.requirements?.length) {
+            st.requirements.filter((r) => r.state !== 'completed').forEach((r) => {
+              out.push({ kind: 'goal', id: r.id, need: r.label, state: r.state, callId: r.callId });
+            });
+            return;
+          }
           /* ⚠ A STEP NOBODY FILED A CALL UNDER IS NOT AN OBSERVED FAILURE. 'pending' is «no operation was attributed to this step», and the ledger
              cannot tell «skipped» from «done under the step that was current» (a model that drew everything in step 1 and never moved
              `current` leaves steps 2..n pending while the map is complete). A reader was told 「完了していないもの: 計画の手順 2」 over a finished
@@ -261,12 +267,10 @@ export function makeAtlasAgent() {
           /* 'unobserved' is «it ran and its effect could not be seen» — not a failure, and the output gate (`made`) counts a call that ran as made;
              the list used to say «not completed» over a step that had run (one-pass-or-a-reason §5: not observed is not failed) */
           if (!st || st.state === 'completed' || st.state === 'noop' || st.state === 'pending' || st.state === 'unobserved') return;
-          /* a step that holds a completed call and whose OTHER calls failed ('partial' by mixture, js/atlas-plan.js stepState) delivered what it was for: the failure
-             was an alternative path or a look-up that did not matter, and Atlas's answer says so when it did. A step whose non-completed calls are partial,
-             unobserved, waiting, stopped or running is still listed. */
-          const ops = Array.isArray(st.ops) ? st.ops : [];
-          if (st.state === 'partial' && ops.some((o) => o && o.state === 'completed') && !ops.some((o) => o && o.state !== 'completed' && o.state !== 'failed')) return;
-          out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
+          if (verified) return; /* the independent reader observed the requested outputs, including work done under another step */
+          const missing = (st.workItems || []).filter((o) => o.work && o.state !== 'completed' && o.state !== 'unobserved');
+          if (missing.length) missing.forEach((o) => out.push({ kind: 'goal', need: st.title + ' · ' + o.work, state: o.state, why: o.code }));
+          else out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
         });
       }
       return out;
@@ -929,14 +933,15 @@ export function makeAtlasAgent() {
       let repeatRun = 0;   /* consecutive steps made only of reused calls — see maxRepeatSteps */
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
-      let lastBounce = null;     /* (atlas-unbounded-execution) the last bounce: {code, results, text} — the same one again with nothing changed is no progress */
+      const lastBounce = new Map();   /* contradiction → last operation record that justified asking for a repair */
+      let operationProgress = 0;
       let nextEffort, nextOutput;   /* (atlas-unbounded-execution) what the last reply declared its NEXT reply needs — FINAL_SCHEMA next_effort / next_output_tokens */
       /* (atlas-unbounded-execution) EVERY SENTENCE ATLAS WROTE ON THE WAY, KEPT. The reader saw these appear while the turn
          ran and lost them when it ended (the user, 2026-11-24): a provisional sentence is not the answer (#R663, #R742), but it is
          not nothing either. They are returned in order for the caller to keep on screen; nothing here decides how. */
       const interim = [];
       trace.outputGate = 0;
-      let goalVerifiedAt = -1;   /* (atlas-goal-verifier) results.length when the request was last read independently (-1: not yet). It is read again ONLY when the record has grown since — a re-read of an unchanged record is the same observation twice */
+      let goalVerifiedAt = -1;   /* a re-read of an unchanged operation record is the same observation twice */
       let goalPrev = null;       /* …and what that read found ({met, unmet}), shown to the next read so it judges whether the work Atlas did since closed the gap */
       let goalRounds = 0;
       let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
@@ -972,8 +977,8 @@ export function makeAtlasAgent() {
       runMarkSink.current = (name) => { try { ledger.mark(name); } catch (_) { /* a record never breaks the turn */ } };   /* (atlas-child-loop-reuse) the instants a delegation reports — see atlas-run-ledger.js runMarkSink */
       lateCostSink.current = (usd) => { try { ledger.late(usd); if (trace.run) Object.assign(trace.run, ledger.summary()); } catch (_) { /* a record never breaks the turn */ } };
       /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
-         calls the reader waits through; `modelCalls` said 1 for a turn that made 3. The caller passes what it already measured (opts.preCalls: [{ model, ms }]); the verifier is timed below. Cost is not reported by those two asks, so it is counted as unreported, never as zero. */
-      (Array.isArray(opts.preCalls) ? opts.preCalls : []).forEach((c) => { try { ledger.model({ model: c && c.model, ms: c && c.ms }); } catch (_) { /* a ledger that cannot take a row is not the turn's problem */ } });
+         calls the reader waits through. Sizing hands in its receipt and the verifier reports its receipt below. */
+      (Array.isArray(opts.preCalls) ? opts.preCalls : []).forEach((c) => { try { ledger.model(c); } catch (_) { /* a ledger that cannot take a row is not the turn's problem */ } });
       if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
@@ -992,7 +997,7 @@ export function makeAtlasAgent() {
          abandoned — the turn stops WAITING for it — and what goes into the transcript is the same
          mechanical record every other outcome gets, so the next step is chosen by Atlas knowing what
          happened rather than by this loop deciding on its behalf. */
-      const runTool = (call, planStep) => {
+      const runTool = (call, planStep, planTarget) => {
         /* (#R801) the turn's facts ride beside the call — see `turn` above. (atlas-completion) …together with the
            plan step this call is filed under (-1 when none), so the caller can name the goal it serves. A CHILD of
            `turn`, not a copy: externalContentSeen changes while the turn runs, and is read live through the prototype. */
@@ -1014,7 +1019,7 @@ export function makeAtlasAgent() {
                 + '; nothing it was fetching arrived in time. Answer with what you have, or try a different approach.' });
           }, lim.toolTimeoutMs);
         };
-        const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1,
+        const facts = Object.assign(Object.create(turn), { planStep: (typeof planStep === 'number') ? planStep : -1, planTarget,
           callSignal: callAbort ? callAbort.signal : undefined,
           // The reader's decision is input to this call. Time the execution on either side of it.
           async awaitInput(decision) {
@@ -1122,12 +1127,9 @@ export function makeAtlasAgent() {
           if (!interim.length || interim[interim.length - 1].text !== reply.text) interim.push({ step, text: reply.text });
         }
         if (reply && reply.noteToIntMap) { (trace.machineNotes = trace.machineNotes || []).push({ step, note: reply.noteToIntMap }); }
-        /* ⚠ A FINDING ATLAS ANSWERED WITH A REASON IS CONTESTED, NOT UNFINISHED. The independent reader is a model and can be wrong: when its finding was put to
-           Atlas and Atlas made no call but wrote why the request does not need it (note_to_intmap, the place the note itself told it to put the reason), the
-           finding is kept on the trace for the evaluation and is no longer shown to the reader as «not completed» over an answer that was complete. */
+        /* An objection is useful diagnostic context. Resolving confirmed missing work requires evidence covering it. */
         if (goalAt >= 0 && results.length === goalAt && !calls.length && goalUnmet.length && reply && reply.noteToIntMap) {
           trace.goalContested = { unmet: goalUnmet.map((u) => ({ need: u.need, why: u.why })), reason: reply.noteToIntMap };
-          goalUnmet = [];
         }
         nextEffort = (reply && NEXT_EFFORTS.indexOf(reply.nextEffort) >= 0) ? reply.nextEffort : undefined;
         nextOutput = (reply && Number.isInteger(reply.nextOutput) && reply.nextOutput > 0) ? reply.nextOutput : undefined;
@@ -1186,18 +1188,26 @@ export function makeAtlasAgent() {
              request does not need it. ⚠ NOT OBSERVED IS NOT UNMET: null / a throw / a timeout accepts the turn and
              says only that it was not checked (`trace.goalCheck`). Only on a turn the gate above would accept. */
           let goalNote = '';
-          if (!code && (goalVerifiedAt < 0 || results.length > goalVerifiedAt) && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
-            goalVerifiedAt = results.length; goalRounds++;
+          if (!code && operationProgress > goalVerifiedAt && typeof opts.verify === 'function' && String(answerHere || '').trim() && !outOfTime()) {
+            goalVerifiedAt = operationProgress; goalRounds++;
             let v = null;
+            let usage;
             const verifyT0 = wallNow();
             try {
               v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
+                onUsage: (meta) => { usage = proxyUsage(meta); },
                 plan: PLAN ? (() => { try { return PLAN.snapshot(); } catch (_) { return null; } })() : null });
             } catch (_) { v = null; }
-            try { ledger.model({ model: 'atlas_verify', ms: wallNow() - verifyT0 }); } catch (_) { /* see preCalls */ }
+            try { ledger.model({ ...usage, model: usage?.model || 'atlas_verify', ms: wallNow() - verifyT0 }); } catch (_) { /* see preCalls */ }
             const list = (v && Array.isArray(v.unmet)) ? v.unmet.filter((u) => u && String(u.need || '').trim()).map((u) => ({ kind: 'goal', id: goalIdOf(u), need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) })) : null;
             /* what the reader said it could NOT SEE is not a finding about the turn (not observed is not unmet): kept for the evaluation, never bounced, never listed as «not done» */
-            if (v && Array.isArray(v.unconfirmed) && v.unconfirmed.length) trace.goalUnconfirmed = v.unconfirmed.filter((u) => u && String(u.need || '').trim()).map((u) => ({ need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) }));
+            const unconfirmed = (v && Array.isArray(v.unconfirmed)) ? v.unconfirmed.filter((u) => u && String(u.need || '').trim()) : [];
+            trace.goalUnconfirmed = unconfirmed.map((u) => ({ need: String(u.need).slice(0, 300), why: String(u.why || '').slice(0, 300) }));
+            if (list && goalPrev) for (const old of goalPrev.unmet) {
+              if (!list.some((u) => u.id === old.id) && unconfirmed.some((u) => u.prev === old.id || goalKey(u.need) === goalKey(old.need))) {
+                list.push({ kind: 'goal', ...old });
+              }
+            }
             const metList = (v && Array.isArray(v.met)) ? v.met.filter((m) => m && String(m.need || '').trim()).map((m) => ({ need: String(m.need).slice(0, 300), how: String(m.how || '').slice(0, 300) })) : [];
             trace.goalCheck = list === null ? 'unobserved' : (list.length ? 'unmet' : 'met');
             /* the ledger of the LAST observed read: what the request asked, what the record covers, what it does not, and how many reads it took (observed-only: an unobserved read leaves the previous ledger) */
@@ -1239,13 +1249,10 @@ export function makeAtlasAgent() {
             goalAt = results.length;   /* put to Atlas: if it then makes no call, nothing was done about it and the finding stays on the record */
             continue;
           }
-          /* (atlas-unbounded-execution) bounced again only while something moved since the last bounce — a tool ran, the
-             contradiction is a different one, or the reply's words changed. The identical contradiction from the identical
-             reply is the loop learning nothing new, and the reply is accepted as it stands (the stop below names it). */
-          const moved = !lastBounce || lastBounce.code !== code || lastBounce.results !== results.length
-            || lastBounce.text !== String(answerHere || '');
+          /* Wording alone cannot advance a missing output. Another repair needs a changed operation record. */
+          const moved = lastBounce.get(code) !== operationProgress;
           if (code && moved && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
-            lastBounce = { code, results: results.length, text: String(answerHere || '') };
+            lastBounce.set(code, operationProgress);
             gateBounces++; trace.outputGate++;
             /* (#R543) the note names the outputs the declaration asked for and the call that makes
                each one, so the recovery is the same shape whichever was declared: make it now, or
@@ -1351,6 +1358,7 @@ export function makeAtlasAgent() {
             return p;
           }
           p.planStep = PLAN ? PLAN.attribute() : -1;
+          p.planTarget = PLAN?.targetOfCall?.();
           /* (atlas-result-delivery) THE IDENTITY OF A CALL IS THE CAPABILITY IT REACHES AND ITS ARGUMENTS, NOT THE DOOR IT CAME IN BY. compose_map and
              run_capability{id:'map.compose'}, or an alias and its canonical id, are one call. `opts.identify` is the tool surface's
              (js/atlas-toolsurface.js identityOf); a caller without one keeps the tool name and the arguments as written. */
@@ -1444,7 +1452,7 @@ export function makeAtlasAgent() {
                the opposite of. */
             executedHere++;
             /* (atlas-plan-on-map) the step this call serves holds what that earlier run returned */
-            if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work }); PLAN.settled(call.id, rec0); } catch (_) { } }
+            if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work, target: p.planTarget }); PLAN.settled(call.id, rec0); } catch (_) { } }
             return rec0;
           }
           /* (atlas-native-tools) the rest of a result the input had to cut. Answered HERE, from this turn's own
@@ -1487,9 +1495,9 @@ export function makeAtlasAgent() {
           const t0 = now();
           const toolW0 = wallNow();
           /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
-          if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work }); } catch (_) { } }
+          if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed), key: p.ckey, work: p.work, target: p.planTarget }); } catch (_) { } }
           try {
-            out = await runTool(p.routed, p.planStep);   /* (#R452) …with a deadline. See `runTool` above. */
+            out = await runTool(p.routed, p.planStep, p.planTarget);   /* (#R452) …with a deadline. See `runTool` above. */
           } catch (e) {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
@@ -1600,6 +1608,8 @@ export function makeAtlasAgent() {
             });
         });
         await Promise.all(settled);
+        operationProgress += toResults.filter((r) => r && !r.reusedFromEarlierCallThisTurn && !r.repeatedFailedCallThisTurn
+          && !r.repeatedPartialCallThisTurn && !r.sameResultAsEarlierCallThisTurn).length;
         toResults.forEach((rec) => { if (rec) results.push(rec); });
         /* ── (atlas-turn-engine) PROMOTION: what this step found is a tool from the next step on — see
               `promoted` above. Only a result that RAN and succeeded promotes (a reused one already did). */
@@ -1801,7 +1811,8 @@ export function makeAtlasAgent() {
       /* …and the plan, read AFTER endTurn has settled what was still in flight (unobserved / stopped) */
       let planSnap = null;
       if (PLAN) { try { planSnap = PLAN.snapshot(); } catch (_) { planSnap = null; } }
-      const unmet = unmetOf(answerMode, produced, planSnap, ranModes).concat((goalAt < 0 || results.length === goalAt) ? goalUnmet : []);   /* (atlas-goal-verifier) the independent reader's findings that stood */
+      const verified = trace.goalCheck === 'met' && goalPrev?.met.length > 0 && !trace.goalUnconfirmed?.length && goalVerifiedAt === operationProgress;
+      const unmet = unmetOf(answerMode, produced, planSnap, ranModes, verified).concat(goalUnmet);
       const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : 'complete');
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
@@ -1883,7 +1894,7 @@ export function makeAtlasAgent() {
         noteToIntMap: (d && typeof d.note_to_intmap === 'string') ? d.note_to_intmap.slice(0, 600) : '',
         nextOutput: (d && Number.isInteger(d.next_output_tokens) && d.next_output_tokens > 0) ? d.next_output_tokens : 0,
         /* (job-cost-ledger) what the proxy said this ONE answer cost and which model served it — undefined when it did not say */
-        usage: meta ? { model: meta.modelServed || meta.model || undefined, costUsd: (typeof meta.costUsd === 'number') ? meta.costUsd : undefined, priceKnown: meta.priceKnown } : undefined,
+        usage: proxyUsage(meta),
         items: native && native.length ? native : undefined,
         /* (atlas-native-tools) what the proxy's own fence cut from THIS input, reported rather than done in silence */
         serverTrim: (meta && meta.inputTrimmed) || undefined,

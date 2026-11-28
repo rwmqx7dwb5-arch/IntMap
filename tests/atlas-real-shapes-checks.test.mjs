@@ -18,7 +18,7 @@ test('area: the highlight ladder\'s outline is real; an approximate one is deriv
   const real = await resolveShape('Nagano', 'area', { area: async () => ({ poly: { name: 'Nagano', geo: POLY }, rrMethod: 'admin1_index', entity: { source: 'admin1-index' } }) });
   assert.deepEqual([real.ok, real.basis, real.method, real.source], [true, 'real', 'admin1_index', 'admin1-index']);
   const ai = await resolveShape('Fossa Magna', 'area', { area: async () => ({ poly: { geo: POLY }, approx: true }) });
-  assert.deepEqual([ai.ok, ai.basis, ai.method], [true, 'derived', 'model_outline']);
+  assert.deepEqual([ai.ok, ai.basis, ai.method, ai.source], [true, 'derived', 'model_outline', 'Atlas']);
 });
 
 test('area: a bounding box, a line and an ambiguity are refusals, never shapes', async () => {
@@ -75,13 +75,15 @@ function compose(shapes) {
 test('compose: a real area and a real line are drawn into the map with their source; points stay numbered', async () => {
   const { C, eng } = compose({ 'Fossa Magna|area': { ok: true, geometry: POLY, basis: 'derived', method: 'model_outline', source: 'Atlas (web-checked)' },
     'Itoigawa-Shizuoka Tectonic Line|line': { ok: true, geometry: LINE, basis: 'real', method: 'osm_line', source: 'OpenStreetMap' } });
-  const r = await C.run({ items: [{ name: 'Fossa Magna', country: 'Japan', shape: 'area' }, { name: 'Itoigawa-Shizuoka Tectonic Line', country: 'Japan', shape: 'line' }, { name: 'Itoigawa', country: 'Japan' }] });
+  const r = await C.run({ items: [{ name: 'Fossa Magna', country: 'Japan', shape: 'area' }, { name: 'Itoigawa-Shizuoka Tectonic Line', country: 'Japan', shape: 'line' }, { name: 'Itoigawa', country: 'Japan' }] }, { source:'atlas', turnId:42 });
   const feats = eng.data().features;
+  assert.equal(r.exec.shapes[1].id, feats.find((f) => f.properties.t === 'shape' && f.properties.g === 'line').properties.id);
+  assert.deepEqual([r.exec.shapes[1].author, r.exec.shapes[1].turnId], ['atlas', 42]);
   const shp = feats.filter((f) => f.properties.t === 'shape');
   assert.deepEqual(shp.map((f) => [f.properties.g, f.properties.basis, f.geometry.type]), [['area', 'derived', 'Polygon'], ['line', 'real', 'LineString']]);
   assert.equal(r.exec.counts.shapesDrawn, 2); assert.equal(r.exec.counts.shapesDerived, 1); assert.equal(r.exec.status, 'ok');
   /* the two shapes had no gazetteer point of their own: their markers stand at the shape, said so */
-  assert.ok(r.exec.placed.filter((p) => p.provenance === 'resolved_place_centroid').length === 2);
+  assert.deepEqual(r.exec.placed.slice(0, 2).map((p) => p.provenance), ['resolved_place_centroid', 'shape_midpoint']);
   assert.ok(/近似|approximate/.test(r.html) && /OpenStreetMap/.test(r.html));
   /* the derived outline is drawn on the dashed layer, the real one on the solid */
   const dashed = eng.added.find((d) => d.id === 'atl-compose-sld'); assert.ok(dashed && dashed.paint['line-dasharray']);

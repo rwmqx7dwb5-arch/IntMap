@@ -250,7 +250,7 @@ test('R493 ②e: the console binds it — frames to the vision argument, reset t
      束ねる側が `urls()` を読んでいることは、ここで綴りを 2 つとも読んで結び直す。 */
   /* (atlas-native-tools) the frames are bundled once for the step and the call carries them as the images.
      (atlas-legacy-protocol-removal) there is one transport now — the one-string envelope's second call is gone. */
-  assert.match(CONSOLE_SRC, /_tImgs=_atlTurnImgs\(VFRAMES\.urls\(\),/, 'the frames are bundled for the step');
+  assert.match(CONSOLE_SRC, /_tImgs=turnAttachmentImages\(VFRAMES\.urls\(\),/, 'the frames are bundled for the step');
   assert.match(CONSOLE_SRC, /askAIJSONEnvelope\('',_sys,_tImgs,/, 'the atlas_turn call carries the frames as IMAGES');
   assert.match(CONSOLE_SRC, /tail\+=VFRAMES\.promptBlock\(\)/, 'and the prompt names them');
   assert.match(CONSOLE_SRC, /VFRAMES\.reset\(\)/, 'and a new turn starts with none');

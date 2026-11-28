@@ -241,9 +241,57 @@ test('D5 held datasets join the same list, with what measuring them gave', async
   assert.ok(h, 'the held dataset is found');
   assert.equal(h.ref, 'dataset:ds7'); assert.ok(Math.abs(h.resolution.min - 111.32) < 0.01, 'pixelLat 0.001 deg ≈ 111 m');
   assert.equal(h.match.spatial, 'covers');
+  assert.deepEqual(h.overlapBounds, [[105.05, 20.95, 105.1, 21]]);
   const only2 = await M.search({ q: 'elevation', origins: ['held'] });
   assert.deepEqual(only2.entries.map((e) => e.origin), ['held']);
   assert.equal(only2.catalogs.length, 0, 'asking only for held datasets asks no catalogue');
+});
+
+test('a held grid without a declared extent is found by its measured extent and carries exact nodata', async () => {
+  const { makeGisRaster } = await import('../js/gis-raster.js');
+  const raster = makeGisRaster();
+  const ds = {
+    id: 'ds-grid', title: 'Test surface', kind: 'raster', count: 4, width: 2, height: 2,
+    grid: { west: 37, north: 56, pixelLng: 0.02, pixelLat: 0.01 },
+    bands: [{ name: 'sample', nodata: -9999 }],
+    read: () => [1, -9999, 3, 4],
+    provenance: { format: 'geotiff' },
+  };
+  ds.provenance.inspection = raster.describeBands(ds);
+  const { M } = remote({}, { raster, data: { list: () => [ds] } });
+  const queued = { origins: ['held'], bbox: [37.01, 55.985, 37.03, 55.99] };
+  const [hit] = (await M.search(queued)).entries;
+  assert.equal(hit.boundsBasis, 'measured');
+  assert.deepEqual(hit.extent.bbox, [[37, 55.98, 37.04, 56]]);
+  assert.deepEqual(hit.overlapBounds, [queued.bbox]);
+  assert.equal(hit.format, 'geotiff');
+  assert.equal(hit.resolution.min, 1113.2);
+  assert.equal(hit.quality.inspection.bands[0].nodataCount, 1);
+  const remoteWindow = await M.search({ ...queued, bbox: [-34, -16, -10, 22] });
+  assert.deepEqual(remoteWindow.entries, []);
+});
+
+test('the GIS capability passes a dateline-spanning camera window and exposes held results as structured data', async () => {
+  const { default: CAP_DATA } = await import('../js/atlas-cap-data.js');
+  const cap = CAP_DATA.find((e) => e.row[0] === 'data.gisRemote');
+  const previous = { IntMapLazy: globalThis.window?.IntMapLazy, IntMapGis: globalThis.window?.IntMapGis };
+  const oldWindow = globalThis.window;
+  globalThis.window ||= {};
+  const asked = [], held = { id: 'ds-survey', origin: 'held', match: { spatial: 'overlaps' } };
+  window.IntMapLazy = { need: async () => true };
+  window.IntMapGis = { atlas: { remote: async (a) => { asked.push(a); return { ok: true, html: '', entries: [held] }; } } };
+  try {
+    const K = {
+      GE: () => ({ camera: { getBounds: () => ({ getWest: () => 177, getEast: () => 184, getSouth: () => 4, getNorth: () => 12 }) } }),
+      R: (ok, html, fields) => ({ ok, html, ...fields }),
+    };
+    const r = await cap.run({ action: 'search', origins: ['held'], inView: true }, { source: 'atlas-worker' }, K);
+    assert.deepEqual(asked[0].bounds, [177, 4, -176, 12]);
+    assert.deepEqual(r.exec.gisRemote, { held: [held], bounds: asked[0].bounds });
+  } finally {
+    if (oldWindow) Object.assign(window, previous);
+    else delete globalThis.window;
+  }
 });
 
 test('D6 a catalogue that did not answer is listed with its KIND of silence and counted, never «nothing there»', async () => {

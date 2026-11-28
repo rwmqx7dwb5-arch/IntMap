@@ -32,6 +32,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ### Where a regression check lives — one file per subject, the round in the title
 
+Atlas query checks exercise elevation batching, missing readings, and the earthquake request scopes with stubbed upstream responses. Fact merge and comparability checks include signed values, conversion and pending comparisons, and external IDs across the session index and the persistent graph.
+
 **This is the rule (正本).** Node regression checks are kept in subject files,
 `tests/<subject>-checks.test.mjs` — one file per subject (a module, a layer, a gate), never one file
 per round. **The round a check came from is the leading `#R<N>` (or `R<N>`) of the test's own title**
@@ -45,6 +47,10 @@ the thing that moves when checks are regrouped.
 Measured 2026-09-29: the 512 round-numbered node files (`tests/r<N>…test.mjs`) were regrouped this way
 into subject files; the `r<N>` names that remain (nine node files and the Playwright specs) are
 history, counted by `LEGACY_NUMBERED_COUNT` in `scripts/round-names.mjs` (see *Static checks* below).
+
+The Atlas population coverage checks exercise explicit target selection, collinear vertex insertion across different
+shapes, and the footprint of successful WorldPop tiles. The browser check in `tests/gis-chain-audit.spec.js` compares
+the visible map source with the Atlas kernel result and verifies that repeating the same query leaves a single highlight. Both use controlled WorldPop responses.
 
 `tests/history-era-borders-checks.test.mjs` (#R710) executes the historical resolver with and without
 translations, with two different present-day countries beneath one historical territory, with QID
@@ -1077,6 +1083,8 @@ node scripts/sync-newsgeo.mjs
 
 `tests/atlas-job-tool-result-recall-checks.test.mjs` runs the Edge job runner with a JSON-round-tripped checkpoint and the server GIS. It checks that a new lease can read the end of a 51-row answer without repeating the filter. It also checks omitted previews, ranges crossing stored parts, missing parts, and progress saved by the previous runner.
 
+`tests/atlas-gis-handoff-integrity-checks.test.mjs` follows whole GIS data through browser delegation, durable worker selection, dependent tasks and browser readback. It also covers temporary storage errors and server strict validation. `tests/atlas-gis-execution-location-checks.test.mjs` exercises the planner against the GIS location contract.
+
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
@@ -1241,6 +1249,12 @@ coming back. This section is the 正本 for the instrument.
 | `scripts/atlas-eval/replay.mjs`, `lab.mjs`, `cassettes/`, `scripted-cassettes.mjs` | **the replay** — a recorded turn run again with no model and no browser (below). |
 | `tests/atlas-quality-lab-checks.test.mjs` | the answer key's schema, the grader on the shapes the replies write, the grader-is-never-the-answerer rule, **every cassette replayed**, and four injected regressions the replay must catch. |
 | `tests/atlas-eval-map-state-checks.test.mjs` | the map axis: the vocabulary is discovered, a key naming what the product lacks is red, an era key is held to the historical enumeration, unobserved is not mismatch, the two axes stay apart, the replay holds each cassette's map verdict, and the report and its history carry the axis. |
+
+For an explicit reasoning-effort comparison, run the same `--only` set on the same deployment with
+`--effort-policy low-adaptive` and `--effort-policy high-fixed`, writing the results to separate output directories.
+The JSON report keeps observed deliverables, reported client-side costs from all observed attempts, and the
+median time to the first usable result. An unpriced attempt leaves the cost-per-deliverable figure unknown.
+Use the server journal for billed costs and human review for the quality of open-ended answers.
 
 ### The quality lab — is the answer right, and can a PR break a turn unseen?
 
@@ -2987,6 +3001,9 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 `.agents/rules/historical-verification.md` が恒久の文脈として読み込まれること。
 
 ### `tests/gis-*.test.mjs` — GIS 基盤の 12 本（#R819 と最寄り圏）
+
+`tests/gis-chain-audit.spec.js` は実ブラウザで GeoJSON と GeoTIFF を描画なしで取り込み、
+登録された範囲・欠測数を読めることと、データセットを後から明示的に描画できることを確かめる。
 
 **どれも「直した姿」ではなく「元の欠陥」に対して書いてある**（[[intmap-restate-the-defect-not-the-fix]]）。
 「キャッシュが効く」「複数の runtime を作れる」「扉が増えた」は**実装についての文**で、

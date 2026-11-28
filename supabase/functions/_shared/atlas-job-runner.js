@@ -19,7 +19,7 @@
 //  ⚠ NO TYPE ANNOTATIONS — scripts/static-checks.mjs parses committed .js/.ts as plain JavaScript.
 // ============================================================================
 
-import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, refsOf, digestOf, stable, s, priorStands, failureWhy, jobGeometryTypes } from "./atlas-job-core.js";
+import { readyTasks, shapeOf, workerSystem, workerPrompt, inputView, resolveArgs, refsOf, cycleMembers, digestOf, stable, s, priorStands, failureWhy, jobGeometryTypes, readJobArtifactFeatures } from "./atlas-job-core.js";
 import { capClass } from "./atlas-cap-classes.js";
 
 /* ══ WHAT ONE TASK HANDS THE NEXT  (gis-result-handoff) ═══════════════════════════════════════════════════════════════════════════════
@@ -42,26 +42,28 @@ const outputId = (job, task) => "job:" + String(job) + "/" + String(task);
 
 /* keepOutput(ctx, task, data, sources) → the data as it is stored, with `output` stated. A FeatureCollection at data.result that does not fit the row
    is written in parts beside it (an RPC that checks the lease and that the task is running) and the row keeps the reference. */
-async function keepOutput(ctx, task, data, sources) {
+async function keepOutput(ctx, task, data, sources, firstPart = 0) {
   if (!data || typeof data !== "object" || !isFC(data.result)) return data;
   const feats = data.result.features;
   const whole = JSON.stringify(data.result);
+  const bytes = new TextEncoder().encode(whole).length;
   const columns = Array.isArray(data.columns) ? data.columns : [];
-  const output = { id: outputId(ctx.job.id, task.task_id), version: digestOf(whole), count: feats.length, columns, geometryTypes: jobGeometryTypes(feats), sources: (sources || []).map((x) => x && x.url).filter(Boolean), bytes: whole.length, stored: "inline" };
-  if (whole.length <= INLINE_OUTPUT_BYTES) return Object.assign({}, data, { output });
+  const output = { id: outputId(ctx.job.id, task.task_id), version: digestOf(whole), count: feats.length, columns, geometryTypes: jobGeometryTypes(feats), sources: (sources || []).map((x) => x && x.url).filter(Boolean), bytes, stored: "inline" };
+  if (bytes <= INLINE_OUTPUT_BYTES) return Object.assign({}, data, { output });
   const parts = [];
+  const encode = new TextEncoder();
   let cur = [], size = 0;
   for (const f of feats) {
-    const n = JSON.stringify(f).length + 1;
+    const n = encode.encode(JSON.stringify(f)).length + 1;
     if (cur.length && size + n > INLINE_OUTPUT_BYTES) { parts.push(cur); cur = []; size = 0; }
     cur.push(f); size += n;
   }
   if (cur.length) parts.push(cur);
   for (let i = 0; i < parts.length; i++) {
-    const ok = await rpc(ctx.db, "atlas_job_artifact_put", { p_job: ctx.job.id, p_holder: ctx.holder, p_task: task.task_id, p_part: i, p_body: { type: "FeatureCollection", features: parts[i] } });
+    const ok = await rpc(ctx.db, "atlas_job_artifact_put", { p_job: ctx.job.id, p_holder: ctx.holder, p_task: task.task_id, p_part: firstPart + i, p_body: { type: "FeatureCollection", features: parts[i], version: output.version } });
     if (ok !== true) throw Object.assign(new Error("artifact_not_written"), { code: "artifact_not_written" });
   }
-  return Object.assign({}, data, { result: null, output: Object.assign(output, { stored: "artifact", parts: parts.length, table: ARTIFACTS }) });
+  return Object.assign({}, data, { result: null, output: Object.assign(output, { stored: "artifact", parts: parts.length, first: firstPart, table: ARTIFACTS }) });
 }
 
 /* wholeData(ctx, row) — a finished task's data with an output kept beside the row read back in (in part order); a part that is missing makes it unreadable,
@@ -70,12 +72,10 @@ async function wholeData(ctx, row) {
   const r = (row && row.result) || {};
   const d = r.data;
   if (!d || typeof d !== "object" || !d.output || d.output.stored !== "artifact") return d;
-  const q = await ctx.db.from(ARTIFACTS).select("part,body").eq("job_id", ctx.job.id).eq("task_id", row.task_id).order("part");
-  const rows = (q && !q.error && Array.isArray(q.data)) ? q.data : null;
-  if (!rows || rows.length !== d.output.parts) return Object.assign({}, d, { unreadable: "output parts " + (rows ? rows.length : 0) + " of " + d.output.parts + " could be read" });
-  const features = [];
-  rows.slice().sort((a, b) => a.part - b.part).forEach((x) => { const b = x.body && Array.isArray(x.body.features) ? x.body.features : []; for (const f of b) features.push(f); });
-  return Object.assign({}, d, { result: { type: "FeatureCollection", features } });
+  const got = await readJobArtifactFeatures(ctx.db, ARTIFACTS, ctx.job.id, row.task_id, d.output);
+  return got.ok
+    ? { ...d, result: { type: "FeatureCollection", features: got.features } }
+    : { ...d, unreadable: "output could not be read whole (" + got.have + " of " + d.output.parts + " parts)" };
 }
 /* the reads of a task: the outputs of its inputs, by id and version, and whether each was read whole */
 const readsOf = (inputs) => (inputs || []).map((i) => {
@@ -204,7 +204,7 @@ async function runCapabilityTask(ctx, task, inputs) {
   /* what an earlier task made, handed on: "@A:data.result" becomes A's whole output, marked with where it came from */
   const unreadable = (inputs || []).find((i) => i && i.data && i.data.unreadable);
   if (unreadable) return fin("failed", "input_unavailable", { summary: "", findings: [], gaps: ['The output of task "' + s(unreadable.from, 64) + '" could not be read back whole (' + s(unreadable.data.unreadable, 120) + ').'], sources: [] });
-  const ra = resolveArgs(c.args || {}, inputs || [], { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: (src.data && src.data.output && src.data.output.version) || "", sources: Array.isArray(src.sources) ? src.sources : [] } }) : v) });
+  const ra = resolveArgs(c.args || {}, inputs || [], { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: (src.data && src.data.output && src.data.output.version) || "", sources: Array.isArray(src.sources) ? src.sources : [], provenance: src.data?.provenance } }) : v) });
   if (!ra.ok) return fin("failed", "input_ref_unresolved", { summary: "", findings: [], gaps: [ra.why], sources: [] });
   /* the outputs of this task's inputs, by the names the page would use for them (the task id, the output id) — a twin that takes datasets reads them
      by name (data.gis), the way the page's data.gis reads a dataset by its id */
@@ -213,7 +213,7 @@ async function runCapabilityTask(ctx, task, inputs) {
     const d = i && i.data;
     /* an input that holds no features is named too — so a step that reads it is told THAT, not that the name means nothing */
     if (!d || !isFC(d.result)) { outputs.set(String(i.from), { noFeatures: true, summary: i.summary || "" }); continue; }
-    const fc = Object.assign({}, d.result, { intmap: { from: i.from, version: (d.output && d.output.version) || "", sources: Array.isArray(i.sources) ? i.sources : [] } });
+    const fc = Object.assign({}, d.result, { intmap: { from: i.from, version: (d.output && d.output.version) || "", sources: Array.isArray(i.sources) ? i.sources : [], provenance: d.provenance } });
     outputs.set(String(i.from), fc);
     if (d.output && d.output.id) outputs.set(String(d.output.id), fc);
   }
@@ -223,7 +223,7 @@ async function runCapabilityTask(ctx, task, inputs) {
     await event(db, job, "task.request_failed", { task: task.task_id, code, capability: s(c.capability, 80) });
     return fin(/_unsupported_on_server$/.test(code) ? "refused" : "failed", code, { summary: s(out && out.text, 400), findings: [], gaps: [s(out && out.text, 400)].filter(Boolean), sources: [] });
   }
-  const sources = Array.isArray(out.sources) ? out.sources.slice(0, 20) : [];
+  const sources = Array.isArray(out.sources) ? out.sources : [];
   let data = out.data === undefined ? undefined : out.data;
   try { data = await keepOutput(ctx, task, data, sources); }
   catch (e) { return fin("failed", s(e && e.code, 60) || "artifact_not_written", { summary: s(out.text, 400), findings: [], gaps: ["The result could not be kept whole on the server, so it is not given as the result."], sources }); }
@@ -258,8 +258,8 @@ async function storeToolBody(ctx, task, body, first) {
   if (chars <= ENTRY_CHARS) return { preview, chars };
   const parts = Math.ceil((chars - ENTRY_CHARS) / TOOL_PART_CHARS);
   const version = digestOf(body);
-  /* Worker and capability tasks use the same artifact table, but a task has only one kind. Revisions that
-     replace the task clear both progress and artifacts. Write parts before checkpointing the ref. */
+  /* A worker's published GIS output starts after its transcript parts. Revisions clear both the progress
+     and artifacts. Write the parts before checkpointing the reference. */
   for (let i = 0; i < parts; i++) {
     const start = ENTRY_CHARS + i * TOOL_PART_CHARS;
     const text = JSON.stringify(body.slice(start, start + TOOL_PART_CHARS));
@@ -300,7 +300,7 @@ async function readStep(wholes, args, ctx, task) {
   const off = Math.min(total, Math.max(0, Math.floor(Number(a.offset) || 0)));
   const end = Math.min(total, off + Math.max(1, Math.min(ENTRY_CHARS, Math.floor(Number(a.length) || ENTRY_CHARS))));
   const part = input ? whole.slice(off, end) : await readToolBody(ctx, task, whole, off, end);
-  if (part == null) return { ok: false, code: "tool_result_unavailable", text: 'The saved range for "' + ref + '" could not be read whole.' };
+  if (part == null) return { ok: false, code: "tool_result_unavailable", category: "transient", text: 'The saved range for "' + ref + '" could not be read whole.' };
   return { ok: true, range: { ref, off, total }, data: part };
 }
 
@@ -309,7 +309,8 @@ function toolsSection(catalogue, mustAnswer) {
     catalogue.map((c) => "- " + c.id + " " + (c.args || "")).join("\n");
   p += mustAnswer
     ? "\n\nYOU HAVE ALL THE ANSWERS THESE TOOLS CAN GIVE. Return the final JSON object now; call nothing more."
-    : "\n\nTO CALL THEM, return ONLY {\"calls\":[{\"capability\":ID,\"args\":{…}}]} (up to " + TOOL_CALLS_PER_ROUND + " at once) INSTEAD of the final answer; you will be given each answer and asked again. When you have what you need, return the final JSON object described above. A call you already made is answered below — do not repeat it. TO HAND A RESULT ON, write \"@<n>:data.result\" as an argument (n = the number [n] of an earlier call below; for data.gis that is its whole FeatureCollection, not the clipped text you see) or \"@<task id>:data.result\" for an input you were given — do not fetch or filter again what you already have.";
+    : "\n\nTO CALL THEM, return ONLY {\"calls\":[{\"capability\":ID,\"args\":{…}}]} (up to " + TOOL_CALLS_PER_ROUND + " at once) INSTEAD of the final answer; you will be given each answer and asked again. When you have what you need, return the final JSON object described above. A call you already made is answered below — do not repeat it. TO HAND A RESULT ON, write \"@<n>:data.result\" as an argument (n = the number [n] of a completed call below or a new call in this list; for data.gis that is its whole FeatureCollection, not the clipped text you see) or \"@<task id>:data.result\" for an input you were given — do not fetch or filter again what you already have.";
+  p += '\nTo return a dataset as the task output, add "output":"@<n>:data.result" to the final JSON alongside the summary. Choose the successful call whose whole FeatureCollection is the deliverable.';
   return p;
 }
 const rangeText = (off, end, total) => "characters " + off + "-" + end + " of " + total;
@@ -382,21 +383,34 @@ async function runToolWorker(ctx, task, inputs) {
      not kept a second time: it is read back from the one place every tool answer is already kept whole (the entry's preview and its parts in
      atlas_job_artifacts — storeToolBody), as the JSON after "DATA: " in that body. Only the calls an argument names are read. → { list } | { why } */
   const DATA_MARK = "\nDATA: ";
-  const handedOn = async (args) => {
+  const handedOn = async (args, round = new Map()) => {
     const list = (inputs || []).map((i) => ({ from: String(i.from), summary: i.summary, sources: i.sources, data: i.data, version: (i.data && i.data.output && i.data.output.version) || "" }));
     for (const from of refsOf(args)) {
+      const local = round.get(from);
+      if (local) {
+        const out = await local;
+        if (!out?.ok) return { why: 'Call [' + from + '] failed, so it has no result to hand on.' };
+        if (out.data === undefined) return { why: 'Call [' + from + '] returned no data to hand on (only text).' };
+        list.push({ from, summary: out.text, sources: out.sources, data: out.data, version: digestOf(JSON.stringify(isFC(out.data?.result) ? out.data.result : out.data)) });
+        continue;
+      }
       const e = st.entries.find((x) => String(x.n) === from);
-      if (!e) continue;   /* not a call of this worker: an input, or a name resolveArgs refuses */
+      if (!e) {
+        if (!list.some((entry) => entry.from === from)) return { transient: /^\d+$/.test(from), why: 'No earlier call or task input is available as "' + from + '".' };
+        continue;
+      }
       if (!e.ok) return { why: 'Call [' + from + '] failed, so it has no result to hand on.' };
       if (!(e.chars > 0)) return { why: 'The whole answer of call [' + from + '] is not kept (it was made before answers were kept whole); make that call again and hand on the new one.' };
       let body = null;
       try { body = e.chars <= ENTRY_CHARS ? JSON.parse(e.preview) : await readToolBody(ctx, task, e, 0, e.chars); } catch (_) { body = null; }
-      if (body == null) return { why: 'The whole answer of call [' + from + '] could not be read back.' };
+      if (body == null) return { transient: true, why: 'The whole answer of call [' + from + '] could not be read back.' };
       const at = body.lastIndexOf(DATA_MARK);   /* the data is JSON, which never holds a raw newline: the last mark is the data's */
       let data;
       try { data = at >= 0 ? JSON.parse(body.slice(at + DATA_MARK.length)) : undefined; } catch (_) { data = undefined; }
       if (data === undefined) return { why: 'Call [' + from + '] returned no data to hand on (only text).' };
-      list.push({ from, summary: body.slice(0, Math.max(0, at)), sources: [], data, version: e.version || digestOf(body) });
+      const origins = Array.isArray(data?.inputs) ? data.inputs.flatMap((input) => Array.isArray(input?.sources) ? input.sources : []) : [];
+      const citations = e.sources || [...new Set(origins.filter((url) => typeof url === 'string'))].map((url) => ({ url }));
+      list.push({ from, summary: body.slice(0, Math.max(0, at)), sources: citations, data, version: isFC(data?.result) ? digestOf(JSON.stringify(data.result)) : (e.version || digestOf(body)) });
     }
     return { list };
   };
@@ -468,12 +482,13 @@ async function runToolWorker(ctx, task, inputs) {
         planned.push({ n, id, args, key });
       }
       let exclusiveTail = Promise.resolve();
+      const round = new Map();
       const runPlanned = async (p) => {
         if (p.id === READ_STEP && wholes.size) return readStep(wholes, p.args, ctx, task);
         if (!granted.has(p.id) || !lane || !lane.has(p.id)) return { ok: false, code: "not_granted", text: '"' + p.id + '" is not one of your tools.' };
-        const handed = await handedOn(p.args);
-        if (handed.why) return { ok: false, code: "input_ref_unresolved", text: handed.why };
-        const ra = resolveArgs(p.args, handed.list, { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: src.version || "", sources: Array.isArray(src.sources) ? src.sources : [] } }) : v) });
+        const handed = await handedOn(p.args, round);
+        if (handed.why) return { ok: false, code: "input_ref_unresolved", retryable: handed.transient === true, text: handed.why };
+        const ra = resolveArgs(p.args, handed.list, { annotate: (v, src) => (isFC(v) ? Object.assign({}, v, { intmap: { from: src.from, version: src.version || "", sources: Array.isArray(src.sources) ? src.sources : [], provenance: src.data?.provenance } }) : v) });
         if (!ra.ok) return { ok: false, code: "input_ref_unresolved", text: ra.why };
         const run = () => lane.run(p.id, ra.args, { signal: ctx.signal });
         const excl = typeof lane.exclusive === "function" ? lane.exclusive(p.id) !== false : true;
@@ -482,7 +497,14 @@ async function runToolWorker(ctx, task, inputs) {
         exclusiveTail = mine.catch(() => {});
         return mine;
       };
-      const outs = await Promise.all(planned.map((p) => runPlanned(p).catch((e) => ({ ok: false, code: "twin_threw", text: s(e && e.message, 300) }))));
+      const cyclic = cycleMembers(planned.map((p) => ({ id: String(p.n), inputs: refsOf(p.args).map((from) => ({ from })) })));
+      planned.forEach((p, i) => {
+        const result = cyclic.has(i)
+          ? Promise.resolve({ ok: false, code: "input_cycle", text: "Call [" + p.n + "] has a circular argument reference." })
+          : Promise.resolve().then(() => runPlanned(p)).catch((e) => ({ ok: false, code: "twin_threw", text: s(e && e.message, 300) }));
+        round.set(String(p.n), result);
+      });
+      const outs = await Promise.all(round.values());
       for (let i = 0; i < planned.length; i++) {
         const { n, id, args, key } = planned[i];
         const out = outs[i];
@@ -494,7 +516,7 @@ async function runToolWorker(ctx, task, inputs) {
           ? { preview: JSON.stringify(out && out.range ? out.data : toolBody(out)), range: out && out.range }
           : await storeToolBody(ctx, task, toolBody(out), nextPart);
         if (!stored) return { state: "lost", lost: true };
-        const entry = { n, key, capability: id, args, ok: !failed, why, code: s(out && out.code, 60), ...stored };
+        const entry = { n, key, capability: id, args, ok: !failed, why, code: s(out && out.code, 60), sources: out?.sources, ...stored };
         st.entries.push(entry);
         register(entry);
         await event(db, job, "task.tool_call", { task: task.task_id, capability: id, ok: !!(out && out.ok === true), code: s(out && out.code, 60) });
@@ -512,7 +534,25 @@ async function runToolWorker(ctx, task, inputs) {
     const sh = shapeOf(parsed);
     if (sh.ok) {
       const web = st.web;
-      return finish(web ? "done" : "partial", web ? "" : "degraded", Object.assign({}, sh.out, { sources, web, toolCalls: st.entries.length, tools: st.entries.map((e) => ({ n: e.n, capability: e.capability, ok: e.ok, code: e.code })) }));
+      const result = { ...sh.out, sources, web, toolCalls: st.entries.length, tools: st.entries.map((e) => ({ n: e.n, capability: e.capability, ok: e.ok, code: e.code })) };
+      if (parsed.output != null) {
+        const match = /^@(\d+):data\.result$/.exec(typeof parsed.output === "string" ? parsed.output : "");
+        const selected = match && st.entries.find((e) => String(e.n) === match[1]);
+        const handed = selected && await handedOn(parsed.output);
+        const product = handed?.list?.findLast((x) => x.from === match[1]);
+        if (!product || !isFC(product.data?.result)) {
+          sh.why = handed?.why || 'the output must name a successful call that returned a FeatureCollection, e.g. "@2:data.result"';
+          if (handed?.transient) {
+            return finish("failed", "output_unavailable", { ...result, gaps: [...result.gaps, sh.why] });
+          }
+        } else {
+          try { result.data = await keepOutput(ctx, task, product.data, product.sources, nextPart); }
+          catch (_) { return finish("failed", "artifact_not_written", { ...result, gaps: [...result.gaps, "The selected dataset could not be kept whole."] }); }
+          result.outputSources = product.sources || [];
+          result.productCall = selected.n;
+          return finish(web ? "done" : "partial", web ? "" : "degraded", result);
+        }
+      } else return finish(web ? "done" : "partial", web ? "" : "degraded", result);
     }
     st.shapeFails += 1;
     if (st.shapeFails >= 2) return finish("failed", "shape", { summary: "", findings: [], gaps: ["The worker did not return the requested shape (" + sh.why + ")."], sources, toolCalls: st.entries.length });
@@ -651,7 +691,7 @@ export async function runJob(ctx0) {
         /* each input is the dependency's WHOLE result — an output kept beside its row is read back in (wholeData) — with its sources, so a task that
            is handed it can name where it came from */
         const start = async () => {
-          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: await wholeData(ctx, row) }; }));
+          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.outputSources || r.sources, data: await wholeData(ctx, row) }; }));
           return runTask(Object.assign({}, ctx, { requestVersion: Array.isArray(cp.amends) ? cp.amends.length : 0 }), t, inputs);
         };
         running.set(t.task_id, start().catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));

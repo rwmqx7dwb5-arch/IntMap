@@ -235,3 +235,14 @@ test('atlas-eval-harness ⑬ the workflow fails without its secrets, keeps the r
   assert.ok(steps.some((s) => /upload-artifact/.test(String(s.uses || ''))), 'the report is uploaded');
   assert.ok(!/\$\{\{\s*(inputs|github\.event)\.[^}]*\}\}/.test(steps.map((s) => String(s.run || '')).join('\n')), 'no workflow input is expanded inside a shell script');
 });
+test('effort samples keep priced failures in the numerator and leave unreported cost unknown', () => {
+  const rows = [
+    { effort: { costMicros: 20, firstUsefulMs: 30 }, deliverables: { present: 2 } },
+    { effort: { costMicros: 12, firstUsefulMs: 10 }, deliverables: { present: 0 } },
+    { effort: { costMicros: 8, firstUsefulMs: null }, deliverables: { present: 0 } },
+  ];
+  const sample = H.effortSample(rows, 'low-adaptive');
+  assert.equal(sample.costPerObservedDeliverableMicros, 20);
+  assert.equal(sample.firstUsefulMedianMs, 20);
+  assert.equal(H.effortSample([...rows, { effort: null }], 'low-adaptive').totalCostMicros, null);
+});

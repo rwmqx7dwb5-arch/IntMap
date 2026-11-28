@@ -176,19 +176,14 @@ export default [
   {
     row: ['web.fetchFile',              'fetchFile',      'downloadToDataset,importFromWeb,fetchDataFile,downloadPortalFile',        'data',     'none',    'gis.dataset,map.object', 'explanation',         'session', 'none',   '',         '', 'external'],
     ui: { none: '2026-11-20' },
+    policy: { headless: true },
     doc: [
-      { in: 'web.browse', at: 10, text: ' TAKE THE FILE: {"type":"fetchFile","ref"?:str,"url"?:str,"label"?:str} (ファイルを取得 · ポータルのファイルをデータセットに · データをダウンロードして取り込む) downloads ONE data file — by the ref of a link from the last web.browse result (usually one of its `files`), or by url — and opens it through the same reader a dropped file takes: a CSV / Excel / GeoJSON / KML / zip becomes a dataset (and a layer when it has places; a table with no places opens the Data Studio step that binds its rows to places). It answers the dataset id, the format and the row count — use data.gis / data.studio / chart.compose on it from there. A file over 6 MB, a page that is not a file (`not_a_file` — it shows you the page instead), or a format IntMap cannot read are said, not guessed. A site that needs a login or CAPTCHA before the download is a `handoff`: ask the reader to download it and attach it. Say where the file came from (its address is in the result) and what the portal says about its licence.' },
+      { in: 'web.browse', at: 10, text: ' TAKE THE FILE: {"type":"fetchFile","ref"?:str,"url"?:str,"label"?:str,"draw"?:bool} (ファイルを取得・登録して後で地図に表示) downloads one data file by its address or a ref from web.browse. It uses the dropped-file reader (for example CSV, GeoJSON, zipped shapefile or GeoTIFF). In a delegated browser worker or with draw:false it registers the data without drawing or opening a panel. Return web.dataset.id and the source to the parent. Use that id with data.gis to analyse it or map.drawDataset to display it explicitly. The result carries extent, format and available quality facts. The foreground default draws geographic files. The download relays files up to 6 MB and reports unreadable files and handoffs. For a login or CAPTCHA wall, try another source and report what you could not retrieve. Cite the source address and any licence the source actually states.' },
     ],
     phrases: () => ['ファイルを取得', 'データをダウンロードして取り込む', 'ポータルのファイルをデータセットに'].concat(['download a data file', 'import a file from the web']),
-    schema: () => ({ type: 'object', properties: { ref: str(), url: str(), label: str() }, anyOf: [{ required: ['ref'] }, { required: ['url'] }] }),
+    schema: () => ({ type: 'object', properties: { ref: str(), url: str(), label: str(), draw: bool() }, anyOf: [{ required: ['ref'] }, { required: ['url'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, note = K.note;
-      /* (worker-reach) ⚠ THE ROW SAYS LESS THAN THE RUN DOES. Column 5 names only 'gis.dataset', but toDataset is the dropped-file door
-         (js/map-ui.js handleFiles), which DRAWS a vector file on the reader's map before it registers the dataset. A delegated worker
-         (js/atlas-console.js runReadCapability, source 'atlas-worker') is let in by that row, and must not change the reader's map, so
-         it is refused here — before anything is downloaded — with the reason, rather than drawing. Lifts when the door can register
-         without drawing; the row should then also name the draw it does for everyone else. */
-      if (dctx && dctx.source === 'atlas-worker') return R(false, warn(esc(L('A delegated worker cannot take a file: the file door draws it on the reader’s map. Hand the address back; the turn that delegated can fetch it.', '委譲された作業者はファイルを取得できません（取り込み口が読者の地図に描くため）。アドレスを返してください。委譲したターンが取得できます。'))),
-        { meta: { code: 'draws_on_reader_map', permanent: true } });
+      const draw = a.draw !== false && dctx?.source !== 'atlas-worker';
       const D = door(K.HOST);
       const web = { untrusted: true, notice: WEB_BROWSE_NOTICE };
       const d = await D.download(a, dctx && dctx.signal);
@@ -201,18 +196,22 @@ export default [
         const say = (d && d.say) || sayFor(code, L);
         return R(false, warn(esc(say)), { meta: { code }, exec: { web: Object.assign(web, { code, say, page: d && d.page }) } });
       }
-      const t = await D.toDataset(d.file, a.label);
-      if (!t.ok && t.code === 'not_registered') {
+      const t = await D.toDataset(d.file, a.label, { draw, inspect: !draw, source: d.meta.url });
+      if (!t.ok && t.code === 'not_registered' && t.layer != null) {
         /* drawn on the map, but no dataset exists: said as a failure with what DID happen, so the next step does not plan on a dataset id it was never given */
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(' and drew ' + (t.rows != null ? t.rows + ' feature(s) ' : '') + 'on the map, but the analysis registry did not accept it, so there is no dataset to analyse.', ' 地図には ' + (t.rows != null ? t.rows + ' 件 ' : '') + '描きましたが、分析用データセットとして登録されませんでした。分析に使えるデータセットはありません。'))),
           { meta: { code: 'dataset_not_registered' }, exec: { web: Object.assign(web, { file: d.meta, reason: 'not_registered', drawn: { layer: t.layer, features: t.rows } }) } });
+      }
+      if (!t.ok && t.code === 'not_registered') {
+        return R(false, warn(esc(L('The download could not be registered for analysis.', 'ダウンロードしたファイルを分析用に登録できませんでした。'))),
+          { meta: { code: 'dataset_not_registered' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }) } });
       }
       if (!t.ok) {
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(', but IntMap could not read it as data (' + t.code + ').', ' が、データとして読み取れませんでした(' + t.code + ')。'))),
           { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }, await textExcerpt(d.file)) } });
       }
       return R(true, note(L('Added the dataset ', 'データセットを追加しました: ') + '<b>' + esc(t.label) + '</b>' + (t.rows != null ? ' — ' + t.rows + L(' rows', ' 行') : '') + ' · ' + esc(host(d.meta.url))),
-        { exec: { web: Object.assign(web, { file: d.meta, dataset: { id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });
+        { exec: { web: Object.assign(web, { file: d.meta, dataset: { ...t.description, id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });
     },
   },
   {
@@ -228,7 +227,7 @@ export default [
       (Array.isArray(a.queries) ? a.queries : []).forEach((x) => {
         const q = String(x && typeof x === 'object' ? x.q : x || '').trim();
         const lang = x && typeof x === 'object' ? String(x.lang || '').trim() : '';
-        const key = queryKey(q) + (lang ? '|' + lang.toLowerCase() : '');
+        const key = queryKey(q, lang);
         if (q && !seen.has(key)) { seen.add(key); asks.push({ q, lang, key }); }
       });
       if (!asks.length) return R(false, warn(esc(L('Give the questions to search as queries:[{q}].', '検索する問いを queries:[{q}] で指定してください。'))), { meta: { code: 'needs_input' } });
@@ -237,19 +236,19 @@ export default [
       const sys = 'You are the web-search desk of IntMap. Search the live web for the question and report what the sources say: concrete facts with dates and figures, each followed by the address of the page that states it. Plain text, no preamble, no markdown headings. Say plainly what you could not find or could not confirm. Never write an address you did not read. Today is ' + today + '.';
       /* the questions run at the SAME TIME (the hosted search inside one provider call runs its queries one after another — js/atlas-toolsurface.js measured 38/18/26/46 s in one reply); each goes through the session's store, so a question already searched — by this turn, an earlier one or a worker — is answered from that search and one that is running now is joined, not started twice */
       const one1 = async (x) => {
-        const out = { q: x.q };
+        const out = { q: x.q, ...(x.lang && { lang: x.lang }) };
         const got = await webEvidence.acquire('search', x.key, async () => {
           let env;
           try { env = await askEnv('Search the web: ' + x.q + (x.lang ? '\nRead sources written in: ' + x.lang + ' as well as any other language that has them.' : ''), sys, null, { task: 'web_search', webMode: 'required', ...modelCallKey(dctx, K), signal: dctx && dctx.signal }); }
           catch (e) { return { ok: false, error: e }; }
           const text = String((env && env.text) || '').trim(), meta = (env && env.meta) || {};
           const ran = meta.webUsed === true;
-          return { ok: !!text && ran, notRun: !!text && !ran, query: x.q, turn: K._curTurnKey, text, sources: env && env.citations, value: { webSearches: meta.webSearches || 0, webSources: meta.webSources == null ? undefined : meta.webSources }, why: meta.webFailure };
+          return { ok: !!text && ran, notRun: !!text && !ran, query: x.q, lang: x.lang, turn: K._curTurnKey, text, sources: env && env.citations, value: { webSearches: meta.webSearches || 0, webSources: meta.webSources == null ? undefined : meta.webSources }, why: meta.webFailure };
         }, Object.assign({ refresh: a.refresh === true }, readFor(dctx, K)));
         if (got.entry) {
           const e = got.entry;
           webEvidence.note(e.sources, Object.assign({ via: 'web.search', query: x.q }, readFor(dctx, K)));
-          return Object.assign(out, { state: 'ok', evidenceId: e.id, how: got.how, ageSec: Math.round((Date.now() - e.fetchedAt) / 1000), searches: (e.value && e.value.webSearches) || undefined, text: e.text, sources: e.sources });
+          return Object.assign(out, { state: 'ok', evidenceId: e.id, how: got.how, ageSec: Math.round((Date.now() - e.fetchedAt) / 1000), searches: (e.value && e.value.webSearches) || undefined, text: e.text, sources: e.sources.map((s) => ({ ...s })) });
         }
         const r = got.result || {};
         if (r.error) return Object.assign(out, { state: 'failed', code: String((r.error && r.error.code) || 'error'), say: String((r.error && r.error.message) || '').slice(0, 200) });

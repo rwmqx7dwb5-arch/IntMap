@@ -52,8 +52,9 @@ test('eval-shape-grading ③ the tally counts shapes by kind and basis; a basis 
   assert.equal(shapeKindOf(line), 'line');
   assert.equal(shapeKindOf(area), 'area');
   assert.equal(shapeKindOf({ type: 'Point', coordinates: [0, 0] }), '');
-  assert.deepEqual(tallyShapes([{ geo: line, basis: 'real' }, { geo: line }, { geo: area, basis: 'derived' }, { geo: { type: 'Point', coordinates: [0, 0] }, basis: 'real' }, { geo: line, basis: 'exact' }]),
-    { n: 4, 'line:real': 1, 'line:unstated': 2, 'area:derived': 1 });
+  const { items, ...totals } = tallyShapes([{ geo: line, basis: 'real' }, { geo: line }, { geo: area, basis: 'derived' }, { geo: { type: 'Point', coordinates: [0, 0] }, basis: 'real' }, { geo: line, basis: 'exact' }]);
+  assert.deepEqual(totals, { n: 4, 'line:real': 1, 'line:unstated': 2, 'area:derived': 1 });
+  assert.deepEqual(items.map(({ kind, basis }) => [kind, basis]), [['line', 'real'], ['line', 'unstated'], ['area', 'derived'], ['line', 'unstated']]);
   assert.equal(tallyShapes([]), null, 'nothing drawn is null, as every other drawing in the section');
 });
 
@@ -79,8 +80,9 @@ test('eval-shape-grading ⑤ a line between towns does not pass as the river; th
   const A = { highlightCountries: 0, lines: { n: 1 } };
   assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:unstated': 1 } } }).verdict, 'mismatch');
   const nm = q.mapState.drawn[0].named;
-  assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:real': 1, names: [nm ? nm[0] : 'x'] } } }).verdict, 'match');
-  if (nm) assert.equal(gradeMap(q.mapState, { atlas: { ...A, shapes: { n: 1, 'line:real': 1, names: ['Some Other River'] } } }).verdict, 'mismatch', 'a real line of ANOTHER river is not the river asked for');
+  const observed = (target) => ({ atlas: { ...A, shapes: { n: 1, 'line:real': 1, items: [{ kind: 'line', basis: 'real', author: 'atlas', source: 'OpenStreetMap', target }] } } });
+  assert.equal(gradeMap(q.mapState, observed(nm?.[0] || 'x')).verdict, 'match');
+  if (nm) assert.equal(gradeMap(q.mapState, observed('Some Other River')).verdict, 'mismatch', 'a real line of ANOTHER river is not the river asked for');
 });
 
 test('eval-shape-grading ⑥ a decline is graded on the words AND on the map — no stand-in of the asked kind', () => {

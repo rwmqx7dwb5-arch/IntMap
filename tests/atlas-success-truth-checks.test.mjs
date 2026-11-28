@@ -148,6 +148,22 @@ test('⑥ 47 地物は 47 行（地図レイヤー通し番号ではない）。
 
 /* ── ⑨ サーバーで保存した操作は依存順に・観測してから「適用済み」 ───────────────────────────────────────────── */
 const JC = await imp('js/atlas-jobs-client.js');
+test('a revised parked operation applies once, while kept tasks and concurrent reads reuse their observed application', async () => {
+  const stored = new Map([['intmap.atlas.jobs.applied', JSON.stringify(['J/date'])]]);
+  const memory = () => JC.deviceParkedMemory({ localStorage: { getItem: (k) => stored.get(k), setItem: (k, v) => stored.set(k, v) } });
+  const facts = (version, year, conditionsVersion = version) => JC.jobFacts({ id: 'J', status: 'done' }, [{
+    task_id: 'date', status: 'done', result: { requestVersion: version, conditionsVersion, parked: { capability: 'time.set', args: { year } } },
+  }]);
+  const seen = [];
+  const apply = async (op) => { seen.push(op.args.year); await tick(5); return { ok: true }; };
+  const current = memory();
+  await JC.applyParked(facts(0, 1850, 1), apply, current);
+  await Promise.all([JC.applyParked(facts(2, 1900), apply, current), JC.applyParked(facts(2, 1900), apply, current)]);
+  await JC.applyParked(facts(2, 1900, 3), apply, memory());
+  await JC.applyParked(facts(4, 1920), apply, memory());
+  assert.deepEqual(seen, [1900, 1920]);
+});
+
 test('⑨ 名前順ではなく依存順（1850 年へ移動 → 描画）。失敗した操作は適用済みにならず、後続も走らない', async () => {
   const mk = () => ({ id: 'J', tasks: [
     { id: 'a_draw', state: 'done', deps: ['b_move'], endedAt: '2026-11-27T00:00:02Z', parked: { capability: 'map.draw', args: {} } },

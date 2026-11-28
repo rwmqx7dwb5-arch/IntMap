@@ -187,13 +187,40 @@ test('atlas-semantic-search ④ the page and the Edge Function compute the same 
   assert.equal(await core.catalogueHash(cat.entries), cat.hash, 'browser and server agree on the key');
   assert.equal(CAPS.SEMANTIC_MAX_DOC_CHARS, core.MAX_DOC_CHARS, 'the page cuts documents at the length the server accepts');
   assert.ok(cat.entries.every((e) => e.text.length <= core.MAX_DOC_CHARS && e.text.trim()));
-  assert.equal(cat.entries.length, CAPS.all().filter((c) => !c.withdrawn).length, 'every live capability is embedded — none is left for spellings only');
+  const { skillSemanticDocs } = await import('../js/atlas-skills.js');
+  assert.deepEqual(cat.entries.filter((e) => cat.skillIds.includes(e.id)), skillSemanticDocs());
+  assert.deepEqual(cat.entries.filter((e) => !cat.skillIds.includes(e.id)).map((e) => e.id), CAPS.semanticDocs().map((e) => e.id),
+    'every live capability is embedded beside the skill notes');
   const ok = await core.parseSeed({ catalog: cat.hash, entries: cat.entries });
   assert.equal(ok.ok, true, ok.code);
   const tampered = cat.entries.map((e, i) => (i ? e : { id: e.id, text: e.text + ' (anything)' }));
   const bad = await core.parseSeed({ catalog: cat.hash, entries: tampered });
   assert.deepEqual([bad.ok, bad.code], [false, 'catalog_mismatch']);
   assert.equal(core.parseSearch({ catalog: cat.hash, q: 'x'.repeat(core.MAX_QUERY_CHARS + 1) }).code, 'query_too_long', 'a long query is refused, not truncated');
+});
+
+test('find_capability finds skills by multilingual meaning without returning skill IDs as callable tools', async () => {
+  const { searchSkills } = await import('../js/atlas-skills.js');
+  const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
+  const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
+  const examples = new Map([
+    ['Wo lässt sich ein neues Werk am besten ansiedeln?', 'industrial-site-screening'],
+    ['Comment ont évolué les limites entre États au fil des siècles ?', 'historical-border-comparison'],
+  ]);
+  const CAPS = registry(async (q, cat) => {
+    const sims = Object.fromEntries(cat.entries.map(({ id }, i) => [id, (i % 31) / 100]));
+    sims['skill.' + examples.get(q).replaceAll('-', '.')] = 0.95;
+    return { state: 'ok', model: 'deterministic', sims };
+  });
+  const surface = makeAtlasToolSurface({ capabilities: CAPS, schemas: makeAtlasSchemas() });
+  const run = surface.makeExecute(surface.baseTools(), {});
+  for (const [query, expected] of examples) {
+    assert.deepEqual(searchSkills(query), []);
+    const result = await run({ name: 'find_capability', arguments: { query } });
+    assert.equal(result.skills[0].id, expected);
+    assert.equal(result.skills[0].semantic, 0.95);
+    assert.ok(result.matches.every((m) => !m.id.startsWith('skill.')));
+  }
 });
 
 /* ══ ⑤ THE EDGE FUNCTION, EVALUATED (Deno.serve and fetch stubbed) ═════════════════════════════════ */

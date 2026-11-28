@@ -21,16 +21,19 @@ export function fakeDb(plan, o = {}) {
   };
   /* a tiny query builder: select().eq()…order()/maybeSingle(), awaited at any point */
   const query = (table) => {
-    const where = [];
+    const where = [], bounds = [];
     let ord = null;
     const rows = () => {
       let list = table === 'atlas_job_tasks' ? Array.from(st.tasks.values()) : table === 'atlas_job_artifacts' ? st.artifacts : table === 'atlas_jobs' ? [j] : [];
       list = list.filter((r) => where.every(([k, v]) => (k === 'job_id' && table === 'atlas_job_tasks') ? v === j.id : (k === 'id' ? r.id === v : r[k] === v)));
+      list = list.filter((r) => bounds.every((match) => match(r)));
       if (ord) list = list.slice().sort((a, b) => a[ord] - b[ord]);
       return JSON.parse(JSON.stringify(list));
     };
     const b = {
       select: () => b, eq: (k, v) => { where.push([k, v]); return b; }, order: (k) => { ord = k; return b; },
+      gte: (k, v) => { bounds.push((r) => r[k] >= v); return b; },
+      lt: (k, v) => { bounds.push((r) => r[k] < v); return b; },
       maybeSingle: async () => ({ data: rows()[0] || null, error: null }),
       then: (res, rej) => Promise.resolve({ data: rows(), error: null }).then(res, rej),
       insert: async (row) => { st.events.push(row); return { error: null }; },

@@ -176,6 +176,102 @@ test('atlas-plan-on-map ③ a revision keeps what was observed for the steps it 
   assert.equal(s.steps[0].state, 'completed');
 });
 
+test('a new request cannot inherit completion merely by giving its steps the same names', () => {
+  const P = makeAtlasPlan();
+  P.beginTurn();
+  P.declare({ goal: 'Use the 2020 figures for Canada', steps: ['Fetch population'], scope: { target: 'CA', period: 2020, inputs: { population: 'v1' } } });
+  P.started('ca', { step: 0, capability: 'data.value' });
+  P.settled('ca', { ok: true, capability: 'data.value' });
+  P.endTurn();
+  P.beginTurn();
+  P.declare({ goal: 'Verify the same population', steps: ['Fetch population'], scope: { inputs: { population: 'v1' }, period: 2020, target: 'CA' } });
+  assert.equal(P.snapshot().steps[0].state, 'completed', 'explicitly unchanged inputs can be reused');
+  P.endTurn();
+  P.beginTurn();
+  P.declare({ goal: 'Use the 2020 figures for Japan', steps: ['Fetch population'], scope: { target: 'JP', period: 2020, inputs: { population: 'v1' } } });
+  assert.equal(P.snapshot().steps[0].ops.length, 0);
+  P.started('jp', { step: 0, capability: 'data.value' });
+  P.settled('jp', { ok: true, capability: 'data.value' });
+  P.declare({ scope: { target: 'JP', period: 2020, inputs: { population: 'v2' } } });
+  assert.equal(P.snapshot().steps[0].ops.length, 0, 'a changed input version invalidates the old result');
+});
+
+test('the final turn preserves every missing work item even without an independent reading', async () => {
+  const labels = ['Benin', 'Brazil', 'Greece', 'Malaysia', 'New Zealand'];
+  const p = makeAtlasPlan();
+  const { out } = await turn([
+    calls({ id: 'p', name: 'plan', args: { steps: ['Fetch figures'] } },
+      ...labels.map((place, i) => ({ id: 'c' + i, name: 'map_view', args: { place } }))),
+    answer('One result is available.'),
+  ], async (a) => a.place === labels.at(-1) ? verdict('completed') : verdict('failed', []), { plan: p, verify: async () => null });
+  assert.equal(out.plan.steps[0].state, 'partial');
+  assert.equal(out.completion, 'partial');
+  assert.deepEqual(out.unmet.map((u) => labels.find((place) => u.need.includes(place))), labels.slice(0, -1));
+});
+
+test('a period revision can retain only steps whose input scope is explicitly preserved', () => {
+  const p = makeAtlasPlan();
+  const steps = ['Read terrain', 'Draw the historical boundaries'];
+  const terrain = { step: 1, scope: { region: 'Nile delta', inputs: { terrain: 'v2' } } };
+  p.beginTurn();
+  p.declare({ goal: 'Map 1720', steps, scope: { period: 1720 }, stepScopes: [terrain] });
+  for (const step of [0, 1]) {
+    p.started('c' + step, { step, capability: 'map.shape' });
+    p.settled('c' + step, { ok: true, capability: 'map.shape' });
+  }
+  p.endTurn();
+  p.beginTurn();
+  p.declare({ goal: 'Map 1780', steps, scope: { period: 1780 }, stepScopes: [terrain] });
+  assert.deepEqual(p.snapshot().steps.map((step) => step.ops.length), [1, 0]);
+});
+
+test('different methods can close one required deliverable without closing another', async () => {
+  const p = makeAtlasPlan();
+  const { out } = await turn([
+    calls(
+      { id: 'p', name: 'plan', args: { steps: ['Place both locations'], requirements: [{ id: 'pier', step: 1, label: 'Wharf' }, { id: 'yard', step: 1, label: 'Rail yard' }], target: 'pier' } },
+      { id: 'a', name: 'map_view', args: { place: 'Wharf from catalog' } },
+      { id: 'p2', name: 'plan', args: { target: 'yard' } },
+      { id: 'b', name: 'map_view', args: { place: 'Rail yard from catalog' } },
+      { id: 'p3', name: 'plan', args: { target: 'pier' } },
+      { id: 'c', name: 'highlight', args: { country: 'Wharf from survey' } }),
+    answer('The wharf was found.'),
+  ], async (a) => a.country === 'Wharf from survey' ? verdict('completed') : verdict('failed', []), { plan: p });
+  assert.equal(out.completion, 'partial');
+  assert.deepEqual(out.unmet.map((u) => u.need), ['Rail yard']);
+  assert.equal(out.plan.steps[0].requirements[0].callId, 'c');
+});
+
+test('an unrelated machine note does not withdraw a confirmed shortfall', async () => {
+  const { out } = await turn([answer('Eight regions are visible.'), { ...answer('Eight regions are visible.'), noteToIntMap: 'The previous draft used blue.' }],
+    async () => verdict('completed'), { verify: async () => ({ unmet: [{ need: 'Remaining twelve regions', why: 'Only eight were observed' }] }) });
+  assert.equal(out.completion, 'partial');
+  assert.equal(out.unmet[0].need, 'Remaining twelve regions');
+});
+
+test('an observed deliverable settles the request even if a preparatory retrieval failed', async () => {
+  const { out } = await turn([
+    calls({ id: 'p1', name: 'plan', args: { steps: ['Fetch an upstream dataset', 'Draw the district'] } },
+      { id: 'a', name: 'map_view', args: { place: 'District index' } }),
+    calls({ id: 'p2', name: 'plan', args: { current: 2 } },
+      { id: 'b', name: 'highlight', args: { country: 'Surveyed district' } }),
+    { ...answer('The district boundary is visible.'), answerMode: 'map' },
+  ], async (a) => a.country ? verdict('completed') : verdict('failed', []), {
+    plan: makeAtlasPlan(),
+    verify: async () => ({ met: [{ need: 'Draw the district', how: 'The observed district polygon is visible' }], unmet: [] }),
+  });
+  assert.equal(out.completion, 'complete');
+  assert.equal(out.plan.steps[0].state, 'failed');
+});
+
+test('rewording a promised map is not progress toward its production', async () => {
+  const { seen, out } = await turn([
+    ...Array.from({ length: 8 }, (_, i) => ({ ...answer('I will draw the map, draft ' + (i + 1)), answerMode: 'map' })),
+  ], async () => verdict('completed'), { limits: { maxSteps: 8 } });
+  assert.equal(seen.length, 2);
+  assert.equal(out.stopped, 'output_unmet');
+});
+
 /* ── ④ ─────────────────────────────────────────────────────────────────────────────────────── */
 
 test('atlas-plan-on-map ④ the ceilings are not moved, and the loop does not read the server\'s budget', () => {

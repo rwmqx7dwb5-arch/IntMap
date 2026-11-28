@@ -14,6 +14,12 @@
 
 **「何ができるか」の一覧は 1 つしかない。** `js/atlas-capabilities.js` の登録表がそれで、UI のボタンも Atlas の自然文も、テストも監査も、同じ能力 ID を名指す。
 
+複数の成果物を扱う計画は `requirements` で対象ごとの ID を記録し、`target` でその対象を満たす操作を結び付ける。
+各対象の状態と操作・成果物の受領証は独立検証にも渡る。計画の再利用は `scope`・`stepScopes` に記録した対象・期間・入力版で照合する。
+不足が確認された後に検証できなくなった場合は、直近に確認した不足を保持する。出力を求める差し戻しは、次の操作記録が進んだときに同じ不足を再判定する。
+描画した地物は ID ごとに対象・作成者・ターン・採用した出典と版・加工を記録できる。計測線や表示された線の両端と範囲も地図の状態から読める。
+地図の評価では、同じ地物 ID が名前・形状・出典・作成者の条件を満たすかを照合する。
+
 **能力ひとつにつき、書く場所はひとつ。** 能力は **`js/atlas-cap-<名前空間>.js` の 1 項目**（名前空間は能力 ID の先頭。`view.flyTo` は `js/atlas-cap-view.js`）で、
 1 項目が宣言・説明文・方針・実行のすべてを持つ（持てる欄は `js/atlas-caps.js` の `ENTRY_KEYS`、綴り違いの欄は読み込み時に名指しで拒む）:
 
@@ -162,6 +168,9 @@
 - 意味の半分が使えないとき（未ログイン・失敗・タイムアウト 8 秒・未知のカタログ）は `basis:'lexical'`・`semantic:{state:'unavailable', reason}`。引けて何も立たなければ
   `basis:'lexical+semantic'`・`candidates:0`。同期の `search` は `semantic:{state:'not_consulted'}`。`find_capability`（`js/atlas-toolsurface.js` の `find`）は
   `await CAPS.searchFused(...)` を返し、空振りの文を言い分ける。
+- 手順書（`js/atlas-skills-data.js`）は en・jp の題名、要約、キーワードを同じカタログに載せる。
+  英語のキーワードは単語境界で照合する。語彙が重ならない言語でも類似度が十分高ければ `skills` に出る。
+  手順書は能力の順位には入らず、`find_capability` の `skill:<id>` で読む。
 
 **反復の扱い**（上限ではなく、進行していない手を数える）: 既に答えた呼び出しだけの手が 2 回続いたらターンは答えへ向かう（`maxRepeatSteps`＝2・`stopped:'repeated_calls'`。
 `reusedFromEarlierCallThisTurn`）。同じ引数の 2 度目の拒否は `repeatedFailedCallThisTurn`、同じ判定（`code` ＋ `status`）の `partial` の 2 度目は `repeatedPartialCallThisTurn`
@@ -264,7 +273,7 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 位置づけ（`"final"` か `"continuing"`。宣言は必須ではない）。`answer_mode` は `"text"`・`"map"`・`"chart"`・`"mixed"` で、コードは決めず宣言との整合だけを取る——宣言が求める
 出力をそのターンの成功結果が生んでいなければ final は型付きの注記として Atlas に返る（`producedModes`＝レジストリの `produces` 列から読み、`"map"` は `map_not_drawn`・
 `"chart"` は `chart_not_drawn`・`"mixed"` は `output_not_produced`。`"mixed"` はどちらか一方で満たされる）。`"continuing"` なのに関数呼び出しが無ければ `no_calls_issued`
-（同じ門）。差し戻しは回数でなく進展で止まる——前回の差し戻しから道具が走ったか、矛盾の種類か返答の文が変わった間は返し、同じ返答が同じ矛盾で戻ったら受け入れて `produced` を記録する。`changedMap` はこの集合の地図要素の旧称。
+（同じ門）。矛盾の種類ごとに差し戻した時点の操作記録を持つ。同じ不足を再び指摘するのは、前回の差し戻し後に新しい操作結果が記録された場合。`changedMap` は `produced` の地図要素の旧称。
 **受け入れても完了とは呼ばない。** 宣言した出力が `produced` に無いまま終わったターンは `stopped:'output_unmet'`（`'answered'` ではない）。返り値は `completion`
 （`complete`／`partial`／`none`）と `unmet`（`{kind:'output',mode,code}` と、このターンの計画のうち観測状態が completed・noop 以外のステップ `{kind:'step',n,title,state}`）を持ち、
 独立した検証役（`js/atlas-goal-verify.js`・task `atlas_verify`）の所見は、記録が**欠けていると示す**もの（`seen:"missing"`）だけが未達で、記録からは
@@ -309,12 +318,12 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 | 表 (tables) | `cities`（GeoNames cities1000・同梱。都市であるものだけ）／`countries`（Countries タブの記録）／`earthquakes`（USGS FDSN・生）／`volcanoes`（Smithsonian GVP・同梱）／`facilities`（OpenStreetMap＋Wikidata・生。`kind` 必須） |
 | 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`・`time`）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／国の統計（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から）／任意の World Bank 指標（`wb:SP.POP.GROW`） |
 | 演算子 | `>=` `>` `<=` `<` `==` `!=` `between` `in` `contains` |
-| 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。結合先には候補の外接矩形＋半径しか要求しない |
+| 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。通常は候補の外接矩形を半径分広げて取得する。USGS の地震は地点ごとの球面上の円を問い合わせ、既存の大円距離で絞る |
 | 空間述語 | `spatial:[{rel:'within'｜'contains'｜'intersects'｜'nearer_than', of:表 または GeoJSON, km?:数, where?:…, require?:bool, as?:名}]`。行が持つ形そのもので判定する。予算 `SPATIAL_WORK_CAP`（頂点対）を超えたら結果に載せる |
 
 - **計画は費用の安い順**（列の費用 0＝行が持つ／1＝1 回の取得で以後ただ／2＝行ごとのネットワーク。「標高1500m以上・人口50万人以上・年降水量300mm未満」はメモリ上の 934 件 →
   ラスタ参照 934 件 → 残った数十件にだけ標高の問い合わせ）。
-- **この操作が守ること**（`js/atlas-query.js` の冒頭に同じ文）: ① 打ち切りを黙らない（ネットワーク列の上限 400・結合の上限 20,000・表示行の上限・ピンの上限は結果に載る）。
+- **この操作が守ること**（`js/atlas-query.js` の冒頭に同じ文）: ① 打ち切りを黙らない（対象となるネットワーク列の上限 400・結合の上限 20,000・表示行の上限・ピンの上限は結果に載る）。
   ② 出典の無い列を出さない（取れなかった値は「—」、評価できなかった条件は表の上に警告）。存在しない列を名指した条件は問い合わせ全体を拒否し（`{ok:false,
   error:'unknown-column'}`）、その表が持つ列 id を全部挙げる（`where`・`near`・`spatial` を 1 つの `planFor()` が答える）。列は id の完全一致か、列が名乗るラベル（`col()` の
   5 言語の `LA(...)`）の唯一の部分一致でも引ける。③ 数値をモデルに訊かない（AI 呼び出しは 0）。④ 1 つの操作は返答の中で 1 ブロック（`meta.resultKey` は表・条件・国スコープ・
@@ -325,10 +334,16 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 - **表示名と照合 surface は別の列**（gazetteer の `en`＝`asciiname` はニュース照合用。表示は `disp`＝英語 preferred name → UTF-8 name → asciiname。英語名は照合 surface に
   足さない）。行の id は `geonames:<id>`。
 - **判定方法は 4 つの数を別々に言う**（元レコード → それ自体で 1 つの場所 → 評価 → 該当。評価数は国スコープの適用後）。
+- **標高の順位付け**は候補を 100 地点ずつ Open-Meteo に問い合わせる。候補数と実測数は `ranking` で返し、欠測があれば順位を実測できた候補に限ると表示する。標高で絞り込んで同じ列で順位付けするときは絞り込み前の候補すべてを問い合わせ、`elevationFilters` には標高条件の候補数と実測数を残す。
+- **USGS の近接結合**は同一座標の照会を共有する。日付変更線と極付近も地点ごとの角距離で問い、離れた地点が同じ取得上限を消費することを防ぐ。`earthquakeSearches` は実際の時刻範囲、地点ごとの角距離、取得状態を運ぶ。取得失敗や上限到達は欠測として示し、該当が見つからない場合でも、その地点での不在は確定しない。
 - **列は `origin` を名乗る**: `raw`／`sampled`／`computed`／`network`／`derived`（`cost` からは導けない）。
 - **`coastKm` と `seaKm` は別の答え**（Natural Earth の海岸線はカスピ海を含む。`data/coastline.json.gz` は外洋 `coords` と内海 `enclosed` を分けて持つ）。測り方は点から線分
   までの大円距離（単位ベクトル、内側ループに三角関数は無く `Math.acos` は 1 クエリ 1 回。誤差の上限は簡略化の許容値 2 km）。
 - **遅延モジュール**（`js/lazy-modules.js` の `atlasQuery`。エンジンも `js/coastline.js` も 249 KB の海岸線もクエリが走るまで取得しない）。
+
+**範囲内人口**（`data.populationIn`）。`target:"drawn"` は計測ポリゴン、`target:"radius"` は配置済みの円を選ぶ。明示した図形が無ければ、その図形の指定を求める。
+WorldPop の集計と地図の強調表示は、照会に成功した同じタイルの範囲を使う。Atlas への結果には指定対象、実際の面積・図形種別・外接矩形・地図オブジェクト ID、データ年、タイルの成功数が入る。
+複数円は円ごとの人口と面積の合算で、重なりは円ごとに数える。委任ワーカーにも集計結果が返り、表示は親の操作で行う。
 
 ### 2.1d 調査ノート (The investigation notebook) — `js/atlas-notebook.js`
 
@@ -445,6 +460,9 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
   題＝質問・出典表記＝一覧のすべての出典で作る（出典表記は一覧の下にも出るので、回答のコピーにも載る）。
 - 一覧は**調査ノートの記録**（`provenance`・`credit`。値は持たない）、**その Markdown**、**ブリーフィング**にも載る。
 
+Web 検索の証拠は `js/atlas-web-evidence.js` が問いの全文と言語を使って検索単位を照合し、取得版ごとの ID を保持する。
+回答に結び付いた証拠 ID と出典一覧はそのターンのものを読む。取得し直した証拠は、その取得を使ったターンから参照できる。
+
 ### 2.2b 添付ファイル (Attachments) — `js/atlas-attach.js` の `ATL_FILE`
 
 入口は3つ（＋ボタン・貼り付け・パネルへのドロップ）で、どれも `_atlAddFiles` に集まり、判定は **`ATL_FILE.read(file, {encodeImage})` の1か所**。`<input>` に `accept` は書かない。
@@ -468,9 +486,10 @@ Anthropic 経路は道具の末尾と system の末尾に `cache_control: {type:
 |---|---|---|
 | `images` | data URL（長辺2000px・q0.9 の JPEG） | `MAX_IMAGES` / `MAX_IMAGE_BYTES` / `MAX_IMAGES_BYTES` |
 | `docs` | `{name,mime,b64}`。3 provider それぞれの文書ブロックになる | `MAX_DOCS` / `MAX_DOC_BYTES` / `MAX_DOCS_BYTES` |
-| `files` | `{name,text,truncated}`。`filesBlock()` が1か所で組み立てる | `MAX_FILES` / `MAX_FILE_TEXT` / `MAX_FILES_TEXT` |
+| `files` | `{name,text,truncated,window?}`。`filesBlock()` が1か所で組み立てる | `MAX_FILES` / `MAX_FILE_TEXT` / `MAX_FILES_TEXT` |
 
 - 添付の中身は `prompt` の枠（`MAX_PROMPT`）を共有しない。上限はクライアントとサーバの両方が持ち、両者が等しいことは検査が見る。
+- 取り寄せたテキスト区間と比較対象の画像を優先して受理する。プロキシは受理した区間の末尾、画像名・順番を受領証に記録し、モデルはその位置から続きを読める。画像の再読で判読不能と判断した場合は、その撤回を回答に反映する。
 - **入力の大きさと展開後の大きさは別の数**: `readBytes`（64 MiB）は読み込むファイルの上限、`ATL_FILE.LIMITS` の `inflatedPerEntry`（1 部品）・`inflatedTotal`（1 コンテナの
   合計）・`sheetCols`（XFD）・`sheetCells` が展開後の上限。展開はストリームを逐次読み累積が上限に達した時点で `reader.cancel()`。ZIP の central directory の非圧縮サイズは
   自己申告なので、大きい申告は拒み小さい申告はその量までしか許さず実出力を測る。XLSX は列参照が上限を超えた時点でそのシートを打ち切り、行は実在セルの最大列までしか組まない。

@@ -63,6 +63,7 @@
    hides inside the await a caller was already doing. What a caller can never observe is a
    capability that is missing because its code has not arrived. */
 import { IntMapTime } from './chronos.js';
+import { skillSemanticDocs } from './atlas-skills.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 export function installCapabilityKernel(OS, HOST, deps) {
   deps = deps || {};
@@ -176,7 +177,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.timeSeries","timeSeries","timeseries","data","panel","panel.timeseries","panel","session","none","country",""],
       ["map.isolateCountry","isolate","","map","paint","map.isolate","map","session","none","country",""],
       ["sim.lineOfSight","los","lineOfSight","sim","sim","map.los","map","session","none","place","los"],
-      ["data.populationIn","population","populationIn,popIn","data","none","","explanation","read","none","area","popArea"],
+      ["data.populationIn","population","populationIn,popIn","data","paint","map.polygon","explanation,object,map","session","none","area","popArea"],
       ["data.coverage","admin1Coverage","subdivisionsCovered,regionsCovered","data","none","","explanation","read","none","",""],
       ["data.satelliteCompare","satelliteCompare","satCompare,satChange","data","panelPaint","panel.satcompare","panel,map","session","none","place",""],
       ["data.layerValues","layerData","layerValue,layerQuery","data","none","","explanation","read","none","point",""],
@@ -471,7 +472,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
     var ASKS_USER = {"dialog.ask":1};
     var DELEGATES = {"research.delegate":1,"jobs.start":1,"jobs.resume":1,"research.longform":1};
-    var HEADLESS = {"data.query":1,"geo.regionStat":1,"model.run":1};
+    var HEADLESS = {"data.query":1,"data.populationIn":1,"geo.regionStat":1,"web.fetchFile":1,"model.run":1};
     /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
@@ -2573,13 +2574,15 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     API.semanticCatalogue = function () {
       if (_catP && _catDocs === runtime.docs) return _catP;
       _catDocs = runtime.docs;
-      var entries = API.semanticDocs();
+      var docs = API.semanticDocs();
+      var skillDocs = docs.length ? skillSemanticDocs() : [];
+      var entries = docs.concat(skillDocs);
       var subtle = null;
       try { subtle = globalThis.crypto && globalThis.crypto.subtle; } catch (_) { subtle = null; }
       if (!entries.length || !subtle) { _catP = Promise.resolve(null); return _catP; }
       _catP = subtle.digest('SHA-256', new TextEncoder().encode(canonicalCatalogue(entries))).then(function (buf) {
         var hex = Array.prototype.map.call(new Uint8Array(buf), function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
-        return { hash: hex, entries: entries };
+        return { hash: hex, entries: entries, skillIds: skillDocs.map(function (s) { return s.id; }) };
       }, function () { return null; });
       return _catP;
     };
@@ -2612,8 +2615,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       var a = xs.slice().sort(function (x, y) { return x - y; }), m = a.length >> 1;
       return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
     }
-    API.semanticCandidates = function (sims) {
+    API.semanticCandidates = function (sims, skillIds) {
       var ids = Object.keys(sims || {}).filter(function (id) { var c = byId[id]; return c && !c.withdrawn && Number.isFinite(+sims[id]); });
+      var candidates = skillIds ? skillIds.filter(function (id) { return Number.isFinite(+sims[id]); }) : ids;
       var n = ids.length;
       if (n < 2) return { rows: [], threshold: null, n: n };
       var xs = ids.map(function (id) { return +sims[id]; });
@@ -2623,9 +2627,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         var mean = xs.reduce(function (s, x) { return s + x; }, 0) / n;
         scale = Math.sqrt(xs.reduce(function (s, x) { return s + (x - mean) * (x - mean); }, 0) / n);
       }
-      var zStar = upperQuantile(SEMANTIC_ALPHA / n);
+      var zStar = upperQuantile(SEMANTIC_ALPHA / (skillIds ? n + candidates.length : n));
       if (!(scale > 0)) return { rows: [], threshold: zStar, n: n };   /* nothing stands out from anything */
-      var rows = ids.map(function (id) { var s = +sims[id]; return { id: id, similarity: s, z: (s - med) / scale }; })
+      var rows = candidates.map(function (id) { var s = +sims[id]; return { id: id, similarity: s, z: (s - med) / scale }; })
         .filter(function (r) { return r.z >= zStar; })
         .sort(function (a, b) { return b.similarity - a.similarity; });
       declareTies(rows, function (a, b) { return b.similarity - a.similarity; });
@@ -2683,11 +2687,11 @@ export function makeAtlasCapabilities(HOST, OPTS) {
 
     /* ── THE DEFAULT TRANSPORT: the atlas-embed Edge Function, with the reader's own session.
        A reason code comes back for everything that is not an answer, and the code is what the result
-       reports. The seed of an unknown catalogue runs in the background, ONCE per catalogue per page:
-       its outcome is kept (`semanticStatus`) and a failed seed is not re-sent on every search — the
-       searches report why instead (one-pass-or-a-reason §5: retry only when something differs). */
+       reports. A catalogue miss seeds in the background. If the first request had a transport
+       failure, the next confirmed miss can start one retry, shared by concurrent searches. */
+    var _seeds = new Map();
     var _seed = { catalog: null, state: 'none', at: 0 };
-    API.semanticStatus = function () { return Object.assign({}, _seed); };
+    API.semanticStatus = function () { return { catalog: _seed.catalog, state: _seed.state, at: _seed.at }; };
     function httpTransport(q, cat, signal) {
       var W = null; try { W = window; } catch (_) { W = null; }
       var base = W && String(W.SUPABASE_URL || '').replace(/\/+$/, '');
@@ -2709,10 +2713,13 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         };
         return post({ op: 'search', catalog: cat.hash, q: q }, signal).then(function (j) {
           if (j.state !== 'catalog_unknown') return j;
-          if (_seed.catalog === cat.hash) {
-            return { state: _seed.state === 'running' ? 'catalog_indexing' : ('catalog_seed_' + _seed.state) };
+          var prior = _seeds.get(cat.hash);
+          if (prior && !(prior.attempts === 1 && /^(unreachable|http_50[234])$/.test(prior.state))) {
+            return { state: prior.state === 'running' ? 'catalog_indexing' : ('catalog_seed_' + prior.state) };
           }
-          _seed = { catalog: cat.hash, state: 'running', at: Date.now() };
+          var seed = { catalog: cat.hash, state: 'running', at: Date.now(), attempts: (prior ? prior.attempts : 0) + 1 };
+          _seeds.set(cat.hash, seed);
+          _seed = seed;
           /* ⚠ THE SEED HAS ITS OWN DEADLINE, or a hung request would leave this page saying
              `catalog_indexing` for ever. SEED_TIMEOUT_MS is an ESTIMATE: the function gives one
              embeddings call 30 s (atlas-embed EMBED_TIMEOUT_MS) and today's catalogue is ONE batch
@@ -2721,13 +2728,13 @@ export function makeAtlasCapabilities(HOST, OPTS) {
              next search then simply finds the catalogue known. */
           var sctl = null; try { sctl = new AbortController(); } catch (_) { sctl = null; }
           var stimer = setTimeout(function () { try { sctl && sctl.abort(); } catch (_) { } }, SEED_TIMEOUT_MS);
-          post({ op: 'seed', catalog: cat.hash, entries: cat.entries }, sctl && sctl.signal).then(function (s) {
+          var finishSeed = function (state) {
             clearTimeout(stimer);
-            if (_seed.catalog === cat.hash) _seed = { catalog: cat.hash, state: s.state === 'ok' ? 'ok' : s.state, at: Date.now() };
-          }, function () {
-            clearTimeout(stimer);
-            if (_seed.catalog === cat.hash) _seed = { catalog: cat.hash, state: 'unreachable', at: Date.now() };
-          });
+            seed.state = state;
+            seed.at = Date.now();
+          };
+          post({ op: 'seed', catalog: cat.hash, entries: cat.entries }, sctl && sctl.signal)
+            .then(function (s) { finishSeed(s.state); }, function () { finishSeed('unreachable'); });
           return { state: 'catalog_indexing' };
         });
       });
@@ -2763,8 +2770,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
             clearTimeout(timer);
             if (!ans || ans.state !== 'ok' || !ans.sims) return lexicalOnly((ans && ans.state) || 'no_answer');
             var sem = API.semanticCandidates(ans.sims);
+            var skillMatches = API.semanticCandidates(ans.sims, cat.skillIds).rows;
             var fused = API.fuse(lexical, sem, opts);
             return Object.assign(fused, { basis: 'lexical+semantic',
+              skillMatches: skillMatches,
               semantic: { state: 'ok', model: ans.model || null, threshold: sem.threshold, compared: sem.n, candidates: sem.rows.length, ms: Date.now() - t0 } });
           }, function () { clearTimeout(timer); return lexicalOnly('unreachable'); });
       }, function () { return lexicalOnly('no_digest'); });

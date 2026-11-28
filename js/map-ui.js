@@ -3774,31 +3774,42 @@ export function geojsonUpload(HOST){
       const list=Array.from(files||[]);
       const out=[];
       if(!list.length) return out;
+      const draw=opts?.draw!==false;
+      const tell=draw?toast:()=>{};
+      const describe=opts?.inspect||opts?.source;
       let readGeoFile=null;
       /* on demand: nothing about reading a dropped file belongs in the startup bundle */
       try{ readGeoFile=(await import('./geo-import.js')).GEO_IMPORT.readGeoFile; }
-      catch(_){ toast(IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo")); return; }
+      catch(_){ tell(IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo")); return; }
       for(const f of list){
         let r=null;
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
-        if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); out.push({ok:false,why:(r&&r.why)||'unreadable',name:(f&&f.name)||''}); continue; }
+        if(!r||!r.ok){ tell(reasonText(r&&r.why,r&&r.detail)); out.push({ok:false,why:(r&&r.why)||'unreadable',name:(f&&f.name)||''}); continue; }
         const label=labelFor(f,r);
         /* (#R749) A grid takes the other arm. It is a dataset first and a picture second — the
            reverse of the vector path, where addFC draws immediately and registerDataset follows —
            because a grid cannot be painted until its extremes have been measured, and measuring
            them is the registry's job. */
-        if(r.grid){ const gid=await registerRaster(r, label); out.push({ok:!!gid,grid:true,label,datasetId:gid||null}); continue; }
-        const put=addFC(r.fc, label, r);
-        const did=await registerDataset(r, label, f, put&&put.n);
+        if(r.grid){
+          const grid=await registerRaster(r,label,{draw,tell,inspect:opts?.inspect,source:opts?.source});
+          out.push({ok:grid.ok,grid:true,label,format:r.format,why:grid.why,datasetId:grid.id||null,
+            description:describe?importDescription(grid.id):undefined});
+          continue;
+        }
+        const put=draw?addFC(r.fc,label,r):null;
+        const did=await registerDataset(r,label,f,put?.n,{tell,source:opts?.source});
         /* ⚠ `n` IS THE MAP LAYER'S SERIAL (addFC's `put.n`), NOT A COUNT — a reader that took it for «rows» told Atlas a 47-feature file had 1 row, and a
            registration that failed (`did` null) came back ok with nothing to say so. The count is what was read (`features`), and whether the analysis
            registry accepted the file is stated (`registered`) rather than left to a toast the caller never sees. */
         const feats=(r.fc&&Array.isArray(r.fc.features))?r.fc.features.length:null;
-        const o={ok:true,label,file:f,format:r.format||null,stats:r.stats||null,fc:r.fc,n:put?put.n:null,layer:put?put.n:null,features:feats,registered:!!did,datasetId:did||null};
+        const o={ok:true,label,file:f,format:r.format||null,stats:r.stats||null,fc:r.fc,n:put?put.n:null,layer:put?put.n:null,features:feats,registered:!!did,datasetId:did||null,description:describe?importDescription(did):undefined};
         out.push(o);
-        if(r.format==='table'&&!(opts&&opts.quiet)) offerStudio(o);
+        if(draw&&r.format==='table'&&!opts?.quiet) offerStudio(o);
       }
       return out;
+    }
+    function importDescription(id){
+      return id?window.IntMapGis?.atlas?.describeDataset?.(id):undefined;
     }
     /* (data-studio) a dropped table that states no place: the studio is fetched and handed what the file became, and it
        opens on the step that binds the rows to places. Not a second import — the layer and the dataset above exist already. */
@@ -3816,24 +3827,25 @@ export function geojsonUpload(HOST){
        js/geo-import.js accepts unstated coordinates when they are within degree bounds and refuses
        them when they are not (settleCrs, #R732). The same rule, asked of a grid's extent: one rule
        with two readers rather than two rules. The reader is told that the file said nothing. */
-    async function registerRaster(r,label){
+    async function registerRaster(r,label,{draw,tell,inspect,source}){
+      const refuse=(why,detail)=>{ tell(reasonText(why,detail)); return {ok:false,why}; };
       let mod=false;
       try{ mod=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; }
       catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
       if(!mod||!window.IntMapData||!window.IntMapGisWarp){
-        toast(IntMapLang.t(HOST.lang,"This file is a grid, and the module that reads grids did not load","このファイルは格子ですが、格子を扱う部品を読み込めませんでした"));
-        return null;
+        tell(IntMapLang.t(HOST.lang,"This file is a grid, and the module that reads grids did not load","このファイルは格子ですが、格子を扱う部品を読み込めませんでした"));
+        return {ok:false,why:'gis-module-unavailable'};
       }
       let g=r.grid, code=g.crs||null, stated=!!code, converted=null;
       if(!stated){
         /* The extent the file DOES state, asked whether it could be degrees. */
         const a=window.IntMapGisWarp.affineOf(g);
-        if(!a.ok){ toast(reasonText(a.why,a.detail)); return null; }
+        if(!a.ok) return refuse(a.why,a.detail);
         const A=a.affine, xs=[], ys=[];
         for(const [i,j] of [[0,0],[g.width,0],[0,g.height],[g.width,g.height]]){
           xs.push(A[0]+A[1]*i+A[2]*j); ys.push(A[3]+A[4]*i+A[5]*j); }
         const inDeg=xs.every(v=>v>=-180&&v<=180)&&ys.every(v=>v>=-90&&v<=90);
-        if(!inDeg){ toast(reasonText('crs-not-stated',null)); return null; }
+        if(!inDeg) return refuse('crs-not-stated',null);
         code='EPSG:4326';
       }
       if(code!=='EPSG:4326'||g.affine||g.model){
@@ -3842,24 +3854,26 @@ export function geojsonUpload(HOST){
            two shapes are reconciled, and a second conversion written here would be the copy this
            project keeps removing. An identity warp moves no pixel (tests/geo-gis-raster-checks.test.mjs #R749 ①). */
         const out=await window.IntMapGisWarp.to4326(Object.assign({},g,{crs:code}),{method:'nearest'});
-        if(!out.ok){ toast(reasonText(out.why,out.detail)); return null; }
+        if(!out.ok) return refuse(out.why,out.detail);
         converted=out.report; g=out.grid;
       }
       let rec=null;
       try{
-        rec=window.IntMapData.add({
+        const spec={
           kind:'raster', title:label, crs:'EPSG:4326', sourceCrs:(stated?code:null),
           width:g.width, height:g.height, grid:g.grid, bands:g.bands, read:(i)=>g.read(i),
-          provenance:{kind:'import', file:label, format:'geotiff', readAt:new Date().toISOString()},
-        });
+          provenance:{kind:'import',file:label,format:r.format,readAt:new Date().toISOString(),...(source?{url:source}:{})},
+        };
+        if(inspect) spec.provenance.inspection=window.IntMapGisRaster.describeBands(spec);
+        rec=window.IntMapData.add(spec);
       }catch(e){ rec=null; try{ console.warn('[upload] grid not registered',e); }catch(_){} }
       /* ⚠ add() RETURNS THE RECORD OR THROWS — it has no {ok:false} arm (js/gis-datasets.js
          addRaster), so the only honest test is whether a record with an id came back. Writing a
          refusal branch for a refusal this door cannot make would be a dead arm that reads like a
          guarantee. */
       if(!rec||!rec.id){
-        toast(reasonText('add-failed',null));
-        return null;
+        tell(reasonText('add-failed',null));
+        return {ok:false,why:'not_registered'};
       }
       const id=rec.id;
       /* ⚠ SAY WHAT WAS DONE TO IT ON THE WAY IN. Two facts the reader cannot recover from the
@@ -3867,16 +3881,16 @@ export function geojsonUpload(HOST){
       const notes=[];
       if(!stated) notes.push(IntMapLang.t(HOST.lang,"the file states no coordinate system; read as lon/lat","ファイルが座標系を述べていないため、経緯度として読みました"));
       if(converted&&converted.from&&converted.from!=='EPSG:4326') notes.push(IntMapLang.t(HOST.lang,"converted from","変換元")+' '+converted.from+' · '+IntMapLang.t(HOST.lang,"nearest neighbour","最近傍"));
-      if(notes.length) toast(label+' — '+notes.join(' · '));
+      if(notes.length) tell(label+' — '+notes.join(' · '));
       /* Registered and measured; now the picture, through the one door (js/gis-core.js draw()). */
       try{
         const C=window.IntMapGis;
-        if(id&&C&&typeof C.draw==='function'){
+        if(draw&&C&&typeof C.draw==='function'){
           const d=C.draw(id,null);
           if(d&&d.ok===false) toast(reasonText(d.why,d.detail));
         }
       }catch(e){ try{ console.warn('[upload] grid drawn nowhere',e); }catch(_){} }
-      return id;
+      return {ok:true,id};
     }
 
     /* ══ (#R729) THE FILE BECOMES A DATASET, NOT JUST A DRAWING ════════════════════════════════
@@ -3898,13 +3912,14 @@ export function geojsonUpload(HOST){
        ⚠ The exception's own message is not shown to the reader — it is a JS string written for a
        developer, in one language, about an internal object; it goes to console.warn, and the reader
        gets the sentence that tells them what they can no longer do. */
-    async function registerDataset(r,label,f,n){
+    async function registerDataset(r,label,f,n,options){
+      const {tell,source}=options;
       let mod=false;
       try{ mod=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; }
       catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
       if(!mod||!window.IntMapData){
         try{ console.warn('[upload] not registered as a dataset: gisCore='+mod+', IntMapData='+!!window.IntMapData); }catch(_){}
-        toast(IntMapLang.t(HOST.lang,"Added to the map, but the analysis module did not load — this file cannot be analysed","地図には追加しましたが、分析モジュールを読み込めなかったため、このファイルは分析に使えません"));
+        tell(IntMapLang.t(HOST.lang,"Added to the map, but the analysis module did not load — this file cannot be analysed","地図には追加しましたが、分析モジュールを読み込めなかったため、このファイルは分析に使えません"));
         return null;
       }
       try{
@@ -3913,10 +3928,10 @@ export function geojsonUpload(HOST){
            passed on rather than re-derived here: js/gis-datasets.js verifies it against the features
            and refuses it by name if it does not hold, and this path has no knowledge to add. */
         const rec=window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null, time:r.time||null,
-          provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now() } });
+          provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now(), ...(source?{url:source}:{}) } });
         if(!rec||!rec.id){
           try{ console.warn('[upload] the dataset registry returned no record for',label); }catch(_){}
-          toast(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+          tell(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
           return null;
         }
         /* ⚠ (#R738) THE DRAWN LAYER AND THE DATASET ARE TIED BY IDENTIFIER, NOT BY TITLE. Two files
@@ -3927,7 +3942,7 @@ export function geojsonUpload(HOST){
       }catch(e){
         /* a registry failure must not lose the layer that is already drawn — but it must be said */
         try{ console.warn('[upload] the dataset registry refused this file',e); }catch(_){}
-        toast(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+        tell(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
         return null;
       }
     }

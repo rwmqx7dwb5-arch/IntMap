@@ -24,7 +24,7 @@
  *  model; no operation is blocked, reordered or limited for it (CONSTITUTION.md §5).
  * ==========================================================================*/
 
-const SOURCE_KINDS = ['layer', 'dataset', 'stac', 'ogc', 'overture', 'upload', 'none'];
+const SOURCE_KINDS = ['layer', 'dataset', 'stac', 'ogc', 'overture', 'upload', 'url', 'inline', 'job-output', 'none'];
 const ENVIRONMENTS = ['browser-gis', 'python', 'server', 'job'];
 const COMPLETENESS = ['all', 'sample', 'any'];
 const OUTPUT_KINDS = ['map', 'table', 'chart', 'file', 'answer'];
@@ -79,11 +79,17 @@ export function normalizeGeo(raw) {
     if (src.kind != null && src.kind !== '' && !kind) bad.push({ path: 'needs[' + i + '].source.kind', value: src.kind, accepted: SOURCE_KINDS });
     const comp = pick(n.completeness, COMPLETENESS);
     if (n.completeness != null && n.completeness !== '' && !comp) bad.push({ path: 'needs[' + i + '].completeness', value: n.completeness, accepted: COMPLETENESS });
-    spec.needs.push({ id: str(n.id) || ('need' + (i + 1)), what: str(n.what), source: { kind: kind, ref: str(src.ref) || null }, completeness: comp,
+    const source = { kind, ref: str(src.ref) || null };
+    if (str(src.format)) source.format = str(src.format).toLowerCase();
+    if (str(src.scope)) source.scope = str(src.scope).toLowerCase();
+    spec.needs.push({ id: str(n.id) || ('need' + (i + 1)), what: str(n.what), source, completeness: comp,
       resolution: normResolution(n.resolution), time: n.time != null && n.time !== '' ? str(n.time) : null });
   });
   if (g.method && typeof g.method === 'object') {
     spec.method = { ops: (Array.isArray(g.method.ops) ? g.method.ops : []).map(str).filter(Boolean), note: str(g.method.note) || null };
+    for (const mode of ['strict', 'semantics']) {
+      if (typeof g.method[mode] === 'boolean') spec.method[mode] = g.method[mode];
+    }
   } else if (typeof g.method === 'string' && str(g.method)) spec.method = { ops: [], note: str(g.method) };
   if (g.environment != null && g.environment !== '') {
     spec.environment = pick(g.environment, ENVIRONMENTS);
@@ -122,13 +128,13 @@ export function gapsOf(spec) {
     const p = 'needs[' + i + ']';
     if (!n.what) add('need-what-not-stated', p + '.what', n.id + ': what the data is has no statement.');
     if (!n.source.kind) add('need-source-not-stated', p + '.source.kind', n.id + ': where the data comes from is not stated.');
-    else if (n.source.kind !== 'none' && n.source.kind !== 'upload' && !n.source.ref && n.source.kind !== 'overture')
+    else if (!['none', 'upload', 'inline', 'overture'].includes(n.source.kind) && !n.source.ref)
       add('need-ref-not-stated', p + '.source.ref', n.id + ': a ' + n.source.kind + ' source is named without which one.');
     if (!n.completeness) add('need-completeness-not-stated', p + '.completeness', n.id + ': whether the region must be fully covered is not stated.');
     if (!n.resolution) add('need-resolution-not-stated', p + '.resolution', n.id + ': the resolution is not stated.');
     else if (n.resolution.text != null) add('need-resolution-unreadable', p + '.resolution', n.id + ': the resolution is not {"value":n,"unit":"m"|"km"|"deg"}.');
   });
-  if (!spec.method || (!spec.method.ops.length && !spec.method.note)) add('method-not-stated', 'method', 'No operation is stated.');
+  if (!spec.method || (!spec.method.ops.length && !spec.method.note && !spec.method.semantics)) add('method-not-stated', 'method', 'No operation is stated.');
   if (!spec.environment) add('environment-not-stated', 'environment', 'No execution environment is stated (' + ENVIRONMENTS.join(' | ') + ').');
   if (!spec.outputs.length) add('outputs-not-stated', 'outputs', 'No deliverable is stated.');
   return g;
@@ -148,7 +154,7 @@ async function probeNeed(need, spec, deps) {
   if (k === 'layer' || k === 'dataset') {
     if (!deps.describe) return { state: 'unknown', completeness: 'unstated', detail: 'no-describe-door' };
     let row = null;
-    try { row = need.source.ref ? await deps.describe(need.source.ref) : null; } catch (_) { return { state: 'unknown', completeness: 'unstated', detail: 'describe-threw' }; }
+    try { row = need.source.ref ? await deps.describe(need.source.ref, k) : null; } catch (_) { return { state: 'unknown', completeness: 'unstated', detail: 'describe-threw' }; }
     if (!row) return { state: 'unavailable', completeness: 'unstated', detail: 'not-in-intmap' };
     const und = Array.isArray(row.undeclared) ? row.undeclared.map((u) => u && u.slot).filter(Boolean) : [];
     return { state: 'available', completeness: 'unstated', detail: 'in-intmap', ref: row.ref || need.source.ref, undeclared: und };
@@ -157,6 +163,9 @@ async function probeNeed(need, spec, deps) {
     /* Overture is a theme/release, not a catalogue IntMap can ask: it is a plan to fetch from the Overture
        distribution. Reported as what it is — nothing in the app can confirm it. */
     return { state: 'unknown', completeness: 'unproven', detail: 'overture-is-not-asked-by-any-catalogue-in-the-app' };
+  }
+  if (k === 'url' || k === 'inline' || k === 'job-output') {
+    return { state: 'unknown', completeness: 'unstated', detail: 'source-is-confirmed-only-when-the-executor-reads-it' };
   }
   /* stac / ogc — ask the catalogues; q words are all required, so only the stated what is passed on as q only when it is short */
   if (!deps.discover) return { state: 'unknown', completeness: 'unstated', detail: 'no-discover-door' };
@@ -211,6 +220,27 @@ async function probeNeed(need, spec, deps) {
     candidates: cand.slice(0, 5), silent };
 }
 
+/* Compatibility describes the host's route. Availability and extent remain observations of
+   a particular data source. For example, accepting a whole GeoJSON file does not confirm its extent. */
+function sourceExecution(source, contract, environment) {
+  const { kind, format, scope } = source;
+  if (!contract || !kind || kind === 'none') return { compatible: null };
+  const route = Object.hasOwn(contract.sources, kind) ? contract.sources[kind] : null;
+  const refusal = (reason) => ({ compatible: false, reason: reason + ' in ' + environment });
+  if (!route) return refusal('source kind "' + kind + '" cannot be read');
+  if (format && route.formats && !route.formats.includes(format)) {
+    return refusal('format "' + format + '" cannot be read for source kind "' + kind + '"');
+  }
+  const scopes = format && route.scopeByFormat ? route.scopeByFormat[format] : route.scopes;
+  if (scope && scopes && !scopes.includes(scope)) {
+    return refusal('acquisition scope "' + scope + '" is unavailable for source kind "' + kind + '"');
+  }
+  if ((format && !route.formats) || (scope && !scopes)) {
+    return { compatible: null, reason: 'the route for "' + kind + '" does not state the requested format or scope in ' + environment };
+  }
+  return { compatible: true };
+}
+
 /**
  * preflight(spec, deps) -> {needs:[{id, ...probe, wanted}], environment, runnable, reason[]}
  * runnable: true  — every need found, the environment has its capability, the spec states what it must
@@ -221,12 +251,26 @@ async function probeNeed(need, spec, deps) {
 export async function preflight(spec, deps) {
   const d = deps || {};
   const reasons = [];
+  const soft = [];
   const needs = [];
+  const location = spec.environment;
+  const asksExecution = !!location && typeof d.executionOf === 'function';
+  let contract = null;
+  if (asksExecution) {
+    try { contract = await d.executionOf(location); } catch (_) { contract = null; }
+  }
   for (const n of spec.needs) {
     const r = await probeNeed(n, spec, d);
     const row = Object.assign({ id: n.id, wanted: n.completeness }, r);
     if (n.completeness === 'all' && r.state === 'available' && r.completeness !== 'stated-all')
       row.fullCoverage = 'unproven';
+    if (asksExecution) {
+      row.execution = sourceExecution(n.source, contract, location);
+      if (row.execution.reason) {
+        const target = row.execution.compatible === false ? reasons : soft;
+        target.push(n.id + ': ' + row.execution.reason);
+      }
+    }
     needs.push(row);
     if (r.state === 'unavailable') reasons.push(n.id + ': ' + r.detail);
   }
@@ -235,13 +279,15 @@ export async function preflight(spec, deps) {
     const cap = ENVIRONMENT_CAPABILITY[spec.environment];
     let has = null;
     if (cap === null) has = false;
-    else if (typeof d.hasCapability === 'function') { try { has = !!d.hasCapability(cap); } catch (_) { has = null; } }
+    else if (typeof d.hasCapability === 'function') {
+      try { const answer = d.hasCapability(cap); has = typeof answer === 'boolean' ? answer : null; } catch (_) { has = null; }
+    }
     env = { name: spec.environment, capability: cap, available: has };
+    if (asksExecution) env.execution = contract;
     if (has === false) reasons.push('environment ' + spec.environment + ' has no capability in IntMap' + (cap ? ' (' + cap + ' is not registered)' : ''));
   }
   /* method.ops against the operations that exist. Asked of the environment named, else of every environment (an op is known if any has it). */
   let method = null;
-  const soft = [];
   const wanted = (spec.method && spec.method.ops) || [];
   if (wanted.length) {
     const envs = spec.environment ? [spec.environment] : ENVIRONMENTS;
@@ -267,8 +313,21 @@ export async function preflight(spec, deps) {
       } else if (o.known === null) soft.push('method.ops: "' + o.id + '" could not be checked against ' + where + ' (its operations were not asked or are not declared)');
     }
   }
+  const modes = ['strict', 'semantics'].filter((mode) => spec.method && spec.method[mode] === true);
+  if (modes.length) {
+    if (!method) method = { ops: [] };
+    method.execution = {};
+    for (const mode of modes) {
+      const supported = contract && typeof contract[mode] === 'boolean' ? contract[mode] : null;
+      method.execution[mode] = supported;
+      if (supported === false) reasons.push('method.' + mode + ' is unavailable in ' + location);
+      if (supported === null) soft.push('method.' + mode + ': execution support could not be established');
+    }
+  }
+  if (asksExecution && !contract) soft.push('the acquisition contract for ' + location + ' could not be established');
   const opsOk = !method || method.ops.every((o) => o.known === true);
-  const known = needs.length > 0 && needs.every((x) => x.state === 'available') && (!spec.environment || (env && env.available === true)) && opsOk;
+  const routesOk = !asksExecution || (contract && needs.every((x) => x.execution.compatible === true));
+  const known = needs.length > 0 && needs.every((x) => x.state === 'available') && (!location || (env && env.available === true)) && opsOk && routesOk && !soft.length;
   const unproven = needs.some((x) => x.fullCoverage === 'unproven');
   const runnable = reasons.length ? false : (known && !unproven ? true : null);
   if (runnable !== true) {
@@ -287,7 +346,7 @@ export async function preflight(spec, deps) {
 /** The words that go back to the model. Gaps and availability, as IntMap observed them. */
 export function geoReport(spec, unrecognised, check) {
   return { spec, gaps: gapsOf(spec), unrecognised: unrecognised || [], availability: check || null,
-    note: 'gaps = what the spec does not state (not defaulted). availability = what IntMap\'s layers and the catalogues STATE; "unknown" is not "unavailable", and a catalogue cannot prove full coverage. runnable:false means a need or the environment does not exist; null means it could not be established. Nothing is blocked by this.' };
+    note: 'gaps = what the spec does not state. availability reports what sources state and what the chosen environment can execute. A supported route does not confirm source coverage or availability. runnable:false records an observed incompatibility or unavailable requirement; null means execution could not be established. The check is advisory.' };
 }
 
 /** defaultProbe() -> deps for preflight, from the live app. Looked up at call time; absent doors are
@@ -295,8 +354,19 @@ export function geoReport(spec, unrecognised, check) {
 export function defaultProbe(g) {
   const root = g || (typeof globalThis !== 'undefined' ? globalThis : {});
   const atlas = () => (root.IntMapGis && root.IntMapGis.atlas) || null;
+  const flowOf = async () => {
+    try { if (root.IntMapLazy && !(root.IntMapGis && root.IntMapGis.flow)) await root.IntMapLazy.need('gisCore'); } catch (_) { /* absent door = null */ }
+    return root.IntMapGis && root.IntMapGis.flow;
+  };
   return {
-    describe: async (ref) => {
+    describe: async (ref, kind) => {
+      if (kind === 'dataset') {
+        const flow = await flowOf();
+        if (!flow || typeof flow.find !== 'function') throw new Error('no-describe');
+        const rows = (await flow.find()).datasets;
+        const named = rows.filter((row) => String(row.title).toLowerCase() === ref.toLowerCase());
+        return rows.find((row) => row.id === ref) || (named.length === 1 ? named[0] : null);
+      }
       try { if (root.IntMapLazy && !atlas()) await root.IntMapLazy.need('gisCore'); } catch (_) { /* absent door = unknown, below */ }
       const a = atlas(); if (!a || typeof a.describe !== 'function') throw new Error('no-describe'); return a.describe(ref);
     },
@@ -310,8 +380,7 @@ export function defaultProbe(g) {
        browser-gis: all; server/job: the ones flow.runsWithoutScreen accepts (what the job's data.gis twin runs); python: null — compute.run declares no operations. */
     opsOf: async (environment) => {
       if (environment === 'python') return null;
-      try { if (root.IntMapLazy && !(root.IntMapGis && root.IntMapGis.flow)) await root.IntMapLazy.need('gisCore'); } catch (_) { /* absent door = null, below */ }
-      const flow = root.IntMapGis && root.IntMapGis.flow;
+      const flow = await flowOf();
       if (!flow || typeof flow.find !== 'function') return null;
       const cat = await flow.find();
       const ops = cat && Array.isArray(cat.ops) ? cat.ops : null;
@@ -319,6 +388,11 @@ export function defaultProbe(g) {
       if (environment === 'browser-gis') return ops.map((o) => o.id);
       if (environment === 'server' || environment === 'job') return typeof flow.runsWithoutScreen === 'function' ? ops.filter(flow.runsWithoutScreen).map((o) => o.id) : null;
       return null;
+    },
+    executionOf: async (environment) => {
+      if (environment === 'python') return null;
+      const flow = await flowOf();
+      return flow && typeof flow.executionOf === 'function' ? flow.executionOf(environment) : null;
     },
     hasCapability: (id) => { const C = root.IntMapCapabilities; if (!C || typeof C.has !== 'function') return null; return C.has(id); },
   };

@@ -67,24 +67,17 @@ test('R318-atlas ②: the built app sends a relevant catalogue instead of all of
 });
 
 test('R318-atlas ③: the button and the command leave the same state', async () => {
-  const r = await page.evaluate(async () => {
-    const base = () => window.IntMapAtlasState.snapshot({ only: ['camera'] }).camera.base;
-    const settle = () => new Promise((res) => setTimeout(res, 400));
-    document.getElementById('btn-view-sat').click();           /* the UI path, as a reader clicks it */
-    await settle();
-    const viaUi = base();
-    document.getElementById('btn-view-map').click();
-    await settle();
-    window.IntMapOS.exec('view.base.sat', { source: 'test' }); /* the kernel path, by name */
-    await settle();
-    const viaKernel = base();
-    document.getElementById('btn-view-map').click();
-    await settle();
-    return { viaUi, viaKernel, restored: base() };
-  });
-  expect(r.viaUi).toBe('satellite');
-  expect(r.viaKernel, 'the button and the command must reach the same engine work').toBe(r.viaUi);
-  expect(r.restored).toBe('map');
+  const base = () => page.evaluate(() => window.IntMapAtlasState.snapshot({ only: ['camera'] }).camera.base);
+  const press = (id) => page.evaluate((button) => document.getElementById(button).click(), id);
+  await press('btn-view-sat');
+  await expect.poll(base).toBe('satellite');
+  await press('btn-view-map');
+  await expect.poll(base).toBe('map');
+  const command = await page.evaluate(() => window.IntMapOS.exec('view.base.sat', { source: 'test' }));
+  expect(command.ok).toBe(true);
+  await expect.poll(base, { message: 'the button and command reach the same engine work' }).toBe('satellite');
+  await press('btn-view-map');
+  await expect.poll(base).toBe('map');
 });
 
 test('R320 ①: the control catalogue ranks against the request and says what it left out', async () => {
@@ -391,6 +384,56 @@ test('R318-atlas ⑦ (#R777): 送信は run() に到達し、吹き出しを作�
   const chip = await page.evaluate(() => !!document.querySelector('#atlas-panel .atl-chat .atl-fchip-msg[data-atlvid]'));
   expect(chip, 'the request bubble did not carry the attachment it was sent with').toBe(true);
   page.off('pageerror', onErr);
+  await page.locator('#am-close').click();
+  await page.evaluate(() => window.IntMapConsole.close());
   const fatal = errs.filter((m) => /ReferenceError|before initialization|is not defined|is not a function/.test(m));
   expect(fatal, 'the send path threw: ' + fatal.join(' | ')).toEqual([]);
+});
+
+test('Atlas rereads the map with provenance from the painter and endpoints from a user measurement', async () => {
+  const result = await page.evaluate(async () => {
+    await window.IntMapAtlasExec.execute('map.clear', {}, { source: 'atlas' });
+    await window.IntMapAtlasExec.execute('map.drawLine', { points: [[174, 5], [-176, 5]], label: 'Open ocean crossing' }, { source: 'atlas', turnId: 71 });
+    window.IntMapAnnotations.add({ type: 'LineString', coordinates: [[174, 2], [-176, 2]] }, { name: 'Reader drawing' });
+    const measure = document.getElementById('btn-tool-measure');
+    if (!measure.classList.contains('tool-on')) measure.click();
+    const renderer = window.IntMapGeoEngine;
+    const canvas = renderer.render.canvas();
+    const frame = canvas.getBoundingClientRect();
+    return { x: frame.x + frame.width * 0.44, y: frame.y + frame.height * 0.42, dx: frame.width * 0.10 };
+  });
+  await page.mouse.click(result.x, result.y);
+  await page.mouse.click(result.x + result.dx, result.y);
+  const state = await page.evaluate(() => window.IntMapAtlasState.snapshot({ only: ['atlas', 'objects'] }));
+  const lines = state.atlas.shapes.items.filter((f) => f.kind === 'line');
+  expect(lines).toEqual([expect.objectContaining({
+    id: expect.any(String), target: 'Open ocean crossing', author: 'atlas', turnId: 71,
+    basis: 'unstated', endpoints: [[174, 5], [-176, 5]], bounds: [174, 5, -176, 5],
+  })]);
+  expect(state.atlas.measure).toMatchObject({ author: 'user', endpoints: [expect.any(Array), expect.any(Array)] });
+  expect(state.atlas.lastClick).toMatchObject({ author: 'user' });
+  expect(state.objects.items.find((x) => x.name === 'Reader drawing').shape).toMatchObject({
+    provenance: { author: 'user' }, endpoints: [[174, 2], [-176, 2]],
+  });
+});
+
+test('Atlas observes a named basin from the bundled hydrological data', async () => {
+  const nominatim = /nominatim\.openstreetmap\.org\/search/;
+  const river = { category:'waterway', class:'waterway', type:'river', osm_type:'relation', osm_id:71, importance:0.9,
+    display_name:'Nile, Africa', namedetails:{ name:'Nile', 'name:en':'Nile' }, lat:'27', lon:'31',
+    geojson:{ type:'LineString', coordinates:[[31,30],[31,28],[32,24],[32,20],[32,15],[32,10]] } };
+  await page.route(nominatim, (route) => route.fulfill({ json:[river] }));
+  try {
+    const { result, rows } = await page.evaluate(async () => {
+      const result = await window.IntMapAtlasExec.execute('map.highlight', { query:'Nile basin' }, { source:'atlas', turnId:72 });
+      return { result, rows:window.IntMapAtlasState.snapshot({ only:['atlas'] }).atlas.shapes.items };
+    });
+    expect(result.status).toBe('completed');
+    expect(rows).toContainEqual(expect.objectContaining({
+      kind:'area', basis:'real', target:'Nile basin', author:'atlas', turnId:72,
+      source:'GRDC/World Bank Major River Basins', sourceVersion:'2nd revised edition (2020)', transformation:expect.any(String),
+    }));
+  } finally {
+    await page.unroute(nominatim);
+  }
 });

@@ -26,6 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
+import { geometryRange, osmFeatureId } from './map-feature-geometry.js';
 import { fillFromAlpha, alphaFromFill, opacityPaint, opacityAlpha } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 import { countryShapeOnMap, OFM_FRONTIER_MINZOOM } from './frontier-fit.js';   /* the one shape of a country on the map — mask, edge and highlight are drawn from it */
@@ -943,7 +944,7 @@ export function outline(HOST){
         const inside=polys.filter(o=>_pipGeo(lng,lat,o.geojson));
         const pick=(inside.length?inside:polys).sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson))[0];
         if(!pick) return null;
-        return { name:(pick.display_name||q).split(',')[0], geojson:pick.geojson, lng:+pick.lon, lat:+pick.lat };
+        return { name:(pick.display_name||q).split(',')[0], geojson:pick.geojson, lng:+pick.lon, lat:+pick.lat, source:'OpenStreetMap', sourceId:osmFeatureId(pick) };
       }catch(_){ return null; } }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
       const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;   /* (#R54) high-res shape, not 9 straight points */
@@ -997,13 +998,13 @@ export function outline(HOST){
       const d=8, vb=located?('&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d)):'';
       const best=_pick(await _ask(vb));
       if(!best) return null;
-      return { name:(best.display_name||q).split(',')[0], geojson:best.geojson, lng:+best.lon, lat:+best.lat }; }
+      return { name:(best.display_name||q).split(',')[0], geojson:best.geojson, lng:+best.lon, lat:+best.lat, source:'OpenStreetMap', sourceId:osmFeatureId(best), transformation:'Nominatim polygon threshold '+thr+'°' }; }
     async function show(name, ctx){ ctx=ctx||{}; const myseq=++_seq;   /* generation token — a later show()/clear() invalidates this one */
-      try{ let geo=(ctx.geojson&&/Polygon/.test(ctx.geojson.type||''))?ctx.geojson:null, disp=name||'';
-        if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; } }
+      try{ let geo=(ctx.geojson&&/Polygon/.test(ctx.geojson.type||''))?ctx.geojson:null, disp=name||'', provenance={target:name,author:'user',...ctx.provenance};
+        if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; provenance={...provenance,source:r.source,sourceId:r.sourceId,transformation:r.transformation}; } }
         if(myseq!==_seq) return false;
         if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
-        _iso3=ctx.iso3||null; _last={name:disp,geo}; _active=true; paintShape(true); setVis('visible');
+        _iso3=ctx.iso3||null; _last={id:'outline:'+myseq,name:disp,geo,provenance}; _active=true; paintShape(true); setVis('visible');
         /* ══ (#R669) A SHARPER SHAPE MAY ARRIVE AFTER THE OUTLINE IS ALREADY UP ═══════════════════
            「クリックしたときのハイライト線が線に比べて解像度が低い。」 The era subdivision layer has
            TWO accounts of the same unit: a bundled ring simplified to ~2.2 km so that a planet fits
@@ -1017,7 +1018,7 @@ export function outline(HOST){
         if(ctx.refine&&typeof ctx.refine.then==='function'){ try{ ctx.refine.then(better=>{
           if(myseq!==_seq||!_active) return;
           if(!better||!/Polygon/.test(better.type||'')) return;
-          _last={name:disp,geo:better}; paintShape(true);
+          _last={..._last,geo:better}; paintShape(true);
         }).catch(()=>{}); }catch(_){} }
         if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=GE().render.container&&GE().render.container(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); GE().camera.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
@@ -1031,7 +1032,7 @@ export function outline(HOST){
     GE().events.on('idle',()=>{ if(_active&&_last) paintShape(false); });   /* the tiles loaded changed: fit the shape to them */
     /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
     return { show, clear, setColor, active:()=>_active,
-      current:()=>(_active&&_last)?{name:_last.name, geo:_last.geo}:null,   /* (#R122) expose the geometry (Move/Isolate) */
+      current:()=>(_active&&_last)?{..._last}:null,   /* (#R122) expose the geometry (Move/Isolate) */
       focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) GE().camera.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
   })();
 }
@@ -1411,7 +1412,7 @@ export function objectList(HOST){
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
       try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
-        width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), geo:()=>it.geom, area:()=>geomKm2(it.geom),
+        provenance:{ author:'user', target:it.name, transformation:'manual_drawing' }, width:it.width!=null?it.width:IA.defaultLineWidth, alpha:it.alpha!=null?it.alpha:(geomKind(it.geom)==='area'?alphaFromFill(it.op):1), geom:geomKind(it.geom), geo:()=>it.geom, area:()=>geomKm2(it.geom),
         setWidth:w=>{ it.width=w; try{ IA.refresh&&IA.refresh(); }catch(_){} }, setOpacity:a=>{ it.alpha=a; try{ IA.refresh&&IA.refresh(); }catch(_){} },
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; const _ul=layersOf([it.sid]); const geom=featuresKind(srcFeats(it.sid));
@@ -1436,7 +1437,7 @@ export function objectList(HOST){
          描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
       try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
         out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)), src:['nlq-poly-src'],
-          geom:'area', geo:()=>p.geo, area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:alphaFromFill(p.op!=null?p.op:HP.fillBase),   /* what the reader set (0–1); the painter holds it as the fill opacity in p.op */
+          geom:'area', geo:()=>p.geo, provenance:p.provenance, area:()=>geomKm2(p.geo), width:p.w!=null?p.w:1.4, alpha:p.alpha!=null?p.alpha:alphaFromFill(p.op!=null?p.op:HP.fillBase),   /* what the reader set (0–1); the painter holds it as the fill opacity in p.op */
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           setWidth:w=>{ p.w=w; try{ HP.repaint(); }catch(_){} },
@@ -1445,7 +1446,7 @@ export function objectList(HOST){
       /* the lines Atlas drew (drawLine, river highlights, journey courses) — until now neither listed nor editable, though they were drawn */
       try{ const HL=window._imHlLines; ((HL&&HL.list())||[]).forEach((l,i)=>{ const lid=HL.tagId(l); if(!lid) return;
         out.push({ id:lid, kind:'line', dot:l.color||'#2f9bff', color:l.color||'#2f9bff', name:labels[lid]||l.name||(OL('Line drawn by Atlas','ライン')+' '+(i+1)), src:['nlq-line-src'],
-          geom:'line', geo:()=>l.geo, width:l.w!=null?l.w:3, alpha:l.op!=null?l.op:0.92,
+          geom:'line', geo:()=>l.geo, provenance:l.provenance, width:l.w!=null?l.w:3, alpha:l.op!=null?l.op:0.92,
           focus:()=>{ if(l.geo) fitFeats([{geometry:l.geo}]); }, rename:v=>{ labels[lid]=v; l.name=v; },
           setColor:col=>{ l.color=col; try{ HL.repaint(); }catch(_){} },
           setWidth:w=>{ l.w=w; try{ HL.repaint(); }catch(_){} },
@@ -1458,7 +1459,7 @@ export function objectList(HOST){
           remove:()=>{ try{ PO.clear(); }catch(_){} } }); } }catch(_){}
       /* the figures of one composed map (numbered places, real shapes, links) — each under the id the compose result reports */
       try{ const AC=window.IntMapAtlasCompose; ((AC&&AC.objects&&AC.objects())||[]).forEach(o=>{
-        out.push({ id:o.id, kind:o.kind, dot:o.color, color:o.color, name:labels[o.id]||o.name, src:o.src, geom:o.geom, width:o.width, alpha:o.alpha, area:o.areaKm2!=null?(()=>o.areaKm2):null,
+        out.push({ id:o.id, kind:o.kind, dot:o.color, color:o.color, name:labels[o.id]||o.name, src:o.src, geom:o.geom, geo:()=>o.geometry, provenance:o.provenance, width:o.width, alpha:o.alpha, area:o.areaKm2!=null?(()=>o.areaKm2):null,
           setColor:o.setColor, setWidth:o.setWidth, setOpacity:o.setOpacity, rename:v=>{ labels[o.id]=v; },
           focus:()=>{ if(o.geometry) fitFeats([{geometry:o.geometry}]); else if(o.center) GE().camera.flyTo({center:o.center,zoom:Math.max(GE().camera.getZoom(),9),duration:800}); },
           remove:()=>{ try{ AC.removeOne(o.id); }catch(_){} } }); }); }catch(_){}
@@ -1468,7 +1469,7 @@ export function objectList(HOST){
         let ms=[]; try{ const r=GE().render.drawn({owners:['map.myMap']}); ms=Object.keys((r&&r.surfaces)||{}); }catch(_){}
         mo.forEach(o=>out.push(Object.assign({src:ms},o))); } } }catch(_){}
       try{ const OT=window.IntMapOutline, cur=OT&&OT.current&&OT.current(); if(cur) out.push({ id:'outline', kind:'outline', dot:'#0a84ff',
-        name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), geom:'area', area:()=>geomKm2(cur.geo),
+        name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), geom:'area', geo:()=>cur.geo, provenance:cur.provenance, area:()=>geomKm2(cur.geo),
         focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
       /* ══ (atlas-completion) WHAT ELSE IS DRAWN, ASKED OF THE RENDERER ═══════════════════════════════════════════
          The entries above are the subsystems that keep their own lists. Everything else drawn on the map — Atlas's answer
@@ -1481,13 +1482,14 @@ export function objectList(HOST){
         const r=GE().render.drawn({});
         if(r&&r.observable) Object.keys(r.surfaces).sort().forEach(sid=>{ const su=r.surfaces[sid]; /* a surface whose layers an answer's switch turned OFF is still the reader's object: it is listed (hidden) so Objects can bring it back, not dropped */ if((su.state!=='drawn'&&su.state!=='hidden')||covered.has(sid)) return;
           const fs=srcFeats(sid); if(!fs.length) return;
-          const feats=fs.map((f,i)=>{ const p=f.properties||{}; return { id:String(p.id!=null?p.id:(f.id!=null?f.id:i)), name:String(p.name||p.label||'') }; });
+          const feats=fs.map((f,i)=>{ const p=f.properties||{}; return { id:String(p.id??f.id??i), name:String(p.name||p.label||''), kind:geomKind(f.geometry),
+            ...geometryRange(f.geometry), author:p.author||'unknown', target:p.target, source:p.source, sourceVersion:p.sourceVersion, transformation:p.transformation, turnId:p.turnId }; });
           const named=feats.map(f=>f.name).filter(Boolean), oid='surface:'+sid;
           const col=((fs.find(f=>f.properties&&f.properties.color)||{}).properties||{}).color||'#8e8e93';
           const layers=layersOf([sid]), geom=featuresKind(fs), alpha=layerOpacity(layers,geom), style=layerStyle([sid]);
           out.push({ id:oid, kind:'drawn', dot:col, src:[sid], owners:(su.owners||[]).slice(), features:feats,
             name:labels[oid]||(named.length?(named.slice(0,3).join(', ')+(named.length>3?(' +'+(named.length-3)):'')):(OL('Map drawing','地図の描画')+' ('+fs.length+')')),
-            geom, alpha, area:()=>featsKm2(fs), hidden:su.state==='hidden',
+            geom, alpha, area:()=>featsKm2(fs), geo:()=>{ const lines=fs.flatMap(f=>f.geometry?.type==='LineString'?[f.geometry.coordinates]:f.geometry?.type==='MultiLineString'?f.geometry.coordinates:[]); return fs.length===1&&lines.length?{type:'MultiLineString',coordinates:lines}:null; }, hidden:su.state==='hidden',
             setColor:layers.some(l=>l.type==='fill'||l.type==='line'||l.type==='circle')?style.setColor:null,
             setWidth:layers.some(l=>l.type==='line')?style.setWidth:null,
             setOpacity:alpha==null?null:style.setOpacity,
@@ -1687,7 +1689,10 @@ export function objectList(HOST){
       return { n:pts.length, first:[r6(pts[0][0]),r6(pts[0][1])], last:[r6(pts[pts.length-1][0]),r6(pts[pts.length-1][1])], bbox:[w,s,e,n], key:('0000000'+h.toString(16)).slice(-8) }; }
     function describe(o,i){ const ed=[]; if(o.setColor) ed.push('color'); if(o.setWidth) ed.push('width'); if(o.setOpacity) ed.push('opacity'); if(o.toggleHide) ed.push('hidden'); if(o.rename) ed.push('name');
       let ar=null; if(typeof o.area==='function'){ try{ ar=o.area(); }catch(_){} }
-      return Object.assign({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i, geom:o.geom||null, shape:(typeof o.geo==='function')?(()=>{ try{ return shapeOfGeo(o.geo()); }catch(_){ return null; } })():null, width:o.width!=null?o.width:null, opacity:o.alpha!=null?o.alpha:null, areaKm2:ar!=null?Math.round(ar*100)/100:null, editable:ed }, o.features?{ features:o.features.map(f=>({id:f.id,name:f.name})) }:null); }
+      let shape=null;
+      if(typeof o.geo==='function'){ try{ const g=o.geo(), fingerprint=shapeOfGeo(g); if(fingerprint) shape={...fingerprint,...geometryRange(g),...(o.provenance?{provenance:o.provenance}:null)}; }catch(_){} }
+      if(o.features) shape={...shape,features:o.features};
+      return Object.assign({ id:String(o.id), kind:o.kind, name:o.name, color:o.color||null, hidden:!!o.hidden, index:i, geom:o.geom||null, shape, width:o.width!=null?o.width:null, opacity:o.alpha!=null?o.alpha:null, areaKm2:ar!=null?Math.round(ar*100)/100:null, editable:ed }, o.features?{ features:o.features }:null); }
     function list(){ try{ return collect().map(describe); }catch(_){ return []; } }
     /* the ONE way an object's look is changed — Atlas's `object` capability and the panel's own controls both end in these setters.
        Returns what took effect and what this object cannot take, so a refusal is a fact the caller can read (never a silent no-op). */

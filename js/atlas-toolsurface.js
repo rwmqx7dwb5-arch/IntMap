@@ -233,14 +233,7 @@ export function makeAtlasToolSurface(deps) {
         if (read.ok) { try { read.readiness = await skillReadiness(skillById(sid), { capabilities: CAPS, probes: deps.probes || {} }); } catch (_) { read.readiness = { error: 'readiness_unobserved' }; } }
         return read;
       }
-      var out = await findCapabilities(query, args);
-      var sk = [];
-      try { sk = searchSkills(query, { want: 2 }); } catch (_) { sk = []; }
-      if (sk.length) {
-        out.skills = sk;
-        if (!out.matches.length) out.note = 'No capability matched, but a skill did: read it for how this kind of work is done with IntMap. ' + (out.note || '');
-      }
-      return out;
+      return findCapabilities(query, args);
     }
     /* ══ (atlas-child-loop-reuse) WHICH MATCHES ARE SPELLED OUT WHEN THE RANKER IS SURE OF NONE ═════════════════════════════════════════════════
        With nothing strong, every match used to arrive whole: 「稜線の両側の植生を比較」 shares only the category word 比較 with the registry, so 58
@@ -290,6 +283,11 @@ export function makeAtlasToolSurface(deps) {
         res.note = 'None of these ' + rankedIds.length + ' was named by your request (they share only a general word with it), so each is one line. '
           + 'Call find_capability again with the same query and "want" (the output you need: ' + VOCAB().want.join(', ') + ') and/or "have" (what you hold or will name: '
           + VOCAB().have.join(', ') + ') to have the ones that fit spelled out, or with one id to read that one. ' + (res.note || '');
+      }
+      var skills = searchSkills(q, { want: 2, semantic: r && r.skillMatches });
+      if (skills.length) {
+        res.skills = skills;
+        if (!res.matches.length) res.note = 'No capability matched, but a skill did: read it for how this kind of work is done with IntMap. ' + (res.note || '');
       }
       /* (mcp-client) the reader's registered MCP servers are searched with the same words, and their tools come back beside the registry's
          under their own key, with their real inputSchema and the capability that runs them (mcp.call | mcp.act). Every string in them was written

@@ -95,12 +95,14 @@ test('⑦ the same capability asked twice in one delegation is one task (the rep
   assert.equal(out[1].reused, true);
 });
 
-test('⑧ data a capability returns rides on the result; data past the bound is dropped and the result says so', async () => {
+test('⑧ capability data past the inline bound stays available to downstream work', async () => {
   const D = makeDelegation({ executor: { id: 'x', run: async (t) => ok('s', { data: t.goal === 'big' ? { blob: 'z'.repeat(30000) } : { v: 3 } }) } });
   const [small, big] = await D.run([{ goal: 'small' }, { goal: 'big' }]);
   assert.deepEqual(small.data, { v: 3 });
   assert.equal(big.data, undefined);
-  assert.ok(big.gaps.some((g) => /too large/.test(g)));
+  assert.ok(big.dataRef);
+  assert.equal(D.snapshot().results.find((r) => r.result.id === big.id).payload.blob.length, 30000);
+  assert.deepEqual(big.gaps, []);
 });
 
 test('⑨ the capability executor refuses what is not read-only, what is unknown, and everything when it cannot classify', async () => {

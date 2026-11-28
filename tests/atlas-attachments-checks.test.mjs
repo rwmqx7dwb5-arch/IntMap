@@ -190,8 +190,8 @@ test('#R773 ⑪ 取り寄せは実装されている — 宣言だけして繋�
      （プロンプト本文に置いた data URL は画像ではなく数十万文字の base64・#R493）。 */
   /* (#R779) 取り戻した画像はターンの画像一覧に載る。⚠ 組む場所は 1 か所で、
      `VFRAMES.urls()` が空のとき返す null はそこが受け止める（直接 .concat しない）。 */
-  assert.match(con, /_atlTurnImgs\(VFRAMES\.urls\(\),_atlRecallImgs\)/);
-  assert.match(con, /_atlRecallAtts\.docs\.push/);
+  assert.match(con, /turnAttachmentImages\(VFRAMES\.urls\(\),_atlRecallImgs\.concat\(_heldPhotos\),_turnPhotos\)/);
+  assert.match(con, /attachments\.docs\.push/);
   /* 台帳は毎ターンの入口で更新され、編集の巻き戻しと同じ境界を持つ */
   assert.match(con, /ATTACH_LOG\.remember\(turn,imgs,files\)/);
   assert.match(con, /ATTACH_LOG\.carry\(turn,files,ATL_FILE\.LIMITS\)/);
@@ -218,7 +218,7 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
      encoder that returns nothing must not yield an image. */
   assert.match(html, /encodeImage:\(x\)=>compressImage\(x,2000,0\.9\)/, 'the attach path still encodes at R156 hi-fi 2000/0.9 for OCR/maths (was 1100/0.72)');
   // run() takes the images the paste/attach handlers collected
-  assert.match(html, /async function run\(q,imgs,files\)\{/, 'run accepts images (and R158 file attachments)');
+  assert.match(html, /async function run\(q,imgs,files\b[^)]*\)\{/, 'run accepts images (and R158 file attachments)');
   /* «the planner call gets imgs» removed in #R406: the planner is deleted, and that assertion had been guarding a path that could never run — `if(imgs.length){ … _atlVisionTurn … return; }` returns BEFORE the model call, so an image has never reached the planner; the pipeline the images do reach is the one asserted above. */
   assert.match(html, /class="atl-attach"/, 'attach button present');
   // server already supports vision
@@ -241,10 +241,10 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
      BYTE FOR BYTE — `const aiv=bubble('a',stageDots('read'))` — so wrapping that bubble to open a
      work trace failed a routing test while the routing was untouched. What #R540 states is a
      property with three parts, and each is asked for on its own below. */
-  /* (atlas-gis-first-arrival) THE BRANCH STILL ROUTES TO THE VISION TURN FIRST AND STILL RETURNS — unless the READER ITSELF asked for tools (`continueWithTools`), in which case it carries on into the agent loop with the reading and the images. So the branch ends at `_atlRecallImgs=imgs;` and the `return;` is inside it. */
-  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,900}?\breturn;[\s\S]{0,160}?_atlRecallImgs=imgs;\s*\}/.exec(html);
+  /* (atlas-gis-first-arrival) THE BRANCH STILL ROUTES TO THE VISION TURN FIRST AND STILL RETURNS — unless the READER ITSELF asked for tools (`continueWithTools`), in which case it carries on into the agent loop with the reading and the images. So the branch ends at `_imgCtx=agentContext(_vd);` and the `return;` is inside it. */
+  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,900}?\breturn;[\s\S]{0,160}?_imgCtx=agentContext\(_vd\);\s*\}/.exec(html);
   assert.ok(visionBranch, 'run() has a branch for an attached image that returns');
-  assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*imgs\s*,\s*gen\s*,\s*_atts\s*\)/,
+  assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*turnAttachmentImages\(null,_turnPhotos\)\s*,\s*gen\s*,\s*_atts\s*\)/,
     'it hands the image to the vision pipeline, with the files/docs channels riding along (R540)');
   assert.ok(html.indexOf(visionBranch[0]) < html.indexOf('AGENT.runTurn('),
     'and it does so BEFORE the planner, which is what 「routes to the vision turn, not the generic planner」 means');

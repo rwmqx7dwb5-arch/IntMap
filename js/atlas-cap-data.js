@@ -222,15 +222,30 @@ export default [
     row: ['data.gisRemote',             'gisRemote',      'discoverData,findDatasets,searchDataCatalog,stacSearch,remoteCog,findImagery,satelliteScenes,findSatelliteData', 'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
     ui: { at: ['#btn-gis-panel'] },
     doc: [
-      { in: 'spatial-analysis', at: 48, text: 'FIND DATA THAT IS NOT IN IntMap (世界のオープンデータカタログから、場所と期間に合うデータセットを探す): {"type":"gisRemote","action":"discover"|"search"|"inspect"|"items"|"scenes"|"acquire"|"status"|"catalogs"|"add"|"sources"|"facts","modality"?:"optical"|"sar"|"dem"|"lidar"|[..],"q"?:str,"bounds"?:[w,s,e,n],"time"?:str,"ref"?:"<catalog>/<collection>","catalogs"?:[id],"kinds"?:["stac"|"ogc-features"],"limit"?:int,"kind"?:"stac"|"ogc-features","url"?:str,"id"?:str,"label"?:str,"operator"?:str}. THIS IS THE FIRST MOVE when the data you need is not a layer or dataset IntMap already holds. facts = BEFORE JOINING OR COMPARING DATASETS THAT IntMap SHIPS (ref = a bundle name such as "maddison", or several separated by commas): what each states about itself — period (what the VALUES describe, not when they were fetched), extent, method, resolution, completeness, accuracy, cadence and whether that cadence was measured, stated, derived or only an estimate — and `unstated` lists what nobody stated (never read it as zero or as matching). With several refs, timeMismatch.pairs names the datasets whose periods do not overlap and the gap in years: a 2020 population joined to 2025 districts is two different worlds, so say so in the answer. discover = which COLLECTIONS of the world\'s open catalogues (STAC: Earth Search, Planetary Computer, NASA LP DAAC; OGC API – Features: Canada MSC, BGS) STATE that they cover the place (bounds) and period (time, a year or an ISO range) and match every word of q — each carries its licence VERBATIM or null (null = NOT STATED, never read it as open) and match.spatial / match.temporal = covers|overlaps|unstated; a catalogue that did not answer is listed with why and is NOT 「nothing there」. inspect = one collection\'s own statement, a sample item\'s assets (which are Cloud-Optimised GeoTIFFs, bands, units), `evidence` — worldCompleteness is ALWAYS "unproven": a catalogue cannot say it holds everything that exists — and `refs`: the input to READ it with the gis step: refs.features = "ogc:<…/collections/id>" (items as a vector dataset), refs.grids = ["url:<COG address>"] (a grid, with acquire.bounds/width/height). Discovery does not fetch data; reading is the gis step. add registers another STAC / OGC Features catalogue (kind stated, https public address) for this session. sources lists what IntMap\'s OWN sources state they can supply (window, time, conditions, end, extent) — null is NOT STATED, which is different from "cannot", and it asks nobody anything. Use for 「ベトナム北部の最高解像度の標高データを探して」「この地域で使える衛星画像のコレクション」, "find open elevation data for Kenya", "which catalogues hold flood data here". search = discover plus resolution / cloud / licence filters and the datasets already held in this session, ranked, with facet counts: "maxGsd"?:metres ("10 m or finer" = 10), "minGsd"?, "maxCloud"?:percent, "licensed"?:bool, "strict"?:bool (drop records that do not STATE the filtered fact; default keeps them marked unstated), "origins"?:["catalogue"|"held"], "items"?:bool (also list a few scenes), "until"?:"ready" with "width","height" (grid size) = do not wait for every catalogue: the first candidate that states it covers the window (and meets maxGsd) is READ and its values inspected while the slow catalogues keep answering, and you get it as `early` (analysis ready, datasets) plus a "follow" handle; call search again with "follow":"<handle>" (or action follow) for the finished list and switch if a later answer is finer or newer — which one to use is your call. items = the scenes of one STAC collection over bounds/time (ref required). scenes = THE FIRST MOVE FOR 「この場所・この時期の衛星画像／SAR／LiDAR／標高は」: bounds (required) + time + modality (optical | sar | dem | lidar, one or several; default all four) + maxCloud (optical only) asks EVERY catalogue\'s collections of that kind that state they cover the place and period, then each one\'s scenes, newest first, and answers per kind with each scene\'s datetime, cloud, stated unusable shares (quality, verbatim property names), resolution, platform, radar mode/polarisation, its collection\'s licence VERBATIM with the licence link, and refs.grids (url:<COG>) that data.gis / the change and model routes read. THREE DIFFERENT 「無い」 are returned in "none" and you must say which: no-collection (no catalogue asked states that kind of data for the place — say so, e.g. no SAR before 2014 over Tokyo), no-scene (collections state it but hold no scene in the period; atOtherTimes lists what they hold at other dates, droppedByCloud what was too cloudy) and not-answered (a catalogue or collection did not answer — that is 「訊けなかった」, never 「無い」). A DEM is not a time series, so the period is not applied to it (periodApplied:false). Collections licensed non-commercial are listed in "excluded" and never offered; "proprietary" is STAC for 「the terms are at the licence link」 — give the link, do not call it open or closed. Each collection answers one page (continues), so a count is a page, not the archive. acquire = take ONE collection ref through every stage — discovered, access (can an anonymous reader take the file), fetched (all or part of the window), inspected (values looked at: empty / all nodata / outside the window), dataset — with "bounds", "width", "height" (grid) or "limit" (features); the answer is a STATE: analysis ready | ready-partial | not-ready, blockedAt, and why. status = the same states for what this session has touched (ref optional). NOTE: A DISCOVERED DATASET IS NOT AN ANALYSABLE DATASET: do not feed a ref to an analysis step unless its state is ready or ready-partial, and when ready-partial say which part is missing. blocked (login, 403, a sign-in page, needs signing) is NOT worked around: tell the reader it needs their account; unknown (timeout, unreachable, relay budget) is NOT 「無い」 and may be retried once later. A window across the date line is read as two files (east side, west side), each its own dataset, not mosaicked. Say plainly that results are what the catalogues STATE, and name the licence (or that none is stated). Do NOT use it for layers already on the map (use gis with layer:<id>) or for a file the reader uploaded. ' },
+      { in: 'spatial-analysis', at: 48, text: 'FIND DATA THAT IS NOT IN IntMap (世界のオープンデータカタログから、場所と期間に合うデータセットを探す): {"type":"gisRemote","action":"discover"|"search"|"inspect"|"items"|"scenes"|"acquire"|"status"|"catalogs"|"add"|"sources"|"facts","modality"?:"optical"|"sar"|"dem"|"lidar"|[..],"q"?:str,"bounds"?:[w,s,e,n],"time"?:str,"ref"?:"<catalog>/<collection>","catalogs"?:[id],"kinds"?:["stac"|"ogc-features"],"limit"?:int,"kind"?:"stac"|"ogc-features","url"?:str,"id"?:str,"label"?:str,"operator"?:str}. THIS IS THE FIRST MOVE when the data you need is not a layer or dataset IntMap already holds. facts = BEFORE JOINING OR COMPARING DATASETS THAT IntMap SHIPS (ref = a bundle name such as "maddison", or several separated by commas): what each states about itself — period (what the VALUES describe, not when they were fetched), extent, method, resolution, completeness, accuracy, cadence and whether that cadence was measured, stated, derived or only an estimate — and `unstated` lists what nobody stated (never read it as zero or as matching). With several refs, timeMismatch.pairs names the datasets whose periods do not overlap and the gap in years: a 2020 population joined to 2025 districts is two different worlds, so say so in the answer. discover = which COLLECTIONS of the world\'s open catalogues (STAC: Earth Search, Planetary Computer, NASA LP DAAC; OGC API – Features: Canada MSC, BGS) STATE that they cover the place (bounds) and period (time, a year or an ISO range) and match every word of q — each carries its licence VERBATIM or null (null = NOT STATED, never read it as open) and match.spatial / match.temporal = covers|overlaps|unstated; a catalogue that did not answer is listed with why and is NOT 「nothing there」. inspect = one collection\'s own statement, a sample item\'s assets (which are Cloud-Optimised GeoTIFFs, bands, units), `evidence` — worldCompleteness is ALWAYS "unproven": a catalogue cannot say it holds everything that exists — and `refs`: the input to READ it with the gis step: refs.features = "ogc:<…/collections/id>" (items as a vector dataset), refs.grids = ["url:<COG address>"] (a grid, with acquire.bounds/width/height). Discovery does not fetch data; reading is the gis step. add registers another STAC / OGC Features catalogue (kind stated, https public address) for this session. sources lists what IntMap\'s OWN sources state they can supply (window, time, conditions, end, extent) — null is NOT STATED, which is different from "cannot", and it asks nobody anything. Use for 「ベトナム北部の最高解像度の標高データを探して」「この地域で使える衛星画像のコレクション」, "find open elevation data for Kenya", "which catalogues hold flood data here". search = discover plus resolution / cloud / licence filters and the datasets already held in this session, ranked, with facet counts: "maxGsd"?:metres ("10 m or finer" = 10), "minGsd"?, "maxCloud"?:percent, "licensed"?:bool, "strict"?:bool (drop records that do not STATE the filtered fact; default keeps them marked unstated), "origins"?:["catalogue"|"held"], "items"?:bool (also list a few scenes), "until"?:"ready" with "width","height" (grid size) = do not wait for every catalogue: the first candidate that states it covers the window (and meets maxGsd) is READ and its values inspected while the slow catalogues keep answering, and you get it as `early` (analysis ready, datasets) plus a "follow" handle; call search again with "follow":"<handle>" (or action follow) for the finished list and switch if a later answer is finer or newer — which one to use is your call. items = the scenes of one STAC collection over bounds/time (ref required). scenes = THE FIRST MOVE FOR 「この場所・この時期の衛星画像／SAR／LiDAR／標高は」: bounds (required) + time + modality (optical | sar | dem | lidar, one or several; default all four) + maxCloud (optical only) asks EVERY catalogue\'s collections of that kind that state they cover the place and period, then each one\'s scenes, newest first, and answers per kind with each scene\'s datetime, cloud, stated unusable shares (quality, verbatim property names), resolution, platform, radar mode/polarisation, its collection\'s licence VERBATIM with the licence link, and refs.grids (url:<COG>) that data.gis / the change and model routes read. THREE DIFFERENT 「無い」 are returned in "none" and you must say which: no-collection (no catalogue asked states that kind of data for the place — say so, e.g. no SAR before 2014 over Tokyo), no-scene (collections state it but hold no scene in the period; atOtherTimes lists what they hold at other dates, droppedByCloud what was too cloudy) and not-answered (a catalogue or collection did not answer — that is 「訊けなかった」, never 「無い」). A DEM is not a time series, so the period is not applied to it (periodApplied:false). Collections licensed non-commercial are listed in "excluded" and never offered; "proprietary" is STAC for 「the terms are at the licence link」 — give the link, do not call it open or closed. Each collection answers one page (continues), so a count is a page, not the archive. acquire = take ONE collection ref through every stage — discovered, access (can an anonymous reader take the file), fetched (all or part of the window), inspected (values looked at: empty / all nodata / outside the window), dataset — with "bounds", "width", "height" (grid) or "limit" (features); the answer is a STATE: analysis ready | ready-partial | not-ready, blockedAt, and why. status = the same states for what this session has touched (ref optional). NOTE: A DISCOVERED DATASET IS NOT AN ANALYSABLE DATASET: do not feed a ref to an analysis step unless its state is ready or ready-partial, and when ready-partial say which part is missing. blocked (login, 403, a sign-in page, needs signing) is NOT worked around: tell the reader it needs their account; unknown (timeout, unreachable, relay budget) is NOT 「無い」 and may be retried once later. A window across the date line is read as two files (east side, west side), each its own dataset, not mosaicked. Say plainly that results are what the catalogues STATE, and name the licence (or that none is stated). Do NOT use it for layers already on the map (use gis with layer:<id>). To inspect GIS datasets already registered for the current map view (表示範囲と重なる登録済みのデータを調べる), use data.gisRemote {"action":"search","origins":["held"],"inView":true} or pass explicit bounds. The structured held entries carry the match of the recorded extent to that window, raster resolution, known format and missing-data facts. An extent match is about the bounds, not a guarantee of coverage by every row or cell. Pass a held entry id to data.gis or map.drawDataset. ' },
     ],
-    schema: () => ({ type: 'object', properties: { action: one('discover', 'search', 'follow', 'inspect', 'items', 'scenes', 'acquire', 'status', 'catalogs', 'add', 'sources', 'facts'), modality: list(one('optical', 'sar', 'dem', 'lidar')), perModality: int(1, 50), q: str(), bounds: list(num()), time: str(), ref: str(), limit: int(1, 1000), maxGsd: num(), minGsd: num(), maxCloud: num(), licensed: bool(), strict: bool(), items: bool(), origins: list(one('catalogue', 'held')), until: one('ready'), follow: str(), width: int(1, 4096), height: int(1, 4096), asset: str(), kind: one('stac', 'ogc-features'), kinds: list(one('stac', 'ogc-features')), catalogs: list(str()), url: str(), id: str(), label: str(), operator: str() } }),
+    schema: () => ({ type: 'object', properties: { action: one('discover', 'search', 'follow', 'inspect', 'items', 'scenes', 'acquire', 'status', 'catalogs', 'add', 'sources', 'facts'), modality: list(one('optical', 'sar', 'dem', 'lidar')), perModality: int(1, 50), q: str(), bounds: list(num()), inView: bool(), time: str(), ref: str(), limit: int(1, 1000), maxGsd: num(), minGsd: num(), maxCloud: num(), licensed: bool(), strict: bool(), items: bool(), origins: list(one('catalogue', 'held')), until: one('ready'), follow: str(), width: int(1, 4096), height: int(1, 4096), asset: str(), kind: one('stac', 'ogc-features'), kinds: list(one('stac', 'ogc-features')), catalogs: list(str()), url: str(), id: str(), label: str(), operator: str() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn;
       await window.IntMapLazy.need('gisCore');
       const _G = (window.IntMapGis || {}).atlas;
       if (!_G || typeof _G.remote !== 'function') return R(false, warn(K.L('The GIS engine could not be loaded.', 'GIS エンジンを読み込めませんでした。')));
-      const r = await _G.remote(a);
-      return r.ok ? R(true, r.html, { meta: { gisRemote: { action: a.action || 'discover', dataset: r.dataset && r.dataset.id, coverage: r.coverage && r.coverage.completeness } } }) : R(false, warn(r.html));
+      let bounds = a.bounds;
+      if (a.inView && bounds == null) {
+        try {
+          const box = K.GE().camera.getBounds();
+          const west = box.getWest(), east = box.getEast();
+          const wrap = (x) => ((x + 180) % 360 + 360) % 360 - 180;
+          const span = east - west;
+          bounds = [span >= 360 ? -180 : wrap(west), box.getSouth(), span >= 360 ? 180 : wrap(east), box.getNorth()];
+        } catch (_) { bounds = null; }
+        if (!bounds || !bounds.every(Number.isFinite)) {
+          return R(false, warn(K.L('The current map bounds could not be read.', '現在の地図の範囲を読み取れませんでした。')), { meta: { code: 'view_bounds_unavailable' } });
+        }
+      }
+      const r = await _G.remote({ ...a, bounds });
+      const held = r.entries?.filter((e) => e.origin === 'held');
+      const result = held?.length || a.origins?.includes('held') ? { gisRemote: { held: held || [], bounds } } : undefined;
+      return r.ok ? R(true, r.html, { meta: { gisRemote: { action: a.action || 'discover', dataset: r.dataset && r.dataset.id, coverage: r.coverage && r.coverage.completeness } }, exec: result }) : R(false, warn(r.html));
     },
   },
   /* ⚠⚠ (overture-maps) THE WORLD'S BUILDINGS, PLACES, ROADS AND BORDERS — read by the window you name. Overture Maps publishes ~90 M
@@ -337,34 +352,110 @@ export default [
     },
   },
   {
-    row: ['data.populationIn',          'population',     'populationIn,popIn',                                          'data',    'none',    '',                       'explanation',         'read',    'none',   'area',     'popArea'],
+    row: ['data.populationIn', 'population', 'populationIn,popIn', 'data', 'paint', 'map.polygon', 'explanation,object,map', 'session', 'none', 'area', 'popArea'],
+    policy: { headless: true },   /* a delegated worker gets the calculation without painting the reader's map */
     ui: { at: ['#tp-pop-btn'] },
     doc: [
-      { in: 'data.populationIn', text: 'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num,"year"?:int} = EXACT population inside a shape, summed from the WorldPop 100m population grid (WorldPop Global2: 2015-2030, e.g. 2020; past years are its back-casts and later ones its projections). "year" picks the year; without it, the year the map shows. target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n' },
+      { in: 'data.populationIn', text: 'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num,"year"?:int} sums the WorldPop Global2 100 m population grid (2015–2030, including back-casts and projections). Without "year" it uses the year shown on the map. target:"drawn" selects the measured polygon; target:"radius" selects the placed circles. If the specified shape is absent, the result names what is missing. place alone uses its boundary; place+radiusKm makes a circle around it. The result gives the population, actual counted area and shape, data year, and whether any tiles were unavailable. The counted footprint is highlighted on the map and returned by its object ID. Multiple placed circles are summed with overlap counted in each circle. Use for 「この範囲の人口」「半径30 km以内の人口」 or “population within 30 km of a place.”\n' },
     ],
-    schema: () => ({ type: 'object', properties: { target: one('drawn', 'area', 'polygon', 'radius', 'circle'), area: str(), place: str(), radiusKm: num(0), km: num(0), year: num(2015) }, anyOf: [{ required: ['target'] }, { required: ['area'] }, { required: ['place'] }, { required: ['radiusKm'] }, { required: ['km'] }] }), /* `population` */
-      /* (#R118) POPULATION inside an area — drawn polygon / radius circles / a named place / an explicit radius
-         around a place. Real WorldPop 100m-grid sum (IntMapPopArea), never an AI guess. */
-    async run(a, dctx, K) { const HOST = K.HOST, L = K.L, R = K.R, note = K.note, geocode = K.geocode, warn = K.warn, esc = K.esc, _nomExtent = K._nomExtent;
-      {
-          try{
-            let geom=null, label='';
-            const tgt=String(a.target||a.area||'').toLowerCase();
-            if(tgt==='drawn'||tgt==='area'||tgt==='polygon'||(!a.place&&typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3&&!a.radiusKm)){
-              if(typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints.length>=3){ geom={type:'Polygon',coordinates:[[...HOST.measurePoints,HOST.measurePoints[0]]]}; label=L('the drawn area','描画した範囲','das gezeichnete Gebiet','нарисованная область','el área dibujada'); } }
-            if(!geom&&(tgt==='radius'||tgt==='circle'||(!a.place&&typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length))&&typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length&&!a.place){
-              let tot=0, src2='WorldPop', yr2=''; for(const c of HOST.radiusItems){ const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r2=await window.IntMapPopArea.estimate(g, null, a.year); tot+=r2.pop; src2=r2.src; yr2=r2.year; }
-              return R(true, note(icon('users')+' '+L('Population inside the circle(s): ','円内の人口: ','Bevölkerung im Kreis: ','Население в круге: ','Población en el círculo: ')+'<b>'+tot.toLocaleString()+'</b> · '+esc(src2)+' '+yr2+(HOST.radiusItems.length>1?(' · '+L('sum of circles (overlaps counted twice)','複数円の合算（重なりは二重計上）','Summe der Kreise','сумма кругов','suma de círculos')):''))); }
-            if(!geom&&a.place){ const km=+a.radiusKm||+a.km||0;
-              if(km>0){ const ll=await geocode(a.place); if(!ll) return R(false, warn(esc(a.place)));
-                geom=window.IntMapPopArea.circleGeom([ll.lng,ll.lat],km); label=esc(ll.name||a.place)+' · '+km+' km'; }
-              else{ let e=null; try{ e=await _nomExtent(a.place); }catch(_){}
-                if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){ geom=e.geojson; label=esc(e.name||a.place); }
-                else return R(false, warn(L('No boundary polygon found for','境界ポリゴンが見つかりません','Keine Grenze gefunden für','Не найдена граница','Sin límite para')+' '+esc(a.place))); } }
-            if(!geom) return R(false, warn(L('Draw an area / place a circle first, or name a place.','先に範囲を描くか円を置くか、地名を指定してください。','Erst Gebiet zeichnen / Kreis setzen oder Ort nennen.','Сначала нарисуйте область/круг или укажите место.','Dibuja un área / círculo o indica un lugar.')));
-            const r=await window.IntMapPopArea.estimate(geom, null, a.year);
-            return R(true, note(icon('users')+' '+(label?label+' — ':'')+L('population: ','人口: ','Bevölkerung: ','население: ','población: ')+'<b>'+r.pop.toLocaleString()+'</b> · '+esc(r.src)+' '+r.year));
-          }catch(e){ return R(false, warn(L('Population lookup failed (WorldPop busy) — try again.','人口を取得できませんでした（WorldPop混雑）— 再試行してください。','Bevölkerungsabfrage fehlgeschlagen — erneut.','Не удалось получить население — повторите.','Fallo al obtener población — reintenta.'))); } }
+    schema: () => ({ type: 'object', properties: { target: one('drawn', 'area', 'polygon', 'radius', 'circle'), area: str(), place: str(), radiusKm: num(0), km: num(0), year: num(2015) }, anyOf: [{ required: ['target'] }, { required: ['area'] }, { required: ['place'] }, { required: ['radiusKm'] }, { required: ['km'] }] }),
+    async run(a, dctx, K) {
+      const {HOST,L,R,note,geocode,warn,esc,_nomExtent}=K;
+      const {estimate,circleGeom}=window.IntMapPopArea;
+      const target=String(a.target||a.area||'').toLowerCase();
+      const points=HOST.measurePoints||[];
+      const circles=HOST.radiusItems||[];
+      const km=+a.radiusKm||+a.km||0;
+      const draws=target==='drawn'||target==='area'||target==='polygon';
+      const usesCircles=target==='radius'||target==='circle';
+      let requestedTarget=null, label;
+      let geometries;
+      const missing=(message)=>R(false,warn(message),{
+        meta:{code:'needs_input'}, exec:{population:{requestedTarget,areas:[]}}
+      });
+      if(draws || (!usesCircles && !a.place && points.length>=3 && !a.radiusKm)){
+        requestedTarget='drawn';
+        if(points.length<3) return missing(L('Draw a polygon before estimating its population.','人口を集計する多角形を先に描画してください。'));
+        label=L('the drawn area','描画した範囲','das gezeichnete Gebiet','нарисованная область','el área dibujada');
+        geometries=[{type:'Polygon',coordinates:[[...points,points[0]]]}];
+      } else if(usesCircles || (!a.place && circles.length)){
+        requestedTarget='radius';
+        if(!circles.length) return missing(L('Place a radius circle before estimating its population.','人口を集計する半径円を先に地図に置いてください。'));
+        label=L('Population inside the circle(s): ','円内の人口: ','Bevölkerung im Kreis: ','Население в круге: ','Población en el círculo: ').trim();
+        geometries=circles.map(c=>circleGeom(c.center,c.radiusKm));
+      } else if(a.place && km>0){
+        requestedTarget='place-radius';
+        const ll=await geocode(a.place);
+        if(!ll) return missing(esc(a.place));
+        label=(ll.name||a.place)+' · '+km+' km';
+        geometries=[circleGeom([ll.lng,ll.lat],km)];
+      } else if(a.place){
+        requestedTarget='place-boundary';
+        let extent=null;
+        try{ extent=await _nomExtent(a.place); }catch(_){}
+        if(!['Polygon','MultiPolygon'].includes(extent?.geojson?.type)){
+          return missing(L('No boundary polygon found for','境界ポリゴンが見つかりません','Keine Grenze gefunden für','Не найдена граница','Sin límite para')+' '+esc(a.place));
+        }
+        label=extent.name||a.place;
+        geometries=[extent.geojson];
+      } else {
+        return missing(L('Draw an area / place a circle first, or name a place.','先に範囲を描くか円を置くか、地名を指定してください。','Erst Gebiet zeichnen / Kreis setzen oder Ort nennen.','Сначала нарисуйте область/круг или укажите место.','Dibuja un área / círculo o indica un lugar.'));
+      }
+
+      const results=[], missingAreas=[];
+      for(const [index, geometry] of geometries.entries()){
+        dctx?.signal?.throwIfAborted();
+        try{ results.push({index, result:await estimate(geometry,null,a.year)}); }
+        catch(e){ missingAreas.push({index, code:e?.code||'lookup_failed', reason:e?.message||String(e)}); }
+      }
+      if(!results.length){
+        const message=missingAreas.every(a=>a.code==='worldpop-busy')
+          ? L('Population lookup failed (WorldPop busy) — try again.','人口を取得できませんでした（WorldPop混雑）— 再試行してください。','Bevölkerungsabfrage fehlgeschlagen — erneut.','Не удалось получить население — повторите.','Fallo al obtener población — reintenta.')
+          : L('Population lookup failed','人口を取得できませんでした');
+        return R(false,warn(message),{exec:{population:{requestedTarget,areas:[],missingAreas}}});
+      }
+      dctx?.signal?.throwIfAborted();
+
+      const headless=dctx?.source==='atlas-worker';
+      const painter=window._imHlPolys;
+      const areaName=L('Counted area','集計範囲');
+      const polyNames=[];
+      const areas=results.map(({result,index})=>{
+        const {geometry,areaKm2,requestedAreaKm2,bounds,pop,year,src,tiles,tilesOk}=result;
+        const area={index,shape:geometry.type,areaKm2,requestedAreaKm2,bounds,pop,year,source:src,tiles,tilesOk};
+        if(!headless && painter){
+          const key='worldpop:'+JSON.stringify(geometry);
+          let item=K._hlPolys.find(p=>p.key===key);
+          if(!item){
+            const name=geometries.length>1?areaName+' '+(index+1):areaName+' · '+label;
+            item={geo:geometry,name,key,shapeBasis:'worldpop-coverage',w:3};
+            K._hlPolys.push(item);
+          }
+          area.objectId=painter.tagId(item);
+          polyNames.push(item.name);
+        }
+        return area;
+      });
+      const painted=!headless && !!painter && K.paintPolys() && K._verifyPolyPaint(K._hlPolys.length).ok;
+      const objectIds=[...new Set(areas.map(area=>area.objectId).filter(Boolean))];
+      const pop=areas.reduce((sum,area)=>sum+area.pop,0);
+      const areaKm2=areas.reduce((sum,area)=>sum+area.areaKm2,0);
+      const partial=missingAreas.length>0 || results.some(({result})=>result.partial);
+      const sumOfCircles=requestedTarget==='radius' && geometries.length>1;
+      const areaText=areaKm2.toLocaleString(undefined,{maximumSignificantDigits:areaKm2<1?3:6});
+      const sources=[...new Set(areas.map(area=>area.source+' '+area.year))];
+      const populationText=L('population: ','人口: ','Bevölkerung: ','население: ','población: ');
+      const subject=requestedTarget==='radius'?esc(label)+' ':esc(label)+' — '+populationText;
+      const html=note(icon('users')+' '+subject+'<b>'+pop.toLocaleString()+'</b> · '+esc(sources.join(' / '))
+        +' · '+areaName+' '+areaText+' km²'
+        +(sumOfCircles?' · '+L('sum of circles (overlaps counted twice)','複数円の合算（重なりは二重計上）','Summe der Kreise','сумма кругов','suma de círculos'):'')
+        +(partial?' · '+L('Partial coverage','一部範囲のみ集計'):'')
+        +(!headless && !painted?' · '+L('Map highlight unavailable','地図の強調表示を確認できませんでした'):''));
+      const meta={ partial, code:partial?'partial_coverage':undefined,
+        ...(headless?{paintsNothing:true}:{unverified:!painted,painted:painted?{polys:polyNames}:undefined}) };
+      return R(true,html,{
+        objectIds,meta,exec:{status:partial?'partial':'completed',population:{requestedTarget,areas,missingAreas,pop,areaKm2,partial,sumOfCircles,highlighted:painted}}
+      });
     },
   },
   /* (#R760) WHICH FIRST-LEVEL UNITS A SHAPE COVERS — prefectures, states, provinces, oblasts.

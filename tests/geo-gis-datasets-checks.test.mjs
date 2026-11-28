@@ -408,7 +408,8 @@ describe('§ #R729 · the GIS core (registry, chain, refusals, project, query)',
     for (const entry of ['async function run(spec)', 'function catalogue()']) {
       const i = src.indexOf(entry);
       assert.ok(i > 0, 'entry point not found: ' + entry);
-      assert.ok(src.slice(i, i + 400).includes('syncUserTables()'), entry + ' does not read the registry');
+      const lookup = src.indexOf('TABLES[', i);
+      assert.ok(lookup > i && src.slice(i, lookup).includes('syncUserTables()'), entry + ' does not read the registry before the first lookup');
     }
     /* Into the SAME object every existing reader indexes — TABLES[x] is read in several places and a
        second lookup rule would have to be added at each of them. */

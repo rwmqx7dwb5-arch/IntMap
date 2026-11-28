@@ -50,6 +50,11 @@ test('discovery: requests in either language reach the right skill, other reques
   }
 });
 
+test('keyword phrases respect word boundaries including inside longer technical terms', () => {
+  for (const q of ['support and transport', 'constructionism', 'factorylike']) assert.deepEqual(skills.searchSkills(q), [], q);
+  assert.equal(skills.searchSkills('do a before-and-after comparison')[0]?.id, 'satellite-change-detection');
+});
+
 test('a search hands over names and one line, never the text; the Japanese request gets Japanese', () => {
   const [hit] = skills.searchSkills('港湾の物流リスクを比較して');
   assert.match(hit.title, /港湾/);
