@@ -1781,6 +1781,11 @@ It deliberately does **not** reformat or style-lint existing code.
 
 ## The agent context — `npm run check:agents` (`scripts/agent-sync.mjs`, #R503)
 
+`tests/atomic-worktree-settings-checks.test.mjs` runs parallel worktree creation, cleanup and Codex setup in
+temporary repositories. It checks that readers see complete settings, existing entries survive, preview ports stay
+distinct and the next writer can recover after a process exits while holding the lock.
+
+
 Two products read this repository, and each reads only its own location: Claude Code reads
 `CLAUDE.md` and `.claude/`, Codex reads `AGENTS.md` and `.codex/`. The instructions are written
 **once**, provider-neutral, under `.agents/` (`rules/`, `roles/`, `skills/`), and the per-product

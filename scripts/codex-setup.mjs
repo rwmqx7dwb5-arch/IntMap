@@ -44,10 +44,12 @@
  *      node scripts/codex-setup.mjs --json     # the same report, machine-readable
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { codexConfigPath, codexToml } from './lib/codex-settings.mjs';
+import { updateSettings } from './lib/local-settings.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ARGS = process.argv.slice(2);
@@ -60,8 +62,7 @@ const run = (cmd, args, cwd = ROOT) => {
 };
 
 /* ── where things are (all derived, never typed) ──────────────────────────────────────── */
-const CODEX_HOME = process.env.CODEX_HOME || path.join(homedir(), '.codex');
-const CONFIG = path.join(CODEX_HOME, 'config.toml');
+const CONFIG = codexConfigPath();
 
 /* The master working directory — master-sync.mjs's derivation, so this agrees from any worktree. */
 const MASTER = (() => {
@@ -93,102 +94,71 @@ const SETTINGS = [
     why: 'Quietest policy that still has somewhere to go when the sandbox itself refuses — «never» would turn the USB mirror (§11.2, a drive outside every workspace) into a silent failure instead of one question.' },
 ];
 
-/* ── a very small TOML surgeon ────────────────────────────────────────────────────────────
-   Not a TOML library on purpose: the three shapes needed here are «a bare key before the first
-   table», «one key inside one named table», and «a table exists at all». A parser that can only
-   express those cannot silently reformat 480 lines of the user's plugins and trust entries. */
-const HEAD = (text) => { const i = text.search(/^\s*\[/m); return i < 0 ? text.length : i; };
-
-function setBareKey(text, key, value) {
-  const head = text.slice(0, HEAD(text));
-  const re = new RegExp(`^${key}\\s*=.*$`, 'm');
-  const line = `${key} = ${JSON.stringify(value)}`;
-  if (re.test(head)) {
-    const cur = head.match(re)[0];
-    if (cur.trim() === line) return { text, changed: false, was: cur.trim() };
-    return { text: text.slice(0, HEAD(text)).replace(re, line) + text.slice(HEAD(text)), changed: true, was: cur.trim() };
-  }
-  return { text: `${line}\n${text}`, changed: true, was: null };
-}
-
-function setTableKey(text, table, key, valueLiteral) {
-  /* ⚠ escape EVERY regex metacharacter, «\» included — a partial sanitiser is the one CodeQL
-     calls js/incomplete-sanitization, and «escapes the characters I happen to use today» is the
-     same shape as a hand-written list of cases (.agents/rules/no-ad-hoc-hardcoding.md). */
-  const head = new RegExp(`^\\[${table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\s*$`, 'm');
-  const line = `${key} = ${valueLiteral}`;
-  if (!head.test(text)) return { text: `${text.replace(/\s*$/, '')}\n\n[${table}]\n${line}\n`, changed: true, was: null };
-  const start = text.search(head);
-  const after = text.indexOf('\n', start) + 1;
-  const nextTable = text.slice(after).search(/^\s*\[/m);
-  const body = nextTable < 0 ? text.slice(after) : text.slice(after, after + nextTable);
-  const re = new RegExp(`^${key}\\s*=.*$`, 'm');
-  if (re.test(body)) {
-    const cur = body.match(re)[0];
-    if (cur.trim() === line) return { text, changed: false, was: cur.trim() };
-    return { text: text.slice(0, after) + body.replace(re, line) + text.slice(after + body.length), changed: true, was: cur.trim() };
-  }
-  return { text: text.slice(0, after) + line + '\n' + body + text.slice(after + body.length), changed: true, was: null };
-}
-
-const tomlPathArray = (dirs) => `[${dirs.map((d) => JSON.stringify(d)).join(', ')}]`;
-
-/* ── report ───────────────────────────────────────────────────────────────────────────── */
 const rows = [];
-const add = (name, state, detail) => rows.push({ name, state, detail });   /* state: ok | fixed | manual | miss */
+const add = (name, state, detail) => rows.push({ name, state, detail });
+const backup = CONFIG + '.r704.bak';
 
 if (!existsSync(CONFIG)) {
   add('codex', 'miss', `${CONFIG} が無い——Codex がこのマシンに入っていないか、まだ一度も起動していない`);
 } else {
-  let text = readFileSync(CONFIG, 'utf8');
-  const before = text;
-
-  /* 1. the master copy must be a trusted project, or `.codex/` is not read at all */
-  if (MASTER) {
-    const trusted = new RegExp(`^\\[projects\\.(?:'|")${MASTER.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&')}(?:'|")\\]`, 'm').test(text);
-    if (trusted) add('project-trust', 'ok', `原本 ${MASTER} は信頼済み（.codex/config.toml・agents・hooks が読まれる）`);
-    else if (APPLY) {
-      text += `\n# (#R704) IntMap master copy — scripts/codex-setup.mjs\n[projects.'${MASTER}']\ntrust_level = "trusted"\n`;
-      add('project-trust', 'fixed', `原本 ${MASTER} を信頼済みとして登録した`);
-    } else add('project-trust', 'manual', `原本 ${MASTER} が信頼されていない——--apply で登録する`);
+  try {
+    const parse = await codexToml();
+    const configure = before => {
+      if (before == null) throw new Error('Codex configuration disappeared during setup');
+      let doc = parse(before);
+      const result = [];
+      const report = (name, state, detail) => result.push({ name, state, detail });
+      const edit = (key, value) => {
+        doc = parse(doc.set(key, value));
+        if (JSON.stringify(doc.get(key)) !== JSON.stringify(value)) throw new Error('Codex settings edit did not apply');
+      };
+      if (MASTER) {
+        const key = ['projects', MASTER, 'trust_level'];
+        const current = doc.get(key);
+        if (current === 'trusted') report('project-trust', 'ok', `原本 ${MASTER} は信頼済み`);
+        else if (APPLY && current === undefined) {
+          edit(key, 'trusted');
+          report('project-trust', 'fixed', `原本 ${MASTER} を信頼済みとして登録した`);
+        } else report('project-trust', 'manual', `原本 ${MASTER} の信頼設定は ${current ?? '未設定'}`);
+      }
+      for (const s of SETTINGS) {
+        const key = [s.key];
+        const current = doc.get(key);
+        if (current === s.value) report(s.key, 'ok', s.value);
+        else if (s.appOwned) report(s.key, 'manual', `いまは ${current ?? '未設定'}。Codex のモデル選択 UI で選ぶこと。${s.why}`);
+        else if (APPLY) {
+          edit(key, s.value);
+          report(s.key, 'fixed', `${current ?? '未設定'} → ${s.value}   ${s.why}`);
+        } else report(s.key, 'manual', `いまは ${current ?? '未設定'}。要る値は ${s.value} — ${s.why}`);
+      }
+      const rootKey = ['sandbox_workspace_write', 'writable_roots'];
+      const roots = doc.get(rootKey);
+      const writable = [...new Set([...(Array.isArray(roots) ? roots : []), ...OUTSIDE_ROOTS])];
+      for (const [name, value, label] of [
+        ['network_access', true, 'サンドボックスからの通信（gh・supabase・npm・本番検証）'],
+        ['writable_roots', writable, `workspace の外で書く先 ${writable.length} 件（メモリ・worktree）`],
+      ]) {
+        const key = ['sandbox_workspace_write', name];
+        if (JSON.stringify(doc.get(key)) === JSON.stringify(value)) report('sandbox.' + name, 'ok', label);
+        else if (APPLY) {
+          edit(key, value);
+          report('sandbox.' + name, 'fixed', label);
+        } else report('sandbox.' + name, 'manual', `未設定または別の値 — ${label}`);
+      }
+      if (doc.text !== before) report('backup', 'ok', `変更前の設定の初回バックアップ: ${backup}`);
+      const hooks = doc.get(['hooks', 'state']);
+      report('hook-trust', hooks && Object.keys(hooks).length ? 'ok' : 'manual',
+        hooks && Object.keys(hooks).length ? '[hooks.state] に信頼が記録されている'
+          : '[hooks.state] に信頼が記録されていない。Codex の /hooks で SessionStart を信頼する。それまでは AGENTS.md §0 の代替コマンドを使う');
+      return { text: doc.text, result };
+    };
+    const result = APPLY ? await updateSettings(CONFIG, configure, { backup })
+      : configure(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(readFileSync(CONFIG))).result;
+    rows.push(...result);
+  } catch (e) {
+    add('codex', 'miss', '設定を処理できませんでした: ' + e.message);
+    if (APPLY) process.exitCode = 1;
   }
-
-  /* 2. the three scalar settings */
-  for (const s of SETTINGS) {
-    const r = setBareKey(text, s.key, s.value);
-    if (!r.changed) add(s.key, 'ok', `${s.value}`);
-    else if (s.appOwned) {
-      /* Writing it would "work" and then be undone by the app — a fix that does not hold is worse
-         than no fix, because the report would say ✎ while the value went back. Say who owns it. */
-      add(s.key, 'manual', `いまは ${r.was ?? '未設定'}。要る値は ${s.value}。⚠ **この鍵はアプリが所有している**——Codex の起動中にファイルへ書いても書き戻される（実測 #R704）。Codex のモデル選択 UI で選ぶこと。${s.why}`);
-    } else if (APPLY) { text = r.text; add(s.key, 'fixed', `${r.was ?? '（未設定）'} → ${s.value}   ${s.why}`); }
-    else add(s.key, 'manual', `いまは ${r.was ?? '未設定'}。要る値は ${s.value} — ${s.why}`);
-  }
-
-  /* 3. network, and the roots a round writes to that no workspace contains */
-  for (const [key, literal, label] of [
-    ['network_access', 'true', 'サンドボックスからの通信（gh・supabase・npm・本番検証）'],
-    ['writable_roots', tomlPathArray(OUTSIDE_ROOTS), `workspace の外で書く先 ${OUTSIDE_ROOTS.length} 件（メモリ・worktree)`],
-  ]) {
-    const r = setTableKey(text, 'sandbox_workspace_write', key, literal);
-    if (!r.changed) add(`sandbox.${key}`, 'ok', label);
-    else if (APPLY) { text = r.text; add(`sandbox.${key}`, 'fixed', label); }
-    else add(`sandbox.${key}`, 'manual', `未設定または別の値 — ${label}`);
-  }
-
-  if (APPLY && text !== before) {
-    const backup = `${CONFIG}.r704.bak`;
-    if (!existsSync(backup)) copyFileSync(CONFIG, backup);
-    writeFileSync(CONFIG, text);
-    rows.push({ name: 'backup', state: 'ok', detail: `変更前の config.toml を ${backup} に残した` });
-  }
-
-  /* 4. hook trust — the one thing a file cannot grant (docs/AGENT-SETUP.md §7) */
-  const hookTrusted = /^\[hooks\.state(?:\.|\])/m.test(text);
-  add('hook-trust', hookTrusted ? 'ok' : 'manual',
-    hookTrusted
-      ? '[hooks.state] に信頼が記録されている'
-      : '⚠ [hooks.state] が空——SessionStart hook は一度も走っていない。Codex を開いて /hooks で SessionStart を trust する（hash に対して記録されるので .codex/hooks.json を変えるたびに 1 回要る）。それまでは AGENTS.md §0 の代替コマンドが同じ中身を運ぶ');
 }
 
 /* 5. what the startup context IS, derived from the one source both products render from — so a
@@ -199,7 +169,7 @@ try {
   add('startup-commands', 'ok', `hook が届かないときに自分で走らせるもの ${forCodex.length} 件:\n      ${forCodex.map((c) => c.command).join('\n      ')}`);
 } catch (e) { add('startup-commands', 'miss', `.agents/session-start.json を読めない: ${e.message}`); }
 
-if (JSON_OUT) { console.log(JSON.stringify({ config: CONFIG, master: MASTER, memory: MEMORY, rows }, null, 2)); process.exit(0); }
+if (JSON_OUT) { console.log(JSON.stringify({ config: CONFIG, master: MASTER, memory: MEMORY, rows }, null, 2)); process.exit(process.exitCode || 0); }
 
 const MARK = { ok: '✓', fixed: '✎', manual: '⚠', miss: '✖' };
 console.log(`\nIntMap · Codex をこのマシンで Claude Code と同じ使用感にする${APPLY ? '' : '（--apply で実際に書く）'}\n`);
