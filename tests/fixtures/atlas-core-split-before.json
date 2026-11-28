@@ -1,12 +1,12 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "56cf0fc5d258443a72ea873f4c90d90c19d3b2d0:supabase/functions/ai-proxy/index.ts",
+ "source": "cdc1bb0fbb0dd284bd51b26797a7cc14b805c3ba:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -19,7 +19,7 @@
    {
     "status": 405,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -34,7 +34,7 @@
    {
     "status": 401,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -62,7 +62,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -136,7 +136,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -210,7 +210,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -278,7 +278,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -352,7 +352,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -425,7 +425,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -493,7 +493,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -586,6 +586,7 @@
        "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": true,
        "p_cached": 0
       }
      }
@@ -597,7 +598,7 @@
    {
     "status": 413,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -691,6 +692,7 @@
        "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": true,
        "p_cached": 0
       }
      }
@@ -702,7 +704,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -760,7 +762,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -819,7 +821,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -876,7 +878,7 @@
    {
     "status": 429,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -931,7 +933,7 @@
    {
     "status": 404,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -987,7 +989,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1061,7 +1063,7 @@
    {
     "status": 400,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1136,7 +1138,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1169,7 +1171,8 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -1370,7 +1373,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1403,7 +1406,8 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -1604,7 +1608,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1637,7 +1641,8 @@
       },
       "protocol": 1,
       "maxOutput": 4600,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -1897,7 +1902,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -1910,7 +1915,10 @@
      "meta": {
       "provider": "openai",
       "model": "gpt-5.6-terra",
-      "task": "analysis_structured"
+      "task": "analysis_structured",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": false
      }
     },
     "calls": [
@@ -2370,7 +2378,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2403,7 +2411,8 @@
       },
       "protocol": 1,
       "maxOutput": 3400,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -2872,7 +2881,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -2905,7 +2914,8 @@
       },
       "protocol": 1,
       "maxOutput": 1200,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3131,7 +3141,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3164,7 +3174,8 @@
       },
       "protocol": 1,
       "maxOutput": 2600,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3364,7 +3375,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3397,7 +3408,8 @@
       },
       "protocol": 1,
       "maxOutput": 3000,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3607,7 +3619,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3640,7 +3652,8 @@
       },
       "protocol": 1,
       "maxOutput": 2400,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -3821,7 +3834,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -3855,7 +3868,8 @@
       },
       "protocol": 1,
       "maxOutput": 700,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false
      },
      "citations": [
@@ -4057,7 +4071,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4090,7 +4104,8 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -4285,7 +4300,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4321,7 +4336,8 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.0022,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -4624,6 +4640,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -4644,25 +4675,11 @@
        "p_latency_ms": 0,
        "p_input": 900,
        "p_output": 40,
-       "p_cost_micros": 2200,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -4674,7 +4691,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -4710,7 +4727,8 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -5004,6 +5022,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -5024,25 +5057,11 @@
        "p_latency_ms": 0,
        "p_input": 120,
        "p_output": 30,
-       "p_cost_micros": 520,
+       "p_cost_micros": 0,
        "p_web": true,
        "p_web_searches": 1,
+       "p_cost_complete": false,
        "p_cached": 20
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -5054,7 +5073,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5087,7 +5106,8 @@
       },
       "protocol": 1,
       "maxOutput": 2200,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -5289,7 +5309,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5308,7 +5328,10 @@
       "quotaScope": "per-minute",
       "quotaId": "",
       "retryAfter": "",
-      "bodyLen": 66
+      "bodyLen": 66,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -5518,7 +5541,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5533,7 +5556,10 @@
       "model": "gpt-5.6-terra",
       "task": "free_text",
       "providerStatus": 429,
-      "bodyLen": 39
+      "bodyLen": 39,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -5698,7 +5724,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -5714,7 +5740,10 @@
       "task": "free_text",
       "retries": 2,
       "providerStatus": 500,
-      "bodyLen": 13
+      "bodyLen": 13,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -5969,7 +5998,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6002,7 +6031,8 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -6248,7 +6278,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6281,7 +6311,8 @@
       },
       "protocol": 1,
       "maxOutput": 1200,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -6547,7 +6578,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6562,7 +6593,10 @@
       "model": "gpt-5.6-terra",
       "task": "free_text",
       "providerStatus": 400,
-      "bodyLen": 2
+      "bodyLen": 2,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -6826,7 +6860,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -6859,7 +6893,8 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.00052,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable"
      },
@@ -7098,7 +7133,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7112,7 +7147,10 @@
       "provider": "openai",
       "model": "gpt-5.6-terra",
       "task": "free_text",
-      "finishReason": ""
+      "finishReason": "",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -7298,7 +7336,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7312,7 +7350,10 @@
       "provider": "openai",
       "model": "gpt-5.6-terra",
       "task": "free_text",
-      "ceiling": "project_day"
+      "ceiling": "project_day",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -7450,7 +7491,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7464,7 +7505,10 @@
       "provider": "openai",
       "model": "gpt-5.6-terra",
       "task": "free_text",
-      "ceiling": "newcomer_day"
+      "ceiling": "newcomer_day",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -7604,7 +7648,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -7612,7 +7656,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0,\"costComplete\":false,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -7870,6 +7914,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -7890,25 +7949,11 @@
        "p_latency_ms": 0,
        "p_input": 5,
        "p_output": 2,
-       "p_cost_micros": 30,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      },
      {
@@ -7959,7 +8004,8 @@
          },
          "streamed": true,
          "maxOutput": 2600,
-         "costUsd": 0.00003,
+         "costUsd": 0,
+         "costComplete": false,
          "priceKnown": false,
          "spend": "unavailable",
          "delegationPolicy": {
@@ -8015,7 +8061,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8023,7 +8069,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0.00003,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: think\ndata: {\"d\":\"**Plan** thinking\"}\n\nevent: text\ndata: {\"d\":\"Hel\"}\n\nevent: text\ndata: {\"d\":\"lo\"}\n\nevent: done\ndata: {\"status\":200,\"body\":{\"text\":\"Hello\",\"used\":1,\"limit\":10,\"remaining\":9,\"charged\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"modelServed\":\"gpt-5.6-terra\",\"modelChosenBy\":\"server\",\"task\":\"atlas_turn\",\"webAttached\":false,\"webUsed\":false,\"webSearches\":0,\"schemaAttached\":false,\"finishReason\":\"completed\",\"status\":\"complete\",\"incompleteReason\":null,\"web\":{\"state\":\"not_run\",\"reason\":\"not_requested\",\"searches\":0,\"sources\":null},\"protocol\":2,\"inputTrimmed\":{\"invalidItems\":1},\"streamed\":true,\"maxOutput\":2600,\"costUsd\":0,\"costComplete\":false,\"priceKnown\":false,\"spend\":\"unavailable\",\"delegationPolicy\":{\"mode\":\"independent\",\"maxChildren\":null,\"childMaxCalls\":null,\"maxConcurrent\":null},\"delegationModels\":[{\"id\":\"gpt-6.2-sol\",\"usdPerMTok\":{\"input\":2,\"cached\":0.1,\"output\":10}},{\"id\":\"gpt-6.1-terra\",\"usdPerMTok\":{\"input\":1,\"cached\":1,\"output\":5}},{\"id\":\"gpt-6-luna\",\"usdPerMTok\":{\"input\":0.1,\"cached\":0.1,\"output\":0.5}}]},\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"Hello\"}],\"citations\":[]}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -8375,6 +8421,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -8395,25 +8456,11 @@
        "p_latency_ms": 0,
        "p_input": 5,
        "p_output": 2,
-       "p_cost_micros": 30,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -8425,7 +8472,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8487,7 +8534,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8589,7 +8636,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -8625,7 +8672,8 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.0022,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -8957,6 +9005,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -8977,25 +9040,11 @@
        "p_latency_ms": 0,
        "p_input": 900,
        "p_output": 40,
-       "p_cost_micros": 2200,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      },
      {
@@ -9045,7 +9094,8 @@
           "invalidItems": 1
          },
          "maxOutput": 2600,
-         "costUsd": 0.0022,
+         "costUsd": 0,
+         "costComplete": false,
          "priceKnown": false,
          "spend": "unavailable",
          "delegationPolicy": {
@@ -9112,7 +9162,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9148,7 +9198,8 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.0022,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -9462,6 +9513,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -9482,25 +9548,11 @@
        "p_latency_ms": 0,
        "p_input": 900,
        "p_output": 40,
-       "p_cost_micros": 2200,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -9512,7 +9564,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9548,7 +9600,8 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.0022,
+      "costUsd": 0,
+      "costComplete": false,
       "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
@@ -9841,6 +9894,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -9861,25 +9929,11 @@
        "p_latency_ms": 0,
        "p_input": 900,
        "p_output": 40,
-       "p_cost_micros": 2200,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -9891,7 +9945,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -9899,7 +9953,7 @@
      "content-type": "text/event-stream; charset=utf-8",
      "x-accel-buffering": "no"
     },
-    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: done\ndata: {\"status\":503,\"body\":{\"error\":\"provider_unavailable\",\"message\":\"The AI provider is temporarily unavailable.\",\"retryable\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"retries\":2,\"providerStatus\":503}}}\n\n",
+    "body": "event: open\ndata: {\"protocol\":2}\n\nevent: done\ndata: {\"status\":503,\"body\":{\"error\":\"provider_unavailable\",\"message\":\"The AI provider is temporarily unavailable.\",\"retryable\":true,\"meta\":{\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"atlas_turn\",\"retries\":2,\"providerStatus\":503,\"costUsd\":0,\"costComplete\":false,\"priceKnown\":true}}}\n\n",
     "calls": [
      {
       "method": "GET",
@@ -10395,13 +10449,14 @@
        "p_outcome": "failed",
        "p_code": "provider_unavailable",
        "p_http": 503,
-       "p_model": "",
+       "p_model": "gpt-5.6-terra",
        "p_latency_ms": 0,
        "p_input": 0,
        "p_output": 0,
        "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
       }
      }
@@ -10419,7 +10474,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10562,7 +10617,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10577,7 +10632,10 @@
       "model": "gpt-5.6-sol",
       "task": "free_text",
       "providerStatus": 403,
-      "bodyLen": 41
+      "bodyLen": 41,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -10688,7 +10746,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10721,8 +10779,9 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.000008,
-      "priceKnown": true
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": false
      },
      "citations": []
     },
@@ -10850,7 +10909,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -10885,7 +10944,8 @@
       "protocol": 1,
       "maxOutput": 700,
       "costUsd": 0,
-      "priceKnown": false
+      "costComplete": false,
+      "priceKnown": true
      },
      "citations": []
     },
@@ -11078,7 +11138,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11111,8 +11171,9 @@
       },
       "protocol": 1,
       "maxOutput": 1800,
-      "costUsd": 0.000024,
-      "priceKnown": true,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": false,
       "spend": "unavailable"
      },
      "citations": [
@@ -11339,7 +11400,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11375,8 +11436,9 @@
        "invalidItems": 1
       },
       "maxOutput": 2600,
-      "costUsd": 0.000024,
-      "priceKnown": true,
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": false,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
@@ -11670,6 +11732,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -11690,25 +11767,11 @@
        "p_latency_ms": 0,
        "p_input": 9,
        "p_output": 3,
-       "p_cost_micros": 24,
+       "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -11720,7 +11783,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11734,7 +11797,10 @@
       "provider": "anthropic",
       "model": "claude-haiku-4-5-20251001",
       "task": "free_text",
-      "finishReason": "end_turn"
+      "finishReason": "end_turn",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -11917,7 +11983,7 @@
    {
     "status": 503,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -11993,7 +12059,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12027,7 +12093,8 @@
       "protocol": 1,
       "maxOutput": 3200,
       "costUsd": 0,
-      "priceKnown": false,
+      "costComplete": false,
+      "priceKnown": true,
       "spend": "unavailable"
      },
      "citations": []
@@ -12279,7 +12346,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12313,7 +12380,8 @@
       "protocol": 1,
       "maxOutput": 1800,
       "costUsd": 0,
-      "priceKnown": false,
+      "costComplete": false,
+      "priceKnown": true,
       "spend": "unavailable"
      },
      "citations": []
@@ -12554,7 +12622,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12588,7 +12656,8 @@
       "protocol": 1,
       "maxOutput": 1200,
       "costUsd": 0,
-      "priceKnown": false,
+      "costComplete": false,
+      "priceKnown": true,
       "spend": "unavailable"
      },
      "citations": []
@@ -12827,7 +12896,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -12862,7 +12931,8 @@
       "retries": 1,
       "maxOutput": 1800,
       "costUsd": 0,
-      "priceKnown": false,
+      "costComplete": false,
+      "priceKnown": true,
       "spend": "unavailable"
      },
      "citations": []
@@ -13092,7 +13162,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13109,7 +13179,10 @@
       "providerStatus": 429,
       "quotaScope": "per-day",
       "quotaId": "GenerateRequestsPerDayPerProject",
-      "retryAfter": ""
+      "retryAfter": "",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -13273,7 +13346,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13288,7 +13361,10 @@
       "model": "gemini-3.5-flash",
       "task": "free_text",
       "finishReason": "NO_CANDIDATE",
-      "blockReason": "SAFETY"
+      "blockReason": "SAFETY",
+      "costUsd": 0,
+      "costComplete": false,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -13473,7 +13549,7 @@
    {
     "status": 200,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13510,7 +13586,8 @@
       },
       "maxOutput": 2600,
       "costUsd": 0,
-      "priceKnown": false,
+      "costComplete": false,
+      "priceKnown": true,
       "spend": "unavailable",
       "delegationPolicy": {
        "mode": "independent",
@@ -13788,6 +13865,21 @@
      },
      {
       "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
+      }
+     },
+     {
+      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -13811,22 +13903,8 @@
        "p_cost_micros": 0,
        "p_web": false,
        "p_web_searches": 0,
+       "p_cost_complete": false,
        "p_cached": 0
-      }
-     },
-     {
-      "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
       }
      }
     ],
@@ -13840,7 +13918,7 @@
    {
     "status": 502,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",
@@ -13853,7 +13931,10 @@
      "meta": {
       "provider": "openai",
       "model": "gpt-6.2-sol",
-      "task": "free_text"
+      "task": "free_text",
+      "costUsd": 0,
+      "costComplete": true,
+      "priceKnown": true
      }
     },
     "calls": [
@@ -13970,7 +14051,7 @@
    {
     "status": 500,
     "headers": {
-     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
+     "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-call, x-intmap-lane, x-intmap-replay, x-intmap-parent-turn, x-intmap-model",
      "access-control-allow-methods": "POST, OPTIONS",
      "access-control-allow-origin": "*",
      "access-control-max-age": "86400",

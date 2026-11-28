@@ -160,7 +160,7 @@ test('a capability run by a delegated worker asks the model under the worker\'s 
   assert.deepEqual(modelCallKey({ turnKey: 'original~child' }, { _curTurnKey: 'next' }),
     { turnId: 'original~child', parentTurnId: 'original' });
   assert.deepEqual(modelCallKey({ turnKey: 'original' }, { _curTurnKey: 'next' }), { turnId: 'original' });
-  assert.equal((r.match(/modelCallKey\(dctx,\s*K\)/g) || []).length, 3, 'every model-asking capability of research uses the one rule (brief, situation, longform)');
+  assert.equal((r.match(/modelCallKey\(dctx,\s*K\)/g) || []).length, 5, 'every model-asking capability of research uses the one rule');
   assert.match(read('atlas-cap-web.js'), /\.\.\.modelCallKey\(dctx, K\)/, 'and so does web.search: a worker\'s search is the worker\'s call');
   assert.match(read('atlas-answer-pipeline.js'), /parentTurnId: opts\.parentTurnId \|\| undefined/);
 });
