@@ -118,7 +118,7 @@ GeoPackage の `gpkg_spatial_ref_sys` も同じ形の WKT を持つ。⚠ AUTHOR
 
 ```
 { id, title, kind:'raster', crs:'EPSG:4326', sourceCrs, width, height,
-  grid:{ west, north, pixelLng, pixelLat }, bands:[{name,unit,nodata}], time,
+  grid:{ west, north, pixelLng, pixelLat }, bands:[{name,unit,nodata,categorical,quantity,classification}], time,
   read(bandIndex), raster(), provenance, createdAt, stale }
 ```
 
@@ -134,6 +134,9 @@ GeoPackage の `gpkg_spatial_ref_sys` も同じ形の WKT を持つ。⚠ AUTHOR
   雨量ゼロである）。
 - **格子が格子でないものは登録の時点で拒む**（幅が整数でない・画素の大きさが 0 か負・`read` が関数でない）。
   そこを通してしまうと、以降の標本は全部**黙って間違う**。
+- 登録とマスクはバンドの宣言を継承する。再標本化は欠損表現を `NaN` に統一し、画素の範囲が
+  変わるときの非按分処理では画素総量の宣言を外す。面積按分 `sum` に画素総量以外の宣言を渡すと
+  `resample-quantity-incompatible` になる。
 - **バンドはその格子の列である。** `fields[]` にバンドが並ぶので、パネルの「どの列で」がそのまま
   「どのバンドで」になる（一つの操作、二つの実装を作らない）。
 
@@ -236,10 +239,25 @@ GDAL の warp が担っている役——**座標系・解像度・範囲・再�
 - ⚠ **欠損の規則を写さない。** 値はすべて `IntMapGisRaster.sample` が出す（隅が欠けたら nearest へ
   落ちて `partial` を数える、という 1 つの規則を 2 か所に持たない）。
 - ⚠ **分類の格子を bilinear で補間しない。**「3」と「5」の中間の「4」は別の分類であって中間ではない。
-  ただし**整数だから分類だとは推測しない**——バンドが `categorical` を述べているときだけ断る。
+  ただし**整数だから分類だとは推測しない**——明示の `categorical`、カテゴリーの `quantity`、または `classification` を使う。
 - **逆写像で走る**（出力画素の中心 → 4326 → 入力 CRS → 入力の画素）。順写像は穴を作る。
 - **出力範囲は周を 1 画素刻みで歩いて求める**——投影された辺は度では曲線なので、四隅では足りない。
 - `align` の**規則は呼び出し元が述べる**（`finer` / `coarser` / `first`）。交差が空なら `grids-disjoint`。
+
+- 経度の 360° 折り返しは地理座標で行う。投影座標と入力画素の列・行は折り返さない。
+  全周を覆う地理格子の補間と面積集計は日付変更線の両側のセルを参照する。`align` で共有範囲が
+  経度方向の二つの区間になる場合は `align-intersection-disconnected` を返す。
+- `mosaic` の結合範囲は両方の経度区間を含む最短の範囲。格子原点と画素の刻みが一致する入力は
+  画素を直接コピーし、残りだけを指定した `method` で再標本化する。
+  `rule` は解像度を選び（`first` が既定、`finer` と `coarser` も指定可）、
+  `overlap` は両方に有効値がある位置の値だけを決める。双方が同じ分類体系や量を宣言したときに
+  その宣言を一つの帯に引き継ぎ、互換でない分類体系や分類の平均は拒む。
+- 最近傍の warp と mosaic は出力格子の最大 128 位置を独立した逆算で照合する。結果の
+  `spatialIntegrity` は照合対象、件数、不一致数を持つ。mosaic が非最近傍で再標本化した入力は、
+  結合を照合した事実を `aligned-grid-coordinate-samples` で示す。補間そのものの独立照合は未実施と分かる。
+  `raster-integrity-failed` の場合は出力を登録せず、成功時は `provenance.integrity` を
+  Atlas のツール、描画結果のデータセット、既存の Goal Verifier へ渡す。
+  座標照合、量・分類の継承、地図への描画、依頼の達成はそれぞれ別の事実として扱う。
 
 ⇒ §1.4 の `grid-mismatch` は**今も正しい拒否**だが、行き先ができた: *「`js/gis-warp.js` で明示的に
 合わせてから、もう一度」*。
@@ -410,7 +428,7 @@ map していて、**`DECL` に足して `ORDER` に足し忘れた op は run()
 | `sample` | 2（点・**格子**） | `Point`／— | 入力と同じ | `band`・`method`・`outName` |
 | `resample` | 2（**格子**・**格子**） | — | **格子** | `method`（必須）・`rule`（§1.4b） |
 | `rasterCalc` | 2（**格子**・**格子**） | — | **格子** | `expr`（必須。`a`・`b` だけを名指す）・`bandA`・`bandB`・`outName`・`unit` |
-| `mosaic` | 2（**格子**・**格子**） | — | **格子** | `overlap`・`method`（必須）・`band` |
+| `mosaic` | 2（**格子**・**格子**） | — | **格子** | `overlap`・`method`（必須）・`band`・`rule` |
 | `rasterize` | 1 | 何でも | **格子** | `width`・`height`（必須）・`field`・`stat`・`bbox` |
 | `polygonize` | 1（**格子**） | — | `Polygon` | `band`・`outName` |
 | `measure` | 1 | 何でも | 入力と同じ | `what`（`area`/`length`。必須）・`crs`・`surface`・`unit`・`tolerance`・`outName`（§2.4） |

@@ -86,6 +86,8 @@
  *  drops a newer copy, and IndexedDB would be holding the reader's keystrokes rather than their data.
  * ==========================================================================*/
 
+import { inheritRasterBand } from './gis-raster.js';
+
 export function makeGisDatasets() {
   return (function () {
 
@@ -722,6 +724,12 @@ export function makeGisDatasets() {
       const bands = Array.isArray(src.bands) ? src.bands : [];
       if (!bands.length) throw new Error('raster needs at least one band');
 
+      if (g.coordinateSpace != null && g.coordinateSpace !== 'geographic') throw new Error('raster registration needs a geographic grid');
+      const declaredBands = bands.map((b, i) => inheritRasterBand(b, {
+        name: String(b?.name || ('band' + (i + 1))),
+        unit: b?.unit == null ? null : String(b.unit),
+        quantity: b?.quantity && typeof b.quantity === 'object' ? b.quantity : null,
+      }));
       const id = claimId(src.id || null);
       /* A raster's time is the epoch of the grid, so only the whole-dataset shape can apply: there
          are no features to carry a column. A caller declaring a per-feature shape is told so rather
@@ -738,7 +746,8 @@ export function makeGisDatasets() {
         sourceCrs: src.sourceCrs || null,
         width: src.width,
         height: src.height,
-        grid: { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat },
+        grid: { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat,
+          ...(g.coordinateSpace ? { coordinateSpace: g.coordinateSpace } : {}) },
         /* ⚠⚠⚠ (#R783) THIS DOOR USED TO DROP WHAT THE BAND SAID ABOUT ITSELF. The three fields below
            were the whole of a band here, so a grid that arrived declaring `quantity` (what kind of
            amount it is, whether the number belongs to the whole pixel or to a point, whether it is
@@ -749,12 +758,7 @@ export function makeGisDatasets() {
            ⚠ It is carried VERBATIM and not normalised here — the vocabulary belongs to
            js/gis-units.js (`quantity()`), and a second normaliser in this file would be a second
            answer to the same question. A band that says nothing still says nothing (`null`). */
-        bands: bands.map((b, i) => ({
-          name: String((b && b.name) || ('band' + (i + 1))),
-          unit: (b && b.unit != null) ? String(b.unit) : null,
-          nodata: (b && typeof b.nodata === 'number' && isFinite(b.nodata)) ? b.nodata : null,
-          quantity: (b && b.quantity && typeof b.quantity === 'object') ? b.quantity : null,
-        })),
+        bands: declaredBands,
         fields: bands.map((b, i) => ({
           name: String((b && b.name) || ('band' + (i + 1))),
           type: 'number', band: i,

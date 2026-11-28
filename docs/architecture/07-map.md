@@ -291,7 +291,7 @@ Atlas の入口は `geo.regionStat`（`js/atlas-cap-geo.js`）。**まだ無い�
 | `js/gis-crs.js` | `window.IntMapGisCrs` | **座標変換と解析用の平面**——`define` / `known` / `resolve` / `transformGeometry` / `transformFeatures` / `why` / `looksProjected`、`projections` / `projection` / `distortionAt` / `assess` / `suggest` / `areaOn` / `lengthOn` / `planeSpellings`。面の名指し方は `PLANES` から導出（`kind:v1,v2` の一般文法）。面は呼び出し元が選び、測った値は単位と歪みを伴う |
 | `js/gis-raster.js` | `window.IntMapGisRaster` | **数値ラスターのカーネル**——`sample`（6 方式: nearest / bilinear / cubic と average / sum / mode）・`zonal`・`mask`・`diff`・`combine`・`merge`・`polygonize`・`build`・`pixelAreaKm2`・`describeBands`・`fromSampler`。footprint は `box` と `ring` の 2 形（`sampleCellForms()`）で、集約の規則は 1 本 |
 | `js/gis-geotiff.js` | `window.IntMapGisGeotiff` | **GeoTIFF / COG の読み手**（依存なしで TIFF 6.0）——`sniff` / `read` / `readUrl` / `refusals`。バイトの供給元は `{size, read(offset,length)}` の 1 契約で、窓を覆う tile／strip だけを読み、`levels` / `levelAt` / `levelFor` が overviews から要求を満たす最も粗い段を選ぶ。BigTIFF・PlanarConfiguration 2・predictor 3 も読み、扱えないもの（JPEG-in-TIFF など）は名前を付けて断る。欠損は NaN |
-| `js/gis-warp.js` | `window.IntMapGisWarp` | **格子の再投影と再標本化**——`to4326` / `resample` / `align` / `methods` / `affineOf` / `footprintModes`。`method` に既定は無い。`opts.sink`（`begin` / `write` / `end`）へ窓ごとに書き出せ、予算は `opts.budgetBytes` か扉の `budgetBytes()` に訊く（無ければ受け皿を渡したときだけ `warp-budget-not-stated`）。超過は拒まず `report.memory.overBudget`・`report.footprint.boxExcess` として述べる。`footprint:'exact'` と `areaTolerance` |
+| `js/gis-warp.js` | `window.IntMapGisWarp` | **格子の再投影と再標本化**——`to4326` / `resample` / `align` / `mosaicGrid` / `methods` / `affineOf` / `footprintModes`。`method` に既定は無い。`opts.sink`（`begin` / `write` / `end`）へ窓ごとに書き出せ、予算は `opts.budgetBytes` か扉の `budgetBytes()` に訊く（無ければ受け皿を渡したときだけ `warp-budget-not-stated`）。超過は拒まず `report.memory.overBudget`・`report.footprint.boxExcess` として述べる。`footprint:'exact'` と `areaTolerance` |
 | `js/gis-sources.js` | `window.IntMapGisSources` | **供給元**——`list` / `features` / `region` / `acquire` / `declare` / `supply` / `supplierOf` / `plan` / `acquirePlanned` / `capabilitiesOf` / `measureCapabilities` / `auditCapabilities`。取得は必ず `coverage`（`all` / `partial` / `sample` と理由・範囲・時点・解像度）を伴い、`all` は供給元の宣言からしか届かない。`plan()` が上流で効く条件と後段に回る条件を述べ、`acquirePlanned()` が窓を取り切る（できなければ `plan-unsatisfiable`。後段は `kind:'staged'`）。答えた道は `coverage.answeredBy`。`analysis:true` はカメラ依存の答えを `renderer-view-dependent` で断る。能力は申告（導出）と実測（呼び手と同じ扉）の両方で、3 値のまま |
 | `js/gis-voronoi.js` | `window.IntMapGisVoronoi` | **球面の最寄り圏**——`cells` / `farthest` / `sphereRelError`。`voronoi` op の算術: 近傍は 3 次元凸包（球面 Delaunay）、圏は真の位置の二等分面で 8 つの八分円から切り出す。境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差（`docs/GIS-CORE.md` §2.9） |
 | `js/gis-network.js` | `window.IntMapGisNetwork` | **つながりとしての網**——`analyse` / `build` / `centrality` / `maxFlow` / `kShortest` / `disrupt` / `resolveEnds`。`network` / `networkDisrupt` op の算術（GIS-CORE §2.11）。 |
@@ -311,6 +311,9 @@ Atlas の入口は `geo.regionStat`（`js/atlas-cap-geo.js`）。**まだ無い�
 | `js/gis-shapefile.js` | `window.IntMapGisShapefile` | **Shapefile の読み手**（`.shp` / `.dbf` / `.prj` / `.cpg`）——`read` / `group` / `refusals` |
 | `js/gis-geopackage.js` | `window.IntMapGisGeopackage` | **GeoPackage の読み手**（依存なしで SQLite を読み取り専用で）——`sniff` / `tables` / `read` / `refusals` |
 | `js/gis-export.js` | `window.IntMapGisExport` | **出口**——`formats(kind)` / `write(ds, format)` / `refusals`。ベクタは GeoJSON（属性・時刻の宣言・出典を値として運ぶ）と CSV（点は `longitude`/`latitude`、面と線は `geometry_wkt`）、ラスタは GeoTIFF（無圧縮・ジオ参照を必ず書く・ASCII フィールドは UTF-8）。3 形式とも `js/geo-import.js` と `js/gis-geotiff.js` が読み返し、許容幅 0 で一致を測る。持っていない出典を主張しない。CSV は出典を運べないことを画面が述べる |
+
+ラスターの座標空間、バンド宣言、結合の解像度と経度区間、Atlas が受け取る照合結果の正本は
+[`GIS-CORE.md` §1.4・§1.4b](../GIS-CORE.md)。
 
 骨格の不変条件（各項の詳細・拒否コード・根拠は `docs/GIS-CORE.md`。ここは名前だけ）:
 

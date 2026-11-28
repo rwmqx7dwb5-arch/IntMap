@@ -136,6 +136,18 @@
  *  would be a global before the bundle, and this file may not reintroduce one.
  * ==========================================================================*/
 
+/* A band declaration belongs to the samples. Operations only override what they changed,
+   such as the encoding of missing values or the unit of a converted plane. */
+export function inheritRasterBand(source, changes) {
+  const b = { ...source, ...changes };
+  return { ...b, name: b.name ?? null, unit: b.unit ?? null, nodata: Number.isFinite(b.nodata) ? b.nodata : null,
+    ...(b.quantity != null ? { quantity: b.quantity } : {}) };
+}
+
+export function categoricalRasterBand(band) {
+  return band?.categorical === true || band?.quantity?.kind === 'category' || band?.classification != null;
+}
+
 export function makeGisRaster() {
   return (function () {
 
@@ -189,7 +201,7 @@ export function makeGisRaster() {
       }
       return {
         ok: true, converted: { from: c.b, to: c.a },
-        B: { ok: true, index: B.index, band: { name: B.band.name, unit: c.a, nodata: null }, values: out, nodata: null },
+        B: { ok: true, index: B.index, band: inheritRasterBand(B.band, { unit: c.a, nodata: null, quantity: B.band.quantity ? { ...B.band.quantity, unit: c.a } : B.band.quantity }), values: out, nodata: null },
       };
     }
 
@@ -233,6 +245,20 @@ export function makeGisRaster() {
        reads it here, so the two cannot drift. */
     const CLOCK_EVERY = 256;
     const CLOCK_MASK = CLOCK_EVERY - 1;
+
+    // An evenly spaced sample over the whole plane keeps verification bounded at large sizes.
+    function integritySampleIndexes(total) {
+      const size = Math.min(total, 128);
+      return Array.from({ length: size }, (_, i) => size === 1 ? 0 : Math.round(i * (total - 1) / (size - 1)));
+    }
+
+    function spatialIntegrity(method, checkedSamples, mismatches, firstMismatch) {
+      return {
+        status: mismatches ? 'failed' : checkedSamples ? 'verified' : 'not-checked',
+        method, checkedSamples, mismatches,
+        ...(mismatches ? { reason: 'source-output-coordinate-mismatch', firstMismatch } : {}),
+      };
+    }
 
     /* ── pacing: ONE loop over pixels, for every whole-grid walk in this file ──────────────────── */
 
@@ -327,6 +353,9 @@ export function makeGisRaster() {
          size is a grid that states its rows in the other order and means something else entirely. */
       if (g.pixelLng <= 0) return refuse('raster-invalid', { field: 'grid.pixelLng', value: g.pixelLng });
       if (g.pixelLat <= 0) return refuse('raster-invalid', { field: 'grid.pixelLat', value: g.pixelLat });
+      if (g.coordinateSpace != null && !['geographic', 'projected', 'pixel'].includes(g.coordinateSpace)) {
+        return refuse('raster-invalid', { field: 'grid.coordinateSpace', value: g.coordinateSpace });
+      }
       /* ⚠ `grid.latAxis` is OPTIONAL (absent = the contract's degrees) and is checked in O(1). This
          function runs once per `sample` call, and a warp calls `sample` once per output pixel per
          band — so walking the height+1 edges here would be a walk of the whole axis per pixel. The
@@ -444,7 +473,8 @@ export function makeGisRaster() {
        exactly one pixel); the OUTER east and south limits of a grid narrower than one turn belong to the
        last column and last row, so that lat −90 is answered exactly as lat +90 is. */
     function lngInFrame(raster, lng) {
-      const west = raster.grid.west;
+      const { west, coordinateSpace } = raster.grid;
+      if (coordinateSpace === 'projected' || coordinateSpace === 'pixel') return lng;
       const t = lng - west;
       return west + (t - 360 * Math.floor(t / 360));
     }
@@ -479,13 +509,13 @@ export function makeGisRaster() {
        each call site is the drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The ids
        themselves are the keys of this table, so `sampleMethods()` cannot fall behind it. */
     const SAMPLE_METHOD_FACTS = {
-      nearest: { kind: 'point', neighbours: 1 },
+      nearest: { kind: 'point', neighbours: 1, categoricalSafe: true },
       bilinear: { kind: 'point', neighbours: 4 },
       /* Keys' cubic convolution over a 4×4 neighbourhood — see `tapWeights` for which kernel and why
          its outer weights are negative. */
       cubic: { kind: 'point', neighbours: 16 },
       average: { kind: 'areal', aggregate: 'area-weighted-mean' },
-      mode: { kind: 'areal', aggregate: 'largest-area-value' },
+      mode: { kind: 'areal', aggregate: 'largest-area-value', categoricalSafe: true },
       sum: { kind: 'areal', aggregate: 'area-apportioned-total' },
     };
     const SAMPLE_METHODS = Object.keys(SAMPLE_METHOD_FACTS);
@@ -576,6 +606,9 @@ export function makeGisRaster() {
       }
       const V = values(raster, bandIndex);
       if (!V.ok) return V;
+      if (!facts.categoricalSafe && categoricalRasterBand(V.band)) {
+        return refuse('bilinear-on-categorical', { bandIndex: V.index, name: V.band.name ?? null, method });
+      }
       return sampleWith(raster, V, lng, lat, method, cell);
     }
 
@@ -609,7 +642,12 @@ export function makeGisRaster() {
        own consumers) pays for validate() and read() once. */
     function sampleWith(raster, V, lng, lat, method, cell) {
       const at = pixelAt(raster, lng, lat);
-      if (!at) return refuse('outside', { lng: lng, lat: lat, bbox: bboxOf(raster) });
+      if (!at) {
+        if (cell && raster.grid.coordinateSpace === 'pixel') {
+          return arealWith(raster, V, { row: Math.floor(-lat), col: Math.floor(lng) }, cell, method);
+        }
+        return refuse('outside', { lng: lng, lat: lat, bbox: bboxOf(raster) });
+      }
       const nearestValue = V.values[at.row * raster.width + at.col];
       const nearest = () => missing(nearestValue, V.nodata)
         ? { ok: true, value: null, nodata: true, row: at.row, col: at.col, method: 'nearest' }
@@ -630,7 +668,8 @@ export function makeGisRaster() {
          the outer half-pixel border. That is an edge EXTENSION of published data, not an invented
          value: outside the last centre there is no second sample to interpolate towards, and the
          only alternatives are to refuse a position that is inside the grid or to extrapolate. */
-      const cx = (x) => Math.max(0, Math.min(raster.width - 1, x));
+      const cx = (x) => g.periodicColumns ? ((x % raster.width) + raster.width) % raster.width
+        : Math.max(0, Math.min(raster.width - 1, x));
       const cy = (y) => Math.max(0, Math.min(raster.height - 1, y));
       const offs = TAP_OFFSETS[method];
       const wx = tapWeights(method, tx), wy = tapWeights(method, ty);
@@ -749,8 +788,10 @@ export function makeGisRaster() {
          off the grid is not counted as a void: it is not this grid's to answer, and `coverage` below
          is measured over the part that IS on it — the caller already learns about the other part
          from `outside` on the centre. */
-      let c0 = Math.max(0, Math.floor((fW - g.west) / g.pixelLng));
-      let c1 = Math.min(raster.width - 1, Math.ceil((fE - g.west) / g.pixelLng) - 1);
+      const firstCol = Math.floor((fW - g.west) / g.pixelLng);
+      const lastCol = Math.ceil((fE - g.west) / g.pixelLng) - 1;
+      const c0 = g.periodicColumns ? firstCol : Math.max(0, firstCol);
+      const c1 = g.periodicColumns ? lastCol : Math.min(raster.width - 1, lastCol);
       let r0 = Math.max(0, Math.floor((g.north - fN) / g.pixelLat));
       let r1 = Math.min(raster.height - 1, Math.ceil((g.north - fS) / g.pixelLat) - 1);
       const out = { ok: true, row: at.row, col: at.col, method: method, pixels: 0, missingPixels: 0, coverage: 0 };
@@ -820,7 +861,8 @@ export function makeGisRaster() {
             if (!(ov > g.pixelLng * GRID_EPS_FRAC)) continue;
             wgt = ov * gh;
           }
-          const val = V.values[base + col];
+          const sourceCol = g.periodicColumns ? ((col % raster.width) + raster.width) % raster.width : col;
+          const val = V.values[base + sourceCol];
           /* ⚠ A VOID IS EXCLUDED FROM THE AGGREGATE, NOT READ AS 0 — the header's rule in aggregate
              form. It is counted instead, and `coverage` says how much of the footprint had an
              answer, so 「半分しか観測が無い平均」 does not reach the reader as a plain number. */
@@ -1398,7 +1440,7 @@ export function makeGisRaster() {
         if (t.test(val)) { out[i] = val; kept++; } else { out[i] = NaN; dropped++; }
       }, useCtx(opts), () => ({
         ok: true,
-        raster: derived(raster, [{ name: V.band.name, unit: V.band.unit == null ? null : V.band.unit, nodata: V.nodata }], out),
+        raster: derived(raster, [inheritRasterBand(V.band)], out),
         kept: kept, dropped: dropped, nodataCount: missingCount,
       }));
     }
@@ -1804,22 +1846,45 @@ export function makeGisRaster() {
       const stated = (opts && opts.overlap != null) ? String(opts.overlap) : '';
       if (!stated) return refuse('merge-overlap-not-stated', { overlaps: MERGE_OVERLAPS.slice() });
       if (MERGE_OVERLAPS.indexOf(stated) < 0) return refuse('merge-overlap-unknown', { overlap: stated, overlaps: MERGE_OVERLAPS.slice() });
-      const off = gridDelta(a, b);
-      if (off) return refuse('grid-mismatch', off);
+      const target = opts.target || a;
+      const placements = opts.placements || [];
+      const off = gridDelta(target, a) || gridDelta(target, b);
+      if (off && !opts.target) return refuse('grid-mismatch', off);
       const A = values(a, bandIndex); if (!A.ok) return A;
       const B0 = values(b, bandIndex); if (!B0.ok) return B0;
+      const categoricalA = categoricalRasterBand(A.band), categoricalB = categoricalRasterBand(B0.band);
+      const declarationKey = (value) => JSON.stringify(value ?? null, (_, v) => v && typeof v === 'object' && !Array.isArray(v)
+        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v);
+      const classA = A.band.classification, classB = B0.band.classification;
+      const categorical = categoricalA || categoricalB;
+      if (categorical && (stated === 'mean' || A.band.unit !== B0.band.unit
+        || (classA != null && classB != null && declarationKey(classA) !== declarationKey(classB))
+        || (categoricalA && B0.band.quantity && !categoricalB) || (categoricalB && A.band.quantity && !categoricalA))) {
+        return refuse('merge-category-incompatible', { overlap: stated, a: classA ?? null, b: classB ?? null });
+      }
       /* (#R774) A mosaic of two sheets is one sheet: `min`, `max` and `mean` are arithmetic over
          both, and `first`/`second` still hand the reader one band with one unit on it. Same rule,
          same place — see commensurate(). */
       const comm = commensurate(A, B0);
       if (!comm.ok) return comm.refusal;
       const B = comm.B;
-      const n = a.width * a.height;
+      const n = target.width * target.height;
+      const reader = (src, vals, placement) => {
+        if (!placement) return (i) => vals[i];
+        return (i) => {
+          const row = Math.floor(i / target.width) - placement.row;
+          let col = i % target.width - placement.col;
+          if (col < 0 && placement.period != null) col += placement.period;
+          return row >= 0 && row < src.height && col >= 0 && col < src.width
+            ? vals[row * src.width + col] : NaN;
+        };
+      };
+      const readA = reader(a, A.values, placements[0]), readB = reader(b, B.values, placements[1]);
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       let count = 0, missingCount = 0, both = 0, onlyA = 0, onlyB = 0;
       return paced(n, (i) => {
-        const x = A.values[i], y = B.values[i];
+        const x = readA(i), y = readB(i);
         const hasA = !missing(x, A.nodata), hasB = !missing(y, B.nodata);
         if (hasA && hasB) {
           both++; count++;
@@ -1849,7 +1914,13 @@ export function makeGisRaster() {
         const name = (na != null && nb != null) ? (na === nb ? na : (na + ' ∪ ' + nb)) : (na != null ? na : nb);
         return {
           ok: true,
-          raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
+          raster: derived(target, [inheritRasterBand(null, {
+            name, unit, nodata: null,
+            ...(categorical ? { categorical: true } : {}),
+            ...(classA != null && declarationKey(classA) === declarationKey(classB) ? { classification: classA } : {}),
+            ...(A.band.quantity != null && declarationKey(A.band.quantity) === declarationKey(B.band.quantity)
+              ? { quantity: A.band.quantity } : {}),
+          })], out),
           count: count, nodataCount: missingCount,
           overlapCount: both, onlyA: onlyA, onlyB: onlyB, overlap: stated,
         };
@@ -1866,6 +1937,7 @@ export function makeGisRaster() {
          rows as its input, so the latitudes those rows stand for are the same statement. Dropping it
          would make an areal aggregate over a masked grid weight by row index where the input weighted
          by ground — the same numbers, silently differently weighted. */
+      if (gridFields.coordinateSpace != null) grid.coordinateSpace = gridFields.coordinateSpace;
       if (gridFields.latAxis !== undefined && gridFields.latAxis !== null) grid.latAxis = gridFields.latAxis;
       return {
         width: width, height: height,
@@ -1900,16 +1972,7 @@ export function makeGisRaster() {
     function build(grid, bands, data) {
       if (!grid || typeof grid !== 'object') return refuse('raster-invalid', { field: 'grid' });
       if (!Array.isArray(bands) || !bands.length) return refuse('raster-invalid', { field: 'bands' });
-      const decl = bands.map((b) => {
-        const s = (b && typeof b === 'object') ? b : {};
-        return {
-          name: s.name == null ? null : s.name,
-          unit: s.unit == null ? null : s.unit,
-          /* Same rule as `fromSampler`'s band: a sentinel survives only if one was declared as a
-             number, and `null` stays 「宣言が無い」 rather than becoming 「欠損が無い」. */
-          nodata: isNum(s.nodata) ? s.nodata : null,
-        };
-      });
+      const decl = bands.map((b) => inheritRasterBand(b));
       const arrayLike = (x) => !!x && typeof x !== 'string' && typeof x !== 'number' && typeof x.length === 'number';
       const planes = (Array.isArray(data) && data.length === decl.length && data.every(arrayLike)) ? data.slice() : [data];
       const raster = assemble(grid.width, grid.height, grid, decl, planes);
@@ -2254,15 +2317,7 @@ export function makeGisRaster() {
       const bandSpec = (spec.band && typeof spec.band === 'object') ? spec.band : {};
       const raster = {
         width: width, height: height,
-        bands: [{
-          name: bandSpec.name == null ? null : bandSpec.name,
-          unit: bandSpec.unit == null ? null : bandSpec.unit,
-          /* The sampler's own declaration survives if it made one; otherwise null — 「宣言が無い」,
-             which is not 「欠損が無い」, and the NaNs written below are missing regardless. */
-          nodata: isNum(bandSpec.nodata) ? bandSpec.nodata : null,
-          /* what the numbers MEAN, when somebody stated it (js/gis-units.js quantity) — carried, never inferred */
-          ...((bandSpec.quantity && typeof bandSpec.quantity === 'object') ? { quantity: bandSpec.quantity } : {}),
-        }],
+        bands: [inheritRasterBand(bandSpec)],
         grid: grid,
         read: (i) => ((i == null ? 0 : i) === 0 ? data : null),
       };
@@ -2384,7 +2439,7 @@ export function makeGisRaster() {
        answered as lat +90 always was. Nothing that answered before changes its number; a replayed
        step that was an `outside` refusal may now be a value (and a bilinear fraction at a wrapped
        longitude is taken in the wrapped frame). */
-    const KERNEL_VERSION = 'raster-5';
+    const KERNEL_VERSION = 'raster-6';
 
     const API = {
       /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */
@@ -2397,7 +2452,8 @@ export function makeGisRaster() {
          ⚠ Derived from TOTAL_RULES itself, so a rule added there appears here the same day. */
       totalRules: () => TOTAL_RULE_NAMES.slice(),
       validate,
-      bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
+      sampleCategoricalSafe: (method) => SAMPLE_METHOD_FACTS[method]?.categoricalSafe === true,
+      integritySampleIndexes, spatialIntegrity, bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
       /* (#R752) the arithmetic js/gis-ops.js's rasterCalc / mosaic / rasterize / polygonize run on.
          ⚠ `polygonize` is ALWAYS ASYNC (it walks the grid three times and keeps its own phases).
          ⚠ (#R756) `combine` / `merge` — and `mask` / `diff` / `zonal` above — answer SYNCHRONOUSLY

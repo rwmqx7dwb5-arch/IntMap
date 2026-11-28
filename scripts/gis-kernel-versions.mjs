@@ -152,7 +152,8 @@ export const KERNELS = {
   /* (gis-worker-columnar) ops-14 HASH ONLY (over the time kit): a spatialJoin's pairs may be asked on worker threads (the same relateBlock the page asks), and an op may be run by a registered engine when the caller names one — by default nothing is registered and every run is this GIS. Same rows, same refusals (tests/gis-worker-columnar-checks.test.mjs holds the carried run against the in-thread run). */
   /* (duckdb-equivalence) ops-14 HASH ONLY: the API also exposes `engineDomain` (js/gis-engine-domain.js) for a registered engine's `accepts` to ask; nothing is registered by default, so every run, row and refusal is unchanged. */
   /* (atlas-completion-verdict) ops-14 HASH ONLY: run() states the inputs it read (`datasetsRead`: id, version, op, ok) beside the result it already returned — no value of the result changes */
-  'js/gis-ops.js': { version: 'ops-14', sha256: '8d43f5ab9ba6db7c302a98efe1d163c3c3b3affc7f4f125ef748791dd7976849' },
+  /* (atlas-gis-coordinate-integrity) Mosaic chooses a wrapped union and preserves aligned values by direct placement, with sampled integrity on registered results. */
+  'js/gis-ops.js': { version: 'ops-15', sha256: 'a71151d740a7e996f6116782607b6c1e22caaaa31465bd855e08c567727af4e0' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -241,7 +242,8 @@ export const KERNELS = {
      is built exactly as before, so every recipe replays bit for bit. */
   /* (#W4) raster-4 -> raster-5: `sample` reads a longitude in the grid's own frame and treats the outer
      east/south edges as closed, so positions that answered `outside` now answer a value. */
-  'js/gis-raster.js': { version: 'raster-5', sha256: 'e18d7158f6f78cf47d7607a6656e1b614cc1a930ba5049bba7956aebdb80f01f' },
+  /* (atlas-gis-coordinate-integrity) The raster kernel keeps pixel and projected axes non-periodic and preserves band declarations through masks and compatible merges. */
+  'js/gis-raster.js': { version: 'raster-6', sha256: 'd7b93dd20ae7b8a5621b74862da8aac05a945c0916d8bff3646656940120356e' },
   /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
      what the conversion is; every caller above asks it, so a change to the table or to the
      expression walk changes what a replayed recipe answers or refuses. */
@@ -271,7 +273,8 @@ export const KERNELS = {
      of holding the whole grid, and an exact-footprint road with a stated tolerance. All three
      are reached only by a caller that states them; a recipe that states none takes the same
      path. ⚠ Measured against #R783 ① — six methods, on-thread and off — byte for byte. */
-  'js/gis-warp.js': { version: 'warp-1', sha256: '3dc35d986515ebadc369e693f775c93381bb991d7abbee4a62c5b6c4e66394db' },
+  /* (atlas-gis-coordinate-integrity) Wide inverse sampling no longer repeats source columns. Geographic warps handle the longitude seam before converting to pixels. */
+  'js/gis-warp.js': { version: 'warp-2', sha256: 'f62e2246e120228844e65c9aafb18018caf3e9070667b338223e878da019b8bf' },
     /* (#R783) HASH ONLY: every function in FUNCS now declares what it does to a unit (keeps /
      dimensionless / no-unit / changes) so js/gis-units.js can ASK instead of guessing. The
      evaluator is untouched — the same expression over the same rows returns the same numbers. */

@@ -224,6 +224,10 @@ export function makeGisPanel(HOST) {
       if (code === 'align-failed') return IntMapLang.t(HOST.lang, 'The two grids could not be put on one common lattice, and the step stopped without naming a reason', '2つの格子を共通の格子に合わせられず、処理は理由を述べずに止まりました');
       if (code === 'resample-failed') return IntMapLang.t(HOST.lang, 'The resampling stopped without naming a reason', '再標本化が、理由を述べずに止まりました');
       if (code === 'calc-failed') return IntMapLang.t(HOST.lang, 'The grid calculation stopped without naming a reason', '格子の計算が、理由を述べずに止まりました');
+      if (code === 'resample-quantity-incompatible') return IntMapLang.t(HOST.lang, 'Area apportionment requires a total per source cell', '面積按分には元の画素ごとの総量が必要です');
+      if (code === 'merge-category-incompatible') return IntMapLang.t(HOST.lang, 'The band declarations or overlap rule are incompatible with merging categories', '帯の分類の宣言か重なりの処理規則が、区分の結合に適合しません');
+      if (code === 'raster-integrity-failed') return IntMapLang.t(HOST.lang, 'Source and output values disagree at sampled coordinates', '抽出した座標で入力と出力の値が一致しません');
+      if (code === 'align-intersection-disconnected') return IntMapLang.t(HOST.lang, 'The shared extent has separate longitude intervals', '共通範囲は経度方向に分かれています');
       if (code === 'mosaic-failed') return IntMapLang.t(HOST.lang, 'Joining the two sheets stopped without naming a reason', '2枚の格子の結合が、理由を述べずに止まりました');
       if (code === 'rasterize-failed') return IntMapLang.t(HOST.lang, 'Burning the features onto the lattice stopped without naming a reason', '地物を格子に焼き込む処理が、理由を述べずに止まりました');
       if (code === 'polygonize-failed') return IntMapLang.t(HOST.lang, 'Tracing the regions stopped without naming a reason', '領域の抽出が、理由を述べずに止まりました');

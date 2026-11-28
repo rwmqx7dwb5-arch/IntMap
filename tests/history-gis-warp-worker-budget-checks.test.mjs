@@ -632,3 +632,17 @@ test('R783 ⑤ the scheduler runs every unit once, hands ownership over, and sto
     assert.equal((await door.runBlocks('t.sum', plan, {})).why, 'blocks-make-missing');
   } finally { door.stop(); }
 });
+
+test('wide nearest resampling agrees between the real Worker and the source over a longitude seam', async () => {
+  const { warp, worker } = await boot();
+  const target = { west: 175, north: 4, pixelLng: 1 / 32, pixelLat: 1 / 32, width: 1057, height: 3 };
+  const src = degreeGrid({ ...target, west: target.west - 360, value: (col, row) => row * 1057 + col });
+  const here = await warp.resample(src, target, { method: 'nearest' });
+  const there = await warp.resample(src, target, { method: 'nearest', worker: threadDoor(worker), budgetBytes: 64 * 1024 });
+  assert.equal(here.ok, true, JSON.stringify(here));
+  assert.equal(there.ok, true, JSON.stringify(there));
+  assert.equal(there.report.worker.used, true);
+  assert.deepEqual(there.grid.read(0), src.read(0));
+  assert.deepEqual(there.grid.read(0), here.grid.read(0));
+  assert.deepEqual(there.report.spatialIntegrity, here.report.spatialIntegrity);
+});
