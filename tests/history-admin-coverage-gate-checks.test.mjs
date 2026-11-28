@@ -357,7 +357,8 @@ test('#R719 ⑤ dropping one unit of an answered country fails check:histfill', 
 
     /* well-formed first: the copy passes where the original does */
     writeFileSync(join(dir, 'data', 'hist-admin-fill.js'), 'window.__HISTADMFILL=' + JSON.stringify(d) + ';\n');
-    assert.equal(runGate(dir, 'scripts/build-hist-admin-fill.mjs').failed, false, 'the copied record must pass');
+    const original = runGate(dir, 'scripts/build-hist-admin-fill.mjs');
+    assert.equal(original.failed, false, original.out);
 
     /* now drop every row of ONE unit and keep the rest of its country — addressed by its ISO
        3166-2 code, because the record is joined by the code and names repeat across countries */
