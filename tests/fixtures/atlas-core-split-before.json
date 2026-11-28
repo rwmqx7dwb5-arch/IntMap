@@ -1,6 +1,6 @@
 {
  "//": "tests/atlas-core-split-checks.test.mjs ① — what ai-proxy did with each request of CASES (tests/helpers/ai-proxy-contract-cases.mjs), run from `source`. Regenerate: node scripts/ai-proxy-photograph.mjs <git ref>",
- "source": "cdc1bb0fbb0dd284bd51b26797a7cc14b805c3ba:supabase/functions/ai-proxy/index.ts",
+ "source": "cedc3811de9b10e2739ec3e3ea2c11f538982082:supabase/functions/ai-proxy/index.ts",
  "cases": {
   "refusals before the provider (openai)": [
    {
@@ -4640,21 +4640,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -4680,6 +4665,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -5022,21 +5022,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -5062,6 +5047,21 @@
        "p_web_searches": 1,
        "p_cost_complete": false,
        "p_cached": 20
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -7914,21 +7914,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -7954,6 +7939,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      },
      {
@@ -8421,21 +8421,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -8461,6 +8446,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -9005,21 +9005,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -9045,6 +9030,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      },
      {
@@ -9513,21 +9513,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -9553,6 +9538,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -9894,21 +9894,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -9934,6 +9919,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -11732,21 +11732,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -11772,6 +11757,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
@@ -13865,21 +13865,6 @@
      },
      {
       "method": "POST",
-      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
-      "headers": {
-       "apikey": "service-key",
-       "authorization": "Bearer service-key",
-       "content-profile": "public",
-       "content-type": "application/json",
-       "x-client-info": "supabase-js/<version>; runtime=deno"
-      },
-      "body": {
-       "p_user": "u-1",
-       "p_turn": "turn-0001"
-      }
-     },
-     {
-      "method": "POST",
       "url": "https://sb.test/rest/v1/rpc/log_ai_delegation",
       "headers": {
        "apikey": "service-key",
@@ -13905,6 +13890,21 @@
        "p_web_searches": 0,
        "p_cost_complete": false,
        "p_cached": 0
+      }
+     },
+     {
+      "method": "POST",
+      "url": "https://sb.test/rest/v1/rpc/settle_ai_turn",
+      "headers": {
+       "apikey": "service-key",
+       "authorization": "Bearer service-key",
+       "content-profile": "public",
+       "content-type": "application/json",
+       "x-client-info": "supabase-js/<version>; runtime=deno"
+      },
+      "body": {
+       "p_user": "u-1",
+       "p_turn": "turn-0001"
       }
      }
     ],
