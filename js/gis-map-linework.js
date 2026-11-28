@@ -1,7 +1,7 @@
 /* Linework is extracted in the same top-left viewport as the source preview.
  * Filled or clipped artwork can be traced as rendered pixels instead. */
 
-export const KERNEL_VERSION = 'map-linework-1';
+export const KERNEL_VERSION = 'map-linework-2';
 const IDENTITY = [1, 0, 0, 1, 0, 0];
 const mul = ([a, b, c, d, x, y], [e, f, g, h, u, v]) =>
   [a*e+c*f, b*e+d*f, a*g+c*h, b*g+d*h, a*u+c*v+x, b*u+d*v+y];
@@ -143,7 +143,7 @@ function matrixOfSvg(node, root) {
   return null;
 }
 
-export function svgLinework(root, size, legend) {
+function svgViewport(root, size) {
   const width = size.width, height = size.height;
   const box = root.viewBox?.baseVal;
   const ar = root.preserveAspectRatio?.baseVal;
@@ -155,7 +155,25 @@ export function svgLinework(root, size, legend) {
   const align = Math.max(0, (ar?.align || 6) - 2);
   const tx = none ? 0 : (width - x*box.width) * (align % 3) / 2;
   const ty = none ? 0 : (height - y*box.height) * Math.floor(align/3) / 2;
-  const viewport = [x, 0, 0, y, tx - x*(box?.x || 0), ty - y*(box?.y || 0)];
+  return [x, 0, 0, y, tx - x*(box?.x || 0), ty - y*(box?.y || 0)];
+}
+
+export function svgLandmarks(root, size) {
+  const viewport = svgViewport(root, size);
+  const marks = [];
+  for (const node of root.querySelectorAll('circle,ellipse')) {
+    if (node.namespaceURI !== root.namespaceURI || node.closest('defs,clipPath,mask,symbol,pattern,marker')) continue;
+    const name = node.querySelector(':scope > title')?.textContent?.trim() || node.getAttribute('aria-label') || node.id;
+    const center = ['cx','cy'].map(key => Number(node.getAttribute(key) || 0));
+    const matrix = name && center.every(Number.isFinite) && matrixOfSvg(node, root);
+    if (matrix) marks.push({ name, pixel: move(mul(viewport, matrix), center) });
+  }
+  return marks;
+}
+
+export function svgLinework(root, size, legend) {
+  const { width, height } = size;
+  const viewport = svgViewport(root, size);
   const shapes = [];
   let skipped = 0;
   legend.forEach(({ elementIds }, classIndex) => {

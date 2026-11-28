@@ -60,6 +60,12 @@ function upstream(arg) {
     if (!/functions\/v1\/ai-proxy/.test(s)) return real(u, init);
     let b = {}; try { b = JSON.parse(init.body); } catch (_) { b = {}; }
     const L = window.__live;
+    if (b.task === 'vision_read' && L.mapMarkerFixture) {
+      L.mapMarkerCalls.push({ prompt: JSON.parse(b.prompt), imageCount: b.images.length, webMode: b.webMode });
+      const body = { text: JSON.stringify({ marks: L.mapMarkerFixture }), used: 1, limit: 100,
+        meta: { modelServed: 'source-markers-fixture' } };
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
     if (b.task !== 'atlas_turn') return new Response(JSON.stringify({ text: '{}', used: 1, limit: 100, charged: true, meta: {} }), { status: 200, headers: { 'content-type': 'application/json' } });
     const n = ++L.n;
     L.bodies.push({ stream: b.stream === true, plan: JSON.stringify(b.input || []).indexOf('[YOUR PLAN') >= 0 });
@@ -273,6 +279,14 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="80" vie
 <g transform="translate(2 3)"><path id="survey-trace" fill="none" stroke="#5500ff" d="M 15 62 H 30 L 70 68"/></g>
 </svg>`;
 
+const surveyMarks = [[5,5],[95,5],[95,95],[5,95],[50,8],[8,50],[87,50],[50,89],[35,27],[65,73]]
+  .map((pixel,i) => ({ pixel, name:'Survey point '+(i+1) }));
+const distortedSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <path id="embankment" fill="none" stroke="#145171" d="M 15 22 L 80 74"/>
+  <g transform="translate(1 2)">${surveyMarks.map(({name,pixel:[x,y]}) => `<circle cx="${x-1}" cy="${y-2}" r="1"><title>${name}</title></circle>`).join('')}</g>
+</svg>`;
+const rasterMarks = [[5,5],[90,5],[5,75],[90,75],[40,12],[65,55]].map((pixel,i) => ({ pixel, name:'Marsh marker '+(i+1) }));
+
 function vectorPdf() {
   const commands = '0.2 0.4 0.6 RG\n2 w\n10 10 m\n30 30 50 55 80 70 c\nS\n';
   const objects = [
@@ -294,17 +308,21 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
   const calls = [];
   let png;
   await page.exposeBinding('__provideMapRaster', (_, bytes) => { png = Buffer.from(bytes, 'base64'); });
+  await page.evaluate((marks) => {
+    window.__live.mapMarkerFixture = marks;
+    window.__live.mapMarkerCalls = [];
+  }, rasterMarks);
   await page.route('**/functions/v1/web-browse', async (route) => {
     const req = route.request().postDataJSON();
     calls.push(req.url);
     const isPdf = req.url.endsWith('.pdf');
     const isPng = req.url.endsWith('.png');
-    const bytes = isPng ? png : Buffer.from(isPdf ? vectorPdf() : svg);
+    const bytes = isPng ? png : Buffer.from(isPdf ? vectorPdf() : req.url.endsWith('/distortion.svg') ? distortedSvg : svg);
     await route.fulfill({ json: { ok: true, file: { name: new URL(req.url).pathname.split('/').at(-1),
       type: isPng ? 'image/png' : isPdf ? 'application/pdf' : 'image/svg+xml', url: req.url, bytes: bytes.length,
       sha256: createHash('sha256').update(bytes).digest('hex'), b64: bytes.toString('base64') } } });
   });
-  const evidence = await page.evaluate(async () => {
+  const evidence = await page.evaluate(async ({marks,rasterMarks}) => {
     const gis = async () => { await window.IntMapLazy.need('gisCore'); return window.IntMapGis; };
     const fetchFile = (a) => window.IntMapConsole.dispatch({ type: 'fetchFile', ...a });
     const areaUrl = 'https://public.example.org/editions/survey.svg', pdfUrl = 'https://public.example.org/assets/plate.pdf';
@@ -334,17 +352,32 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
     context.fillStyle = '#442290';
     context.fillRect(25, 20, 40, 30);
     context.fillRect(90, 70, 5, 5);
+    context.fillStyle = '#171717';
+    for (const {pixel:[x,y]} of rasterMarks) context.fillRect(x,y,1,1);
     const png = canvas.toDataURL('image/png').split(',')[1];
     // Hand the normal file relay a third, independently generated document.
     const rasterUrl = 'https://public.example.org/assets/archive.png';
     await window.__provideMapRaster(png);
     const raster = await read(rasterUrl);
     const z = await extract(raster, { legend: [{ label: 'marsh', swatch: [92, 72] }], crop: [0, 0, 85, 60] });
+    const namedRasterReference = G.data.add({ title:'separate marsh ground survey', features:rasterMarks.map(({name,pixel}) => ({
+      type:'Feature', properties:{name}, geometry:{type:'Point', coordinates:ground(pixel)},
+    })) });
+    const v = await fetchFile({ mapSource:{ action:'extract',source:raster.source.id,
+      landmarks:{dataset:namedRasterReference.id,field:'name'}, maxErrorM:1,
+      legend:[{label:'marsh',color:'#442290'}], crop:[0,0,85,60] } });
+    const warped = await read('https://public.example.org/editions/distortion.svg');
+    const survey = G.data.add({ title:'separate ground survey', features:marks.map(({name,pixel:[x,y]}) => ({
+      type:'Feature', properties:{name}, geometry:{type:'Point',coordinates:[19+x/100+(y/120)**2/4, 38-y/100+x*y/50000]},
+    })) });
+    const n = await fetchFile({ mapSource:{ action:'extract', source:warped.source.id, method:'linework',
+      landmarks:{dataset:survey.id,field:'name'}, transformModel:'auto', maxErrorM:1,
+      legend:[{ label:'embankment', elementIds:['embankment'] }] } });
     const featuresOf = (r) => G.data.get(r.exec?.mapSource?.dataset?.id)?.features();
     const measured = a.ok ? await G.atlas.run({ op: 'measure', inputs: [a.exec.mapSource.dataset.id], params: { what: 'area' } }) : null;
-    return { area, pdf, a, l, p, z, rasterFeatures: featuresOf(z), areaFeatures: featuresOf(a), svgLines: featuresOf(l), pdfLines: featuresOf(p),
+    return { area, pdf, a, l, p, z, n, v, nonlinearLines:featuresOf(n), rasterFeatures: featuresOf(z), areaFeatures: featuresOf(a), svgLines: featuresOf(l), pdfLines: featuresOf(p),
       measurement: measured?.ok };
-  });
+  }, { marks:surveyMarks, rasterMarks });
   expect(evidence.area.size).toMatchObject({ width: 100, height: 80, origin: 'top-left' });
   expect(evidence.area.preview.frame).toBeTruthy();
   expect(evidence.a.ok, JSON.stringify(evidence.a)).toBe(true);
@@ -366,5 +399,22 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
   expect(evidence.z.ok, JSON.stringify(evidence.z)).toBe(true);
   expect(evidence.z.exec.mapSource.quality.extraction.classes).toEqual([{ label: 'marsh', pixels: 1200 }]);
   expect(evidence.rasterFeatures[0].properties).toMatchObject({ class: 'marsh', sourcePixels: 1200, color: '#442290' });
-  expect(calls).toHaveLength(3);
+  expect(evidence.n.ok, JSON.stringify(evidence.n)).toBe(true);
+  expect(evidence.n.exec.mapSource.quality.positional).toMatchObject({
+    transformModel:'quadratic', controlSource:{method:'named-svg-markers'},
+    independent:{count:2}, accepted:true,
+  });
+  expect(evidence.nonlinearLines[0].geometry.coordinates.length).toBeGreaterThan(10);
+  expect(evidence.nonlinearLines[0].geometry.coordinates[0][0]).toBeCloseTo(19.15+(22/120)**2/4, 8);
+  expect(evidence.v.ok, JSON.stringify(evidence.v)).toBe(true);
+  expect(evidence.v.exec.mapSource.quality.positional).toMatchObject({
+    transformModel:'affine', controlSource:{method:'visual-landmark-estimates',model:'source-markers-fixture'},
+    independent:{count:1}, accepted:true,
+  });
+  const visual = await page.evaluate(() => window.__live.mapMarkerCalls);
+  expect(visual).toHaveLength(1);
+  expect(visual[0].prompt).toMatchObject({width:100,height:80,names:rasterMarks.map(mark=>mark.name)});
+  expect(visual[0].imageCount).toBe(1);
+  expect(visual[0].webMode).toBe('off');
+  expect(calls).toHaveLength(4);
 });
