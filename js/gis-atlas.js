@@ -1392,7 +1392,7 @@ export function makeGisAtlas(core) {
       /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
          reader; `describe(ref)` is one source, `catalogue().layers` is all of them. */
       describe,
-      describeDataset: (id) => { const ds = data.get(id); return ds ? datasetRow(ds) : null; },
+      describeDataset: (id) => { const ds = data.get(id); return ds ? { ...datasetRow(ds), version: data.versionOf?.(id) } : null; },
       /* the vocabularies, published from the file that decides them rather than copied into a check
          (the same argument js/gis-sources.js completenessValues/coverageReasons are written for) */
       prefetchSlots: () => PREFETCH_SLOTS.slice(),

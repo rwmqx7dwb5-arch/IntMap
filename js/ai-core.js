@@ -8,7 +8,6 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
-import { observeAtlasProviderCall } from './atlas-run-ledger.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
@@ -345,8 +344,10 @@ export function aiCore(HOST){
     try{ const b=new Uint8Array(12); crypto.getRandomValues(b); for(const x of b) s+=x.toString(16).padStart(2,'0'); }catch(_){ s+=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2); }
     return s;
   }
-  function aiCallServerFull(prompt, system, imgs, opts){
+  async function aiCallServerFull(prompt, system, imgs, opts){
     const callId=opts?.callId?String(opts.callId):aiNewCallId();
+    if(!opts?.turnId) return aiCallServerRequest(prompt, system, imgs, opts, callId, false);
+    const { observeAtlasProviderCall } = await import('./atlas-run-ledger.js');
     return observeAtlasProviderCall(opts, callId, (tracked) => aiCallServerRequest(prompt, system, imgs, opts, callId, tracked));
   }
   async function aiCallServerRequest(prompt, system, imgs, opts, callId, tracked){

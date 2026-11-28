@@ -211,7 +211,7 @@ export default [
         return R(false, warn(esc(L('Downloaded ', 'ダウンロードしました: ') + d.meta.name + L(', but IntMap could not read it as data (' + t.code + ').', ' が、データとして読み取れませんでした(' + t.code + ')。'))),
           { meta: { code: 'file_unreadable' }, exec: { web: Object.assign(web, { file: d.meta, reason: t.code }, await textExcerpt(d.file)) } });
       }
-      const version = typeof window !== 'undefined' ? window.IntMapData?.versionOf?.(t.datasetId) : null;
+      const version = t.description?.version;
       const datasetsCreated = version ? [{ id: t.datasetId, version }] : undefined;
       return R(true, note(L('Added the dataset ', 'データセットを追加しました: ') + '<b>' + esc(t.label) + '</b>' + (t.rows != null ? ' — ' + t.rows + L(' rows', ' 行') : '') + ' · ' + esc(host(d.meta.url))),
         { meta: { datasetsCreated }, exec: { web: Object.assign(web, { file: d.meta, dataset: { ...t.description, id: t.datasetId, label: t.label, format: t.format, rows: t.rows, layer: t.layer }, source: d.meta.url }) } });

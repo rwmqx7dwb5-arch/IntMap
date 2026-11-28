@@ -26,7 +26,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
 import * as bus from './bus.js';
-import { geometryRange, osmFeatureId } from './map-feature-geometry.js';
+import { geometryRange, osmFeatureId, userMapClick } from './map-feature-geometry.js';
 import { fillFromAlpha, alphaFromFill, opacityPaint, opacityAlpha } from './object-opacity.js';   /* what the Opacity slider means, for every painter */
 import { BORDER_PAINT, BORDER_LAYOUT } from './border-style.js';   /* the one national-border line — Isolate re-draws it above its mask */
 import { countryShapeOnMap, OFM_FRONTIER_MINZOOM } from './frontier-fit.js';   /* the one shape of a country on the map — mask, edge and highlight are drawn from it */

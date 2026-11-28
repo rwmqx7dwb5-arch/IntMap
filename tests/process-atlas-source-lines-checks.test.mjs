@@ -58,7 +58,8 @@ test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', ()
   ok('docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs', 'documents have their own channels');
   ok('if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;', 'js/ai-core.js puts them on the wire');
   gone("fi.type='file'; fi.accept='image/*'; fi.multiple=true;", 'the image-only picker restriction is removed');
-  ok('function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'files are sent with the message');
+  ok('const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'pending images and files are collected when the user sends');
+  ok('run(v,imgs,files,{sentAt});', 'files are sent with the message');
 });
 
 test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + mobile lift; still monochrome', () => {

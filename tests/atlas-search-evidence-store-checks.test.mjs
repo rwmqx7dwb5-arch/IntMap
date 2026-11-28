@@ -226,5 +226,6 @@ test('⑦ the server: web_search is a registered task and a journal row says how
   assert.equal(journalArgs({ user: 'u', root: 'r', outcome: 'ok' }).p_web_searches, 0);
   assert.match(read('supabase/migrations/20261130100000_journal_web_searches.sql'), /add column if not exists web_searches/);
   const ask = read('supabase/functions/ai-proxy/ask.ts');
-  assert.match(ask, /journalTask === "web_search"/); assert.match(ask, /webSearches: out\.webCount/);
+  assert.match(ask, /\[[^\]\n]*"web_search"[^\]\n]*\]\.includes\(journalTask\)/);
+  assert.match(ask, /await journal\("ok"[^\n]*webSearches: out\.webCount/);
 });
