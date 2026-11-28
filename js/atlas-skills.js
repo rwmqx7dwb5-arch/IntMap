@@ -80,13 +80,30 @@ function bigrams(s) {
 }
 var STOP = { what: 1, which: 1, with: 1, that: 1, this: 1, from: 1, have: 1, does: 1, where: 1, there: 1, about: 1, into: 1, between: 1, their: 1, show: 1, tell: 1, please: 1 };
 function words(s) {
-  return String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length >= 4 && !STOP[w]; });
+  return tokens(s).filter(function (w) { return w.length >= 4 && !STOP[w]; });
+}
+
+function tokens(s) {
+  return String(s || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{M}\p{N}]+/gu) || [];
+}
+
+function skillDocId(skill) { return 'skill.' + skill.id.replaceAll('-', '.'); }
+
+export function skillSemanticDocs() {
+  return ATLAS_SKILLS.map(function (s) {
+    return { id: skillDocId(s), text: [...s.title, ...s.summary, ...s.keywords.flat()].join('\n') };
+  });
 }
 
 function scoreSkill(skill, query) {
-  var q = String(query || '').toLowerCase(), score = 0;
-  var kw = ((skill.keywords && skill.keywords[0]) || []).concat((skill.keywords && skill.keywords[1]) || []);
-  kw.forEach(function (k) { if (k && q.indexOf(String(k).toLowerCase()) >= 0) score += 4; });
+  var q = String(query || '').normalize('NFKC').toLowerCase(), score = 0;
+  var qWords = ' ' + tokens(q).join(' ') + ' ';
+  ((skill.keywords && skill.keywords[0]) || []).forEach(function (k) {
+    if (k && qWords.includes(' ' + tokens(k).join(' ') + ' ')) score += 4;
+  });
+  ((skill.keywords && skill.keywords[1]) || []).forEach(function (k) {
+    if (k && q.includes(k.normalize('NFKC').toLowerCase())) score += 4;
+  });
   /* ordinary words shared with the English title / summary / keywords (each distinct word once) */
   var have = Object.create(null);
   words(pick(skill.title, 'en') + ' ' + pick(skill.summary, 'en') + ' ' + ((skill.keywords && skill.keywords[0]) || []).join(' ')).forEach(function (w) { have[w] = 1; });
@@ -104,13 +121,18 @@ function scoreSkill(skill, query) {
 /* searchSkills(query, {want}) -> [{ id, title, summary, score, read }], best first, only real matches */
 export function searchSkills(query, opts) {
   var want = (opts && opts.want) || 2, lang = langOf(query), out = [];
+  var semantic = new Map(((opts && opts.semantic) || []).map(function (m) { return [m.id, m]; }));
   ATLAS_SKILLS.forEach(function (s) {
     var sc = scoreSkill(s, query);
-    if (sc >= MIN_SCORE) out.push({ skill: s, score: sc });
+    var meaning = semantic.get(skillDocId(s));
+    if (sc >= MIN_SCORE || meaning) out.push({ skill: s, score: sc, meaning: meaning });
   });
-  out.sort(function (a, b) { return b.score - a.score || (a.skill.id < b.skill.id ? -1 : 1); });
+  out.sort(function (a, b) {
+    return b.score - a.score || (b.meaning?.similarity ?? -1) - (a.meaning?.similarity ?? -1) || a.skill.id.localeCompare(b.skill.id);
+  });
   return out.slice(0, want).map(function (x) {
     return { id: x.skill.id, title: pick(x.skill.title, lang), summary: pick(x.skill.summary, lang), score: x.score,
+      ...(x.meaning ? { semantic: x.meaning.similarity } : {}),
       read: 'find_capability {"query":"skill:' + x.skill.id + '"}' };
   });
 }

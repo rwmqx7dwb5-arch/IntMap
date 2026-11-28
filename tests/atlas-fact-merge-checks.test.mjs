@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
+import { makeWorldGraphStore } from '../js/world-graph-store.js';
 import { makeAtlasWorldObjects } from '../js/atlas-world-objects.js';
 import { mergeFacts, normalizeFact, makeFactResolver } from '../js/atlas-orchestrate.js';
 import { shapeOf } from '../js/atlas-delegate.js';
@@ -56,7 +57,9 @@ test('③ a different unit is reported as not comparable; a different year is an
   const rows = m.objects[0].attributes;
   assert.equal(rows.length, 2, '2023 and 2020 are separate rows');
   const y23 = rows.find((r) => /2023/.test(r.at));
-  assert.equal(y23.status, 'conflict');
+  assert.equal(y23.status, 'pending');
+  assert.equal(m.counts.pending, 1);
+  assert.equal(m.counts.conflict, 0);
   assert.equal(y23.unitMismatch, true);
   assert.equal(rows.find((r) => /2020/.test(r.at)).status, 'single');
 });
@@ -103,4 +106,49 @@ test('⑦ the worker answer shape keeps facts and drops what states nothing chec
   assert.equal(r.out.facts.length, 1);
   assert.equal(r.out.facts[0].subject.ids.wikidata, 'Q1');
   assert.equal(normalizeFact({ subject: 'A', attribute: 'a', value: 'v', at: 'not a date' }).at, undefined, 'no time is invented');
+});
+
+test('external IDs are checked in both stores before a name can link the observations', async () => {
+  const name = 'Twin Point';
+  const world = (id, ids) => geo.worldObject({ type: 'facility', id, name, lng: 0, lat: 0, ids });
+  const local = world('east', { geonames: '1102' });
+  const saved = world('west', { geonames: '2706' });
+  const W = makeAtlasWorldObjects();
+  const impostor = geo.worldObject({ type: 'facility', id: 'literal-name', name: 'geonames:2706', lng: 0, lat: 0 });
+  W.register([local, impostor]);
+  const G = makeWorldGraphStore({ worldObjects: W });
+  const persisted = [];
+  const DB = { rpc: async (rpc, args) => {
+    if (rpc === 'world_graph_resolve') {
+      persisted.push(args.p_q);
+      if (args.p_q === 'geonames:2706') return { data: [
+        { ref: local.ref, via: 'past_id', scheme: 'geonames', ext_id: '2706' },
+        { ref: saved.ref, via: 'present_id', scheme: 'geonames', ext_id: '2706' },
+      ] };
+      if (args.p_q === 'geonames:9105') return { data: [{ ref: local.ref, via: 'past_id', scheme: 'geonames', ext_id: '9105' }] };
+      return { data: [] };
+    }
+    assert.equal(rpc, 'world_graph_subgraph');
+    assert.equal(args.p_ref, saved.ref);
+    return { data: { nodes: [{ ref: saved.ref, name, lng: 0, lat: 0, ids: saved.ids }] } };
+  } };
+  const resolve = makeFactResolver({
+    find: (q, opts) => W.find(q, opts),
+    findPersisted: async (q, opts) => (await G.resolvePersisted(DB, q, opts)).object,
+  });
+  const claim = (id, value) => ({ subject: { name, ids: { geonames: id } }, attribute: 'height', value });
+  const m = await mergeFacts([
+    done('survey-a', [claim('2706', 5)]),
+    done('survey-b', [claim('1102', 6)]),
+    done('survey-c', [claim('9105', 7)]),
+  ], { resolve });
+  assert.ok(persisted.includes('geonames:2706'));
+  assert.deepEqual((await G.resolvePersisted({ rpc: async () => ({ data: [
+    { ref: local.ref, via: 'present_id' }, { ref: saved.ref, via: 'present_id' },
+  ] }) }, 'geonames:2706', { externalId: true })).ambiguous, [local.ref, saved.ref]);
+  assert.deepEqual(m.objects.map((o) => [o.ids.geonames, o.ref, o.attributes[0].status]), [
+    ['2706', saved.ref, 'single'],
+    ['1102', local.ref, 'single'],
+    ['9105', undefined, 'single'],
+  ]);
 });

@@ -72,6 +72,37 @@ test('what cannot be converted is refused with the reason, never read as a Commo
   assert.equal(WW.parse('Uruk 200000 BC', { min: MIN, now: NOW }).problem.code, 'before-floor');
 });
 
+test('calendar dates and era boundaries do not roll into other days or years', () => {
+  for (const q of ['京都 2023-02-29', '2024-13-01', '1900年2月29日', 'April 31, 2000', '2000-03-00']) {
+    assert.equal(P(q).problem?.code, 'invalid-date', q);
+  }
+  for (const q of ['令和元年1月1日', '令和元年4月', '平成31年5月1日', '平成32年', '昭和64年1月8日']) {
+    assert.equal(P(q).problem?.code, 'outside-era', q);
+  }
+  for (const q of ['京都 2024-02-29', 'February 29, 2000', '平成31年4月30日', '昭和64年1月7日']) {
+    assert.equal(P(q).problem, null, q);
+    assert.ok(P(q).when, q);
+  }
+  const calls = [];
+  const clock = { min: MIN, set: (value) => calls.push(value) };
+  assert.equal(WW.applyWhen(P('2023-02-29').when, { clock }).ok, false);
+  assert.deepEqual(calls, []);
+});
+
+test('today and the current month are evaluated in the reader’s calendar before setting the clock', () => {
+  const opts = { now: new Date('2026-11-27T16:00:00Z'), timeZone: 'Asia/Tokyo' };
+  assert.equal(WW.parse('京都 2026-11-28', opts).problem, null);
+  assert.equal(WW.parse('京都 11月28日', opts).when?.y, 2026);
+  assert.equal(WW.parse('京都 2026-11-29', opts).problem?.code, 'future');
+  assert.equal(WW.parse('京都 2026-11-28', { ...opts, timeZone: 'America/Los_Angeles' }).problem?.code, 'future');
+  const early = { ...opts, now: new Date('2026-11-01T01:00:00Z') };
+  assert.equal(WW.parse('京都 2026-11', early).problem, null);
+  const clock = { min: MIN, set: (date, { allowFuture }) => { if (allowFuture || date <= opts.now) clock.date = date; },
+    iso: () => clock.date?.toISOString().slice(0, 10), isLive: () => !clock.date };
+  assert.equal(WW.applyWhen(WW.parse('京都 11月28日', opts).when, { ...opts, clock }).iso, '2026-11-28');
+  assert.equal(WW.applyWhen(WW.parse('京都 2026-11', early).when, { ...early, clock }).iso, '2026-11-01');
+});
+
 test('lines that are not a place-and-time are left alone', () => {
   for (const q of ['1600 Pennsylvania Avenue', 'Route 66', '10115', 'Tokyo', 'District 9', '8001', 'Area 51']) {
     const p = P(q); assert.equal(p.when, null, q); assert.equal(p.place, q, q);

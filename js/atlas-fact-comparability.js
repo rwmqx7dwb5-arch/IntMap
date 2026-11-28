@@ -27,9 +27,8 @@
  *  END INSIDE the span the compared values cover are returned as `changedWithin`, verbatim. Which of them is a
  *  boundary change, a merger or only a new operator is Atlas's reading: no relation name is interpreted here.
  *
- *  ⚠ NOTHING HERE IS A VERDICT AND NOTHING CHANGES A ROW'S `status`. `agree`, `conflict` and `single` stay what
- *  mergeFacts decided; `comparability` is an observation placed beside them, with `differs` / `unstated` listed so
- *  Atlas can say 「この 2 つは同じものを測っていない」 or 「測っているものが分からない」 — and keep both numbers.
+ *  Numeric comparison uses the unit kernel to put the readings on the same scale. The original values
+ *  stay with their observations. Other facets describe the measurements and let Atlas interpret the result.
  *  No DOM, no network: the semantic layer, the unit kernel and `ties` are handed in (every one optional; a missing
  *  one leaves its facet `unstated` and says so under `unobserved`).
  * ==========================================================================*/
@@ -81,19 +80,79 @@ const facetValue = (f, facet, derived) => {
   return derived && derived[facet] ? derived[facet].value : null;
 };
 
-/* assessRow(facts, ctx) → { state, facets, differing, unstated, semantics?, unobserved? }  — `facts` carry `.task`
-   ctx: { semantics?, units? }   Only called for a row two or more workers stated. */
+
+/* An unknown inline token is ambiguous with prose. English month names are especially
+   likely after a number, so use the locale's calendar vocabulary to leave those dates as text. */
+let monthWords;
+function isMonthWord(word) {
+  if (!monthWords) {
+    const formatters = ['en-US', 'en-GB'].flatMap((locale) =>
+      ['short', 'long'].map((month) => new Intl.DateTimeFormat(locale, { month, timeZone: 'UTC' })));
+    monthWords = new Set(formatters.flatMap((f) => Array.from({ length: 12 }, (_, month) =>
+      f.format(Date.UTC(2000, month, 1)).toLowerCase())));
+  }
+  return monthWords.has(word.toLowerCase());
+}
+
+/* Read a whole numeric literal. An unknown suffix is only a candidate when it is a separate token.
+   Comparison needs an established unit, except when the kernel itself is unavailable and different
+   suffixes on otherwise numeric readings leave a possible conversion pending. */
+function numericReading(f, units) {
+  if (typeof f.value === 'number') return { value: f.value };
+  if (typeof f.value !== 'string') return null;
+  const raw = f.value.normalize('NFKC').trim().replace(/\u2212/g, '-');
+  const m = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)(\s*)(.*)$/u.exec(raw);
+  if (!m || !Number.isFinite(Number(m[1]))) return null;
+  const suffix = m[3];
+  const reading = { value: Number(m[1]), unit: suffix || null };
+  if (!suffix || suffix === f.unit || /^[%\u2030]$/.test(suffix) || units?.parse?.(suffix)) return reading;
+  if (m[2] && /^\p{Script=Latin}+$/u.test(suffix) && !isMonthWord(suffix)) return { ...reading, tentativeUnit: true };
+  return null;
+}
+
+function compareReadings(readings, unitNames, units) {
+  const mixedUnits = new Set(unitNames).size > 1;
+  if (readings.some((r) => r.unitConflict)) return { state: 'pending', why: 'unit-conflict' };
+  if (mixedUnits && unitNames.includes(null)) return { state: 'pending', why: 'unit-unstated' };
+  const unit = unitNames.slice().sort()[0];
+  const scaled = readings.map((r, i) => {
+    if (unit === unitNames[i]) return r.value;
+    try { return units?.convert?.(r.value, unitNames[i], unit); } catch (_) { return null; }
+  });
+  if (!scaled.every(Number.isFinite)) return { state: 'pending', why: 'unit-conversion-unavailable' };
+  let lo = Infinity, hi = -Infinity;
+  for (const v of scaled) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  const scale = Math.max(Math.abs(lo), Math.abs(hi));
+  const gap = hi - lo;
+  if (gap === 0 || (mixedUnits && gap <= 4 * Number.EPSILON * scale)) return { state: 'equal' };
+  return { state: 'different', unit, relDiff: Number.isFinite(gap) ? gap / scale : hi / scale - lo / scale };
+}
+
+/* assessRow(facts, ctx) → { numeric, comparability }; facts carry .task and the optional
+   semantic layer supplies missing facets through their named dataset columns. */
 export function assessRow(facts, ctx) {
   ctx = ctx || {};
   const derived = facts.map((f) => fromSemantics(f, ctx.semantics));
+  const readings = facts.map((f) => numericReading(f, ctx.units));
+  const establishedUnits = facts.map((f, i) => f.unit ||
+    (!readings[i]?.tentativeUnit && readings[i]?.unit) || derived[i].unit?.value || null);
+  const unreadableUnitPair = !ctx.units && readings.every((r) => r?.tentativeUnit) &&
+    new Set(readings.map((r) => r.unit)).size > 1;
+  const compareNumeric = readings.every(Boolean) &&
+    (establishedUnits.some(Boolean) || unreadableUnitPair || readings.every((r) => !r.tentativeUnit));
+  const unitNames = establishedUnits.map((unit, i) => unit || (compareNumeric ? readings[i].unit : null));
+  const numeric = compareNumeric ? compareReadings(readings.map((r, i) => ({
+    value: r.value, unitConflict: r.unit != null && r.unit !== unitNames[i],
+  })), unitNames, ctx.units) : null;
   const facets = {}, differing = [], unstated = [], unobserved = [];
   FACETS.forEach((facet) => {
     const seen = new Map(), silent = [];
     facts.forEach((f, i) => {
-      const v = facetValue(f, facet, derived[i]);
+      const v = facet === 'unit' ? unitNames[i] : facetValue(f, facet, derived[i]);
       if (v == null) { if (silent.indexOf(f.task) < 0) silent.push(f.task); return; }
-      const k = facet === 'period' ? v : fold(v);
-      if (!seen.has(k)) seen.set(k, { value: v, tasks: [], from: (f[facet] != null && f[facet] !== '') || (facet === 'period' && f.period) ? 'stated' : (derived[i][facet] || {}).from });
+      const k = facet === 'period' || facet === 'unit' ? v : fold(v);
+      const stated = (f[facet] != null && f[facet] !== '') || (facet === 'unit' && readings[i]?.unit === v);
+      if (!seen.has(k)) seen.set(k, { value: v, tasks: [], from: stated ? 'stated' : derived[i][facet]?.from });
       const e = seen.get(k); if (e.tasks.indexOf(f.task) < 0) e.tasks.push(f.task);
     });
     const values = Array.from(seen.values());
@@ -127,7 +186,7 @@ export function assessRow(facts, ctx) {
     if (pairs.length) res.semantics = pairs;
   } else if (facts.some((f) => f.column)) unobserved.push('semantic-layer');
   if (unobserved.length) res.unobserved = unobserved;
-  return res;
+  return { numeric, comparability: res };
 }
 
 /* boundaryChanges(ref, span, ties) → { checked, changedWithin[], validity? } for ONE object over [fromMs, toMs].

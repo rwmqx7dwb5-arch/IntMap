@@ -21,6 +21,11 @@
 const num = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
 const str = (v, n) => String(v == null ? '' : v).slice(0, n || 80);
 
+export function proxyUsage(meta) {
+  return meta ? { model: meta.modelServed || meta.model, costUsd: typeof meta.costUsd === 'number' ? meta.costUsd : undefined,
+    priceKnown: meta.priceKnown } : undefined;
+}
+
 /* peakConcurrency(spans) — the most intervals [start,end) alive at one instant. Sweep over the ends: a span that ends where another begins does not overlap it. */
 export function peakConcurrency(spans) {
   const ev = [];

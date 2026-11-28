@@ -545,8 +545,8 @@ refuse a request.
 | Figure | From |
 |---|---|
 | time to the whole answer (p50 / p90) · time to the first useful result | `turns.total_ms_*`, `turns.first_useful_ms_*` |
-| cost per success | `turns.cost_per_success_micros` = every attempt's whole family in `ai_delegation_journal` (parent, workers and parallel searches share the root key) summed over a task, ÷ the tasks that succeeded; `cost.traced_rate` is the share actually priced. `turns.cost_per_turn_micros` is per answer (only answers whose every call reported a cost) |
-| completion rate | `turns.completion_rate` (the turn's own declaration, not a judgement of the content) |
+| cost per success | `turns.cost_per_success_micros` = every attempt's whole family in `ai_delegation_journal` (parent, workers and parallel searches share the root key) summed over a task, ÷ the tasks recorded as complete. `cost.traced_rate` is the share actually priced. `turns.cost_per_turn_micros` is per answer (only answers whose every call reported a cost) |
+| completion rate | `turns.completion_rate` is the turn's recorded completion state. The separate evaluation report measures whether each requested deliverable was observed. |
 | the capability it needed was found | `turns.capability_found_rate` = 1 − unknown-tool asks / operations asked |
 | duplicate operation rate | `turns.duplicate_op_rate` = reused / asked |
 | cache rate | `calls.cache_rate`, `calls.root_cache_rate` |

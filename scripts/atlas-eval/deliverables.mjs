@@ -130,6 +130,7 @@ export function deliverablesOfTurn(q, obs, ctx = {}) {
     finished: missing ? false : unobserved ? null : true,
     claim, claimBasis,
     falseCompletion: claim === 'complete' && missing > 0,
+    falseIncomplete: (claim === 'partial' || claim === 'none') && present === rows.length,
     honestIncomplete: claim !== 'complete' && claim !== 'unknown' && missing > 0,
   };
 }
@@ -150,6 +151,7 @@ export function completionRateOf(turns) {
     deliverablesAbsent: sum('absent'), deliverablesPending: sum('pending'), deliverablesCancelled: sum('cancelled'), deliverablesUnobserved: sum('unobserved'),
     deliverableRate: seen ? present / seen : null,
     falseCompletion: t.filter((x) => x.falseCompletion).map((x) => x.id),
+    falseIncomplete: t.filter((x) => x.falseIncomplete).map((x) => x.id),
     honestIncomplete: t.filter((x) => x.honestIncomplete).map((x) => x.id),
   };
 }

@@ -27,7 +27,7 @@ import { makeGoalVerify, GOAL_VERIFY_RULES } from './atlas-goal-verify.js';   /*
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { extractVideoFrames } from './atlas-video-frames.js';   /* (atlas-multimodal) a clip becomes one contact-sheet image */
 import { attachLightbox, atlFmtBytes, ATL_FILE } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
-import { ATTACH_STORE, attachViewStrings, ATTACH_LOG } from './atlas-file-view.js';   /* (#R773) 添付を見せる側（記録の預かり所とビューアの文）と、会話 1 本ぶんの台帳 ATTACH_LOG（実体は js/atlas-attach-log.js。ここを 1 行に束ねているのは、この中心部に import 1 行の余白も無いから） */   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
+import { ATTACH_STORE, attachViewStrings, ATTACH_LOG } from './atlas-file-view.js';   /* (#R773) attachment viewer and conversation ledger */ import { turnAttachmentImages, turnTextFiles } from './atlas-cap-attach.js';
 import { makeAtlasReading } from './atlas-reading.js';   /* (#R776) arriving on the thing being read: the bubble both «Ask Atlas» buttons land on. ⚠ A LINE OF ITS OWN, unlike the gloss beside it — scripts/js-reachability.mjs only sees an import at the START of a line, so a module co-located behind another import is invisible to the reachability rule and check:static calls it dead. */
 import { makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */   import { makeAtlasGloss } from './atlas-gloss.js';   /* (#R491) select a phrase in a reply → a dictionary card for it. ⚠ ON THIS LINE because the kernel has no headroom (tests/atlas-capabilities-checks.test.mjs #R318 ⑨b) and a feature moves out, never the ceiling up */
 import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's stylesheet — moved out so this file stays under a ceiling that is never raised */
@@ -41,6 +41,7 @@ import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
+import { proxyUsage } from './atlas-run-ledger.js';
 import { makeEraHighlight } from './atlas-era-highlight.js';
 import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
@@ -56,7 +57,7 @@ import { webEvidence } from './atlas-web-evidence.js';   /* (atlas-search-eviden
 import { makeAtlasAnswerSources, attachSources } from './atlas-answer-sources.js'; import { shareApi } from './atlas-cap-panel.js';   /* (atlas-cited-answers) the answer's sources, joined by code from the results of the tools it ran */
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 import { makeAtlasAnswerAudit } from './atlas-answer-audit.js';
-import { makeAtlasEffort, EFFORT_RULES } from './atlas-effort.js';   /* how hard Atlas thinks — the reader's pick */
+import { effortExperiment, makeAtlasEffort, EFFORT_RULES } from './atlas-effort.js';
 import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
 import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.events — the ONE deterministic article→event grouper, with the measurements behind every constant */
 import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
@@ -75,7 +76,8 @@ import { floatRoute, moveAtlasPanel } from './atlas-float.js';   /* (ui-feedback
 import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the turn as it streams — the draft answer, the notes on the way, the reasoning headline, the map HUD and the measured wait */   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
 import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
-import { resolveShape, tallyShapes } from './atlas-shape-resolve.js';   /* (eval-shape-grading) already in this chunk through js/atlas-map-compose.js — the map explanation's shape rung and the `atlas.shapes` tally */
+import { userMapClick } from './map-feature-geometry.js';
+import { resolveShape, tallyShapes, geometryRange, mapAuthorship, osmFeatureId } from './atlas-shape-resolve.js';   /* (eval-shape-grading) already in this chunk through js/atlas-map-compose.js — the map explanation's shape rung and the `atlas.shapes` tally */
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-layer-system) which rows measure one series (`measures`) */
@@ -213,7 +215,7 @@ export function atlasConsole(HOST){
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
     let _curPlanCites=[];   /* (#R350) the citations of THIS turn's planner call. The `answer` action used to read window._aiLastCitations at render time — a second Atlas turn finishing in between handed it the other turn's sources. */
     let _delegationPolicy=null;   /* (delegation-limits) the worker policy ai-proxy last reported on an Atlas turn (meta.delegationPolicy) — read by research.delegate and stated to Atlas below */
-    let _imgCtx='', _turnSeq=0, _curTurn=0, _curTurnKey='', _atlSentNames=[], _atlRecallImgs=[], _atlRecallAtts=null; const _atlTurnImgs=(frames,recalled)=>{ const a=(frames||[]).concat(recalled||[]); return a.length?a:null; };   /* ⚠⚠⚠ (#R779) `VFRAMES.urls()` は空のとき null を返す契約（その理由は js/atlas-view-capture.js の urls() に書いてある）。#R773 がここに .concat を足したとき契約が一緒に運ばれず、inspect を通らない普通の初回送信が毎回 null.concat で死んだ。空なら null のまま返す——[] は「画像が無い」ではなく「空の一覧を送る」になる */
+    let _imgCtx='', _turnSeq=0, _curTurn=0, _curTurnKey='', _atlSentNames=[], _atlRecallImgs=[], _atlRecallAtts=null;
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
        great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
        driven on the real OSM road network (OSRM). Good for "10地点を最短順に並べ替える". */
@@ -390,20 +392,20 @@ export function atlasConsole(HOST){
       return true; }catch(_){ return false; } }
     function paintPolys(){ if(!_hlPolys.length){ try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
-      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,fc:_soft(p.color||_hlColor,0.55,0),lc:_soft(p.color||_hlColor,0.7,0.06),w:(p.w!=null?p.w:null),name:p.name||'',comp:p.comp?1:0,op:p.op??null,alpha:p.alpha??null,sb:p.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+      try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,fc:_soft(p.color||_hlColor,0.55,0),lc:_soft(p.color||_hlColor,0.7,0.06),w:(p.w!=null?p.w:null),name:p.name||'',comp:p.comp?1:0,op:p.op??null,alpha:p.alpha??null,sb:p.shapeBasis||'',...(p.provenance||{}),id:_tagHighlightPoly(p)}}))}); return true; }catch(_){ return false; } }
     /* the same desaturation the composed figures use (js/atlas-map-compose.js) — read at paint time, so the order the modules load in does not matter */
     function _soft(c,k,l){ try{ const S=window.IntMapAtlasCompose&&window.IntMapAtlasCompose.soften; return S?S(c,k,l):c; }catch(_){ return c; } }
     function clearPolyHl(){ _hlPolys=[]; try{ GE().layers.setSourceData('nlq-poly-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
        enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
     const _POLY_FILL_BASE=0.32;   /* the area fill opacity before the quieter figures (#1468); an object's own opacity scales this */
-    let _hlPolySeq=0;
-    window._imHlPolys={ fillBase:_POLY_FILL_BASE, list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
+    let _hlPolySeq=0; const _tagHighlightPoly=p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; };
+    window._imHlPolys={ fillBase:_POLY_FILL_BASE, list:()=>_hlPolys, tagId:_tagHighlightPoly,
       remove:id=>{ const i=_hlPolys.findIndex(p=>String(p.id)===String(id)); if(i<0) return false; _hlPolys.splice(i,1); paintPolys(); return true; },
       repaint:()=>paintPolys(), clear:()=>clearPolyHl() };
     /* the lines Atlas drew, handed over the same way (an id, a list, a remover): a line has been a map-object only since it could be recoloured from the Objects panel and by Atlas */
-    let _hlLineSeq=0;
-    window._imHlLines={ list:()=>_hlLines, tagId:l=>{ if(l&&!l.id) l.id='line_'+(++_hlLineSeq); return l&&l.id; },
+    let _hlLineSeq=0; const _tagHighlightLine=l=>{ if(l&&!l.id) l.id='line_'+(++_hlLineSeq); return l&&l.id; };
+    window._imHlLines={ list:()=>_hlLines, tagId:_tagHighlightLine,
       remove:id=>{ const i=_hlLines.findIndex(l=>String(l.id)===String(id)); if(i<0) return false; _hlLines.splice(i,1); paintLines(); return true; },
       repaint:()=>paintLines(), clear:()=>clearLineHl() };
     GE().events.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
@@ -418,10 +420,11 @@ export function atlasConsole(HOST){
       return true; }catch(_){ return false; } }
     function paintLines(){ if(!_hlLines.length){ try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensureLineLayer()) return false;
-      try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op??null,name:l.name||'',sb:l.shapeBasis||''}}))}); return true; }catch(_){ return false; } }
+      try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op??null,name:l.name||'',sb:l.shapeBasis||'',...(l.provenance||{}),id:_tagHighlightLine(l)}}))}); return true; }catch(_){ return false; } }
     function clearLineHl(){ _hlLines=[]; try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     GE().events.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
-    window._imAtlasPaint=_ERA.paintState({countries:()=>_hl, era:()=>_eraHl, polys:()=>_hlPolys, lines:()=>_hlLines, choro:()=>_choroState, metric:()=>_choroMetric, poi:()=>_pois, /* (#R802) the markers are a painted surface too — read at OBSERVATION time like every other getter here, so a declaration is held against what the map holds THEN */ outline:()=>{ try{ const c=window.IntMapOutline&&window.IntMapOutline.current&&window.IntMapOutline.current(); return (c&&c.name)||null; }catch(_){ return null; } }});   /* (#R760) the place outline paints its own source, so no count here moves when the same place is outlined twice */   /* (#R736) what Atlas has painted, declared beside the state that paints it — reasoning in js/atlas-era-highlight.js, reader is js/atlas-capabilities.js `paintNow()` */
+    const _currentOutline=()=>window.IntMapOutline?.current?.();
+    window._imAtlasPaint=_ERA.paintState({countries:()=>_hl, era:()=>_eraHl, polys:()=>_hlPolys, lines:()=>_hlLines, choro:()=>_choroState, metric:()=>_choroMetric, poi:()=>_pois, /* (#R802) the markers are a painted surface too — read at OBSERVATION time like every other getter here, so a declaration is held against what the map holds THEN */ outline:()=>{ try{ const c=_currentOutline(); return (c&&c.name)||null; }catch(_){ return null; } }});   /* (#R760) the place outline paints its own source, so no count here moves when the same place is outlined twice */   /* (#R736) what Atlas has painted, declared beside the state that paints it — reasoning in js/atlas-era-highlight.js, reader is js/atlas-capabilities.js `paintNow()` */
     /* ⚠⚠⚠ (#R747) THE OTHER HALF OF #R742's DECLARATION — WHAT A CLEAR TOOK OFF. A painter that took things
        off had nothing to point at, so it fell to `paint.verify`'s last line — `not_rendered`, i.e. failed — and
        Atlas cleared again (measured: 「Clear everything from the map」 ended `repeated_calls` in 36 s while the
@@ -444,22 +447,28 @@ export function atlasConsole(HOST){
       if(/^(?:el\s+)?(?:río|rio)\s+/i.test(s2)) return true;
       return false; }
     /* real river geometry: Nominatim waterway result (full-detail LineString) → Overpass named ways fallback */
-    const _riverGeoCache={};
+    const _riverGeoCache={}, _shapeSources=new WeakMap(), _outlineSources=new Map(), _countryPaint=new Map();
+    function sourceShape(r, target, source, method, extra){ if(r?.geo) _shapeSources.set(r.geo,{target,source,method,...extra}); return r; }
+    function stampShapes(items, ctx){ for(const it of items) if(!it.provenance) it.provenance={target:it.name,..._shapeSources.get(it.geo),...mapAuthorship(ctx),...geometryRange(it.geo)}; }
+    function mapCapDeps(ctx, painted){ const publish=(kind, read, paint)=>()=>{ const items=read(); stampShapes(items,ctx); const ok=paint();
+      const names=ok&&items.map(it=>it.name||it.key).filter(Boolean); if(names?.length) painted[kind]=names; return ok; };
+      return Object.create(capDeps(),{paintPolys:{get:()=>publish('polys',()=>_hlPolys,paintPolys)},paintLines:{get:()=>publish('lines',()=>_hlLines,paintLines)},highlight:{value:(codes)=>{ const had=new Set(_hl); const ok=highlight(codes); if(ok) for(const code of _hl) if(!had.has(code)||!_countryPaint.has(code)) _countryPaint.set(code,mapAuthorship(ctx)); return ok; }}});
+    }
     async function fetchRiverLine(nm){ const key=_lnorm(nm); if(_riverGeoCache[key]!==undefined) return _riverGeoCache[key];
       let out=null;
       try{ await NominatimGate.nominatimSlot(); const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&namedetails=1&q='+encodeURIComponent(nm),{headers:{Accept:'application/json'}});   /* (#R489) …behind the app's one floor — js/nominatim-gate.js */
         if(r.ok){ const j=await r.json();
-          if(Array.isArray(j)){ const wat=j.filter(o=>window.IntMapRiverCourse.isWaterwayLine(o))   /* the one statement of «a waterway line» — js/river-course.js (eager, src/main.js) */
+          if(Array.isArray(j)){ const rules=makeAtlasGeoResolve.placeRules, core=rules.queryCore(nm); const wat=j.filter(o=>window.IntMapRiverCourse.isWaterwayLine(o)&&rules.rankable(core,o)>0&&rules.namesakeOk(core,o))   /* the one statement of «a waterway line» — js/river-course.js (eager, src/main.js) */
             .sort((x,y)=>((+y.importance||0)-(+x.importance||0)))[0];
-            if(wat) out={geo:wat.geojson,name:(wat.display_name||nm).split(',')[0],nameEn:(wat.namedetails&&(wat.namedetails['name:en']||wat.namedetails.int_name))||''}; } } }catch(_){}
+            if(wat) out={geo:wat.geojson,name:(wat.display_name||nm).split(',')[0],nameEn:(wat.namedetails&&(wat.namedetails['name:en']||wat.namedetails.int_name))||'',sourceId:osmFeatureId(wat),transformation:'Nominatim polygon_threshold 0.0008°'}; } } }catch(_){}
       if(!out){ try{ const ll=await geocode(nm); if(ll&&isFinite(ll.lng)){ const d2=3.2; const bb='('+(ll.lat-d2).toFixed(2)+','+(ll.lng-d2).toFixed(2)+','+(ll.lat+d2).toFixed(2)+','+(ll.lng+d2).toFixed(2)+')';
-        const safe=String(nm).replace(/["\\]/g,'').trim();
-        const q2='[out:json][timeout:30];way["waterway"~"^(river|canal|stream)$"]["name"~"'+safe+'",i]'+bb+';out geom 300;';
+        const safe=String(nm).trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+        const q2='[out:json][timeout:30];way["waterway"~"^(river|canal|stream)$"]["name"~"^'+safe+'$",i]'+bb+';out meta geom 300;';
         const j2=await overpassRaw(q2).catch(()=>null);
-        if(j2&&Array.isArray(j2.elements)&&j2.elements.length){ const coords=[]; j2.elements.forEach(el=>{ if(el.geometry&&el.geometry.length>1) coords.push(el.geometry.map(g=>[g.lon,g.lat])); });
-          if(coords.length) out={geo:{type:'MultiLineString',coordinates:coords},name:nm}; } } }catch(_){}
+        if(j2&&Array.isArray(j2.elements)&&j2.elements.length){ const coords=[], ids=[]; j2.elements.forEach(el=>{ if(el.geometry&&el.geometry.length>1){ coords.push(el.geometry.map(g=>[g.lon,g.lat])); if(el.id!=null) ids.push(el.type+'/'+el.id); } });
+          if(coords.length) out={geo:{type:'MultiLineString',coordinates:coords},name:nm,sourceId:ids.length===1?ids[0]:undefined,sourceVersion:j2.osm3s?.timestamp_osm_base,transformation:'Grouped the returned named OSM waterway segments'}; } } }catch(_){}
       }
-      _riverGeoCache[key]=out; return out; }
+      _riverGeoCache[key]=sourceShape(out,nm,'OpenStreetMap','waterway',out&&{sourceId:out.sourceId,sourceVersion:out.sourceVersion,transformation:out.transformation}); return out; }
     /* tributaries inside the basin outline: every OSM waterway=river/canal within the polygon.
        (#R66) NO "narrow your search yourself" cop-out: if one query saturates the server cap, the basin is
        AUTOMATICALLY subdivided into quadrants (real ring clips, not bboxes) and re-fetched, results merged and
@@ -906,23 +915,24 @@ export function atlasConsole(HOST){
        (thin lines) + the basin itself as a FAINT fill. (#R72) the outline now comes from REAL hydrological
        data — see the ladder in buildBasin. Admin-unit composition is deliberately NOT used here (「全部が全部
        行政区分使えばいいわけじゃない」). */
-    async function buildBasin(baseName){
+    async function buildBasin(baseName, { outlineOnly=false, target=baseName+' basin' }={}){
       let river=await fetchRiverLine(baseName); if(!river&&!/river|川|fluss|река|río/i.test(baseName)) river=await fetchRiverLine(baseName+' River');
       /* (#R72) REAL basin geometry first ("流域ポリゴンが、地点数少なすぎてまったくの粗悪。現実に忠実で精細な
          ポリゴンを描画しろ"). Ladder: (1) the self-hosted GRDC/World-Bank Major-River-Basins dataset (236 named
          basins, real hydrological boundaries); (2) live HydroSHEDS delineation via the Global Watersheds API
          (mghydro.com) from the river's downstream end — precise for ANY river; (3) an OSM basin relation;
          (4) the AI-traced outline, kept only as the last resort and labelled approximate. */
-      let basin=null, approx=false, src='';
-      try{ const mb=await _mrbBasin(baseName,river); if(mb){ basin=mb; src='GRDC/World Bank Major River Basins'; } }catch(_){}
-      if(!basin&&river){ try{ const gw=await _mghBasin(river); if(gw){ basin=gw; src='HydroSHEDS via Global Watersheds (mghydro.com)'; } }catch(_){} }
+      let basin=null, approx=false, src='', method='', sourceVersion, sourceId, transformation;
+      try{ const mb=await _mrbBasin(baseName,river); if(mb){ basin=mb; src='GRDC/World Bank Major River Basins'; method='dataset_outline'; sourceVersion='2nd revised edition (2020)'; sourceId=mb.name; transformation='Douglas–Peucker simplification (0.008°)'; } }catch(_){}
+      if(!basin&&river){ try{ const gw=await _mghBasin(river); if(gw){ basin=gw; src='HydroSHEDS via Global Watersheds (mghydro.com)'; method='upstream_delineation'; } }catch(_){} }
       /* (#R73) no fetchable river course (small/unnamed-in-OSM rivers) → still get a REAL watershed by
          delineating from the river's geocoded point itself */
       if(!basin&&!river){ try{ const g=await geocode(baseName); if(g&&isFinite(g.lng)){ const gg=await _mghOne([g.lng,g.lat]);
-        if(gg&&_geoArea(gg)>0.0005){ basin={geo:gg,name:baseName+' basin'}; src='HydroSHEDS via Global Watersheds (mghydro.com)'; } } }catch(_){} }
-      if(!basin){ try{ const e=await _nomExtent(baseName+' basin'); if(e&&e.geojson&&/Polygon/.test((e.geojson.type||''))&&/basin|流域|einzugsgebiet|бассейн|cuenca/i.test(String(e.name||''))){ basin={geo:e.geojson,name:e.name}; src='OpenStreetMap'; } }catch(_){} }
-      if(!basin){ try{ const ai=await aiRegionPoly(baseName+' drainage basin'); if(ai){ basin={geo:ai,name:baseName}; approx=true; src='AI outline'; } }catch(_){} }
-      let trib=null; if(basin){ try{ trib=await fetchTributaries(basin.geo,900); }catch(_){} }
+        if(gg&&_geoArea(gg)>0.0005){ basin={geo:gg,name:baseName+' basin'}; src='HydroSHEDS via Global Watersheds (mghydro.com)'; method='upstream_delineation'; } } }catch(_){} }
+      if(!basin){ try{ const e=await _nomExtent(baseName+' basin'); if(e&&e.geojson&&/Polygon/.test((e.geojson.type||''))&&/basin|流域|einzugsgebiet|бассейн|cuenca/i.test(String(e.name||''))){ basin={geo:e.geojson,name:e.name}; src='OpenStreetMap'; method='osm_polygon'; sourceId=osmFeatureId(e); } }catch(_){} }
+      if(!basin){ try{ const ai=await aiRegionPoly(baseName+' drainage basin'); if(ai){ basin={geo:ai,name:baseName}; approx=true; src='AI outline'; method='model_outline'; } }catch(_){} }
+      sourceShape(basin,target,src,method,{sourceVersion,sourceId,transformation:transformation||method});
+      let trib=null; if(basin&&!outlineOnly){ try{ trib=sourceShape(await fetchTributaries(basin.geo,900),target,'OpenStreetMap','spatial_selection',{transformation:'Selected waterways in the basin extent'}); }catch(_){} }
       return {river,basin,trib,approx,src}; }
     try{ window._imBasinDiag=(nm)=>buildBasin(String(nm||'')); window._imBasinDiag2={mgh:_mghBasin,one:_mghOne,mrb:_mrbBasin,river:fetchRiverLine}; }catch(_){}   /* (#R73) read-only diagnostics (vision §17) */
     /* self-hosted GRDC/WB major-basin polygons (data/basins_mrb.json, CC-BY-4.0) — name match verified by
@@ -997,7 +1007,8 @@ export function atlasConsole(HOST){
        COMPOSITION (real member admin boundaries) → direct OSM boundary polygon (fine threshold) → directional
        slice CLIPPED FROM THE REAL polygon → AI-named member units composed from real boundaries → AI-traced
        outline (last resort, labelled approximate) → gazetteer box (logged-out fallback) → country. */
-    async function resolveHlTarget(nm){
+    async function resolveHlTarget(nm){ const r=await resolveHlTargetRaw(nm); if(r?.poly?.geo) sourceShape(r.poly,nm,r.rrSource||r.entity?.source||(r.approx?'Atlas':undefined),r.rrMethod||(r.approx?'model_outline':r.composed?'admin_union':r.sliced?'directional_slice':'osm_polygon'),{sourceId:r.sourceId||r.entity?.sourceId,sourceVersion:r.sourceVersion||r.entity?.sourceVersion,transformation:r.transformation||r.rrMethod}); return r; }
+    async function resolveHlTargetRaw(nm){
       const c=resolveCountrySync(nm); if(c&&c.code) return {code:c.code,name:c.name};
       const grp=regionGroup(nm); if(grp&&grp.codes.length) return {codes:grp.codes,name:grp.name,basis:grp.basis||null};   /* (#R118) carry the historical-membership basis into the reply */
       { const _a1=await ADM1.hlTarget(nm,{ledger:GLEDGER}); if(_a1){ try{ GLEDGER.record(_a1.entity); }catch(_){} return _a1; } }   /* ⚠ (#R489) THE FIRST-LEVEL ADMIN RUNG, AND IT IS LOCAL. Everything below this line leaves the machine: `_nomExtent` asks Nominatim for `polygon_geojson` and `geoVerify` asks the web. Fourteen oblasts went down that ladder once per name, plus retries, against a host whose published policy is one request per second — and 「ベルゴロド州」 still failed, because Nominatim's top hit for it is the CITY of Belgorod and the fail-closed check correctly refused a city as an oblast outline. `data/admin1-world.json.gz` has held the real outline, and its Russian and ISO names, since #R290; only js/world-packs.js could see it. Now the ladder consults it BEFORE the network, so the fourteen cost ONE request between them — and the entity is filed in the ledger so the NEXT turn does not start from a string again (js/atlas-admin1.js explains why it declines rather than guesses). ⚠ IT SITS ABOVE regionCompose, NOT BELOW IT — measured on the running app: the curated-composition rung ANSWERS 「Belgorod Oblast」 by composing it out of Nominatim member units, one gated request per name, so four oblasts took 4,285 ms and four requests with this rung underneath it and 19 ms and ZERO with it on top. A name this index does not hold still falls through to composition exactly as before. */
@@ -1026,21 +1037,21 @@ export function atlasConsole(HOST){
         return true; }catch(_){ return true; } };
       for(let _wi=0;_wi<(isWaterQ?2:1);_wi++){
         try{ const gv=await _getGV(); const e=await _nomExtent(nm, gv); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'') && _geoAgrees(e.geojson, gv) && _curatedOk(e)){
-          if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv)};
+          if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv),rrSource:'OpenStreetMap',sourceId:osmFeatureId(e)};
           /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
              admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
              CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight.
              (#R130) …but only when the polygon AGREES with the web-verified location (the anchor already makes
              the right candidate win; this rejects a residual homonym rather than painting it). */
           if(/^(natural|water|waterway|place)$/i.test(e.cls||'') && /^(bay|strait|gulf|sea|water|lagoon|channel|sound|fjord|inlet|peninsula|isthmus|cape|archipelago|reef|shoal|wetland)$/i.test(e.typ||''))
-            return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv)};
+            return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv),rrSource:'OpenStreetMap',sourceId:osmFeatureId(e)};
           break;   /* got a polygon but of another kind → no point retrying */
         } }catch(_){}
         if(isWaterQ&&_wi===0) await new Promise(r=>setTimeout(r,900));
       }
       if(isWaterQ) return null;   /* (#R117) water body not found → honest miss, never an AI-guessed outline / point→country fallback */
       const dir=parseDirectional(nm); if(dir){ try{ const b=await _nomExtent(dir.base);
-        if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true}; }
+        if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true,rrSource:'OpenStreetMap',sourceId:osmFeatureId(b),transformation:'Clipped the source polygon to a directional extent'}; }
         if(b&&b.box) return {poly:{name:nm,geo:_bboxSoftPoly(sliceBox(b.box,dir.dir))},soft:true}; }catch(_){} }
       /* (#R132) GENERAL region resolver (window.IntMapRegionResolver): ONE web-grounded metadata call → REAL geometry
          (admin union / OSM boundary / web-anchor-derived), a fail-CLOSED validation gate, and an honest ambiguous /
@@ -1391,7 +1402,7 @@ export function atlasConsole(HOST){
        was made — 31 lines out, 31 lines in, in the same order, over the same fixtures. `toPrompt()`
        is the OTHER projection of the same snapshot: JSON, for the executor's verification, the debug
        record and the audit. Two readers, one source. */
-    function stateContext(){ try{ return ASTATE.renderPrompt(ASTATE.snapshot()); }catch(_){ return ''; } }
+    function stateContext(){ try{ const snap=ASTATE.snapshot(), at=snap.atlas, p=ASTATE.renderPrompt(snap); const measure=at?.measure, click=at?.lastClick; return p+(measure?.endpoints?'\nMeasurement endpoint pair (longitude, latitude): '+JSON.stringify(measure.endpoints)+(measure.endpointNames?' '+JSON.stringify(measure.endpointNames):''):'')+(click?'\nLast user map click (longitude, latitude): '+JSON.stringify([click.lng,click.lat]):''); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
     /* (#R406) The user-side message for ONE step of the turn loop: what IntMap looks like now, what
@@ -1407,7 +1418,7 @@ export function atlasConsole(HOST){
       const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n'; try{ const _gl=GLEDGER.contextLines(); if(_gl.length) p+=_gl.join('\n')+'\n\n'; }catch(_){}   /* ⚠ (#R489) THE PLACES THIS CONVERSATION HAS ALREADY RESOLVED, AS IDENTIFIERS. Without this block the only thing a turn inherited about the fourteen oblasts it had just named was js/atlas-turn-continuity.js's 26-character action label, so the next turn re-extracted them from its own prose as bare strings with no country and no kind — and then geocoded, translated, retried and web-verified every one of them again. js/atlas-geo-ledger.js */
       return {text:p, state:ctx, mem:(function(){ try{ return WM.block(); }catch(_){ return ''; } })()}; }   /* (atlas-working-memory) taken ONCE per turn, before this turn's own goal is filed, so the request item and this block are the same bytes on every step */
     function _agentInput(req, q, c0){ let tail=''; try{ const now=stateContext(); if(now&&now!==c0.state) tail+='[CURRENT MAP STATE — now, after the calls above]\n'+now+'\n\n'; }catch(_){}
-      try{ tail+=ATTACH_LOG.declare(_curTurn,(_atlSentNames||[])); }catch(_){}   /* ⚠⚠⚠ (#R773) 前のターンで添付され、このリクエストには載っていないもの（画像・PDF）を**名前で述べる**。渡さないことと、在ることを黙っていることは別である。中身は recall_attachment が取り寄せる */ try{ tail+=VFRAMES.promptBlock(); }catch(_){}   /* ⚠ (#R493) THE IMAGES ATTACHED TO THIS CALL, NAMED — they arrive through the vision channel carrying no labels of their own, so without these sentences a second frame is indistinguishable from the first and neither is tied to the place it shows. Written in js/atlas-view-capture.js, beside the ledger that holds them. */
+      try{ tail+=ATTACH_LOG.declare(_curTurn,(_atlSentNames||[])); }catch(_){} try{ tail+=VFRAMES.promptBlock().replace(/^\[VIEW FRAMES[^\n]*\]/,'[VIEW FRAME RECORDS — match their names to the server’s image receipt for this call]').replace(/^image (\d+) =/gm,'view frame $1 ='); }catch(_){}
       try{ tail+=PLAN.promptBlock(); }catch(_){}   /* (atlas-plan-on-map) Atlas's own plan with each step's OBSERVED state, on every step and every later turn — js/atlas-plan.js */
       if(req&&req.final) tail+='[Answer the reader now. Do not call any more tools.]\n';
       return AGENT.composeInput({ history:AGENT.historyItems(_hist),   /* ⚠ (#R413) `_hist` is bounded in ONE place (`recordTurn`, 48) and read whole here; what the budget gives up is said by composeInput, never cut silently. (#R298) an entry is {t,s} */
@@ -1658,7 +1669,7 @@ export function atlasConsole(HOST){
     /* (#R135 §17) Developer diagnostics for the LAST Atlas turn — request profile, the model's original plan, the
        validated plan, rejected/rewritten actions, per-action structured outcomes, semantic-retry blocks, scope
        changes and the final goal validation. Not shown to normal users. window.IntMapAtlasDebug.lastPlan(). */
-    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; },
+    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; }, supportsEffortPolicy:mode=>!!effortExperiment(mode),
       latency:function(){ try{ return LIVE.latency(); }catch(_){ return []; } }, plan:function(){ try{ return PLAN.snapshot(); }catch(_){ return null; } },   /* (atlas-plan-on-map) the plan as the HUD shows it — js/atlas-plan.js */   /* (atlas-live-stream) per turn, ms from the request: firstVisible / firstThought / firstAnswer / firstCall / firstOp / firstDraw / answer / end — js/atlas-live.js */   /* (#R406) this turn's steps, tool calls and rejections — js/atlas-agent.js */
       /* (#R136) resolution-only probe for the highlight ladder — returns what resolveHlTarget produces WITHOUT painting
          (so headless tests, where the map never renders, can measure resolution quality without the paint-retry loop). */
@@ -1856,7 +1867,7 @@ export function atlasConsole(HOST){
        a captured value: this closure REPLACES the array, so a copy would go stale. */
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
-    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } }, resolveShape: (nm, want, where) => resolveShape(nm, want, { area: (n) => resolveHlTarget(n), countries: (codes) => _codesGeo(codes).geo, extent: (n) => _nomExtent(n), river: (n) => fetchRiverLine(n), isRiver: riverIntent, countryCode: (c) => { const x = resolveCountrySync(c); return x && x.code; }, countryAt: (lng, lat) => codeAtPoint(lng, lat) }, where) });   /* (atlas-real-shapes) `resolveShape`: an item asked as an AREA or a LINE gets its real geometry through the same ladders the highlight uses — js/atlas-shape-resolve.js */   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
+    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } }, resolveShape: (nm, want, where) => resolveShape(nm, want, { area: (n) => resolveHlTarget(n), basin: async (n) => { const b=basinIntent(n); if(!b) return null; const r=await buildBasin(b.base,{outlineOnly:true,target:n}); return r.basin?{ok:true,geometry:r.basin.geo,basis:r.approx?'derived':'real',..._shapeSources.get(r.basin.geo)}:{ok:false,reason:'not_found'}; }, countries: (codes) => _codesGeo(codes).geo, extent: (n) => _nomExtent(n), river: (n) => fetchRiverLine(n), isRiver: riverIntent, countryCode: (c) => { const x = resolveCountrySync(c); return x && x.code; }, countryAt: (lng, lat) => codeAtPoint(lng, lat) }, where) });   /* (atlas-real-shapes) `resolveShape`: an item asked as an AREA or a LINE gets its real geometry through the same ladders the highlight uses — js/atlas-shape-resolve.js */   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
     const SWITCH = makeAtlasSwitch({ dispatch: (x) => dispatch(x), execute: EXEC ? (x) => { const c = CAPS.resolve(x.type), a = {}; Object.keys(x).forEach((k) => { if (k !== 'type' && k.slice(0, 2) !== '__') a[k] = x[k]; }); return EXEC.execute(c ? c.id : x.type, a, { source: 'ui' }); } : null, CAPS, L });   /* (atlas-controls-receipts) a press is the reader's own act (source 'ui'), observed like any call */   /* (atlas-ui-parts) pressing a tabs/steps option runs its calls through this same dispatch */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
@@ -2107,7 +2118,10 @@ export function atlasConsole(HOST){
       get _atlShouldMap(){ return _atlShouldMap; },
     }); }
     function dispatch(a,dctx){ try{ if(!a||!a.type) return Promise.resolve(R(true,'')); const t=CAPS.dispatchName(a.type);
-      return ((typeof t==='string'&&CAP_RUN[t])||unknownAction)(a,dctx,capDeps()); }catch(e){ return Promise.reject(e); } }
+      const painted={}, k=mapCapDeps(dctx,painted), before=HOST.measurePoints, outline=t==='outline'?_currentOutline():null; const result=((typeof t==='string'&&CAP_RUN[t])||unknownAction)(a,dctx,k);
+      return Promise.resolve(result).then((r)=>{ if(t==='measure'){ const points=HOST.measurePoints; if(points!==before&&points?.length>=2) _measureOrigin={points,key:JSON.stringify(points),names:[a.from,a.to],...mapAuthorship(dctx)}; }
+        if(r?.ok&&t==='outline'){ const cur=_currentOutline(); if(cur?.id&&cur.id!==outline?.id){ _outlineSources.clear(); _outlineSources.set(cur.id,{...mapAuthorship(dctx),target:a.place||a.country||a.name}); } }
+        if(r?.ok&&!r.meta?.painted&&Object.keys(painted).length) return {...r,meta:{...r.meta,painted}}; return r; }); }catch(e){ return Promise.reject(e); } }
     /* (#R64) "別の言語で話しかけても、言語設定の言語でしか返答しないのはやめろ" — Atlas answers in the language
        the USER'S MESSAGE is written in. Script/stop-word detection gives the model a strong hint; unclear input
        falls back to the UI language. */
@@ -2166,6 +2180,7 @@ export function atlasConsole(HOST){
       try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ kind:(rd.kind==='event'?'event':'article'), title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
       try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) o.searchBox=String(si.value).trim().slice(0,60); }catch(_){}
       return o; }
+    let _measureOrigin=null;
     function _atlasOverlayState(){ const o={highlightCountries:0,highlight:null,choropleth:null,customScore:null,pins:null,polygons:null,lines:null,measure:null,radius:null,userPins:null,tool:''};
       try{ if(_hl&&_hl.size&&_ovlVisible('highlight')) o.highlightCountries=_hl.size; }catch(_){}
       try{ if(_wctx.highlight&&_wctx.highlight.name&&_ovlVisible('highlight')) o.highlight={name:_wctx.highlight.name,basis:_wctx.highlight.basis||''}; }catch(_){}
@@ -2174,10 +2189,17 @@ export function atlasConsole(HOST){
       try{ if(_pois&&_pois.length) o.pins={n:_pois.length,kind:(_pois[0]&&_pois[0].sum)?'research':'poi'}; }catch(_){}
       try{ if(_hlPolys&&_hlPolys.length&&_ovlVisible('highlight')) o.polygons={n:_hlPolys.length,names:_hlPolys.map(p=>p.name).filter(Boolean).slice(0,4)}; }catch(_){}
       try{ if(_hlLines&&_hlLines.length) o.lines={n:_hlLines.length}; }catch(_){}
-      try{ const fd=GE().layers.sourceData('nlq-fac-src'); if(fd&&fd.features&&fd.features.length) o.factions={n:fd.features.length}; }catch(_){} try{ if(_eraHl&&_eraHl.length) o.eraPolities={n:_eraHl.length,names:_eraHl.slice(0,4)}; }catch(_){} try{ const it=[]; try{ const cd=GE().layers.sourceData('atl-compose-src'); if(_ovlVisible('map.compose')) ((cd&&cd.features)||[]).forEach(f=>{ const p=f.properties||{}; if(p.t==='shape') it.push({geo:f.geometry,basis:p.basis,name:p.name}); else if(p.t==='rel') it.push({geo:f.geometry,basis:p.basis==='computed'?'derived':'unstated'}); }); }catch(_){}
-        if(_ovlVisible('highlight')) (_hlPolys||[]).forEach(p=>it.push({geo:p.geo,basis:p.shapeBasis,name:p.name})); (_hlLines||[]).forEach(l=>it.push({geo:l.geo,basis:l.shapeBasis,name:l.name}));
-        const t=tallyShapes(it); if(_hl&&_hl.size&&_ovlVisible('highlight')){ const k='area:real'; const r=t||{n:0}; r.n+=_hl.size; r[k]=(r[k]||0)+_hl.size; o.shapes=r; } else if(t) o.shapes=t; }catch(_){}   /* (atlas-real-shapes → eval-shape-grading) EVERY shape Atlas left on the map, by what it is and where it came from — `area:real`, `line:derived`, `line:unstated`… (js/atlas-shape-resolve.js SHAPE_KINDS × SHAPE_BASES): the map explanation's shapes and its relation lines (a `schematic` arc between two places is a line whose course no upstream states — exactly what stood in for a fault in 「フォッサマグナをマッピングして」; a `computed` sea path is one IntMap built), the highlight's outlines and lines (each carries the basis its rung gave it; a line a model drew between coordinates states none), and the countries lit from the border layer. A grader asks for «the real course of the river», not for «a line» — `atlas.lines` counts both. */
-      try{ if(typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length) o.measure={n:HOST.measurePoints.length}; }catch(_){}
+      try{ const fd=GE().layers.sourceData('nlq-fac-src'); if(fd&&fd.features&&fd.features.length) o.factions={n:fd.features.length}; }catch(_){} try{ if(_eraHl&&_eraHl.length) o.eraPolities={n:_eraHl.length,names:_eraHl.slice(0,4)}; }catch(_){} try{ const it=[]; const cd=GE().layers.sourceData('atl-compose-src');
+        if(_ovlVisible('map.compose')) for(const f of cd?.features||[]){ const p=f.properties||{}; if(p.t==='shape'||p.t==='rel') it.push({...p,geo:f.geometry,basis:p.t==='shape'?p.basis:(p.basis==='computed'?'derived':'unstated')}); }
+        for(const [layer,sid] of [['nlq-poly-fill','nlq-poly-src'],['nlq-lines','nlq-line-src']]) if(GE().layers.has(layer)&&GE().layers.getLayout(layer,'visibility')!=='none'){
+          for(const f of GE().layers.sourceData(sid)?.features||[]) it.push({...f.properties,geo:f.geometry,basis:f.properties?.sb}); }
+        if(_ovlVisible('outline')){ const cur=_currentOutline(); const f=GE().layers.sourceData('pl-outline-src')?.features?.[0]; if(cur&&f?.geometry) it.push({id:cur.id,name:cur.name,geo:f.geometry,basis:cur.provenance?.source?'real':'unstated',...cur.provenance,..._outlineSources.get(cur.id),...geometryRange(f.geometry)}); }
+        if(_hl?.size&&_ovlVisible('highlight')) for(const code of _hl){ it.push({id:'country:'+code,kind:'area',basis:'real',name:countryStats?.[code]?cName(countryStats[code]):code,source:'IntMap country outlines',..._countryPaint.get(code)}); }
+        o.shapes=tallyShapes(it)||{n:0,items:[]}; }catch(_){}
+      try{ const pts=HOST.measurePoints; if(pts?.length){ const match=_measureOrigin?.points===pts&&_measureOrigin.key===JSON.stringify(pts), line=HOST.toolMode==='measure';
+        o.measure={n:pts.length,id:'measure',author:match?_measureOrigin.author:'user',turnId:match?_measureOrigin.turnId:null,endpointNames:match?_measureOrigin.names:undefined,
+          ...geometryRange(line?{type:'LineString',coordinates:pts}:{type:'Polygon',coordinates:[pts]}),...(line?HOST.measureReading?.(pts):null)}; } }catch(_){}
+      const click=userMapClick.get(); if(click) o.lastClick=click;
       try{ if(typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length) o.radius={n:HOST.radiusItems.length}; }catch(_){}
       try{ if(typeof HOST.userPins!=='undefined'&&HOST.userPins&&HOST.userPins.length) o.userPins={n:HOST.userPins.length}; }catch(_){}
       try{ if(typeof HOST.toolMode!=='undefined'&&HOST.toolMode) o.tool=String(HOST.toolMode); }catch(_){}
@@ -3037,17 +3059,16 @@ export function atlasConsole(HOST){
       /* ONE image RE-EXAMINATION round when a deterministic recompute failed (the work order's "検算失敗時は回答をそのまま
          返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
       if(vr.ran && vr.failed.length){ try{ if(gen===_runGen){ ai.innerHTML=stageDots('verify'); PROG.phase(ai,'verify'); }
-        const guide='\n\n[SELF-CHECK FAILED] Your emitted check(s) did NOT hold when recomputed EXACTLY on the client: '+vr.failed.map(f=>f.label+' ('+f.detail+')').join('; ')+'. RE-EXAMINE the corresponding region of the image, re-transcribe those exact entries (watch 1/7, 0/O, signs and fraction bars), redo the computation, and return corrected JSON whose checks actually pass. If the image genuinely does not support a passing check, say so honestly in "answer" and omit the failing check.';
+        const guide='\n\n[SELF-CHECK FAILED] Your emitted check(s) did NOT hold when recomputed EXACTLY on the client: '+vr.failed.map(f=>f.label+' ('+f.detail+')').join('; ')+'. RE-EXAMINE the corresponding region of the image, re-transcribe those exact entries (watch 1/7, 0/O, signs and fraction bars), redo the computation, and return corrected JSON whose checks actually pass. If the image does not support the calculation, withdraw it in "answer", name unreadable entries in "uncertain", and omit the unsupported result and its check.';
         const env2=await askAIJSONEnvelope(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
         if(gen!==_runGen){ _markCancelled(ai); return; }
         if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
-          if(vr2.ran && !vr2.failed.length){ d=d2; vr=vr2; env=env2; }                               /* repaired → verified */
-          else if(vr2.ran && vr2.failed.length<vr.failed.length){ d=d2; vr=vr2; env=env2; } }        /* strictly fewer failures → still an improvement */
+          if(d2.answer.trim() && !vr2.failed.length && (vr2.ran || !d2.checks.length)){ d=d2; vr=vr2; env=env2; } }
       }catch(_){} }
       if(gen!==_runGen) return;
-      let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
+      if(vr.failed.length) d=_visNorm({answer:L('I could not verify the calculation from the image.','画像から計算結果を確認できませんでした。')}); let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
       if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
-      try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
+      if(!vr.failed.length) try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);
       if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
         try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls}); }catch(_){}
@@ -3055,7 +3076,7 @@ export function atlasConsole(HOST){
       if(gen===_runGen){ ai.innerHTML=html; if(!wantsContinue(d)) recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
       return wantsContinue(d)?d:null;   /* the reader asked for tools: run() carries on into the agent loop with this reading */
     }
-    async function run(q,imgs,files){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
+    async function run(q,imgs,files,options={}){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
       files=(Array.isArray(files)?files:[]).filter(f=>f&&(f.kind==='doc'?typeof f.b64==='string':typeof f.text==='string')).slice(0,ATL_FILE.LIMITS.files+ATL_FILE.LIMITS.docs);   /* (#R158/#R540) text attachments AND provider-native documents */
       if(!q&&!imgs.length&&!files.length) return;
       /* ⚠⚠ (#R540) THE ATTACHMENTS ARE THEIR OWN CHANNELS NOW, NOT MORE PROMPT TEXT. #R158 glued them into the prompt, which ai-proxy slices at MAX_PROMPT (24,000) — so four 60,000-character files were cut mid-word with nothing said to the reader OR the model. Same shape as #R285's system prompt, same fix: a bound of their own. The bubble and history still keep only the reader's own words plus a chip. */
@@ -3069,7 +3090,7 @@ export function atlasConsole(HOST){
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
       const turn=(_curTurn=++_turnSeq);   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */ try{ GLEDGER.beginTurn(turn); }catch(_){}   /* (#R489) …and the same id groups the places this exchange resolves. Nothing is forgotten; the counter moves. */
-      try{ ATTACH_LOG.remember(turn,imgs,files); }catch(_){} _atlRecallImgs=[]; _atlSentNames=files.map(f=>String(f&&f.name||''));   /* ⚠⚠⚠ (#R773) 添付は会話に属する（1 つのメッセージではない）。ここは長らく**このメッセージの添付だけ**を組んでいて、次のターンにはファイル名すら残らなかった——だから読者が同じファイルについて続けて訊くと、モデルには本当に何も届いておらず「見られません」と正直に答えていた。理由と方針は js/atlas-attach-log.js の見出し。`_atlSentNames` は今ここに在るものを台帳が二度述べないための一覧 */ const _atts={ files:ATTACH_LOG.carry(turn,files,ATL_FILE.LIMITS), docs:files.filter(f=>f.kind==='doc').map(f=>({name:String(f.name||'file'),mime:String(f.mime||''),b64:String(f.b64||'')})) }; _atlRecallAtts=_atts;   /* (#R773) 台帳へ載せ、この回の取り寄せ枠を空にし、いま載っている名前を控える */   /* ⚠⚠⚠ (#R777) この行は `const turn` の**上**に在った——`turn` は TDZ の中なので `carry(turn,…)` が ReferenceError を投げ、本番の Atlas は**すべての送信**が死んでいた（バブルも出ず、リクエストは 1 本も出ない。添付の有無に依らない）。⚠ 行を詰める書き換えは、その文が何に依存しているかを一緒に運ばない。 */
+      try{ ATTACH_LOG.remember(turn,imgs,files); }catch(_){} _atlRecallImgs=[]; _atlSentNames=files.map(f=>String(f&&f.name||''));   /* ⚠⚠⚠ (#R773) 添付は会話に属する（1 つのメッセージではない）。ここは長らく**このメッセージの添付だけ**を組んでいて、次のターンにはファイル名すら残らなかった——だから読者が同じファイルについて続けて訊くと、モデルには本当に何も届いておらず「見られません」と正直に答えていた。理由と方針は js/atlas-attach-log.js の見出し。`_atlSentNames` は今ここに在るものを台帳が二度述べないための一覧 */ const _atts={ recalledFiles:[], files:turnTextFiles([],ATTACH_LOG.carry(turn,files,ATL_FILE.LIMITS)), docs:files.filter(f=>f.kind==='doc').map(f=>({name:String(f.name||'file'),mime:String(f.mime||''),b64:String(f.b64||'')})) }; _atlRecallAtts=_atts;   /* (#R773) 台帳へ載せ、この回の取り寄せ枠を空にし、いま載っている名前を控える */   /* ⚠⚠⚠ (#R777) この行は `const turn` の**上**に在った——`turn` は TDZ の中なので `carry(turn,…)` が ReferenceError を投げ、本番の Atlas は**すべての送信**が死んでいた（バブルも出ず、リクエストは 1 本も出ない。添付の有無に依らない）。⚠ 行を詰める書き換えは、その文が何に依存しているかを一緒に運ばない。 */
       /* ══ (#R318) ONE TURN = ONE UNIT OF WORK ═══════════════════════════════════════════════════
          `_turnKey` identifies this exchange to the SERVER, so the planner call, the bounded repair
          calls and the vision re-read that belong to ONE user request consume ONE use of the daily
@@ -3107,22 +3128,20 @@ export function atlasConsole(HOST){
       }
       /* (#R156) IMAGE → the dedicated vision pipeline, which is its own reader and not this loop. */
       _imgCtx='';   /* what the image reader concluded, when it asked for tools (js/atlas-image-continue.js) */
-      if(imgs.length){ const aiv=_pend(bubble('a',stageDots('read')),'read'); let _vd=null; try{ _vd=await _atlVisionTurn(aiv,q,imgs,gen,_atts); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen){ try{ PROG.done(aiv); }catch(_){} msgTools(aiv,q); } if(!(_vd&&gen===_runGen)) return; _imgCtx=agentContext(_vd); _atlRecallImgs=imgs; }
+      const _turnPhotos=imgs.length?ATTACH_LOG.earlier(turn+1).filter(f=>f.kind==='image').slice(0,imgs.length).reverse():[]; if(imgs.length){ const aiv=_pend(bubble('a',stageDots('read')),'read'); let _vd=null; try{ _vd=await _atlVisionTurn(aiv,q,turnAttachmentImages(null,_turnPhotos),gen,_atts); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen){ try{ PROG.done(aiv); }catch(_){} msgTools(aiv,q); } if(!(_vd&&gen===_runGen)) return; _imgCtx=agentContext(_vd); }
       const ai=_pend(bubble('a',stageDots('think')),'think'); try{ LIVE.watch(EXEC); LIVE.begin(ai); }catch(_){}   /* (atlas-live-stream) the clock the measured wait is read from starts with the reply */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));   /* (#R117) reasoning budget, not meaning: it picks an effort tier and decides nothing about the request */
-      const _preCalls=[]; let _effort=EFFORT.pick(_cplx);   /* how hard this turn thinks: the reader's pick, or — on auto — what one small low-effort call decides about THIS request (js/atlas-effort.js); only a failed call falls back to the complexity guess above */
+      const _experiment=effortExperiment(options?.effortPolicy), _preCalls=[]; let _effort=_experiment?.base||EFFORT.pick(_cplx);
       /* (atlas-orchestration-efficiency) A SHORT, PLAIN REQUEST IS NOT SIZED BY A SEPARATE MODEL CALL. The sizing call is a full round trip the reader waits through before step 1 (8 s at most; measured one extra call per turn), and for a request this short with one clause the answer is the server's default effort — which Atlas raises itself, on the step that needs it, with `next_effort`. Long or multi-clause requests (`_cplx`) and anything carrying an attachment keep the sizing call. */
       const _sizeIt=(_effort!==undefined)||(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length+(imgs&&imgs.length||0))>0;
-      if(EFFORT.get()==='auto'&&_sizeIt){ const _te0=Date.now(); try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length), turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined), fallback:_effort }); }catch(_){} _preCalls.push({ model:'atlas_effort', ms:Date.now()-_te0 }); }
+      if(!_experiment&&EFFORT.get()==='auto'&&_sizeIt){ const _te0=Date.now(); let usage; try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length), turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined), fallback:_effort, onUsage:meta=>{ usage=proxyUsage(meta); } }); }catch(_){} _preCalls.push({ ...usage, model:usage?.model||'atlas_effort', ms:Date.now()-_te0 }); }
       /* ⚠ ONE TOOL CALL BECOMES THE SAME ACTION OBJECT THE DISPATCH HAS ALWAYS RUN, so every pin,
          overlay, panel and rendering behaviour is the one that shipped — and its MECHANICAL result
          is what goes back to Atlas. */
       const _ranActions=[];
       const _runOne=async(action,turn)=>{ action.__externalContent=!!(turn&&turn.externalContentSeen); action.__callSignal=(turn&&turn.callSignal)||undefined; let _asked=null; try{ if(_atlasDbg) _asked=JSON.parse(JSON.stringify(action,(k,v)=>String(k).slice(0,2)==='__'?undefined:v)); }catch(_){}   /* (atlas-quality-lab) the action AS THE SURFACE BUILT IT, before the dispatch adds its own stamps — the key a replay answers it by */   /* (#R801) stamped UNCONDITIONALLY from the agent's turn record, so a `__externalContent` the model wrote into its arguments is overwritten rather than read; `__` keys never reach the executor's arguments (below) nor `callKey` */ const before=((ai.__atlResults||[]).length);
-        /* ⚠ (atlas-completion) A STABLE GOAL ID. An answer's dedupe key was its question text (js/atlas-turn-results.js answerKey), so the
-           same piece of the reader's request researched twice under two phrasings stayed as two answers. The piece is the plan step the
-           call was filed under (js/atlas-agent.js passes `turn.planStep`): within one turn and one step, a later answer replaces the earlier. */
-        try{ if(!action.__goalKey&&TRES.ANSWER_TYPES[action.type]&&turn&&turn.planStep>=0){ const _ps=PLAN.snapshot(); if(_ps) action.__goalKey='goal:'+_turnKey+':'+_ps.id+':'+turn.planStep; } }catch(_){}
+        /* Alternative answers for one declared deliverable share a card. Separate targets can share a plan step. */
+        if(!action.__goalKey&&TRES.ANSWER_TYPES[action.type]&&turn?.planTarget) action.__goalKey='goal:'+_turnKey+':'+turn.planStep+':'+turn.planTarget;
         _ranActions.push(action);
         await runActions(ai,'',[action],gen,turn?.awaitInput);
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
@@ -3148,11 +3167,17 @@ export function atlasConsole(HOST){
          providers (scripts/release-state.mjs: 21 of 21 functions matched the source on 2026-10-01), so that path
          was reachable only by a malformed answer — which it then misread as an old server. An answer that is not
          protocol 2 is now a transport failure (js/ai-core.js aiCallServerFull), reported as one. */
-      const _model=async(req)=>{ try{ PROG.phase(ai,(req&&req.final)?'write':'think'); }catch(_){}   /* ⚠ (#R723) THE PLANNER WAIT IS THE LARGEST PART OF A TURN AND IT WAS THE PART WITH NO ROW. Measured on a real six-operation turn: 57.2 s total, 13.6 s of it inside operations — the other 43 s was eight round-trips to the model, and the trace said nothing about any of them. onStep fires AFTER the reply, so it can only CLOSE a thinking row; this is the only place that knows one has started. */
-        const built=_agentInput(req,q,_c0), _tImgs=_atlTurnImgs(VFRAMES.urls(),_atlRecallImgs), _o={task:'atlas_turn',files:_atts.files,docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs,webMode:'auto',effortHint:(EFFORT.get()==='auto'&&req&&req.effort)||_effort,maxOutputHint:(req&&req.maxOutput)||undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined),stream:LIVE.hooks(ai)};   /* (atlas-live-stream) watched: this model call streams its previews into the reply — js/ai-core.js aiReadStream */
+      let _heldPhotos=[], _heldFiles=[];
+      const _model=async(req)=>{ try{ PROG.phase(ai,req?.final?'write':'think'); }catch(_){}
+        const built=_agentInput(req,q,_c0);
+        const _tImgs=turnAttachmentImages(VFRAMES.urls(),_atlRecallImgs.concat(_heldPhotos),_turnPhotos);
+        const effortHint=_experiment?_experiment.next(req?.effort):(EFFORT.get()==='auto'&&req?.effort)||_effort;
+        const _o={task:'atlas_turn',files:turnTextFiles(_atts.recalledFiles,_heldFiles.concat(_atts.files)),
+          docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs,webMode:'auto',effortHint,
+          maxOutputHint:req?.maxOutput||undefined,turnId:_turnKey,signal:_abortCtl?.signal,stream:LIVE.hooks(ai)};
         const env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
             tools:((req&&req.tools)||[]).concat((built.cut||built.recallable)?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) }));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
-        try{ if(env&&env.meta&&Array.isArray(env.meta.docRefs)&&env.meta.docRefs.length) _atts.docRefs=env.meta.docRefs; }catch(_){}   /* (atlas-mainloop-reliability) the turn's later model calls name its documents instead of re-sending them */
+        _heldFiles=_o.files.filter(f=>f.window); _heldPhotos=_atlRecallImgs.concat(_heldPhotos).filter(img=>env?.meta?.attachmentReceipt?.images?.some(r=>r.name===img.name)); _atts.recalledFiles.length=0; _atlRecallImgs.length=0; try{ if(env&&env.meta&&Array.isArray(env.meta.docRefs)&&env.meta.docRefs.length) _atts.docRefs=env.meta.docRefs; }catch(_){}   /* (atlas-mainloop-reliability) the turn's later model calls name its documents instead of re-sending them */
         try{ if(env&&env.meta&&env.meta.delegationPolicy&&typeof env.meta.delegationPolicy==='object') _delegationPolicy=Object.assign({},env.meta.delegationPolicy,Array.isArray(env.meta.delegationModels)?{models:env.meta.delegationModels}:{}); }catch(_){}
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; } try{ webEvidence.note(_curPlanCites,{via:'turn',turn:_curTurnKey}); }catch(_){}   /* what this step's own hosted search cited is known to the workers and to web.evidence, so it is opened rather than searched for again */
         try{ _curPlanCites.forEach(c=>WM.addEvidence({ url:_atlCleanUrl(c.url), title:c.title, publisher:c.publisher||c.host, retrievedAt:new Date().toISOString().slice(0,10), turnId:turn })); }catch(_){}   /* (atlas-working-memory) a source a turn read stays reachable */
@@ -3164,7 +3189,7 @@ export function atlasConsole(HOST){
           verify:makeGoalVerify({ observe:((since)=>{ const a=makeTurnObserver(since), b=makeHeldObserver(since); return (ctx)=>a(ctx).concat(b(ctx)); })(Date.now()), ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined) }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
           onStep:(s)=>{ try{ _mrec.step(s); }catch(_){} try{ LIVE.stepDone(ai,s); }catch(_){} try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
-        try{ _mrec.recordAnswer(out,_turnKey,{ cites:_curPlanCites }); }catch(_){}   /* (atlas-verify-metrics) one row per finished answer; best-effort, never the answer's problem */
+        try{ const row=_mrec.recordAnswer(out,_turnKey,{ cites:_curPlanCites }); if(_atlasDbg) _atlasDbg.measurement={ row, effortPolicy:_experiment?options.effortPolicy:null }; }catch(_){}
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.produced=(out.produced||[]).join(',')||'-'; _atlasDbg.outputGate=(out.trace&&out.trace.outputGate)||0; _atlasDbg.inputTrims=(out.trace&&out.trace.inputTrims)||[]; } }catch(_){}   /* (atlas-native-tools) inputTrims: what the composer or the proxy's fence gave up on each step — js/atlas-agent.js */   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */
         /* (#R733) the two stops that are a LIMIT rather than Atlas deciding it was done — _atlCompose
            renders the note. Read off `out.stopped`, which js/atlas-agent.js sets from the guard that
@@ -3204,7 +3229,7 @@ export function atlasConsole(HOST){
        never inside the reply's 180-character excerpt, so 「地図は未作成です」 at the end of a long reply can no longer be cut off and the
        next turn reads the original request and what is still owed as data. */
     const _unmetLine=(q,st)=>{ const u=(st&&Array.isArray(st.unmet))?st.unmet:[]; if(!u.length&&!(st&&st.incomplete)) return '';
-      const parts=u.map(x=>x&&x.kind==='step'?('step '+x.n+' "'+String(x.title||'').slice(0,80)+'" '+x.state):('output '+String((x&&x.mode)||'')+' not produced ('+String((x&&x.code)||'')+')'));
+      const parts=u.map(x=>x?.kind==='goal'?String(x.need||'').slice(0,220):x?.kind==='step'?('step '+x.n+' "'+String(x.title||'').slice(0,80)+'" '+x.state):('output '+String((x&&x.mode)||'')+' not produced ('+String((x&&x.code)||'')+')'));
       if(st&&st.incomplete) parts.push('the model output was cut short (incomplete)');
       return 'Atlas [unfinished — completion '+String((st&&st.completion)||'partial')+(st&&st.stopped?(', stopped '+st.stopped):'')+'; still owed for the request "'+String(q||'').slice(0,300)+'": '+parts.join('; ')+']'; };
     function recordTurn(q, say, acts, fails, st){ const _o=!!(st&&st.outside===true);   /* (atlas-outside-mark) the turn record's fact, never the text: what Atlas wrote in a turn that had outside content in front of it keeps the mark for as long as it is in the history */ try{ updateWctx(acts,fails,_o); }catch(_){} try{ _parseExclusions(q); }catch(_){}
@@ -3330,7 +3355,7 @@ export function atlasConsole(HOST){
         if(ar.status==='needs_input'&&ar.inputRequest) _pendingInput={ result:ar, bubble:host, at:Date.now() }; }catch(_){}
       return true;
     }
-    async function askHere(ll){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return; try{ open(); }catch(_){}
+    async function askHere(ll){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return; userMapClick.record(ll); try{ open(); }catch(_){}
       /* …and if something was waiting for exactly this, that is what the click meant. */
       try{ if(await _resumeWithPoint(+ll.lng,+ll.lat)) return; }catch(_){}
       _lastUserMsg=''; const p=ensure();

@@ -49,10 +49,11 @@ const MAX_ENTRIES = 300;   /* memory only (a record holds one page snapshot, a f
 const MAX_TEXT_CHARS = 24000;   /* what read() may hand back at most — web.browse's own textChars ceiling (js/atlas-cap-web.js) */
 
 /** a query's identity: its words (Unicode-folded, lower-cased, whitespace collapsed, edge punctuation off) */
-export function queryKey(q) {
+export function queryKey(q, lang) {
   let s = String(q == null ? '' : q);
   try { s = s.normalize('NFKC'); } catch (_) { /* old engine */ }
-  return s.toLowerCase().replace(/\s+/g, ' ').replace(/^[\s"'“”‘’.,;:!?、。！？]+|[\s"'“”‘’.,;:!?、。！？]+$/g, '').slice(0, 300);
+  const words = s.toLowerCase().replace(/\s+/g, ' ').replace(/^[\s"'“”‘’.,;:!?、。！？]+|[\s"'“”‘’.,;:!?、。！？]+$/g, '');
+  return JSON.stringify([words, String(lang || '').trim().toLowerCase()]);
 }
 
 export function makeWebEvidence(opt) {
@@ -63,6 +64,7 @@ export function makeWebEvidence(opt) {
   const byId = new Map();       /* id → entry */
   const byKey = new Map();      /* kind + ':' + key → id */
   const inflight = new Map();   /* kind + ':' + key → Promise<entry-or-result> */
+  const sourcesByTurn = new Map(); /* lightweight snapshots survive the eviction of large response bodies */
   let seq = 0;
 
   const urlKey = (u) => { const c = canon(u); return c && c.ok ? c.key : ''; };
@@ -75,7 +77,24 @@ export function makeWebEvidence(opt) {
     const c = ctx || {};
     const turn = String(c.turn || '');
     if (!e || !turn) return;
-    if (!e.usedBy.includes(turn)) e.usedBy.push(turn);
+    if (!e.usedBy.includes(turn)) {
+      e.usedBy.push(turn);
+      const cited = e.kind === 'search' ? e.sources : [{ url: e.url, title: e.title }, ...e.sources];
+      let sources = sourcesByTurn.get(turn);
+      for (const s of cited) {
+        const key = urlKey(s.url);
+        if (!key) continue;
+        if (!sources) {
+          sources = new Map();
+          sourcesByTurn.set(turn, sources);
+          if (sourcesByTurn.size > MAX_ENTRIES) sourcesByTurn.delete(sourcesByTurn.keys().next().value);
+        }
+        const previous = sources.get(key);
+        if (!previous || previous.version < e.version) {
+          sources.set(key, { version: e.version, source: { url: s.url, title: s.title || '', publisher: '', retrievedAt: new Date(e.fetchedAt).toISOString() } });
+        }
+      }
+    }
     if (!c.worker) markTurn('evidence_used');
   }
   function evict() {
@@ -89,9 +108,9 @@ export function makeWebEvidence(opt) {
   }
   function put(kind, key, fields, ttlMs) {
     const t = now();
-    const prev = byId.get(byKey.get(slot(kind, key)));
-    /* a refresh keeps the turns that used the earlier copy: they used THIS address, and a turn's list of sources does not lose one because a later turn read it again */
-    const e = Object.assign({ id: prev ? prev.id : 'ev' + (++seq), kind, key, fetchedAt: t, expiresAt: t + (ttlMs == null ? ttl[kind] : ttlMs), usedAt: t, hits: 0, fetchedTurn: '', usedBy: prev ? prev.usedBy.slice() : [] }, fields);
+    /* Re-fetching moves only the cache pointer. Earlier ids and the turns that read them still describe their original fetch. */
+    const version = ++seq;
+    const e = Object.assign({ id: 'ev' + version, version, kind, key, fetchedAt: t, expiresAt: t + (ttlMs == null ? ttl[kind] : ttlMs), usedAt: t, hits: 0, fetchedTurn: '', usedBy: [] }, fields);
     byId.set(e.id, e);
     byKey.set(slot(kind, key), e.id);
     evict();
@@ -129,7 +148,7 @@ export function makeWebEvidence(opt) {
       const result = await fetcher();
       if (!result || !result.ok) return { entry: null, result };
       const turn = String(p.turn || result.turn || '');
-      const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', fetchedTurn: turn, text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
+      const entry = put(kind, key, { url: result.url || '', title: result.title || '', query: result.query || '', lang: result.lang || '', fetchedTurn: turn, text: result.text || '', value: result.value, sources: normSources(result.sources) }, p.ttlMs);
       markTurn('evidence_arrived');
       use(entry, { turn, worker: p.worker });
       return { entry, result };
@@ -171,7 +190,7 @@ export function makeWebEvidence(opt) {
     return added;
   }
 
-  const brief = (e) => ({ id: e.id, kind: e.kind, url: e.url || undefined, title: e.title || undefined, query: e.query || undefined, fetchedAt: new Date(e.fetchedAt).toISOString(), fetchedTurn: e.fetchedTurn || undefined, usedBy: e.usedBy.length ? e.usedBy.slice() : undefined, ageSec: Math.round(age(e) / 1000), fresh: fresh(e), sources: e.sources.length || undefined });
+  const brief = (e) => ({ id: e.id, kind: e.kind, url: e.url || undefined, title: e.title || undefined, query: e.query || undefined, lang: e.lang || undefined, fetchedAt: new Date(e.fetchedAt).toISOString(), fetchedTurn: e.fetchedTurn || undefined, usedBy: e.usedBy.length ? e.usedBy.slice() : undefined, ageSec: Math.round(age(e) / 1000), fresh: fresh(e), sources: e.sources.length || undefined });
 
   /** lookup by reference id, address or query words */
   function lookup(ref) {
@@ -194,7 +213,7 @@ export function makeWebEvidence(opt) {
     const n = Math.max(200, Math.min(MAX_TEXT_CHARS, Number(chars) || 6000));
     const body = String(e.text || '');
     return Object.assign(brief(e), {
-      sourceList: e.sources.length ? e.sources : undefined,   /* BEFORE the text: a reader that cuts the front of this record keeps the addresses */
+      sourceList: e.sources.length ? e.sources.map((s) => ({ ...s })) : undefined,   /* BEFORE the text: a reader that cuts the front of this record keeps the addresses */
       text: body.slice(0, n), textChars: body.length, truncated: body.length > n || undefined,
       cited: e.kind === 'cited' ? { via: e.via, queries: e.queries } : undefined,
     });
@@ -205,9 +224,8 @@ export function makeWebEvidence(opt) {
       in the answer that follows — as one run through research.brief already did. `retrievedAt` is when the record was FETCHED (an earlier
       turn's fetch keeps its own time). opts.use: the caller hands these to the turn's answer, which is the turn using them (evidence_used). */
   function turnSources(turn, opts) {
-    const out = [], seen = new Set();
-    const add = (url, title, e) => { const k = urlKey(url); if (!k || seen.has(k)) return; seen.add(k); out.push({ url, title: title || '', publisher: '', retrievedAt: new Date(e.fetchedAt).toISOString() }); };
-    byId.forEach((e) => { if (!turn || !e.usedBy.includes(turn)) return; if (e.kind === 'page' || e.kind === 'render' || e.kind === 'cited') add(e.url, e.title, e); e.sources.forEach((x) => add(x.url, x.title, e)); });
+    const sources = sourcesByTurn.get(String(turn || ''));
+    const out = sources ? Array.from(sources.values(), ({ source }) => ({ ...source })) : [];
     if (out.length && opts && opts.use) markTurn('evidence_used');
     return out;
   }
@@ -231,7 +249,7 @@ export function makeWebEvidence(opt) {
      to wait for the next arrival rather than for one an earlier answer already satisfied. One turn at a time: a new turn starts empty. */
   let shownTurn = null, shownKeys = new Set();
   function shown(turn) { if (shownTurn !== turn) { shownTurn = turn; shownKeys = new Set(); } return shownKeys; }
-  return { shown, acquire, find, note, lookup, read, list, turnSources, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); } };
+  return { shown, acquire, find, note, lookup, read, list, turnSources, promptBlock, brief, size: () => byId.size, clear() { byId.clear(); byKey.clear(); inflight.clear(); sourcesByTurn.clear(); } };
 }
 
 /** the page's ONE store (the parent turn and every delegated child run in this page) */

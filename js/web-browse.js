@@ -222,11 +222,11 @@ function makeWebBrowse(HOST) {
   }
 
   /* the file door: the SAME reader a dropped file takes, so a downloaded CSV becomes a dataset exactly as a dropped one does */
-  async function toDataset(file, label) {
+  async function toDataset(file, label, opts = {}) {
     const U = (typeof window !== 'undefined') ? window.GeoJSONUpload : null;
     if (!U || typeof U.handle !== 'function') return { ok: false, code: 'no_file_door' };
     let outs = [];
-    try { outs = await U.handle([file], { quiet: true }); } catch (_) { outs = []; }
+    try { outs = await U.handle([file], { quiet: true, ...opts }); } catch (_) { outs = []; }
     const o = outs && outs[0];
     if (!o || !o.ok) return { ok: false, code: (o && o.why) || 'unreadable' };
     /* what the door says it made, and nothing it did not: the count is the features READ (`features`; `n` is the layer's serial, not a count), and a file
@@ -234,7 +234,7 @@ function makeWebBrowse(HOST) {
        the next step of a plan, which cannot use a dataset that does not exist). `layer` says it is nonetheless on the map. */
     const rows = (o.features != null && isFinite(+o.features)) ? +o.features : null;
     if (!o.datasetId) return { ok: false, code: 'not_registered', layer: o.layer != null ? o.layer : null, rows, label: o.label || label || file.name, format: o.format || null };
-    return { ok: true, label: o.label || label || file.name, format: o.format || null, rows, datasetId: o.datasetId, layer: o.layer != null ? o.layer : null, grid: !!o.grid };
+    return { ok: true, label: o.label || label || file.name, format: o.format || null, rows, datasetId: o.datasetId, layer: o.layer != null ? o.layer : null, grid: !!o.grid, description: o.description };
   }
 
   /* session({action,...}) → one step of the OPERATED real browser (?tier=session). The state it hands back is a signed token (grant + provider session);

@@ -45,7 +45,7 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, priorStands, failureWhy, resolveArgs } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, dataManifest, priorStands, failureWhy, resolveArgs, refsOf } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, resolveArgs };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
@@ -77,8 +77,7 @@ function makeEventLog(now) {
 
 /* The result fields that may ride along as raw data (a capability's own answer). Bounded because a result is held in
    memory, written to the event log's snapshot and handed to the model: observation 2026-11-19 — a read capability's
-   meta is a few hundred bytes to a few kB; 20000 characters is generous. Over it, the data is dropped and the
-   result says so in `gaps` rather than being cut mid-structure. */
+   meta is a few hundred bytes to a few kB; 20000 characters is generous. Above it, the result carries a reference to the whole structured value. */
 const DATA_MAX_CHARS = 20000;
 
 /* (delegate-reread) what a worker is shown of one capability answer, and how much one re-read returns. Observation 2026-11-26: the cut was
@@ -97,6 +96,7 @@ export function makeDelegation(o) {
   const parent = opt.parent ? String(opt.parent) : '';
   const tasks = new Map();      // id → { contract, key, promise, controller, holder }
   const byKey = new Map();      // contractKey → id
+  const payloads = new Map();   // task result id → complete large data
   const workspace = new Map();  // id → result (appended once, when the task ends)
   const subscribers = new Set();
   /* RESUME — the results a previous run of this delegation already had (snapshot().results). A task whose contract is
@@ -105,14 +105,14 @@ export function makeDelegation(o) {
      executor (a reloaded page, a server) pick the same delegation up without redoing, or re-paying for, finished work. */
   const resumeByKey = new Map();
   ((opt.resume && Array.isArray(opt.resume.results)) ? opt.resume.results : []).forEach((e) => {
-    if (e && e.key && e.result && (e.result.state === 'done' || e.result.state === 'partial')) resumeByKey.set(String(e.key), { result: e.result, inputs: typeof e.inputs === 'string' ? e.inputs : null });
+    if (e && e.key && e.result && (!e.result.dataRef || e.payload !== undefined) && (e.result.state === 'done' || e.result.state === 'partial')) resumeByKey.set(String(e.key), { result: e.result, payload: e.payload, inputs: typeof e.inputs === 'string' ? e.inputs : null });
   });
   /* ⚠ A TASK THAT STARTS FROM OTHER TASKS' RESULTS IS THE SAME WORK ONLY FROM THE SAME RESULTS. Its contract names its inputs by ID, so «analyse p»
      is one text whether p returned Osaka or Tokyo — and the record of the Osaka analysis answered the Tokyo one (measured 2026-11-27: the upstream
      returned Tokyo, the downstream got the earlier Osaka analysis back; a forced re-run gave Tokyo). The record therefore carries a DIGEST of what
      the task was actually handed, and a task with inputs is answered from the record only when the inputs it has just received digest the same.
      A record from before this field existed (inputs unknown) does not answer a task that has inputs: it runs. */
-  const inputsDigestOf = (inputs) => (Array.isArray(inputs) && inputs.length) ? requestKey(stable(inputs.map((i) => ({ from: i.from, summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data }))), 'inputs') : '';
+  const inputsDigestOf = (inputs) => (Array.isArray(inputs) && inputs.length) ? requestKey(stable(inputs.map((i) => ({ from: i.from, summary: i.summary, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data }))), 'inputs') : '';
   const inputKeys = new Map();  // id → digest of the inputs the task was run (or resumed) with
   const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
@@ -171,9 +171,13 @@ export function makeDelegation(o) {
     if (r && r.data !== undefined) {
       let txt = '';
       try { txt = stable(r.data); } catch (_) { txt = ''; }
-      if (txt && txt.length <= DATA_MAX_CHARS) { try { data = JSON.parse(txt); } catch (_) { data = undefined; } }
+      if (txt) { try { data = JSON.parse(txt); } catch (_) { data = undefined; } }
+      if (data !== undefined && txt.length > DATA_MAX_CHARS) {
+        payloads.set(id, data);
+        data = undefined;
+      }
     }
-    const dropped = !!(r && r.data !== undefined && data === undefined);
+    const dropped = !!(r && r.data !== undefined && data === undefined && !payloads.has(id));
     const res = Object.freeze({
       id, state: RESULT_STATES.includes(r && r.state) ? r.state : 'failed',
       code: (r && r.code) || undefined,
@@ -182,7 +186,7 @@ export function makeDelegation(o) {
       findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
       facts: normalizeFacts(r && r.facts).slice(0, 200),   /* (fact-merge) claims as data: js/atlas-fact-merge.js */
       gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
-        .concat(dropped ? ['The raw data of this result was too large to keep and was dropped (the summary above is complete).'] : []),
+        .concat(dropped ? ['The raw data of this result could not be serialized.'] : []),
       sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],
       /* (atlas-parallel-truth) EVIDENCE, NOT A VERDICT — what the worker looked for and did not find, and how much of what it said
          rests on a source with its excerpt (js/atlas-job-core.js shapeOf counts it). Carried as the worker gave them; absent for a
@@ -190,6 +194,7 @@ export function makeDelegation(o) {
       notFound: Array.isArray(r && r.notFound) ? r.notFound.slice(0, 20) : [],
       evidence: (r && r.evidence && typeof r.evidence === 'object') ? Object.freeze(Object.assign({}, r.evidence)) : undefined,
       data,
+      dataRef: payloads.has(id) ? dataManifest(id, payloads.get(id)) : undefined,
       costUsd: Math.max(0, Number(r && r.costUsd) || 0),
       calls: Math.max(0, Number(r && r.calls) || 0),
       ms: Math.max(0, clock() - t0),
@@ -247,10 +252,10 @@ export function makeDelegation(o) {
     const resumeNow = (prior) => {
       note('task.resumed', id, { from: prior.id || '', costUsd: Number(prior.costUsd) || 0, calls: Number(prior.calls) || 0 });
       /* what the first run spent was spent then; this run spent nothing, so the spend read off this log stays true */
-      return finish(id, t0, Object.assign({}, prior, { costUsd: 0, calls: 0 }));
+      return finish(id, t0, Object.assign({}, prior.result, { data: prior.result.dataRef ? prior.payload : prior.result.data, costUsd: 0, calls: 0 }));
     };
     if (resumeByKey.has(key) && !c.inputs.length) {
-      entry.promise = Promise.resolve(resumeNow(resumeByKey.get(key).result));
+      entry.promise = Promise.resolve(resumeNow(resumeByKey.get(key)));
       settleForward(id, entry.promise);
       return { id, reused: false, resumed: true, promise: entry.promise, cancel() {} };
     }
@@ -264,14 +269,14 @@ export function makeDelegation(o) {
         if (dep === entry || (!dep && !fwd)) return finish(id, t0, { state: 'failed', code: 'input_unknown', summary: 'No task named "' + i.from + '" was started in this delegation.' });
         const r = await (dep ? dep.promise : fwd.promise);
         if (r.state !== 'done' && r.state !== 'partial') return finish(id, t0, { state: 'failed', code: 'input_unavailable', summary: 'The task it starts from ("' + i.from + '") ended ' + r.state + '.' });
-        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, data: r.data });
+        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.dataRef ? payloads.get(r.id) : r.data });
       }
       if (controller.signal.aborted) return finish(id, t0, { state: 'cancelled' });
       const digest = inputsDigestOf(inputs);
       inputKeys.set(id, digest);
       if (resumeByKey.has(key) && c.inputs.length) {
         const rec = resumeByKey.get(key);
-        if (rec.inputs === digest) { entry.resumed = true; return resumeNow(rec.result); }
+        if (rec.inputs === digest) { entry.resumed = true; return resumeNow(rec); }
       }
       /* A capability task's arguments may name what an input produced (`@task:data.gis.dataset`) — the way one analysis step
          is handed the dataset the step before it made. Resolved here, from the inputs this task has just been given, and
@@ -368,7 +373,7 @@ export function makeDelegation(o) {
     snapshot() {
       return JSON.parse(JSON.stringify({
         v: 1, parent, at: clock(),
-        results: Array.from(workspace.entries()).map(([id, result]) => ({ id, key: keys.get(id) || '', inputs: inputKeys.has(id) ? inputKeys.get(id) : '', result })),
+        results: Array.from(workspace.entries()).map(([id, result]) => ({ id, key: keys.get(id) || '', inputs: inputKeys.has(id) ? inputKeys.get(id) : '', result, payload: payloads.get(id) })),
         events: log.all(),
       }));
     },
@@ -589,7 +594,8 @@ function toolSection(allowed, describe, steps, remaining, canFind, canCall) {   
   if (canCall !== false) {
   p += '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
-  p += '\nTo call them, return ONLY {"calls":[{"capability":"<id>","args":{...}}, …]} instead of the findings. Every call in the list runs at the same time and each result comes back in your next request, in the order you listed them — so put ALL the calls that do not need another call\'s answer in ONE request, and wait for a result only when a call\'s arguments depend on it.';
+  p += '\nTo call them, return ONLY {"calls":[{"capability":"<id>","args":{...}}, …]} instead of the findings. Put independent calls in ONE request; their results come back in the order you listed them.';
+  p += '\nPass whole call results in arguments as "@<n>:data.<path>" (n is the call number), or use "@<task id>:data.<path>" for an input. To pass a successful call’s data to the next task, add "output":"@<n>:data" alongside your final summary. The output is kept separately from your summary.';
   if (canFind) p += '\nTo look for a capability you do not have, put {"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}} in "calls": IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   } else {
     /* (atlas-child-loop-reuse) A WORKER WITH NO CAPABILITY STILL READS WHAT IT WAS HANDED. A material longer than the prompt shows is kept whole here
@@ -640,6 +646,7 @@ export function makeWorkerExecutor(o) {
        added to `allowed` under the same read-only rule, so the grant never widens past what the host classifies as read */
     const canFind = !!(cap && typeof cap.find === 'function' && (task.tools || []).includes(FIND));
     const steps = [];
+    const materials = new Map((task.inputs || []).map((input) => [String(input.from), input]));
     /* (worker-reach) the images, named in the order they are attached, and what was named but could not be shown — the pictures arrive
        through the vision channel with no labels of their own (the reason js/atlas-view-capture.js promptBlock exists) */
     const imgs = shown && shown.urls.length ? shown.urls : null;
@@ -752,10 +759,12 @@ export function makeWorkerExecutor(o) {
            grant each is held to is the grant as this request found it: a capability a search in the same request finds is callable
            from the next request on (as the prompt says), not from a sibling that started beside the search. */
         const grant = allowed.slice();
+        const pending = new Map();
         const inRound = new Map();   /* the same call twice in ONE request is run once; the second is answered from the first */
         let fresh = 0, cancelled = false;
         /* (delegate-reread) the references this request's answers are kept under: the step's own number, as "RESULTS OF YOUR CALLS SO FAR" counts them */
         const firstStep = steps.length;
+        const cyclic = cycleMembers(wanted.map((call, i) => ({ id: String(firstStep + i + 1), inputs: refsOf(call.args).map((from) => ({ from })) })));
         const shownWithRef = (whole, ref) => {
           if (whole.length <= SHOW_CHARS) return whole;
           full.set(ref, whole);
@@ -763,6 +772,7 @@ export function makeWorkerExecutor(o) {
         };
         const one = async (w, idx) => {
           const ref = String(firstStep + idx + 1);
+          if (cyclic.has(idx)) return { ok: false, text: 'Call ' + ref + ' has a circular argument reference.' };
           if (w.capability === READ_STEP) {
             const a = (w.args && typeof w.args === 'object') ? w.args : {};
             const whole = full.get(String(a.ref == null ? '' : a.ref));
@@ -782,10 +792,23 @@ export function makeWorkerExecutor(o) {
           /* the same call, the same arguments: answered from the first result, not run (nor searched) again — and not a step forward.
              (atlas-child-loop-reuse) …while the REASON of that first answer still holds (js/atlas-job-core.js priorStands): a refusal for want of
              a grant is not the answer once a search has added the capability, and a failure of the moment is retried. */
-          if (had && priorStands(had, grant.includes(w.capability))) return { ok: had.ok, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
-          if (inRound.has(ck)) { const first = await inRound.get(ck); return { ok: first.ok, text: 'ALREADY ANSWERED (the same call with the same arguments, earlier in this list; not run again): ' + first.text }; }
+          if (had && priorStands(had, grant.includes(w.capability))) return { ...had, text: 'ALREADY ANSWERED (the same call with the same arguments; not run again): ' + had.text };
+          if (inRound.has(ck)) { const first = await inRound.get(ck); return { ...first, text: 'ALREADY ANSWERED (the same call with the same arguments, earlier in this list; not run again): ' + first.text }; }
           fresh += 1;
           const p = (async () => {
+            const handoff = [...materials.values()];
+            const refs = refsOf(w.args);
+            for (const name of refs) {
+              const dependency = pending.get(name);
+              if (!dependency) continue;
+              const prior = await dependency;
+              if (prior.material) handoff.push({ from: name, ...prior.material });
+            }
+            const resolved = resolveArgs(w.args, handoff);
+            if (!resolved.ok) {
+              const notYet = refs.some((name) => /^\d+$/.test(name) && Number(name) > firstStep && !handoff.some((item) => item.from === name));
+              return { ok: false, why: notYet ? 'transient' : '', text: resolved.why };
+            }
             if (canFind && w.capability === FIND) {
               try { return await searchStep(w.args); } catch (e) { cancelled = true; return { ok: false, text: 'cancelled' }; }
             }
@@ -798,7 +821,7 @@ export function makeWorkerExecutor(o) {
             }
             const ti = ctx.emit('effect.intent', { capability: w.capability, by: 'worker', turn: childKey });
             try {
-              const out = await cap.run(w.capability, w.args, { signal: controller.signal, turnKey: childKey });   /* (atlas-verify-metrics) the capability's own model call is the child's, journalled under the child's key */
+              const out = await cap.run(w.capability, resolved.args, { signal: controller.signal, turnKey: childKey });   /* (atlas-verify-metrics) the capability's own model call is the child's, journalled under the child's key */
               ctx.emit('effect.done', { intent: ti.id, costUsd: 0, capability: w.capability });
               /* (delegate-reread) NOTHING IS LOST TO THE CUT. The answer is kept WHOLE under a reference; the worker is shown the first
                  SHOW characters (what it was shown before: 3000 of the text + 1500 of the data) and is told how to read the rest with
@@ -810,7 +833,7 @@ export function makeWorkerExecutor(o) {
               let execShown = '';
               if (out && out.exec && ok) { let j = ''; try { j = JSON.stringify(out.exec); } catch (_) { j = ''; } if (j) execShown = '\nRESULT: ' + shownWithRef(j, ref + 'r'); }
               const why = failureWhy(out);
-              return { ok, why, text: shownWithRef(whole, ref) + execShown + (why === 'transient' ? '\n[this failure is of the moment (the capability says so): the same call may be made again]' : '') };
+              return { ok, why, material: ok ? { data: out?.meta, summary: out?.text } : undefined, text: shownWithRef(whole, ref) + execShown + (why === 'transient' ? '\n[this failure is of the moment (the capability says so): the same call may be made again]' : '') };
             } catch (e) {
               if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
               ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
@@ -824,9 +847,15 @@ export function makeWorkerExecutor(o) {
           answered.set(ck, st);
           return st;
         };
-        const results = await Promise.all(wanted.map((w, i) => one(w, i)));
+        wanted.forEach((w, i) => pending.set(String(firstStep + i + 1), Promise.resolve().then(() => one(w, i))));
+        const results = await Promise.all(pending.values());
         if (cancelled || controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
-        wanted.forEach((w, i) => steps.push({ capability: w.capability || '(not a call)', args: w.args, ok: results[i].ok, text: results[i].text }));
+        wanted.forEach((w, i) => {
+          const result = results[i];
+          const from = String(firstStep + i + 1);
+          if (result.material) materials.set(from, { from, ...result.material });
+          steps.push({ capability: w.capability || '(not a call)', args: w.args, ok: result.ok, hasData: result.material?.data !== undefined, text: result.text });
+        });
         if (fresh) repeatRun = 0;
         else {
           /* a request made only of calls already answered is no step forward; two such in a row end the worker */
@@ -840,8 +869,20 @@ export function makeWorkerExecutor(o) {
         continue;
       }
       const sh = shapeOf(env && env.data);
+      const selected = env?.data?.output;
+      const callMaterials = [...materials.values()].filter((entry) => Number(entry.from) > 0 && steps[Number(entry.from) - 1]?.hasData);
+      if (sh.ok && selected != null && !/^@\d+:data(?:\.|$)/.test(typeof selected === 'string' ? selected : '')) {
+        sh.ok = false;
+        sh.why = '"output" must name a successful call, e.g. "@2:data"';
+      }
+      const material = sh.ok && selected != null ? resolveArgs({ output: selected }, callMaterials) : null;
+      if (material && (!material.ok || material.args.output === undefined)) {
+        sh.ok = false;
+        sh.why = material.why || 'the selected call returned no data';
+      }
       if (sh.ok) {
         const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
+        if (material) out.data = material.args.output;
         if (degraded) { out.state = 'partial'; out.code = 'degraded'; out.gaps = [degraded].concat(out.gaps || []); }
         return out;
       }

@@ -18,6 +18,12 @@
  * ==========================================================================*/
 
 /** @returns {{pick:(cplx:boolean)=>(string|undefined), decide:(d:object)=>Promise<string|undefined>, mount:(panel:HTMLElement)=>void, get:()=>string}} */
+export function effortExperiment(mode) {
+  if (mode === 'low-adaptive') return { base: 'low', next: (requested) => requested || 'low' };
+  if (mode === 'high-fixed') return { base: 'high', next: () => 'high' };
+  return null;
+}
+
 export function makeAtlasEffort(H) {
   const KEY = 'intmap.atlas.effort';
   const MODES = ['auto', 'low', 'medium', 'high', 'xhigh'];
@@ -55,6 +61,7 @@ export function makeAtlasEffort(H) {
         + NL + NL + 'WHAT RIDES WITH IT: ' + (d.attachments ? d.attachments + ' attachment(s)' : 'no attachments')
         + (d.history ? NL + NL + 'EARLIER IN THIS CONVERSATION:' + NL + String(d.history).slice(-800) : '');
       const env = await d.ask(prompt, d.system || '', null, { task: 'atlas_effort', webMode: 'off', turnId: d.turnId || undefined, signal: ctl ? ctl.signal : (d.signal || undefined) });
+      d.onUsage?.(env?.meta);
       const t = String(env && env.data && env.data.effort || '').toLowerCase();
       return TIERS.includes(t) ? t : d.fallback;
     } catch (_) { return d.fallback; } finally { if (timer) clearTimeout(timer); }

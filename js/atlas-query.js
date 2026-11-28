@@ -37,7 +37,7 @@
  *  147,924. That ordering is the whole reason this can be a real engine instead of a demo.
  *
  *  ══ THREE RULES IT DOES NOT BREAK ═════════════════════════════════════════════════════════════
- *   ① NO SILENT CAP. A network column is capped (`NET_CAP`), a join result is capped, a table has a
+ *   ① NO SILENT CAP. Per-point network lookups can be capped (`NET_CAP`), a join result is capped, a table has a
  *     row floor — and every one of those is REPORTED in the result and printed under the table.
  *     A truncated answer that looks complete is the failure this round exists to remove.
  *   ② NO COLUMN WITHOUT ITS SOURCE. Every column that appears in a result carries the dataset it
@@ -80,7 +80,7 @@ export function atlasQuery(HOST) {
 
   /* ⚠ THE CAPS ARE NAMED HERE AND REPORTED WHEREVER THEY BITE (rule ①). */
   const SCAN_CAP = 200000;      /* rows a table may put into the planner at all */
-  const NET_CAP = 400;          /* rows a per-point NETWORK column may be evaluated for */
+  const NET_CAP = 400;          /* rows a bounded per-point network column may be evaluated for */
   const BATCH = 100;            /* points per Open-Meteo request (its documented maximum) */
   const JOIN_CAP = 20000;       /* rows a join table may return */
   const OUT_CAP = 200;          /* rows a single answer may carry */
@@ -264,37 +264,58 @@ export function atlasQuery(HOST) {
     return { rows, note: null };
   }
 
-  /* USGS FDSN — the published catalogue, asked the question it was built to answer. `sinceDays`,
-     `minMagnitude` and a bounding box all go INTO the request, so the browser is never filtering a
-     feed that was chosen for it. */
-  async function quakeRows(scope) {
+  /* Freeze the actual USGS time window once, including for a join that sends several requests. */
+  function quakeScope(scope) {
     const q = scope || {};
     const days = Math.max(0.04, Math.min(3650, +q.sinceDays || 30));
-    /* ⚠ THE WINDOW IS `startTime`/`endTime`, NOT `from`/`to`. `from` is the QUERY's own word for
-       «which table», and a base-table run hands this function the whole spec — so reading `q.from`
-       as a date sent USGS `starttime=earthquakes` and got HTTP 400 back. Measured, first run. */
-    const start = q.startTime || q.since || new Date(Date.now() - days * 864e5).toISOString();
+    const now = Date.now();
+    return { startTime: q.startTime || q.since || new Date(now - days * 864e5).toISOString(),
+      endTime: q.endTime || q.until || new Date(now).toISOString(), minMagnitude: q.minMagnitude, maxDepthKm: q.maxDepthKm };
+  }
+
+  /* USGS FDSN accepts the same sphere as distKm when the radius is expressed in degrees. */
+  async function quakeRows(scope, circle, timeWindow) {
+    const q = scope || {};
+    const period = timeWindow || quakeScope(q);
     const u = new URL('https://earthquake.usgs.gov/fdsnws/event/1/query');
     u.searchParams.set('format', 'geojson');
-    u.searchParams.set('starttime', String(start).slice(0, 23));
-    if (q.endTime || q.until) u.searchParams.set('endtime', String(q.endTime || q.until).slice(0, 23));
-    if (q.minMagnitude != null) u.searchParams.set('minmagnitude', String(+q.minMagnitude));
-    if (q.maxDepthKm != null) u.searchParams.set('maxdepth', String(+q.maxDepthKm));
-    if (q.bbox) {
+    u.searchParams.set('starttime', period.startTime);
+    u.searchParams.set('endtime', period.endTime);
+    if (period.minMagnitude != null) u.searchParams.set('minmagnitude', String(+period.minMagnitude));
+    if (period.maxDepthKm != null) u.searchParams.set('maxdepth', String(+period.maxDepthKm));
+    if (circle) {
+      u.searchParams.set('longitude', String(circle.longitude));
+      u.searchParams.set('latitude', String(circle.latitude));
+      u.searchParams.set('maxradius', String(circle.radiusDegrees));
+    } else if (q.bbox) {
       u.searchParams.set('minlongitude', String(q.bbox[0])); u.searchParams.set('minlatitude', String(q.bbox[1]));
       u.searchParams.set('maxlongitude', String(q.bbox[2])); u.searchParams.set('maxlatitude', String(q.bbox[3]));
     }
     u.searchParams.set('orderby', 'time'); u.searchParams.set('limit', String(JOIN_CAP));
-    const j = await (D.fetchJSON ? D.fetchJSON(u.toString()) : fetch(u.toString()).then((r) => r.json()));
-    const rows = [];
-    for (const f of ((j && j.features) || [])) {
-      const c = f.geometry && f.geometry.coordinates; if (!c) continue;
-      const p = f.properties || {};
-      rows.push({ id: f.id, name: p.place || f.id, lng: +c[0], lat: +c[1],
-        mag: num(p.mag), depthKm: num(c[2]), time: p.time ? new Date(p.time).toISOString() : '', url: p.url || '' });
+    const coverage = { scope: circle || (q.bbox ? { bbox: q.bbox } : { global: true }), status: 'unavailable', returned: 0 };
+    const note = {};
+    let j;
+    try {
+      j = await (D.fetchJSON ? D.fetchJSON(u.toString(), undefined, note) : fetch(u.toString()).then((r) => r.json()));
+    } catch (_) { j = null; }
+    if (!Array.isArray(j && j.features)) {
+      coverage.reason = note.reason && note.reason !== 'ok' ? note.reason : 'invalid-or-missing-response';
+      return { rows: [], window: period, coverage, unavailable: 'earthquake-catalogue-unavailable' };
     }
-    return { rows, note: null, capped: rows.length >= JOIN_CAP ? JOIN_CAP : null,
-      source: 'USGS FDSN event query · ' + String(start).slice(0, 10) + ' →' };
+    const rows = [];
+    for (const f of j.features) {
+      const c = f && f.geometry && f.geometry.coordinates;
+      if (!c || !Number.isFinite(c[0]) || !Number.isFinite(c[1])) continue;
+      const p = f.properties || {}, date = new Date(p.time == null ? NaN : p.time);
+      rows.push({ id: f.id, name: p.place || f.id, lng: +c[0], lat: +c[1],
+        mag: num(p.mag), depthKm: num(c[2]), time: Number.isFinite(date.getTime()) ? date.toISOString() : '', url: p.url || '' });
+    }
+    coverage.returned = rows.length;
+    if (rows.length < j.features.length) coverage.missingRecords = j.features.length - rows.length;
+    const capped = j.features.length >= JOIN_CAP ? JOIN_CAP : null;
+    coverage.status = capped ? 'capped' : (rows.length === j.features.length ? 'complete' : 'partial');
+    return { rows, window: period, coverage, capped,
+      source: 'USGS FDSN event query · ' + period.startTime + ' → ' + period.endTime };
   }
 
   let _volc = null;
@@ -621,23 +642,31 @@ export function atlasQuery(HOST) {
       const part = rows.slice(i, i + BATCH);
       const u = url(part.map((r) => r.lat.toFixed(4)).join(','), part.map((r) => r.lng.toFixed(4)).join(','));
       let j = null;
-      try { j = await (D.fetchJSON ? D.fetchJSON(u) : fetch(u).then((r) => r.json())); } catch (_) { j = null; }
+      const note = {};
+      try { j = await (D.fetchJSON ? D.fetchJSON(u, undefined, note) : fetch(u).then((r) => r.json())); } catch (_) { j = null; }
+      if (note.reason === 'aborted' || note.status === 429) break;
       /* ⚠ OPEN-METEO ANSWERS ITS OWN REFUSAL WITH HTTP 200 — {"error":true,"reason":"Daily API request
          limit exceeded"}. MEASURED on the first live run of this file. Reading that as data would fill
          the column with nulls and still print the endpoint as the source, which is rule ② broken from
          the inside: a source line under a column of «—» that nothing actually answered. */
       if (!j || j.error === true) continue;
       const arr = Array.isArray(j) ? j : [j];
-      for (let k = 0; k < part.length; k++) { read(part[k], arr.length === 1 && part.length > 1 ? arr[0] : arr[k], k); done++; }
+      for (let k = 0; k < part.length; k++) { read(part[k], arr.length === 1 && part.length > 1 ? arr[0] : arr[k], k, part.length); done++; }
     }
     return done;
   }
 
   async function ensureElev(rows) {
-    const n = await omBatch(rows,
+    const targets = rows.filter((r) => r.v.elevM === undefined);
+    for (const r of targets) r.v.elevM = null;
+    await omBatch(targets.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)),
       (la, lo) => 'https://api.open-meteo.com/v1/elevation?latitude=' + la + '&longitude=' + lo,
-      (r, j, k) => { const e = j && j.elevation; r.v.elevM = (e && e[k] != null) ? Math.round(+e[k]) : (e && e[0] != null && (!Array.isArray(e) || e.length === 1) ? Math.round(+e[0]) : null); });
-    return n ? { source: 'Open-Meteo elevation API (Copernicus DEM GLO-90)' } : { unavailable: 'elevation-endpoint-unreachable' };
+      (r, j, k, count) => {
+        const e = j && j.elevation;
+        if (Array.isArray(e) && e.length === count && Number.isFinite(e[k])) r.v.elevM = Math.round(e[k]);
+      });
+    return rows.some((r) => Number.isFinite(r.v.elevM)) ? { source: 'Open-Meteo elevation API (Copernicus DEM GLO-90)' }
+      : { unavailable: 'elevation-endpoint-unreachable' };
   }
 
   const WX = {
@@ -1013,6 +1042,59 @@ export function atlasQuery(HOST) {
     return [Math.max(-180, w - dLng), Math.max(-90, s - dLat), Math.min(180, e + dLng), Math.min(90, n + dLat)];
   }
 
+  async function joinedWhere(rows, plan) {
+    let out = rows.map((r) => Object.assign({ v: Object.create(null) }, r));
+    for (const c of plan) { await c._col.ensure(out); out = out.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
+    return out;
+  }
+
+  async function nearEarthquakes(rows, scope, km, label, plan, searches) {
+    const timeWindow = quakeScope(scope);
+    const centers = new Map();
+    const coverage = [];
+    /* Round the request edge slightly outward; the local distance test makes the final cut. */
+    const radiusDegrees = Math.min(180, km / R_KM * (180 / Math.PI) + 1e-9);
+    for (const row of rows) {
+      if (!Number.isFinite(row.lng) || !Number.isFinite(row.lat) || Math.abs(row.lat) > 90) {
+        coverage.push({ candidates: [row.id], scope: null, status: 'no-coordinate', returned: 0 });
+        continue;
+      }
+      const longitude = row.lng >= -180 && row.lng < 180 ? row.lng : ((row.lng + 180) % 360 + 360) % 360 - 180;
+      const key = longitude + ',' + row.lat;
+      if (!centers.has(key)) centers.set(key, { scope: { longitude, latitude: row.lat, radiusDegrees }, rows: [] });
+      centers.get(key).rows.push(row);
+    }
+    const jobs = Array.from(centers.values());
+    const matched = new Set();
+    let next = 0, aborted = false, source;
+    async function search() {
+      while (next < jobs.length) {
+        const job = jobs[next++];
+        const qr = aborted ? { rows: [], coverage: { scope: null, status: 'not-queried', reason: 'aborted', returned: 0 } }
+          : await quakeRows(scope, job.scope, timeWindow);
+        job.coverage = Object.assign({ candidates: job.rows.map((row) => row.id) }, qr.coverage);
+        if (qr.coverage.reason === 'aborted') aborted = true;
+        if (qr.source) source = qr.source;
+        const events = await joinedWhere(qr.rows, plan);
+        let nearest = null, distance = Infinity, count = 0;
+        for (const e of events) {
+          const d = distKm(job.scope.longitude, job.scope.latitude, e.lng, e.lat);
+          if (d <= km) { count++; if (d < distance) { nearest = e; distance = d; } }
+        }
+        const complete = qr.coverage.status === 'complete';
+        for (const row of job.rows) {
+          row.joins[label] = { count, nearest, km: nearest ? Math.round(distance * 10) / 10 : null, complete };
+          if (scope.require === false ? complete && !count : count > 0) matched.add(row);
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(jobs.length, 6) }, search));
+    for (const job of jobs) coverage.push(job.coverage);
+    const incomplete = coverage.reduce((n, item) => n + (item.status === 'complete' ? 0 : item.candidates.length), 0);
+    searches.push({ label, window: timeWindow, radiusKm: km, candidates: rows.length, incomplete, coverage });
+    return { rows: rows.filter((row) => matched.has(row)), source };
+  }
+
   /* (#R732) The rows that satisfy every spatial condition, and the labels it wrote into `r.joins`.
      ⚠ THE RESULT IS REPORTED THROUGH THE JOIN COLUMN, not through a second renderer: a spatial
      condition IS a join — one that is not limited to points — and the reader gets the number of
@@ -1080,8 +1162,7 @@ export function atlasQuery(HOST) {
         if (!jr || jr.unavailable || !jr.rows) { refuse(label, 'target-unavailable:' + ((jr && jr.unavailable) || '0')); continue; }
         /* the target table's own conditions, evaluated on its rows before any geometry is measured */
         const tconds = TP.conds;
-        let trows = jr.rows.map((r) => Object.assign({ v: Object.create(null) }, r));
-        for (const c of tconds) { await c._col.ensure(trows); trows = trows.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
+        let trows = await joinedWhere(jr.rows, tconds);
         if (trows.length > JOIN_CAP) { bag.caps.push({ what: jt.label, cap: JOIN_CAP, of: trows.length }); trows = trows.slice(0, JOIN_CAP); }
         targets = trows.map(rowGeometry).filter(Boolean);
         bag.sources.push({ what: jt.label, src: jr.source || jt.source });
@@ -1146,16 +1227,21 @@ export function atlasQuery(HOST) {
 
   async function run(spec) {
     const notes = [], sources = [], caps = [], unapplied = [];
+    const earthquakeSearches = [], elevationFilters = [];
     const colSrc = Object.create(null);   /* (atlas-cited-answers) column id → the source its values came from — `provenanceOf` below */
     await ensureShipped();   /* the tables data/ files declare — imported once, on the first query */
     syncUserTables();   /* (#R729) read at the moment of the query — see the header above TABLES */
     const from = String((spec && (spec.from || spec.table)) || 'cities').trim().toLowerCase();
     const T = TABLES[from];
     if (!T) return { ok: false, error: 'unknown-table', table: from, tables: Object.keys(TABLES) };
+    const ord = spec && (spec.order || spec.sort);
+    const oc = ord && columnFor(from, ord.col || ord.column || ord.by || ord);
 
     /* ① the base rows */
     const base = await T.rows(spec && spec.scope ? spec.scope : spec);
-    if (base.unavailable) return { ok: false, error: base.unavailable, table: from };
+    if (base.coverage) earthquakeSearches.push({ label: from, window: base.window, candidates: 1,
+      incomplete: base.coverage.status === 'complete' ? 0 : 1, coverage: [base.coverage] });
+    if (base.unavailable) return { ok: false, error: base.unavailable, table: from, earthquakeSearches };
     let rows = base.rows.map((r) => Object.assign({ v: Object.create(null), joins: {} }, r));
     const offered = rows.length;
     if (base.note) notes.push(base.note);
@@ -1215,11 +1301,16 @@ export function atlasQuery(HOST) {
     for (const c of plan) {
       if (!rows.length) break;
       let target = rows;
-      if (c._col.cost >= 2 && rows.length > NET_CAP) {
+      const rankingElevation = c._col.id === 'elevM' && oc?.id === c._col.id;
+      if (c._col.cost >= 2 && !rankingElevation && rows.length > NET_CAP) {
         target = rows.slice(0, NET_CAP);
         caps.push({ what: c._col.label, cap: NET_CAP, of: rows.length });
       }
       const info = await c._col.ensure(target) || {};
+      if (c._col.id === 'elevM' && c._col.cost >= 2) {
+        const measured = target.filter((r) => Number.isFinite(r.v.elevM)).length;
+        elevationFilters.push({ candidates: rows.length, measured });
+      }
       if (info.unavailable) {
         unapplied.push(colName(c._col));
         notes.push(colName(c._col) + ' — ' + notApplied() + ' (' + info.unavailable + ')');
@@ -1277,7 +1368,19 @@ export function atlasQuery(HOST) {
          they did. Before `jt.rows(scope)`, so a refused query pays for no network call. */
       const JP = planFor(jt.id, jn.where);
       if (JP.reject) return JP.reject;
-      const km = Math.max(0.1, +(jn.withinKm != null ? jn.withinKm : (jn.km != null ? jn.km : 100)));
+      const requestedKm = +(jn.withinKm != null ? jn.withinKm : (jn.km != null ? jn.km : 100));
+      if (!Number.isFinite(requestedKm) || (jt.id === 'earthquakes' && requestedKm <= 0)) {
+        unapplied.push(tableName(jt));
+        notes.push(tableName(jt) + ' — ' + notApplied() + ' (invalid-radius)');
+        continue;
+      }
+      if (jt.id === 'earthquakes') {
+        const result = await nearEarthquakes(rows, jn, requestedKm, String(jn.as || jt.id), JP.conds, earthquakeSearches);
+        rows = result.rows;
+        if (result.source) sources.push({ what: jt.label, src: result.source });
+        continue;
+      }
+      const km = Math.max(0.1, requestedKm);
       const scope = Object.assign({}, jn, { bbox: T.geo ? bboxOf(rows, km) : null });
       let jr;
       try { jr = await jt.rows(scope); } catch (e) { jr = { rows: [], unavailable: (e && e.message) || 'join-failed' }; }
@@ -1294,8 +1397,7 @@ export function atlasQuery(HOST) {
       if (jr.capped) caps.push({ what: jt.label, cap: jr.capped });
       /* the join table's own conditions (resolved above), evaluated on its rows before the distance test */
       const jconds = JP.conds;
-      let jrows = jr.rows.map((r) => Object.assign({ v: Object.create(null) }, r));
-      for (const c of jconds) { await c._col.ensure(jrows); jrows = jrows.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
+      const jrows = await joinedWhere(jr.rows, jconds);
       const label = String(jn.as || jt.id);
       const want = jn.require === false ? false : true;
       const out = [];
@@ -1326,9 +1428,22 @@ export function atlasQuery(HOST) {
        matched and then show nothing about them. */
     if (!shown.length && fieldTable(T)) { for (const f of (T.fields || []).slice(0, 4)) { const c = columnFor(from, f.name); if (c) shown.push(c); } }
     if (!shown.length) { const p = columnFor(from, from === 'earthquakes' ? 'mag' : 'pop'); if (p) shown.push(p); }
-    /* a shown column that no condition paid for still has to be measured */
+    let ranking = null;
+    /* A network ranking measures its column before it spends the output limit. Rank all elevations
+       in Open-Meteo batches and explicitly mark any candidate for which the endpoint supplied no value. */
+    if (oc && oc.cost >= 2) {
+      const full = oc.id === 'elevM';
+      const target = full ? rows : rows.slice(0, NET_CAP);
+      const info = target.some((r) => r.v[oc.id] === undefined) ? await oc.ensure(target) || {} : {};
+      if (!full && rows.length > NET_CAP) caps.push({ what: oc.label, cap: NET_CAP, of: rows.length });
+      if (info.source) { sources.push({ what: oc.label, src: info.source, origin: oc.origin }); colSrc[oc.id] = info.source; }
+      const measured = rows.filter((r) => r.v[oc.id] != null && Number.isFinite(r.v[oc.id])).length;
+      const filteredWithGaps = full && elevationFilters.some((f) => f.measured < f.candidates);
+      ranking = { column: oc.id, candidates: rows.length, measured, complete: measured === rows.length && !filteredWithGaps };
+    }
+    /* a shown column that no condition or ranking paid for still has to be measured */
     for (const c of shown) {
-      if (rows.some((r) => r.v[c.id] === undefined)) {
+      if (!(ranking && c.id === oc.id) && rows.some((r) => r.v[c.id] === undefined)) {
         const target = (c.cost >= 2 && rows.length > NET_CAP) ? rows.slice(0, NET_CAP) : rows;
         if (c.cost >= 2 && rows.length > NET_CAP) caps.push({ what: c.label, cap: NET_CAP, of: rows.length });
         const info = await c.ensure(target) || {};
@@ -1336,13 +1451,18 @@ export function atlasQuery(HOST) {
         if (info.source) colSrc[c.id] = info.source;
       }
     }
-    const ord = spec && (spec.order || spec.sort);
     if (ord) {
-      const oc = columnFor(from, ord.col || ord.column || ord.by || ord);
       const dir = /asc|up|bottom|low/i.test(String((ord && ord.dir) || (ord && ord.order) || 'desc')) ? 1 : -1;
       if (oc) {
-        if (rows.some((r) => r.v[oc.id] === undefined)) await oc.ensure(rows.slice(0, oc.cost >= 2 ? NET_CAP : rows.length));
-        rows.sort((a, b) => { const x = a.v[oc.id], y = b.v[oc.id]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+        if (oc.cost < 2 && rows.some((r) => r.v[oc.id] === undefined)) await oc.ensure(rows);
+        rows.sort((a, b) => {
+          const x = a.v[oc.id], y = b.v[oc.id];
+          if (x == null && y != null) return 1;
+          if (y == null && x != null) return -1;
+          return (x > y ? 1 : x < y ? -1 : 0) * dir
+            || (ranking ? String(a.name).localeCompare(String(b.name)) || a.lng - b.lng || a.lat - b.lat
+              || String(a.id).localeCompare(String(b.id)) : 0);
+        });
         if (!shown.find((x) => x.id === oc.id)) shown.push(oc);
       }
     } else if (from === 'cities') {
@@ -1388,7 +1508,8 @@ export function atlasQuery(HOST) {
       .sort().map((k) => k + '=' + keyOf(spec[k])).join('&');
     const resultKey = 'data.query:' + [from, condKey.join('&'), rest, 'limit=' + lim].join('|');
 
-    return { ok: true, table: from, tableLabel: T.label, offered, scanned, matched, rows, columns: shown, unapplied,
+    return { ok: true, table: from, tableLabel: T.label, offered, scanned, matched, rows, columns: shown,
+      unapplied, ranking, elevationFilters, earthquakeSearches,
       universe: base.universe || null, resultKey, colSrc, baseSource: base.source || T.source,
       /* (#R732) a spatial condition reports in the same column a NEAR join does — see spatialStage */
       joins: joins.map((j) => String(j.as || j.of || '')).concat(sres.labels), notes, sources, caps, spec };
@@ -1575,6 +1696,23 @@ export function atlasQuery(HOST) {
       h += line((icon('warning')+' ') + esc(L.arr(c.what) + ' — ' + L('limited to', '制限', 'begrenzt auf', 'ограничено до', 'limitado a')
         + ' ' + c.cap.toLocaleString() + (c.of ? (' / ' + c.of.toLocaleString()) : '')));
     }
+    if (res.ranking) {
+      h += line(esc(colName(res.columns.find((c) => c.id === res.ranking.column)) + ' · '
+        + res.ranking.measured.toLocaleString() + ' / ' + res.ranking.candidates.toLocaleString() + ' '
+        + L('candidates measured for ranking', '件の候補を順位付けのために実測')));
+    }
+    for (const filter of res.elevationFilters) {
+      h += line(esc(filter.measured.toLocaleString() + ' / ' + filter.candidates.toLocaleString() + ' '
+        + L('candidates measured for the elevation condition', '件の候補を標高条件のために実測')));
+    }
+    for (const search of res.earthquakeSearches) {
+      const scope = search.radiusKm != null ? L('radius per location', '地点ごとの半径') + ' ' + search.radiusKm + ' km'
+        : search.coverage[0]?.scope?.bbox?.join(', ');
+      h += line(esc(search.label + ' · ' + search.window.startTime + ' → ' + search.window.endTime + ' · '
+        + (scope ? scope + ' · ' : '')
+        + search.incomplete.toLocaleString() + ' / ' + search.candidates.toLocaleString() + ' '
+        + L('search candidates with missing or incomplete coverage', '件で地震検索が未取得または不完全')));
+    }
     for (const n of res.notes) h += line(esc(n));
     return '<div style="margin-top:8px;padding-top:7px;border-top:1px solid rgba(128,128,128,0.16);">' + h + '</div>';
   }
@@ -1598,9 +1736,18 @@ export function atlasQuery(HOST) {
       columns: cols.map((c) => ({ id: c.id, label: colName(c), unit: c.unit || '' })),
       rows: res.rows.map((r) => {
         const v = {}; cols.forEach((c) => { v[c.id] = num(r.v[c.id]); });
-        return { id: String(r.id != null ? r.id : (r.name + '@' + r.lat + ',' + r.lng)), name: r.name || '', iso2: r.iso2 || '', lat: rnd(r.lat), lng: rnd(r.lng), v };
+        const row = { id: String(r.id != null ? r.id : (r.name + '@' + r.lat + ',' + r.lng)), name: r.name || '', iso2: r.iso2 || '', lat: rnd(r.lat), lng: rnd(r.lng), v };
+        for (const search of res.earthquakeSearches || []) {
+          const hit = search.radiusKm != null && r.joins?.[search.label];
+          if (!hit) continue;
+          (row.joins ||= {})[search.label] = { count: hit.count, km: hit.km, complete: hit.complete, nearest: hit.nearest };
+        }
+        return row;
       }),
       unapplied: (res.unapplied || []).slice(),
+      ranking: res.ranking,
+      elevationFilters: res.elevationFilters,
+      earthquakeSearches: res.earthquakeSearches,
       sources: (res.sources || []).map((s) => ({ what: (typeof s.what === 'string') ? s.what : L.arr(s.what), src: s.src || '' })),
     };
   }
@@ -1674,6 +1821,10 @@ export function atlasQuery(HOST) {
             'Die Spalten dieser Tabelle sind', 'Столбцы этой таблицы', 'Las columnas de esta tabla son')
             + ': ' + (res.columns || []).join(', ')) + '</div>' };
       }
+      if (res.error === 'earthquake-catalogue-unavailable') {
+        return { ok: false, result: res, html: '<div>' + esc(L('The earthquake catalogue could not be read.',
+          '地震カタログを取得できませんでした。')) + '</div>' };
+      }
       return { ok: false, html: ('<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+icon('warning')+' ')
         + esc(L('This query names something IntMap does not have. The tables it does have are',
           'この問い合わせは IntMap に無いものを指しています。使える表は次のとおりです',
@@ -1714,13 +1865,23 @@ export function atlasQuery(HOST) {
         'Эти условия НЕ удалось проверить, и в строках ниже они НЕ учтены',
         'Estas condiciones NO pudieron evaluarse y NO están reflejadas abajo')
         + ': ' + res.unapplied.join(', ')) + '</div>') : '';
+    const partial = [];
+    if (res.ranking && !res.ranking.complete) partial.push(L('The ranking is incomplete and covers only candidates with measured values.',
+      '順位は実測値のある候補に限られ、全候補の順位は確定できません。'));
+    if (res.elevationFilters.some((f) => f.measured < f.candidates)) partial.push(L('The elevation condition has unmeasured candidates.',
+      '標高条件に未計測の候補があります。'));
+    if (res.earthquakeSearches.some((s) => s.incomplete)) partial.push(L('Earthquake coverage is incomplete. Counts and nearest events reflect available records.',
+      '地震検索に欠測があります。件数と最寄りの地震は取得できた記録に基づきます。'));
+    const coverageWarning = partial.length ? '<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'
+      + icon('warning') + ' ' + esc(partial.join(' ')) + '</div>' : '';
     const none = res.matched ? '' : '<div style="font-size:11.5px;color:var(--text-muted);margin:3px 0;">'
-      + esc(L('No row satisfies every condition. Every condition was actually evaluated — see the method below.',
+      + esc(partial.length || res.unapplied.length ? L('No matching rows were observed with the available data.',
+        '取得できたデータでは該当する行を確認できませんでした。') : L('No row satisfies every condition. Every condition was actually evaluated — see the method below.',
         'すべての条件を満たす行はありませんでした。各条件は実際に評価しています（下の判定方法）。',
         'Keine Zeile erfüllt alle Bedingungen — jede wurde tatsächlich ausgewertet.',
         'Ни одна строка не удовлетворяет всем условиям — каждое было действительно проверено.',
         'Ninguna fila cumple todas las condiciones — cada una fue evaluada.')) + '</div>';
-    return { ok: true, html: gap + title + (res.matched ? tableHtml(res) : none) + methodHtml(res),
+    return { ok: true, html: gap + coverageWarning + title + (res.matched ? tableHtml(res) : none) + methodHtml(res),
       objectIds: ids, resultKey: res.resultKey, result: res, provenance: provenanceOf(res) };
   }
 

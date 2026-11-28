@@ -115,12 +115,13 @@ export function vocabulary() {
    (大化, the first era ICU carries) to today, and twice a month inside every year whose two ends disagree — an
    era shorter than a year (暦仁: 74 days) lies wholly inside such a year. Measured: ~4,000 formats, a few ms. */
 let _eras = null;
+let eraCalendar;
 export function japaneseEras() {
   if (_eras) return _eras;
   const map = new Map();
   let ja = null, en = null;
   try {
-    ja = new Intl.DateTimeFormat('ja-JP-u-ca-japanese', { era: 'long', year: 'numeric', timeZone: 'UTC' });
+    eraCalendar = ja = new Intl.DateTimeFormat('ja-JP-u-ca-japanese', { era: 'long', year: 'numeric', timeZone: 'UTC' });
     en = new Intl.DateTimeFormat('en-u-ca-japanese', { era: 'long', year: 'numeric', timeZone: 'UTC' });
   } catch (_) { _eras = map; return map; }
   const read = (f, d) => { const ps = f.formatToParts(d); const e = ps.find((p) => p.type === 'era'), y = ps.find((p) => p.type === 'year');
@@ -129,8 +130,10 @@ export function japaneseEras() {
     const a = read(ja, d); if (!a || a.n < 1) return null;
     if (!map.has(a.era)) {
       const b = read(en, d);
-      map.set(a.era, { name: a.era, en: b ? b.era.replace(/\s*\(.*\)\s*$/, '') : '', start: gy - a.n + 1 });
+      map.set(a.era, { name: a.era, en: b ? b.era.replace(/\s*\(.*\)\s*$/, '') : '', start: gy - a.n + 1, end: gy });
     }
+    const entry = map.get(a.era);
+    entry.end = Math.max(entry.end, gy);
     return a.era;
   };
   const yNow = new Date().getUTCFullYear();
@@ -138,6 +141,8 @@ export function japaneseEras() {
     const a = note(utcAt(y, 0, 1, 12), y), b = note(utcAt(y, 11, 31, 12), y);
     if (a !== b) for (let m = 0; m < 12; m++) { note(utcAt(y, m, 1, 12), y); note(utcAt(y, m, 15, 12), y); }
   }
+  const current = map.get(read(ja, new Date())?.era);
+  if (current) current.end = Infinity;
   _eras = map;
   return map;
 }
@@ -154,10 +159,39 @@ function tidyPlace(s) {
 const num = (s) => parseInt(s, 10);
 const validMD = (m, d) => (m == null || (m >= 1 && m <= 12)) && (d == null || (d >= 1 && d <= 31));
 
+function dateProblem(w) {
+  if (!validMD(w.m, w.d) || !Number.isInteger(w.y)) return 'invalid-date';
+  const instant = instantOf(w);
+  if (!Number.isFinite(instant.getTime()) || (w.d != null && instant.getUTCDate() !== w.d)) return 'invalid-date';
+  if (!w.era) return null;
+  const era = japaneseEras().get(w.era.name);
+  if (!era || w.era.n !== w.y - era.start + 1 || w.y < era.start || w.y > era.end) return 'outside-era';
+  if (w.m == null || w.y < 1873 || w.y > new Date().getUTCFullYear()) return null;
+  const matches = (d) => eraCalendar.formatToParts(d).some((p) => p.type === 'era' && p.value === era.name);
+  const first = utcAt(w.y, w.m - 1, w.d ?? 1, 12);
+  return matches(first) || (w.d == null && matches(utcAt(w.y, w.m, 0, 12))) ? null : 'outside-era';
+}
+
+function civilToday(now, timeZone) {
+  if (!timeZone) return [now.getFullYear(), now.getMonth() + 1, now.getDate()];
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' })
+    .formatToParts(now).filter((p) => p.type !== 'literal')
+    .reduce((date, p) => { date[{ year: 0, month: 1, day: 2 }[p.type]] = Number(p.value); return date; }, []);
+}
+
+function whenProblem(when, min, today) {
+  if (when.y < min) return 'before-floor';
+  const invalid = dateProblem(when);
+  if (invalid) return invalid;
+  const [y, m, d] = today;
+  if (when.y * 10000 + (when.m ?? 1) * 100 + (when.d ?? 1) > y * 10000 + m * 100 + d) return 'future';
+  return null;
+}
+
 /**
  * Read a line for a place and an instant.
  * @param {string} text
- * @param {{min?:number, now?:Date}} [opts]  the clock's floor (astronomical year) and today
+ * @param {{min?:number, now?:Date, timeZone?:string}} [opts]  the clock's floor (astronomical year) and local calendar
  * @returns {{input:string, place:string, when:null|{y:number,m:number|null,d:number|null,precision:'year'|'month'|'day',
  *   calendar:'gregorian'|'japanese', form:string, matched:string, era?:{name:string,n:number}, dropped?:string},
  *   problem:null|{code:string, text?:string, min?:number}}}
@@ -170,13 +204,14 @@ export function parse(text, opts) {
   if (!s || !/\d|元\s*年/.test(s)) return out;
   const V = vocabulary();
   const now = o.now || new Date();
-  const yNow = now.getUTCFullYear();
+  const today = civilToday(now, o.timeZone);
+  const yNow = today[0];
   let hit = null;   /* { start, end, y, m, d, calendar, form, era?, dropped? } */
 
   /* ① ISO: 1868-01 · 1945-05-08 · -0043-03-15 (astronomical, as ECMA writes it) */
   if (!hit) {
     const re = /(?<![\p{L}\p{N}])(-?\d{1,6})-(\d{1,2})(?:-(\d{1,2}))?(?![\p{N}-])/u, m = re.exec(s);
-    if (m && validMD(num(m[2]), m[3] ? num(m[3]) : null)) hit = { start: m.index, end: m.index + m[0].length, y: num(m[1]), m: num(m[2]), d: m[3] ? num(m[3]) : null, calendar: 'gregorian', form: 'iso' };
+    if (m) hit = { start: m.index, end: m.index + m[0].length, y: num(m[1]), m: num(m[2]), d: m[3] ? num(m[3]) : null, calendar: 'gregorian', form: 'iso' };
   }
   /* ② 和暦: <era>(n|元)年[m月[d日]] — the era name is the longest suffix of the Han run before the number that ICU knows */
   if (!hit) {
@@ -196,11 +231,10 @@ export function parse(text, opts) {
         if (before === s.slice(0, m.index) && run.length >= 2 && run.length <= 4 && m[1].length <= 2) { out.problem = { code: 'unknown-era', text: run + m[1] + '年' }; return out; }
         continue;
       }
-      const n = m[1] === '元' ? 1 : num(m[1]); if (n < 1) continue;
+      const n = m[1] === '元' ? 1 : num(m[1]);
       const y = era.start + n - 1;
       let mo = m[2] ? num(m[2]) : null, d = m[3] ? num(m[3]) : null, dropped;
-      if (!validMD(mo, d)) continue;
-      if (mo != null && y < 1873) { dropped = 'lunisolar'; mo = null; d = null; }
+      if (mo != null && y < 1873 && validMD(mo, d)) { dropped = 'lunisolar'; mo = null; d = null; }
       const start = before.length - era.name.length;
       hit = { start, end: m.index + m[0].length, y, m: mo, d, calendar: 'japanese', form: 'wareki', era: { name: era.name, n }, dropped };
       break;
@@ -209,7 +243,7 @@ export function parse(text, opts) {
   /* ③ CJK Gregorian: [紀元前|西暦]n年[m月[d日]] */
   if (!hit) {
     const re = new RegExp('(?:(' + V.bce + ')|(' + V.ce + '))?\\s*(\\d{1,6})\\s*年(?:\\s*(\\d{1,2})\\s*月(?:\\s*(\\d{1,2})\\s*日)?)?', 'iu'), m = re.exec(s);
-    if (m && num(m[3]) >= 1 && validMD(m[4] ? num(m[4]) : null, m[5] ? num(m[5]) : null))
+    if (m && num(m[3]) >= 1)
       hit = { start: m.index, end: m.index + m[0].length, y: fromEra(num(m[3]), !!m[1]), m: m[4] ? num(m[4]) : null, d: m[5] ? num(m[5]) : null, calendar: 'gregorian', form: m[1] ? 'era' : 'cjk' };
   }
   /* ④ a month name: [d] Month [d,] [era] year [era] — «May 1945», «8 May 1945», «May 8, 1945», «15 March 44 BC» */
@@ -220,7 +254,7 @@ export function parse(text, opts) {
     if (m) {
       const mo = V.months.get(m[2].replace(/\.$/, '').toLocaleLowerCase()), d = m[1] ? num(m[1]) : (m[3] ? num(m[3]) : null);
       const bce = !!(m[4] || m[7]), n = num(m[6]);
-      if (mo && n >= 1 && validMD(mo, d)) hit = { start: m.index, end: m.index + m[0].length, y: fromEra(n, bce), m: mo, d, calendar: 'gregorian', form: 'month' };
+      if (mo && n >= 1) hit = { start: m.index, end: m.index + m[0].length, y: fromEra(n, bce), m: mo, d, calendar: 'gregorian', form: 'month' };
     }
   }
   /* ⑤ a year with an era word: 44 BC · AD 800 · 323 v. Chr. */
@@ -234,6 +268,10 @@ export function parse(text, opts) {
     const m = /(?:^|[\s,、])(\d{3,4})$/u.exec(s);
     if (m && num(m[1]) <= yNow) hit = { start: m.index + m[0].length - m[1].length, end: s.length, y: num(m[1]), m: null, d: null, calendar: 'gregorian', form: 'bare' };
   }
+  if (!hit) {
+    const m = /(?<!\d)(\d{1,2})\s*月\s*(\d{1,2})\s*日/u.exec(s);
+    if (m) hit = { start: m.index, end: m.index + m[0].length, y: yNow, m: num(m[1]), d: num(m[2]), calendar: 'gregorian', form: 'cjk' };
+  }
   if (!hit) return out;
   const when = { y: hit.y, m: hit.m, d: hit.d, precision: hit.d != null ? 'day' : (hit.m != null ? 'month' : 'year'),
     calendar: hit.calendar, form: hit.form, matched: s.slice(hit.start, hit.end).trim() };
@@ -242,8 +280,8 @@ export function parse(text, opts) {
   out.place = tidyPlace(s.slice(0, hit.start) + ' ' + s.slice(hit.end));
   out.when = when;
   const min = Number.isFinite(o.min) ? o.min : clockMin();
-  if (when.y < min) out.problem = { code: 'before-floor', min };
-  else if (when.y > yNow || (when.precision !== 'year' && instantOf(when).getTime() > now.getTime())) out.problem = { code: 'future' };
+  const code = whenProblem(when, min, today);
+  if (code) out.problem = { code, min };
   return out;
 }
 function clockMin() { try { const v = IntMapTime.min; return Number.isFinite(v) ? v : 1; } catch (_) { return 1; } }
@@ -280,6 +318,8 @@ export function problemText(parsed, lang) {
   if (p && p.code === 'unknown-era') out.push(L('«' + p.text + '» is not an era this search can convert. It reads Common Era years, years before the Common Era and Japanese era names.', '「' + p.text + '」は変換できる元号ではありません。西暦・紀元前・和暦に対応しています。'));
   if (p && p.code === 'before-floor') out.push(L('Chronos reaches back to ' + whenText({ y: p.min, precision: 'year' }, lang) + '.', 'Chronos は ' + whenText({ y: p.min, precision: 'year' }, lang) + 'まで遡れます。'));
   if (p && p.code === 'future') out.push(L('That instant is in the future — the clock goes no further than today.', 'その時刻は未来です。時計は今日より先へは進みません。'));
+  if (p && p.code === 'invalid-date') out.push(L('That calendar date does not exist.', 'その年月日は暦に存在しません。'));
+  if (p && p.code === 'outside-era') out.push(L('That date is outside the named era.', 'その年月日は、指定された元号の期間外です。'));
   if (w && w.dropped === 'lunisolar') out.push(L('A Japanese month and day before 1873 are lunisolar and are not converted here — the year is used.', '1873年より前の和暦の月日は太陰太陽暦で、ここでは変換しません。年だけを使います。'));
   return out.length ? out.join(' ') : null;
 }
@@ -289,9 +329,16 @@ export function problemText(parsed, lang) {
 export function applyWhen(when, opts) {
   const o = opts || {}, clock = o.clock || IntMapTime, source = o.source || 'search';
   if (!when || !clock) return { ok: false };
-  if (when.y < clock.min) return { ok: false, code: 'before-floor' };
+  const now = o.now || new Date(), today = civilToday(now, o.timeZone);
+  const code = whenProblem(when, clock.min, today);
+  if (code) return { ok: false, code };
   if (when.precision === 'year') clock.setYear(when.y, { source });
-  else clock.set(instantOf(when), { source });
+  else {
+    const currentMonth = when.precision === 'month' && when.y === today[0] && when.m === today[1];
+    const instant = currentMonth ? utcAt(when.y, when.m - 1, Math.min(15, today[2]), 12) : instantOf(when);
+    /* Chronos stores a UTC date. Its representative noon may be ahead of the wall clock even for a valid local day. */
+    clock.set(instant, { source, allowFuture: instant > now });
+  }
   return { ok: true, iso: clock.iso(), live: clock.isLive() };
 }
 

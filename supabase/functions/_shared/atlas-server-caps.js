@@ -121,7 +121,7 @@ const worldRelated = {
    that task's own sources carried through. */
 /* what the server's data.gis reads, said in its own words when it is asked for something else (it borrowed the world graph's sentence) */
 const notHere = (what) => ({ ok: false, code: 'part_unsupported_on_server', text: 'On the server data.gis reads: inline GeoJSON; the address of a GeoJSON file ("https://…" or "url:https://…"); or what an earlier task of this job made — "@<task id>:data.result", or simply the task id when that task is one of this task\'s inputs. "' + String(what).slice(0, 80) + '" is none of these: layers, OGC/STAC searches, acquire and raster output need the page.' });
-const sourceOfUrl = (u) => ({ url: String(u).slice(0, 500), title: 'GeoJSON file ' + (String(u).split('?')[0].split('/').filter(Boolean).pop() || String(u)).slice(0, 160) });
+const sourceOfUrl = (u) => ({ url: String(u), title: 'GeoJSON file ' + (String(u).split('?')[0].split('/').filter(Boolean).pop() || String(u)).slice(0, 160) });
 export function columnsOf(features) {
   const seen = new Set();
   for (const f of features) { const pr = f && f.properties; if (pr && typeof pr === 'object') for (const k of Object.keys(pr)) if (seen.size < 200) seen.add(k); }
@@ -132,7 +132,7 @@ const gisJob = {
   needs: ['gis'],
   /* the arguments that hold datasets: a task id written there is that task's output (planJob makes it a dependency — js/atlas-job-core.js) */
   datasetArgs: ['inputs'],
-  args: '{"op"?:str (omit it, with inputs, to READ them: the result is the features as read),"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…}} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
+  args: '{"op"?:str (omit it, with inputs, to READ them: the result is the features as read),"inputs":[GeoJSON|"https://…geojson"|"url:https://…geojson"|"@<task>:data.result"|"<task id>"],"params"?:{…},"strict"?:bool (refuse semantic cautions before running an operation)} — a spatial operation (buffer, join, nearest, dissolve, measure, filter…) run on GeoJSON you give, point at, or that an earlier task of this job made ("@A:data.result" hands the whole result of A on); {"describe":true} lists the operations and their parameters. "layer:" / "ogc:" / "stac:" refs, acquire and raster output need the page',
   async run(args, ctx) {
     const a = args || {};
     if (a.acquire || a.kind === 'raster' || a.semantics) return notHere(a.acquire ? 'acquire' : (a.semantics ? 'semantics' : 'raster'));
@@ -145,16 +145,17 @@ const gisJob = {
       /* (gis-worker-chain) describe ONE operation when it is named — its whole declaration (params, required, values). The list of all of them is 13 KB
          as JSON and was read back cut at 6,012 characters, so a worker never saw aggregate's parameters and called it with "stats" for "stat"
          (production 2026-11-28); the list now names each op with its inputs and parameter names, and says how to read one in full. */
+      const execution = await ctx.gis.execution?.();
       if (a.op) {
         const one = ops.find((o) => o.id === String(a.op));
         if (!one) return { ok: false, code: 'unknown_op', text: 'No operation "' + String(a.op).slice(0, 60) + '". The operations: ' + ops.map((o) => o.id).join(', ') + '.' };
-        return { ok: true, text: one.id + '(' + one.inputs + ' input(s), accepts ' + (one.accepts || []).join('/') + ', output ' + one.output + '): ' + (one.params || []).map((p) => p.name + (p.required ? '*' : '') + (p.values ? '=' + p.values.join('|') : '')).join(', ') + '.', data: { op: one }, sources: [] };
+        return { ok: true, text: one.id + '(' + one.inputs + ' input(s), accepts ' + (one.accepts || []).join('/') + ', output ' + one.output + '): ' + (one.params || []).map((p) => p.name + (p.required ? '*' : '') + (p.values ? '=' + p.values.join('|') : '')).join(', ') + '.', data: { op: one, execution }, sources: [] };
       }
       const brief = ops.map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, params: (o.params || []).map((p) => p.name + (p.required ? '*' : '')) }));
-      return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '. Each one in full (types, allowed values, when a parameter is required): {"describe":true,"op":"<id>"}.', data: { ops: brief }, sources: [] };
+      return { ok: true, text: ops.length + ' operation(s): ' + ops.map((o) => o.id + '(' + o.inputs + ')').join(', ') + '. Each one in full (types, allowed values, when a parameter is required): {"describe":true,"op":"<id>"}.', data: { ops: brief, execution }, sources: [] };
     }
-    const inputs = [], names = [], read = [], sources = [];
-    const addSource = (x) => { if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: String(x.url).slice(0, 500), title: String(x.title || '').slice(0, 200) }); };
+    const inputs = [], names = [], read = [], lineage = [], sources = [];
+    const addSource = (x) => { if (x && x.url && !sources.some((y) => y.url === x.url)) sources.push({ url: String(x.url), title: String(x.title || '').slice(0, 200) }); };
     for (const x of Array.isArray(a.inputs) ? a.inputs : []) {
       let v = x, name = '', srcs = [], from = null;
       /* (gis-handoff-entry) THE PAGE'S VOCABULARY, ON THE SERVER. The page's data.gis names an input by a dataset id, and a file by "url:https://…";
@@ -170,10 +171,10 @@ const gisJob = {
         if (!/^https:\/\//i.test(addr)) return notHere(x);
         if (typeof ctx.fetchGeoJson !== 'function') return { ok: false, code: 'no_file_reader', text: 'This runtime cannot read a file by address.' };
         const f = await ctx.fetchGeoJson(addr, { signal: ctx.signal });
-        if (!f.ok) return { ok: false, code: f.code, text: f.text };
+        if (!f.ok) return { ok: false, code: f.code, text: f.text, category: f.category };
         v = f.json; name = addr.slice(0, 500); srcs = [sourceOfUrl(addr)];
       }
-      if (v && typeof v === 'object' && !Array.isArray(v) && v.intmap && typeof v.intmap === 'object') {
+      if (!srcs.length && v && typeof v === 'object' && !Array.isArray(v) && v.intmap && typeof v.intmap === 'object') {
         /* handed on from an earlier task (the runner marked it): its task, the version of its output, and the sources IT named */
         from = { task: String(v.intmap.from || '').slice(0, 64), version: String(v.intmap.version || '').slice(0, 40) };
         name = 'task ' + from.task + (from.version ? ' (output version ' + from.version + ')' : '');
@@ -183,7 +184,9 @@ const gisJob = {
       if (!feats) return { ok: false, code: 'bad_input', text: 'Each input must be a FeatureCollection, a Feature, an array of Features, the https address of a GeoJSON file, or "@<task>:data.result".' };
       inputs.push(feats); names.push(name);
       srcs.forEach(addSource);
-      read.push(Object.assign({ name: name || '(inline GeoJSON)', count: feats.length, sources: srcs.map((y) => y && y.url).filter(Boolean) }, from ? { from: from.task, version: from.version } : null));
+      const record = Object.assign({ name: name || '(inline GeoJSON)', count: feats.length, sources: srcs.map((y) => y && y.url).filter(Boolean) }, from ? { from: from.task, version: from.version } : null);
+      read.push(record);
+      lineage.push({ ...record, provenance: v.provenance || v.intmap?.provenance });
     }
     if (reading) {
       /* the read step: its result IS its input(s) — one input is that collection, several are one collection of all of them, each feature as it came */
@@ -193,12 +196,12 @@ const gisJob = {
       return {
         ok: true,
         text: 'read -> ' + all.length + ' feature(s) from ' + read.map((x) => x.count + ' (' + x.name + ')').join(' + ') + '. First rows: ' + JSON.stringify(head).slice(0, 600),
-        data: { op: 'read', count: all.length, columns: columnsOf(all), result: { type: 'FeatureCollection', features: all }, inputs: read },
+        data: { op: 'read', count: all.length, columns: columnsOf(all), result: { type: 'FeatureCollection', features: all }, inputs: read, provenance: lineage.length === 1 ? lineage[0].provenance : undefined },
         sources,
       };
     }
     let r;
-    try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params, names }); }
+    try { r = await ctx.gis.run({ op: String(a.op), inputs, params: a.params, names, lineage, strict: a.strict === true }); }
     catch (e) { return { ok: false, code: String((e && e.code) || 'op_failed'), text: String((e && e.detail) || (e && e.message) || e).slice(0, 300) }; }
     const head = r.features.slice(0, 5).map((f) => (f && f.properties ? f.properties : {}));
     return {

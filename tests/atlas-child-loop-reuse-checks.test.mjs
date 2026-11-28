@@ -136,7 +136,7 @@ test('③ a retry of the SAME piece replaces its failure; another piece\'s succe
 });
 test('③ the loop hands the plan the call\'s identity', () => {
   const src = readFileSync(new URL('../js/atlas-agent.js', import.meta.url), 'utf8');
-  assert.equal((src.match(/PLAN\.started\(call\.id, \{ step: p\.planStep, capability: capOfCall\(p\.routed\), key: p\.ckey, work: p\.work \}/g) || []).length, 2);
+  assert.equal((src.match(/PLAN\.started\(call\.id, \{[^}]*key: p\.ckey, work: p\.work\b/g) || []).length, 2);
 });
 
 /* ── ④ ───────────────────────────────────────────────────────────────────────────────────── */

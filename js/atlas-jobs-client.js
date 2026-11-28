@@ -21,7 +21,7 @@
  * ==========================================================================*/
 
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every card text and href below goes through */
-import { s, stable, jobGeometryTypes } from './atlas-job-core.js';
+import { s, stable, jobGeometryTypes, readJobArtifactFeatures } from './atlas-job-core.js';
 
 const TERMINAL = new Set(['done', 'partial', 'failed', 'cancelled']);   /* partial: some pieces finished and some did not (gis-result-handoff) */
 const TASK_ENDED = new Set(['done', 'partial', 'failed', 'refused', 'cancelled']);
@@ -94,13 +94,10 @@ export function makeJobsClient(o) {
       const d = r.data || {};
       const o = d.output || null;
       if (!o) return { ok: false, code: 'no_output' };
-      const sources = Array.isArray(r.sources) ? r.sources : [];
+      const sources = Array.isArray(r.outputSources) ? r.outputSources : (Array.isArray(r.sources) ? r.sources : []);
       if (o.stored !== 'artifact') return d.result && Array.isArray(d.result.features) ? { ok: true, features: d.result.features, output: o, sources } : { ok: false, code: 'no_output' };
-      const a = await db.from('atlas_job_artifacts').select('part,body').eq('job_id', jobId).eq('task_id', taskId).order('part');
-      if (a.error || !Array.isArray(a.data) || a.data.length !== o.parts) return { ok: false, code: 'output_incomplete', have: Array.isArray(a.data) ? a.data.length : 0, parts: o.parts };
-      const features = [];
-      a.data.forEach((x) => { for (const f of ((x.body && x.body.features) || [])) features.push(f); });
-      return { ok: true, features, output: o, sources };
+      const got = await readJobArtifactFeatures(db, 'atlas_job_artifacts', jobId, taskId, o);
+      return got.ok ? { ...got, output: o, sources } : got;
     },
   };
 }
@@ -153,7 +150,7 @@ function outputOf(r) {
   const geometryTypes = Array.isArray(o.geometryTypes) ? o.geometryTypes :
     Array.isArray(data.result?.features) ? jobGeometryTypes(data.result.features) : null;
   return { id: s(o.id, 120), version: s(o.version, 40), count: Number(o.count) || 0, columns: Array.isArray(o.columns) ? o.columns.slice(0, 60).map((c) => s(c, 80)) : [],
-    geometryTypes, sources: Array.isArray(o.sources) ? o.sources.slice(0, 10).map((u) => s(u, 400)) : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
+    geometryTypes, sources: Array.isArray(o.sources) ? o.sources.filter((u) => typeof u === 'string') : [], bytes: Number(o.bytes) || 0, stored: o.stored === 'artifact' ? 'artifact' : 'inline', parts: Number(o.parts) || 0 };
 }
 
 /* ══ APPLYING WHAT A JOB SAVED FOR THE PAGE  (server-capability-lane) ═══════════════════════════════════
@@ -180,18 +177,27 @@ export async function applyParked(f, apply, memory) {
     visiting.delete(t.id); seen.add(t.id); ordered.push(t);
   };
   sorted.forEach(visit);
-  const tried = memory ? (memory.tried || (memory.tried = new Set())) : null;
+  const attempts = memory ? (memory.attempts || (memory.attempts = new Map())) : null;
   const notApplied = new Set();   // a task whose operation did not take effect holds back the ones that start from it
   for (const t of ordered) {
     if (!t.parked || t.state !== 'done') continue;
-    const key = String(f.id) + '/' + t.id;
+    /* A kept result may be valid under later conditions, but is still the same execution.
+       Version zero retains the key written by earlier clients. */
+    const version = t.requestVersion ?? t.conditionsVersion ?? 0;
+    const key = String(f.id) + '/' + t.id + (version > 0 ? '@' + version : '');
+    if (t.stale) { notApplied.add(t.id); continue; }
     if (memory && memory.has(key)) continue;
     const blocker = (t.deps || []).find((d) => notApplied.has(d));
     if (blocker) { notApplied.add(t.id); out.push({ task: t.id, capability: t.parked.capability, ok: false, applied: false, why: 'its predecessor "' + blocker + '" did not take effect' }); continue; }
-    if (tried && tried.has(key)) continue;   /* a run that threw or was refused is not run again on the next poll of THIS page */
-    if (tried) tried.add(key);
-    let r;
-    try { r = await apply(t.parked); } catch (e) { r = { ok: false, why: s(e && e.message, 120) || 'threw' }; }
+    const existing = attempts?.get(key);
+    if (existing) {
+      if (!(await existing)?.ok) notApplied.add(t.id);
+      continue;
+    }
+    const attempt = Promise.resolve().then(() => apply(t.parked))
+      .catch((e) => ({ ok: false, why: s(e && e.message, 120) || 'threw' }));
+    attempts?.set(key, attempt);
+    const r = await attempt;
     const ok = !!(r && r.ok);
     /* ⚠ «APPLIED» IS WRITTEN AFTER THE EFFECT WAS OBSERVED, NOT BEFORE THE ATTEMPT. The mark went in first, so an operation that failed was already
        «done» and a fetch of the same job never drew it. `ok` here is the page's own read-back (js/atlas-cap-jobs.js parkedApplier: observed !== false). */
@@ -201,13 +207,17 @@ export async function applyParked(f, apply, memory) {
   return out;
 }
 
-/* the device memory of what was applied — localStorage, never required (a page without it applies once per page load) */
+/* The page's independent job readers share in-flight applications. Storage carries successful receipts across loads. */
+const parkedMemories = new WeakMap();
 export function deviceParkedMemory(w) {
-  const win = w || (typeof window !== 'undefined' ? window : {});
+  const win = w || (typeof window !== 'undefined' ? window : globalThis);
+  if (parkedMemories.has(win)) return parkedMemories.get(win);
   const KEY = 'intmap.atlas.jobs.applied';
   const seen = new Set();
   try { JSON.parse((win.localStorage && win.localStorage.getItem(KEY)) || '[]').forEach((k) => seen.add(String(k))); } catch (_) { /* start empty */ }
-  return { tried: new Set(), has: (k) => seen.has(k), add: (k) => { seen.add(k); try { if (win.localStorage) win.localStorage.setItem(KEY, JSON.stringify(Array.from(seen).slice(-500))); } catch (_) { /* the device refused */ } } };
+  const memory = { has: (k) => seen.has(k), add: (k) => { seen.add(k); try { if (win.localStorage) win.localStorage.setItem(KEY, JSON.stringify(Array.from(seen).slice(-500))); } catch (_) { /* the device refused */ } } };
+  parkedMemories.set(win, memory);
+  return memory;
 }
 
 /* jobText(facts) — plain text, the facts first (Atlas reads the top of a card's text) */

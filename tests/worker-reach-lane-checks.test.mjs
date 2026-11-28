@@ -11,7 +11,7 @@
  *    ④ a worker run of model.run returns the forecast as data and neither pins nor moves the camera; the reader's run still does both
  *    ⑤ a worker run of data.query asks the engine for no pins and hands the rows back as data
  *    ⑥ a worker's compute.run keeps only the 'read' grant, its program may call only what the worker may, and is not filed
- *    ⑦ web.fetchFile, whose file door draws, refuses a worker before anything is fetched
+ *    ⑦ web.fetchFile registers a worker's download without drawing and returns the dataset id
  *  Every run is evaluated with the source the lane itself hands the kernel (⑩ of atlas-delegation-wiring), not a spelling.
  * ==========================================================================*/
 import test from 'node:test';
@@ -145,11 +145,35 @@ test('⑥ compute.run in a worker: read grant only, the program calls only what 
   } finally { delete window.IntMapCompute; delete window.IntMapLazy; }
 });
 
-test('⑦ web.fetchFile refuses a worker before anything is downloaded, with the reason', async () => {
-  let fetched = 0;
-  const K = baseK({ HOST: { get fetch() { fetched++; return null; } } });
-  const r = await entry('web.fetchFile').run({ url: 'https://example.org/a.csv' }, await workerCtx(), K);
-  assert.equal(r.ok, false); assert.equal(r.meta.code, 'draws_on_reader_map'); assert.equal(fetched, 0);
+test('⑦ web.fetchFile in a worker keeps the download for inspection without drawing, even if requested', async () => {
+  const src = 'https://example.test/resources/observations.csv';
+  const b64 = Buffer.from('latitude,longitude,height\n12,35,100\n').toString('base64');
+  const asked = [];
+  const realFetch = globalThis.fetch;
+  const endpoint = window.SUPABASE_URL;
+  window.SUPABASE_URL = 'https://relay.test';
+  globalThis.fetch = async () => ({ status: 200, json: async () => ({ ok: true, file: { b64, name: 'observations.csv', type: 'text/csv', url: src } }) });
+  window.GeoJSONUpload = { handle: async ([file], opts) => {
+    asked.push({ text: await file.text(), ...opts });
+    return [{ ok: true, format: 'csv', features: 1, datasetId: 'ds-retained', layer: opts.draw ? 27 : null,
+      description: { bounds: [35, 12, 35, 12], quality: { rowsWithoutGeometry: 0 } } }];
+  } };
+  try {
+    assert.equal(classify('web.fetchFile'), 'read');
+    const K = baseK({ HOST: { DB: { auth: { getSession: async () => ({ data: { session: { access_token: 't' } } }) } } } });
+    const cap = entry('web.fetchFile');
+    const r = await cap.run({ url: src, draw: true }, await workerCtx(), K);
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.exec.web.dataset, { id: 'ds-retained', format: 'csv', rows: 1, layer: null,
+      label: 'observations.csv', bounds: [35, 12, 35, 12], quality: { rowsWithoutGeometry: 0 } });
+    assert.deepEqual(asked[0], { text: 'latitude,longitude,height\n12,35,100\n', quiet: true, draw: false, inspect: true, source: src });
+    const parent = await cap.run({ url: src }, { source: 'atlas' }, K);
+    assert.equal(parent.exec.web.dataset.layer, 27);
+  } finally {
+    globalThis.fetch = realFetch;
+    window.SUPABASE_URL = endpoint;
+    delete window.GeoJSONUpload;
+  }
 });
 
 test('⑧ geo.regionStat names what it writes and is headless: a worker gets the figures, never the reader\'s layer', async () => {

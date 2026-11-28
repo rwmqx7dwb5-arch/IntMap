@@ -14,6 +14,8 @@
  *  regression to one-request-per-pixel shows as a request count, not as a flaky network wait.
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
+import area from '@turf/area';
+import { readFileSync } from 'node:fs';
 
 test('the four GIS chains reach their end through the shipped doors', async ({ app }) => {
   const page = app.page;
@@ -133,4 +135,110 @@ test('the population of an area: WorldPop counts become a density and integrate 
   } finally {
     await page.unroute(RE);
   }
+});
+
+test('atlas-population-coverage: the Atlas kernel paints and reports the same WorldPop footprint', async ({ app }) => {
+  const { page } = app;
+  const url = 'https://api.worldpop.org/v3/population';
+  const posted = [];
+  await page.route(url, route => {
+    const { geojson, year } = route.request().postDataJSON();
+    posted.push(geojson);
+    return route.fulfill({ json: { total_population: 50, data_year: year, data_source: 'WorldPop test fixture' } });
+  });
+  try {
+    const r = await page.evaluate(async () => {
+      const host = window.IntMapKnowledgeHost();
+      window._radiusFromPoint(144.5, 43);
+      host.radiusItems[0].radiusKm = 8;
+      host.measurePoints = [[142, 43], [142.125, 43], [142, 43.125]];
+      const ask = () => window.IntMapOS.execute('data.populationIn', { target: 'radius', year: 2024 }, { source: 'atlas' });
+      const first = await ask();
+      const repeat = await ask();
+      const result = first.observed?.exec?.population;
+      const ids = result?.areas.map(area => area.objectId) || [];
+      const painted = window.IntMapGeoEngine.layers.sourceData('nlq-poly-src')?.features || [];
+      const item = window._imHlPolys.list().find(p => p.id === ids[0]);
+      const matches = painted.filter(f => JSON.stringify(f.geometry) === JSON.stringify(item?.geo));
+      return {
+        status: first.status, repeat: repeat.status, objectIds: ids,
+        repeatIds: repeat.observed?.exec?.population?.areas.map(area => area.objectId),
+        result, geometry: item?.geo, sourceShape: matches[0]?.geometry, matchingShapes: matches.length,
+      };
+    });
+    expect(r.status).toBe('completed');
+    expect(r.repeat).toBe('completed');
+    expect(r.repeatIds).toEqual(r.objectIds);
+    expect(r.objectIds).toHaveLength(1);
+    expect(r.result.requestedTarget).toBe('radius');
+    expect(r.result.highlighted).toBe(true);
+    expect(r.matchingShapes).toBe(1);
+    expect(r.sourceShape).toEqual(r.geometry);
+    expect(r.result.areaKm2).toBeCloseTo(area(r.sourceShape) / 1e6, 8);
+    expect(posted).toHaveLength(r.result.areas[0].tiles);
+    expect(r.result.areas[0].bounds[0]).toBeGreaterThan(144);
+  } finally {
+    await page.unroute(url);
+    await page.evaluate(() => {
+      window._imHlPolys?.clear();
+      window.clearAllRadius();
+      window.IntMapKnowledgeHost().measurePoints = [];
+    });
+  }
+});
+
+test('a deferred GIS import is inspectable and becomes visible only when requested', async ({ app }) => {
+  const result = await app.page.evaluate(async () => {
+    await window.IntMapLazy.need('gisCore');
+    const upload = window.GeoJSONUpload;
+    const A = window.IntMapGis.atlas;
+    const source = 'https://example.test/observations.geojson';
+    const fc = { type: 'FeatureCollection', features: [
+      { type: 'Feature', properties: { value: 3 }, geometry: { type: 'Point', coordinates: [178, 11] } },
+      { type: 'Feature', properties: { value: 8 }, geometry: { type: 'Point', coordinates: [-177, 16] } },
+    ] };
+    const file = new File([JSON.stringify(fc)], 'observations.geojson', { type: 'application/geo+json' });
+    const before = upload._items.length;
+    const [imported] = await upload.handle([file], { draw: false, inspect: true, source });
+    const afterImport = upload._items.length;
+    const nearby = await A.remote({ action: 'search', origins: ['held'], bounds: [179, 10, -179, 12] });
+    const distant = await A.remote({ action: 'search', origins: ['held'], bounds: [30, 10, 35, 17] });
+    const held = nearby.entries.find((e) => e.id === imported.datasetId);
+    const read = await A.run({ inputs: [held.ref] });
+    const drawn = await window.IntMapOS.execute('map.drawDataset', { dataset: imported.datasetId });
+    return {
+      imported: imported.description, before, afterImport, held, analysed: read.dataset?.id,
+      distant: distant.entries.some((e) => e.id === imported.datasetId),
+      drawn: drawn.status, afterDraw: upload._items.length,
+    };
+  });
+  expect(result.imported).toMatchObject({ source: 'https://example.test/observations.geojson', format: 'geojson', bounds: [178, 11, -177, 16] });
+  expect(result.afterImport).toBe(result.before);
+  expect(result.held.match.spatial).toBe('overlaps');
+  expect(result.held.overlapBounds).toEqual([[179, 11, 180, 12], [-180, 11, -179, 12]]);
+  expect(result.distant).toBe(false);
+  expect(result.analysed).toBe(result.imported.id);
+  expect(result.drawn).toBe('completed');
+  expect(result.afterDraw).toBe(result.before + 1);
+});
+
+test('a deferred GeoTIFF import measures raster quality without mounting a layer', async ({ app }) => {
+  const fixture = JSON.parse(readFileSync(new URL('./fixtures/worldpop-service.json', import.meta.url), 'utf8'));
+  const result = await app.page.evaluate(async (encoded) => {
+    const upload = window.GeoJSONUpload;
+    const before = upload._items.length;
+    const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+    const [receipt] = await upload.handle([new File([bytes], 'population-grid.tif')], { draw: false, inspect: true });
+    return { before, after: upload._items.length, receipt };
+  }, fixture.exportImage8x8Tokyo2020);
+  expect(result.after).toBe(result.before);
+  expect(result.receipt).toMatchObject({
+    ok: true, grid: true, format: 'geotiff',
+    description: { kind: 'raster', boundsBasis: 'measured', quality: { inspected: true } },
+  });
+  const { description } = result.receipt;
+  expect(description.resolution.min).toBeGreaterThan(0);
+  const band = description.quality.inspection.bands[0];
+  expect(band.count).toBeGreaterThan(0);
+  expect(band.count + band.nodataCount).toBe(description.count);
 });

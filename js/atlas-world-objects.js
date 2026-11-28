@@ -553,11 +553,13 @@ export function makeAtlasWorldObjects(deps) {
     function find(query, opts) {
       var q = str(query, 160).trim(); if (!q) return null;
       var type = opts && opts.type;
+      var externalOnly = opts && opts.externalId;
+      var c0 = externalOnly ? null : byRef[canon(q)];
+      if (c0 && (!type || c0.type === type)) return c0;
+      var hit = byIdentifier(q);
+      if (hit && (!type || hit.type === type)) return hit;
+      if (externalOnly) return null;
       var pool = all().filter(function (o) { return !type || o.type === type; });
-      var c0 = byRef[canon(q)];
-      var hit = c0 && (!type || c0.type === type) ? c0 : null;
-      if (hit) return hit;
-      hit = byIdentifier(q); if (hit && (!type || hit.type === type)) return hit;
       hit = pool.filter(function (o) { return o.id === q; })[0];
       if (hit) return hit;
       var n = geo.normName(q); if (!n) return null;

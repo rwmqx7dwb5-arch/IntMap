@@ -3,7 +3,7 @@
     "Atlas evaluation questions with ground-truth answers. Every answer was checked on 2026-10-01 against the source recorded with it; each question pins its reference (census year, survey edition, named service, named event).",
     "Great-circle distances are computed (haversine, R=6371.0088 km) from the coordinates given in each derivation; everything else is a figure stated by the cited source.",
     "(atlas-eval-map-state) `mapState` — what the FINAL MAP must hold, only where the question's own words ask the map for something (「地図に出して」「Highlight」「Fly to」「線を引いて」…). A coordinate names the source it was read at. Field meanings and the discovered vocabulary: scripts/atlas-eval/map-state.mjs. A question without such words carries none.",
-    "(eval-shape-grading) When the thing asked for IS an area or a line in the world (a river, a basin, a prefecture, a state, a canal, a fault), the map is graded on `atlas.shapes.<kind>:<basis>` — `line:real` is an upstream's course, `line:unstated` a line nobody vouches for — so a line drawn between two towns does not pass as the river. A thing with no shape in any source IntMap reads is answered by saying so (answer kind `declines`, graded on the words) and drawing no stand-in (`max: 0` on the map); its `until` names the source whose arrival turns it into a shape question."
+    "(eval-shape-grading) When the thing asked for IS an area or a line in the world (a river, a basin, a prefecture, a state, a canal, a fault), the map is graded on `atlas.shapes.<kind>:<basis>` — `line:real` is an upstream's course, `line:unstated` a line nobody vouches for — so a line drawn between two towns does not pass as the river. A named criterion checks the same feature for its name, geometry kind, basis, source and Atlas authorship. A thing with no shape in any source IntMap reads is answered by saying so (answer kind `declines`, graded on the words) and drawing no stand-in (`max: 0` on the map); its `until` names the source whose arrival turns it into a shape question."
   ],
   "version": 1,
   "retrieved": "2026-10-01",
@@ -271,7 +271,7 @@
       "capabilities": ["map.outline", "data.populationIn", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「東京都を地図で囲って」 — an outline of the prefecture" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["東京都","Tokyo","Tokyo Metropolis"], "why": "「東京都を地図で囲って」 — an outline of the prefecture" }
         ]
       }
     },
@@ -285,7 +285,7 @@
       "capabilities": ["map.highlight", "data.populationIn", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「大阪府をハイライトして」 — the prefecture's own boundary" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["大阪府","Osaka","Osaka Prefecture"], "why": "「大阪府をハイライトして」 — the prefecture's own boundary" }
         ]
       }
     },
@@ -327,7 +327,7 @@
       "note": "Census count, not the adjusted population estimate (~38.2 million).",
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Canada.\"" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["Canada","カナダ"], "why": "\"Highlight Canada.\"" }
         ]
       }
     },
@@ -496,7 +496,7 @@
           "why": "「琵琶湖を地図でハイライトして」 — the lake is on screen"
         },
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「琵琶湖を地図でハイライトして」 — the lake's own outline, not an approximate one" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["琵琶湖","Lake Biwa","Biwa-ko"], "why": "「琵琶湖を地図でハイライトして」 — the lake's own outline, not an approximate one" }
         ]
       }
     },
@@ -520,7 +520,7 @@
       "capabilities": ["map.highlight", "data.countryCard", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Russia.\" — the national border (a lit country counts as area:real)" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["Russia","Russian Federation","ロシア","Россия"], "why": "\"Highlight Russia.\" — the national border (a lit country counts as area:real)" }
         ]
       }
     },
@@ -567,7 +567,7 @@
           "why": "\"Outline Lake Superior on the map\" — the lake is on screen"
         },
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Outline Lake Superior\"" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["Lake Superior","Lac Supérieur","スペリオル湖"], "why": "\"Outline Lake Superior\"" }
         ]
       }
     },
@@ -691,7 +691,7 @@
       "capabilities": ["map.highlight", "data.value"],
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.line:real", "min": 1, "named": ["信濃川", "Shinano", "千曲川"], "why": "「信濃川を地図でなぞって」 — the river's own course (an upstream's waterway), not a line drawn between places along it" }
+          { "path": "atlas.shapes.line:real", "min": 1, "named": ["信濃川", "Shinano", "Shinano River", "千曲川", "Chikuma River"], "why": "「信濃川を地図でなぞって」 — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
@@ -752,7 +752,7 @@
       "note": "Length is disputed by definition of the source; the range covers the commonly cited 6,650 and 6,695 km.",
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.line:real", "min": 1, "named": ["Nile", "ナイル"], "why": "\"Trace the Nile on the map\" — the river's own course (an upstream's waterway), not a line drawn between places along it" }
+          { "path": "atlas.shapes.line:real", "min": 1, "named": ["Nile", "Nile River", "ナイル", "ナイル川"], "why": "\"Trace the Nile on the map\" — the river's own course (an upstream's waterway), not a line drawn between places along it" }
         ]
       }
     },
@@ -831,7 +831,7 @@
       "capabilities": ["map.highlight", "data.countryCard"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Highlight Germany.\"" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["Germany","ドイツ","Deutschland"], "why": "\"Highlight Germany.\"" }
         ]
       }
     },
@@ -971,7 +971,7 @@
       "capabilities": ["map.highlight", "data.value"],
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.area:real", "min": 1, "why": "「流域を地図に塗って」 — the basin's hydrological outline (GRDC / HydroSHEDS / OSM), not an outline a model traced" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["利根川の流域", "利根川流域", "利根川水系", "Tone River basin", "Tone basin", "Tone River watershed"], "why": "「流域を地図に塗って」 — the basin's hydrological outline (GRDC / HydroSHEDS / OSM), not an outline a model traced" }
         ]
       }
     },
@@ -985,7 +985,7 @@
       "capabilities": ["map.highlight", "data.value"],
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "「長野県を地図で塗って」 — the prefecture's own boundary" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["長野県","Nagano","Nagano Prefecture"], "why": "「長野県を地図で塗って」 — the prefecture's own boundary" }
         ]
       }
     },
@@ -1000,7 +1000,7 @@
       "note": "Total area (land and water).",
       "mapState": {
         "drawn": [
-          { "anyOf": [{ "path": "atlas.shapes.area:real", "min": 1 }, { "path": "objects.kind:outline", "min": 1 }], "why": "\"Shade Texas on the map\" — the state's own boundary" }
+          { "path": "atlas.shapes.area:real", "min": 1, "named": ["Texas","テキサス州"], "why": "\"Shade Texas on the map\" — the state's own boundary" }
         ]
       }
     },
@@ -1015,7 +1015,7 @@
       "note": "Length since the 2015 expansion; older figures (162–164 km) measure the canal without its approach channels.",
       "mapState": {
         "drawn": [
-          { "path": "atlas.shapes.line:real", "min": 1, "why": "\"Trace the Suez Canal\" — the waterway's own course, not a straight line from Port Said to Suez" }
+          { "path": "atlas.shapes.line:real", "min": 1, "named": ["Suez Canal", "スエズ運河", "قناة السويس"], "why": "\"Trace the Suez Canal\" — the waterway's own course, not a straight line from Port Said to Suez" }
         ]
       }
     },

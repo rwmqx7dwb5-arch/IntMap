@@ -161,7 +161,7 @@ export const CASES = {
 /* The configuration travels in a file, not in an environment variable: a case that sends an oversized
    body (the 413 answer) makes the JSON larger than Linux lets one environment string be (MAX_ARG_STRLEN,
    128 KiB), and the spawn itself fails with E2BIG — on the CI runner, not on Windows. */
-function runCase(entryUrl, c) {
+export function runCase(entryUrl, c) {
   const dir = mkdtempSync(join(tmpdir(), 'aipc-cfg-'));
   const file = join(dir, 'cfg.json');
   writeFileSync(file, JSON.stringify({ entry: entryUrl, env: c.env, requests: c.requests }));

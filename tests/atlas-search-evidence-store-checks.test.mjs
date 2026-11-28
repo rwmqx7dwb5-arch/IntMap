@@ -41,7 +41,7 @@ test('② acquire: joined while running, stored while fresh, refreshed on reques
   const c = await ev.acquire('page', 'k', fetcher(3));
   assert.equal(c.how, 'stored'); assert.equal(calls, 1);
   const d = await ev.acquire('page', 'k', fetcher(4), { refresh: true });
-  assert.equal(d.how, 'fetched'); assert.equal(calls, 2); assert.equal(d.entry.id, a.entry.id, 'a refresh replaces the record, keeping its id');
+  assert.equal(d.how, 'fetched'); assert.equal(calls, 2); assert.notEqual(d.entry.id, a.entry.id, 'a refresh gets its own evidence id');
   const e = await ev.acquire('page', 'k', fetcher(5), { fits: () => false });
   assert.equal(e.how, 'fetched', 'a stored record that does not fit this request is not enough');
 

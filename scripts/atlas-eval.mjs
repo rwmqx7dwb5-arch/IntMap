@@ -17,6 +17,7 @@
  *  (atlas-quality-lab) ALSO, on a live run:
  *      --set records|answers|all   which problem set to ask (default all): the questions the manual rounds
  *                                  recorded (questions.json) and/or the verified answer key (answer-key.json)
+ *      --effort-policy low-adaptive|high-fixed  measure the same question set with an explicit effort policy
  *      --rubric                    grade every answer-key reply with the INDEPENDENT grader (ai-proxy
  *                                  `atlas_grade`, a provider other than the one answering; one use per grade)
  *      --record <dir>              save every measured turn as a cassette (scripts/atlas-eval/replay.mjs) —
@@ -157,10 +158,10 @@ export const PAGE = {
     T.__atlasEvalTapped = true;
     return true;
   },
-  ask: async (q) => {
+  ask: async ({ text, effortPolicy }) => {
     const t0 = Date.now(); let err = '';
     window.__atlasEvalCalls = [];
-    try { await window.IntMapConsole.run(q); } catch (e) { err = String((e && e.message) || e); }
+    try { await window.IntMapConsole.run(text, undefined, undefined, { effortPolicy }); } catch (e) { err = String((e && e.message) || e); }
     return { ms: Date.now() - t0, err };
   },
   stop: () => { try { window.IntMapConsole.stopRun(); } catch (_) { } },
@@ -211,6 +212,7 @@ export const PAGE = {
       } : null,
       steps: (dbg && Array.isArray(dbg.steps)) ? dbg.steps.map((s) => ({ step: s.step, calls: s.calls || [] })) : [],
       stopped: dbg ? dbg.stopped : null,
+      measurement: dbg?.measurement || null,
       calls: window.__atlasEvalCalls || [],
       /* (atlas-quality-lab) the two sides of the turn js/atlas-console.js keeps for --record */
       replies: (dbg && Array.isArray(dbg.replies)) ? dbg.replies : null,
@@ -269,7 +271,8 @@ export function observeTurn(q, raw, askRes, earlier) {
     completion: t.completion || null,   /* (atlas-completion-rate) what the turn's own trace declared — read only to compare with what existed */
     unmet: Array.isArray(t.unmet) ? t.unmet : null,   /* (atlas-completion-verdict) what `completion` is computed from — deliverables.mjs claimOf derives the claim from it when `completion` is missing, and says so */
     replies: raw.replies || null, dispatches: raw.dispatches || null,
-    aiCalls: Number.isFinite(+t.aiCalls) ? +t.aiCalls : null,   /* (atlas-delegation-eval) the model calls of the turn, for the A/B bench */
+    aiCalls: raw.measurement?.row?.model_calls ?? (Number.isFinite(+t.aiCalls) ? +t.aiCalls : null),
+    measurement: raw.measurement || null,
     ...conversationOf(earlier),
   };
 }
@@ -330,7 +333,7 @@ export function harnessPatienceMs(rules, patienceMin) {
 /** askOnFreshPage(S, text, {patienceMs, sections}) → { unmeasured:{measured:false,unmeasured,detail} } | { askRes, raw }
  *  One question on a fresh page: a turn is judged on what IT did, not on what the previous turn — or the place
  *  probes, which set the geocoder's language — left behind. The watchdog is the harness's patience, not a limit on Atlas. */
-export async function askOnFreshPage(S, text, { patienceMs, sections, earlier }) {
+export async function askOnFreshPage(S, text, { patienceMs, sections, earlier, effortPolicy }) {
   const { page } = S;
   await S.boot(); await page.evaluate(PAGE.ensureAtlas);
   await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.run), null, { timeout: 60000 });
@@ -340,11 +343,11 @@ export async function askOnFreshPage(S, text, { patienceMs, sections, earlier })
      it left (ids, courses, looks) is on record before the next turn can change it. */
   const said = [];
   for (const t of earlier || []) {
-    const a = await askOnce(page, t, patienceMs);
+    const a = await askOnce(page, t, patienceMs, effortPolicy);
     if (a.unmeasured) return { unmeasured: Object.assign({}, a.unmeasured, { detail: 'earlier turn «' + t + '»: ' + (a.unmeasured.detail || a.unmeasured.unmeasured) }) };
     said.push({ text: t, askRes: a.askRes, raw: await page.evaluate(PAGE.observe, sections) });
   }
-  const a = await askOnce(page, text, patienceMs);
+  const a = await askOnce(page, text, patienceMs, effortPolicy);
   if (a.unmeasured) return { unmeasured: a.unmeasured };
   const raw = await page.evaluate(PAGE.observe, sections);
   /* (atlas-controls-receipts) the graded turn's drawn switches are pressed after it is observed — never an earlier turn's, which would change the map the next turn starts from */
@@ -353,9 +356,9 @@ export async function askOnFreshPage(S, text, { patienceMs, sections, earlier })
   return { askRes: a.askRes, raw, earlier: said };
 }
 /** one question on the page as it stands, under the harness's watchdog → { askRes } | { unmeasured } */
-async function askOnce(page, text, patienceMs) {
+async function askOnce(page, text, patienceMs, effortPolicy) {
   let askRes, timer = null;
-  const asking = page.evaluate(PAGE.ask, text);
+  const asking = page.evaluate(PAGE.ask, { text, effortPolicy });
   asking.catch(() => { });   /* if the watchdog wins, the next boot() rejects this one — that is not an error */
   try {
     askRes = await Promise.race([asking, new Promise((r) => { timer = setTimeout(() => r({ timedOut: true }), patienceMs); })]);
@@ -402,11 +405,28 @@ export function cassetteOf(q, obs, judged, meta) {
   };
 }
 
+export function effortSample(turns, policy) {
+  const attempted = turns.filter((t) => t.effort !== undefined);
+  const evidence = attempted.map((t) => t.effort);
+  const priced = evidence.filter((e) => e && Number.isFinite(e.costMicros));
+  const shown = evidence.map((e) => e?.firstUsefulMs).filter(Number.isFinite).sort((a, b) => a - b);
+  const observedDeliverables = attempted.reduce((n, t) => n + (t.deliverables?.present || 0), 0);
+  const totalCostMicros = attempted.length && priced.length === attempted.length ? priced.reduce((n, e) => n + e.costMicros, 0) : null;
+  return { policy, attempted: attempted.length, observedDeliverables, costObserved: priced.length, totalCostMicros,
+    costPerObservedDeliverableMicros: totalCostMicros != null && observedDeliverables ? totalCostMicros / observedDeliverables : null,
+    firstUsefulObserved: shown.length, firstUsefulMedianMs: shown.length ? (shown[(shown.length - 1) >> 1] + shown[shown.length >> 1]) / 2 : null };
+}
+
 async function evaluate() {
   const dryRun = has('--dry-run');
   const url = arg('--url', process.env.ATLAS_EVAL_URL || PROD_URL);
   const outDir = resolve(arg('--out', join(ROOT, 'test-results', 'atlas-eval')));
   const only = arg('--only') ? new Set(arg('--only').split(',').map((s) => s.trim())) : null;
+  const effortPolicy = arg('--effort-policy');
+  if (effortPolicy && !['low-adaptive', 'high-fixed'].includes(effortPolicy)) {
+    console.error('atlas-eval: --effort-policy is low-adaptive or high-fixed');
+    process.exit(2);
+  }
   const token = process.env.ATLAS_EVAL_REFRESH_TOKEN || '';
   if (!dryRun && !token) {
     console.error('atlas-eval: ATLAS_EVAL_REFRESH_TOKEN is not set. A run without a session measures nothing —');
@@ -435,6 +455,9 @@ async function evaluate() {
     S = await openAtlasSession({ url, token, headed: has('--headed'), dryRun });
     const { page, who } = S;
     build = S.build; session = S.session; fatal = S.fatal;
+    if (effortPolicy && !await page.evaluate((mode) => window.IntMapAtlasDebug?.supportsEffortPolicy?.(mode) === true, effortPolicy)) {
+      fatal ||= 'the deployed console does not support the requested effort policy';
+    }
 
     /* the place probes: no model call, no session needed — they run in every mode */
     for (const row of probeRows) {
@@ -452,9 +475,9 @@ async function evaluate() {
       if (stopAll) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'not_reached', detail: stopAll }, rules)); continue; }
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
-      const asked = await askOnFreshPage(S, q.text, { patienceMs, earlier: (q.earlier || []).map((e) => e.text),
+      const asked = await askOnFreshPage(S, q.text, { patienceMs, effortPolicy, earlier: (q.earlier || []).map((e) => e.text),
         sections: [...new Set([...sectionsRead(questions), ...sectionsRead(questions.flatMap((x) => x.earlier || [])), ...deliverableSectionsOf(questions)])] });
-      if (asked.unmeasured) { turns.push(judgeTurn(q, asked.unmeasured, rules)); continue; }
+      if (asked.unmeasured) { turns.push({ ...judgeTurn(q, asked.unmeasured, rules), ...(effortPolicy ? { effort: null } : {}) }); continue; }
       const obs = observeTurn(q, asked.raw, asked.askRes, asked.earlier);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
          asked for (it costs a use), and never for an empty reply (there is nothing to grade; the
@@ -467,6 +490,14 @@ async function evaluate() {
         }
       }
       const judged = judgeTurn(q, obs, rules);
+      if (effortPolicy) {
+        const row = obs.measurement?.row;
+        const costs = [obs].concat(obs.earlier || []).map((e) => e.measurement?.effortPolicy === effortPolicy && e.measurement.row?.cost_known ? e.measurement.row.cost_micros : null);
+        judged.effort = obs.measurement?.effortPolicy === effortPolicy && row ? {
+          costMicros: costs.every(Number.isFinite) ? costs.reduce((n, c) => n + c, 0) : null,
+          firstUsefulMs: row.first_useful_ms,
+        } : null;
+      }
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
       if (obs.measured) judged.record = { operations: obs.operations, calls: obs.calls ? trimCalls(obs.calls) : null, steps: obs.steps, reply: obs.reply, snapshot: obs.snapshot,
         completion: obs.completion, unmet: obs.unmet,   /* (atlas-completion-verdict) the declaration as the turn recorded it — deliverables claimBasis says when it was derived */
@@ -499,6 +530,7 @@ async function evaluate() {
     runUrl: arg('--run-url') || null, dryRun, partial, session, fatal: fatal || null, verdict,
     metrics: metricsOf(turns, probes),
     completionRate: completionRateOf(turns.map((t) => t.deliverables)),   /* (atlas-completion-rate) the requested things that existed, apart from what the turns said */
+    ...(effortPolicy ? { effortComparison: effortSample(turns, effortPolicy) } : {}),
     previous: previous ? { when: previous.when, runUrl: previous.runUrl || null, verdict: previous.verdict } : null,
     regressions: adv.regressions, improvements: adv.improvements,
     reference: (dryRun || partial) ? ((previous && previous.reference) || {}) : adv.reference,

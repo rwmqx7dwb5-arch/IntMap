@@ -25,6 +25,11 @@
  *  PURE: every network rung is injected (`deps`), so tests drive it with scripted answers.
  * ==========================================================================*/
 
+import along from '@turf/along';
+import length from '@turf/length';
+import { geometryRange, osmFeatureId } from './map-feature-geometry.js';
+export { geometryRange, osmFeatureId };
+
 const AREA_TYPES = /^(Multi)?Polygon$/;
 const LINE_TYPES = /^(Multi)?LineString$/;
 
@@ -62,19 +67,28 @@ export function shapeBasisOf(r) {
  * neither an area nor a line is not a shape and is not counted. `basis` outside SHAPE_BASES is `unstated`.
  */
 export function tallyShapes(items) {
-  const o = { n: 0 };
+  const o = { n: 0, items: [] };
   for (const it of items || []) {
-    const k = shapeKindOf(it && it.geo);
+    const k = shapeKindOf(it?.geo) || (SHAPE_KINDS.includes(it?.kind) ? it.kind : '');
     if (!k) continue;
     const b = SHAPE_BASES.includes(it.basis) ? it.basis : 'unstated';
-    o.n++;
-    o[k + ':' + b] = (o[k + ':' + b] || 0) + 1;
+    if (it.author !== 'user') {
+      o.n++;
+      o[k + ':' + b] = (o[k + ':' + b] || 0) + 1;
+    }
     /* (atlas-shape-identity) WHICH thing each shape is: the name it was resolved for. A count says a river-shaped line is
        on the map; only the name says it is the river that was asked for. Absent when a shape carries none. */
     const nm = it && typeof it.name === 'string' ? it.name.trim() : '';
     if (nm) { (o.names || (o.names = [])); if (o.names.indexOf(nm) < 0) o.names.push(nm); }
+    const { id, target, author, source, sourceId, sourceVersion, method, transformation, turnId, bounds, endpoints } = it;
+    o.items.push({ id, name: nm, target: target || nm, kind: k, basis: b, author, source, sourceId, sourceVersion, method, transformation, turnId, bounds, endpoints });
   }
-  return o.n ? o : null;
+  return o.items.length ? o : null;
+}
+
+export function mapAuthorship(ctx) {
+  if (!ctx?.source) return { author: 'unknown', turnId: null };
+  return { author: /^atlas(?:-|$)/.test(ctx.source) ? 'atlas' : 'user', turnId: ctx.turnId ?? null };
 }
 
 /** the first GeoJSON geometry a highlight-ladder answer carries, wherever that rung put it */
@@ -98,8 +112,9 @@ export async function resolveShape(name, want, deps, where) {
   const nm = String(name == null ? '' : name).trim();
   if (!nm) return { ok: false, reason: 'no_name' };
   const r = want === 'line' ? await line(nm, deps) : want === 'area' ? await area(nm, deps) : { ok: false, reason: 'unknown_shape' };
-  if (!r.ok || !where || !where.country) return r;
-  return inCountry(r, where.country, deps);
+  if (!r.ok) return r;
+  const shape = { ...r, target: nm };
+  return where && where.country ? inCountry(shape, where.country, deps) : shape;
 }
 
 /* (see the header) a shape asked FOR a country must touch it: up to 64 vertices, evenly spaced, are asked which country
@@ -121,11 +136,15 @@ function inCountry(r, country, deps) {
 
 async function area(nm, deps) {
   let r = null;
+  if (typeof deps.basin === 'function') {
+    try { r = await deps.basin(nm); } catch (_) { r = null; }
+    if (r) return r.ok ? r : { ok: false, reason: r.reason || 'not_found' };
+  }
   try { r = typeof deps.area === 'function' ? await deps.area(nm) : null; } catch (_) { r = null; }
   if (!r) {
     /* the ladder had nothing; a name-agreeing polygon straight from the gazetteer is still a real shape */
     const e = await ext(nm, deps);
-    if (e && e.geojson && AREA_TYPES.test(e.geojson.type)) return { ok: true, geometry: e.geojson, basis: 'real', method: 'osm_polygon', source: 'OpenStreetMap' };
+    if (e && e.geojson && AREA_TYPES.test(e.geojson.type)) return { ok: true, geometry: e.geojson, basis: 'real', method: 'osm_polygon', source: 'OpenStreetMap', sourceId: e.sourceId || osmFeatureId(e), sourceVersion: e.sourceVersion };
     if (e && e.geojson && LINE_TYPES.test(e.geojson.type)) return { ok: false, reason: 'kind_mismatch', got: 'line' };
     return { ok: false, reason: 'not_found' };
   }
@@ -133,10 +152,10 @@ async function area(nm, deps) {
   if (r.soft) return { ok: false, reason: 'only_extent' };
   const codes = r.codes || (r.code ? [r.code] : null);
   /* the METHOD names the rung that produced the outline; an approximate answer with no rung of its own is the ladder's
-     model-drawn outline (checked against the web by the ladder, but authored by a model — derived, and said so) */
+     model-drawn outline. The ladder may verify the location independently of its geometry. */
   let g = geometryOf(r);
   let method = r.rrMethod || (r.composed ? 'admin_union' : r.sliced ? 'directional_slice' : r.approx ? 'model_outline' : 'osm_polygon');
-  let source = r.rrSource || (r.entity && r.entity.source) || (method === 'model_outline' ? 'Atlas (web-checked)' : 'OpenStreetMap');
+  let source = r.rrSource || (r.entity && r.entity.source) || (method === 'model_outline' ? 'Atlas' : undefined);
   if (!g && codes && typeof deps.countries === 'function') {
     try { g = await deps.countries(codes); } catch (_) { g = null; }
     method = 'country'; source = 'IntMap country outlines';
@@ -144,7 +163,8 @@ async function area(nm, deps) {
   if (!g) return { ok: false, reason: 'no_geometry' };
   if (LINE_TYPES.test(g.type)) return { ok: false, reason: 'kind_mismatch', got: 'line' };
   if (!AREA_TYPES.test(g.type)) return { ok: false, reason: 'kind_mismatch', got: g.type };
-  return { ok: true, geometry: g, basis: shapeBasisOf(r), method, source };
+  return { ok: true, geometry: g, basis: shapeBasisOf(r), method, source, sourceId: r.sourceId || r.entity?.sourceId,
+    sourceVersion: r.sourceVersion || r.entity?.sourceVersion, transformation: r.transformation || method };
 }
 
 async function line(nm, deps) {
@@ -154,11 +174,11 @@ async function line(nm, deps) {
     let rv = null;
     try { rv = await deps.river(nm); } catch (_) { rv = null; }
     const g = geometryOf(rv);
-    if (g && LINE_TYPES.test(g.type)) return { ok: true, geometry: g, basis: 'real', method: 'waterway', source: 'OpenStreetMap' };
+    if (g && LINE_TYPES.test(g.type)) return { ok: true, geometry: g, basis: 'real', method: 'waterway', source: rv.source || 'OpenStreetMap', sourceId: rv.sourceId, sourceVersion: rv.sourceVersion, transformation: rv.transformation };
   }
   const e = await ext(nm, deps);
   if (!e || !e.geojson) return { ok: false, reason: 'not_found' };
-  if (LINE_TYPES.test(e.geojson.type)) return { ok: true, geometry: e.geojson, basis: 'real', method: 'osm_line', source: 'OpenStreetMap' };
+  if (LINE_TYPES.test(e.geojson.type)) return { ok: true, geometry: e.geojson, basis: 'real', method: 'osm_line', source: 'OpenStreetMap', sourceId: e.sourceId || osmFeatureId(e), sourceVersion: e.sourceVersion };
   return { ok: false, reason: 'kind_mismatch', got: AREA_TYPES.test(e.geojson.type) ? 'area' : String(e.geojson.type) };
 }
 
@@ -166,8 +186,28 @@ async function ext(nm, deps) {
   try { return typeof deps.extent === 'function' ? await deps.extent(nm) : null; } catch (_) { return null; }
 }
 
+/** Half of the length along the parts, without adding segments between disconnected parts. */
+export function lineMidpoint(geometry) {
+  const parts = geometry?.type === 'LineString' ? [geometry.coordinates] : geometry?.type === 'MultiLineString' ? geometry.coordinates : [];
+  if (!Array.isArray(parts)) return null;
+  const lines = parts.filter((points) => Array.isArray(points) && points.length >= 2 &&
+    points.every((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])))
+    .map((coordinates) => ({ type: 'LineString', coordinates }));
+  const lengths = lines.map((line) => length(line));
+  let remaining = lengths.reduce((total, km) => total + km, 0) / 2;
+  for (let i = 0; i < lines.length; i++) {
+    if (remaining <= lengths[i]) return along(lines[i], remaining).geometry.coordinates;
+    remaining -= lengths[i];
+  }
+  return null;
+}
+
 /** a representative point of a shape — the mean of its bounding box, for a marker when the name had no point of its own */
 export function shapeAnchor(g) {
+  if (shapeKindOf(g) === 'line') {
+    const point = lineMidpoint(g);
+    return point ? { lng: ((point[0] + 540) % 360) - 180, lat: point[1] } : null;
+  }
   let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
   const walk = (c) => { if (typeof c[0] === 'number') { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; } else c.forEach(walk); };
   try { walk(g.coordinates); } catch (_) { return null; }

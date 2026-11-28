@@ -95,7 +95,7 @@ export async function saveJobAsWork(f, store, o) {
       const { task, output, version } = product.from;
       const fact = f.tasks.find((t) => t.id === task);
       const geometryTypes = fact.output.geometryTypes ?? (Array.isArray(product.content.features) ? jobGeometryTypes(product.content.features) : null);
-      datasets.push({ task, title: fact.title, output, version, product: product.id, count: product.content.count, geometryTypes, stale: !!fact.stale });
+      datasets.push({ task, title: fact.title, output, version, product: product.id, count: product.content.count, geometryTypes, sources: product.from.urls, stale: !!fact.stale });
     }
   }
   work = Object.assign({}, work, { status: f.status === 'done' && !(f.tasks || []).some((t) => t.state === 'failed' || t.state === 'refused' || t.state === 'cancelled') ? 'done' : 'blocked', summary: clip(f.result || work.summary, 16000), updatedAt: saved.length ? now : work.updatedAt });

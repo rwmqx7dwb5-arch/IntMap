@@ -37,6 +37,7 @@
    yet, and no steps) is answered by declare() as a typed note — the same way the loop answers any call
    that cannot be carried out. */
 import { mergeGeo, gapsOf, geoReport, preflight, defaultProbe } from './atlas-geoplan.js';   /* (geo-task-planner) the structured spec of a geospatial analysis */
+import { stable } from './atlas-job-core.js';
 
 export const PLAN_TOOL = {
   name: 'plan',
@@ -46,17 +47,27 @@ export const PLAN_TOOL = {
     + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. To replace the plan, '
     + 'send new steps. A request that one or two calls answer needs no plan. The plan stays in the conversation: '
     + 'a later request may name a step ("redo step 2") — set "current" to it and make its calls again. '
+    + 'For reusable work set scope to the actual target, period and input IDs and versions. Supply the same scope only when all are unchanged. '
+    + 'Use stepScopes:[{step,scope}] to reuse individual unaffected steps when the overall scope changes. '
+    + 'For a request with several required deliverables, declare requirements as [{id,step,label}] (step numbers start at 1). '
+    + 'Set target to a requirement ID before the calls producing that deliverable. Start an alternative method for the same deliverable under the same ID. '
+    + 'Use target:"" before unrelated or preparatory operations. A requirement is complete when its deliverable is observed. '
     + 'For a GEOSPATIAL ANALYSIS add "geo", the analysis as IntMap can read it: {"question","region":{"name","bounds":[w,s,e,n]},"time":{"at"|"from","to"},'
-    + '"conditions":[str],"needs":[{"id","what","source":{"kind":"layer|dataset|stac|ogc|overture|upload|none","ref"},"completeness":"all|sample|any",'
-    + '"resolution":{"value","unit":"m|km|deg"}}],"method":{"ops":[str]},"environment":"browser-gis|python|server|job","outputs":["map|table|chart|file|answer"],'
+    + '"conditions":[str],"needs":[{"id","what","source":{"kind":"layer|dataset|stac|ogc|overture|upload|url|inline|job-output|none","ref","format"?:str,"scope"?:"whole|window|query"},"completeness":"all|sample|any",'
+    + '"resolution":{"value","unit":"m|km|deg"}}],"method":{"ops":[str],"strict"?:bool,"semantics"?:bool},"environment":"browser-gis|python|server|job","outputs":["map|table|chart|file|answer"],'
     + '"check":true}. Every member is optional and a later call states only what changed. The answer lists what the spec does not state (gaps); '
-    + 'with "check":true IntMap also asks its own layers and the open catalogues whether each need exists, and says what they STATE ("unknown" is not "unavailable").',
+    + 'with "check":true IntMap asks the available sources and checks the chosen environment\'s accepted input formats, acquisition scopes and methods. '
+    + 'Use source.scope for how the data must be acquired. Use region.bounds for the area to analyse. A supported route does not confirm that a particular source has answered.',
   parameters: {
     type: 'object',
     properties: {
       goal: { type: 'string' },
       steps: { type: 'array', items: { type: 'string', minLength: 1 } },
       current: { type: 'integer', minimum: 1 },
+      scope: { type: 'object' },
+      stepScopes: { type: 'array', items: { type: 'object', properties: { step: { type: 'integer', minimum: 1 }, scope: { type: 'object' } }, required: ['step', 'scope'] } },
+      requirements: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, step: { type: 'integer', minimum: 1 }, label: { type: 'string' } }, required: ['id', 'step', 'label'] } },
+      target: { type: 'string' },
       geo: { type: 'object' },
     },
   },
@@ -111,7 +122,7 @@ export function makeAtlasPlan(opts) {
      Germany's failure stays Germany's. A call that arrives without a key (an older caller) is its capability, as before. */
   function latestPerWork(ops) {
     const by = Object.create(null), order = [];
-    ops.forEach((o) => { const k = o.key || ('cap:' + o.cap); if (!(k in by)) order.push(k); by[k] = o; });
+    ops.forEach((o) => { const k = JSON.stringify([o.target, o.key || ('cap:' + o.cap)]); if (!(k in by)) order.push(k); by[k] = o; });
     return order.map((k) => by[k]);
   }
   /* the operations of one step as the model reads them: one line per capability, and where a capability did several pieces of work, how many of
@@ -131,6 +142,12 @@ export function makeAtlasPlan(opts) {
   }
   function stepState(st, i) {
     if (st.ops.some((o) => o.inflight)) return 'running';
+    if (st.requirements?.length) {
+      const states = requirementStates(st);
+      if (states.every((r) => r.state === 'completed')) return 'completed';
+      if (states.some((r) => r.state === 'completed')) return 'partial';
+      return states.find((r) => r.state !== 'pending')?.state || 'pending';
+    }
     const last = latestPerWork(st.ops);
     if (last.length) {
       let worst = 'completed';
@@ -147,6 +164,15 @@ export function makeAtlasPlan(opts) {
     return st.touched ? 'noop' : 'pending';
   }
 
+  function requirementStates(st) {
+    const work = latestPerWork(st.ops);
+    return st.requirements.map((r) => {
+      const attempts = work.filter((o) => o.target === r.id);
+      const best = attempts.findLast((o) => o.state === 'completed') || attempts.at(-1);
+      return { ...r, state: best?.state || 'pending', callId: best?.callId || null, artifact: best?.artifact };
+    });
+  }
+
   function snapshot() {
     if (!plan) return null;
     return {
@@ -159,6 +185,8 @@ export function makeAtlasPlan(opts) {
       steps: plan.steps.map((st, i) => ({
         n: i + 1, title: st.title, state: stepState(st, i),
         ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null, work: o.work || undefined })),
+        workItems: latestPerWork(st.ops).map((o) => ({ capability: o.cap, work: o.work, state: o.state, code: o.code })),
+        requirements: requirementStates(st),
       })),
     };
   }
@@ -166,7 +194,7 @@ export function makeAtlasPlan(opts) {
   /* beginTurn() — js/atlas-agent.js runTurn, before its first step. Which step the calls serve is a
      statement about THIS turn: a call made in a later turn that never mentioned the plan is not filed
      under whatever step an earlier turn left current. */
-  function beginTurn() { turnNo++; live = true; activeThisTurn = false; emit({ type: 'turn', phase: 'begin' }); }
+  function beginTurn() { turnNo++; live = true; activeThisTurn = false; if (plan) plan.target = ''; emit({ type: 'turn', phase: 'begin' }); }
 
   /* declare(args) -> the tool's record. Runs where the loop reads the reply, IN CALL ORDER, so a plan
      call earlier in a reply decides which step the calls after it serve. */
@@ -179,35 +207,58 @@ export function makeAtlasPlan(opts) {
     const o = !!(facts && facts.outside === true);
     const hasGeo = a.geo != null && typeof a.geo === 'object';
     const steps = Array.isArray(a.steps) ? a.steps.map((s) => String(s == null ? '' : s).trim()).filter(Boolean) : null;
-    if (steps && steps.length) {
-      /* a revision keeps what was observed for every step it did not rename — the same piece of work */
-      const before = plan;
-      const prev = plan ? plan.steps : [];
+    if (!plan && !steps?.length) return { ok: false, error: 'no_plan',
+      message: 'There is no plan to update yet. Declare one with "goal" and "steps" (and "current"), or make the calls without a plan.' };
+    const before = plan;
+    const replaces = !!steps?.length;
+    const titles = replaces ? steps : plan.steps.map((st) => st.title);
+    const current = a.current == null ? (replaces ? 0 : plan.current) : Math.floor(+a.current) - 1;
+    if (!(current >= 0 && current < titles.length)) return { ok: false, error: 'no_such_step',
+      message: 'The plan has steps 1-' + titles.length + '; there is no step ' + String(a.current) + '. Nothing was changed.' };
+    const goal = String(a.goal ?? before?.goal ?? '').trim();
+    const scope = a.scope == null ? null : stable(a.scope);
+    const sameScope = scope != null && scope !== '{}' && scope === before?.scope;
+    const changedScope = a.scope != null && scope !== before?.scope;
+    const startsLater = replaces && before && before.turn !== turnNo;
+    const keepWork = before && !changedScope && (sameScope || (!startsLater && normTitle(goal) === normTitle(before.goal)));
+    const nextGeo = hasGeo ? mergeGeo(keepWork ? before.geo : null, a.geo) : null;
+    const changedGeo = !!(nextGeo && before?.geo && stable(nextGeo.spec) !== stable(before.geo.spec));
+    const oldRequirements = keepWork && !changedGeo ? before.steps.flatMap((st) => st.requirements) : [];
+    const stepScopes = new Map((Array.isArray(a.stepScopes) ? a.stepScopes : [])
+      .filter((e) => e?.scope && Object.keys(e.scope).length).map((e) => [e.step, stable(e.scope)]));
+    const requirements = Array.isArray(a.requirements) ? a.requirements.map((r) => ({
+      id: String(r?.id || '').trim(), label: String(r?.label || '').trim(), step: Number(r?.step),
+    })) : oldRequirements.filter((r) => r.step <= titles.length);
+    if (requirements.some((r) => !r.id || !r.label || !Number.isInteger(r.step) || r.step < 1 || r.step > titles.length) ||
+        new Set(requirements.map((r) => r.id)).size !== requirements.length) return { ok: false, error: 'invalid_requirements',
+      message: 'Every requirement needs a unique id, a label and an existing step.' };
+    const target = a.target == null ? (replaces || a.current != null ? '' : before?.target || '') : String(a.target).trim();
+    if (target && !requirements.some((r) => r.id === target && r.step === current + 1)) return { ok: false, error: 'unknown_requirement',
+      message: 'Set target to a declared requirement in the current step.' };
+    if (replaces || !keepWork || changedGeo || Array.isArray(a.requirements) || Array.isArray(a.stepScopes)) {
+      const prev = before?.steps || [];
       let keptOld = false;
-      plan = { geo: before ? before.geo : undefined, declaredTurn: turnNo, id: ++seq, goal: String(a.goal == null ? (plan ? plan.goal : '') : a.goal).trim(), turn: turnNo, current: 0,
-        steps: steps.map((t, i) => {
-          const old = prev[i] && normTitle(prev[i].title) === normTitle(t) ? prev[i] : null;
+      plan = { geo: keepWork ? before.geo : undefined, declaredTurn: replaces ? turnNo : before.declaredTurn, id: ++seq, goal, turn: turnNo, current,
+        scope: scope ?? (keepWork ? before.scope : null),
+        steps: titles.map((t, i) => {
+          const candidate = prev[i];
+          const safeByPlan = keepWork && !changedGeo && !stepScopes.has(i + 1);
+          const safeByStep = stepScopes.has(i + 1) && stepScopes.get(i + 1) === candidate?.scope;
+          const old = (safeByPlan || safeByStep) && candidate && normTitle(candidate.title) === normTitle(t) ? candidate : null;
+          const needed = requirements.filter((r) => r.step === i + 1);
+          const sameRequirements = stable(needed) === stable(old?.requirements || []);
           if (old) keptOld = true;
-          return { title: t, ops: old ? old.ops : [], touched: old ? old.touched : false };
+          return { title: t, requirements: needed, scope: stepScopes.get(i + 1) || old?.scope,
+            ops: old && sameRequirements ? old.ops : [], touched: !!(old && sameRequirements && old.touched) };
         }) };
       plan.outside = o || !!(before && before.outside && (a.goal == null || keptOld));
-    } else if (!plan) {
-      return { ok: false, error: 'no_plan',
-        message: 'There is no plan to update yet. Declare one with "goal" and "steps" (and "current"), or make the calls without a plan.' };
-    } else if (a.goal != null && String(a.goal).trim()) {
-      plan.goal = String(a.goal).trim();
     }
-    if (a.current != null) {
-      const c = Math.floor(+a.current);
-      if (!(c >= 1 && c <= plan.steps.length)) {
-        return { ok: false, error: 'no_such_step',
-          message: 'The plan has steps 1-' + plan.steps.length + '; there is no step ' + String(a.current) + '. Nothing was changed.' };
-      }
-      plan.current = c - 1;
-    }
+    plan.goal = goal;
+    plan.current = current;
+    plan.target = target;
     let geoRec = null;
-    if (hasGeo) {
-      const m = mergeGeo(plan.geo || null, a.geo);
+    if (nextGeo) {
+      const m = nextGeo;
       /* a changed spec invalidates an earlier check: it answered another question */
       plan.geo = { spec: m.spec, unrecognised: m.unrecognised, check: null };
       geoPending = a.geo.check === true;
@@ -239,6 +290,7 @@ export function makeAtlasPlan(opts) {
 
   /* the step the next call is filed under, or -1 — asked by the loop in call order */
   function attribute() { return (plan && activeThisTurn) ? plan.current : -1; }
+  function targetOfCall() { return activeThisTurn ? plan?.target || '' : ''; }
 
   /* started / settled — the loop around ONE call that reaches the app (not the plan tool itself) */
   function started(callId, info) {
@@ -246,7 +298,7 @@ export function makeAtlasPlan(opts) {
     const i = (info && info.step != null) ? info.step : -1;
     if (!(i >= 0 && i < plan.steps.length)) return;
     const op = { callId: String(callId), cap: String((info && info.capability) || (info && info.name) || ''), state: 'running', inflight: true, turn: turnNo, planId: plan.id,
-      key: info && info.key ? String(info.key) : '', work: info && info.work ? String(info.work).slice(0, 160) : '' };   /* (atlas-child-loop-reuse) the piece of work — see latestPerWork */
+      target: info?.target || '', key: info && info.key ? String(info.key) : '', work: info && info.work ? String(info.work).slice(0, 160) : '' };   /* (atlas-child-loop-reuse) the piece of work — see latestPerWork */
     plan.steps[i].ops.push(op);
     inflight[op.callId] = op;
     emit({ type: 'op', phase: 'started', callId: op.callId, step: i + 1 });
@@ -266,6 +318,7 @@ export function makeAtlasPlan(opts) {
     op.cap = String(rec.capability);
     op.state = opState(rec);
     op.code = String(rec.code || rec.error || '') || undefined;
+    if (rec.resultKey) op.artifact = { id: String(rec.resultKey), version: rec.revision ?? null };
     emit({ type: 'op', phase: 'settled', callId: op.callId, state: op.state,
       produced: Array.isArray(rec.producedModes) ? rec.producedModes.slice() : [] });
   }
@@ -297,11 +350,12 @@ export function makeAtlasPlan(opts) {
     const s = snapshot(); if (!s) return null;
     return { goal: s.goal, current: s.current,
       steps: s.steps.map((st) => ({ n: st.n, title: st.title, state: st.state,
-        operations: operationLines(plan.steps[st.n - 1].ops) })) };
+        requirements: st.requirements, operations: operationLines(plan.steps[st.n - 1].ops) })) };
   }
   function promptBlock() {
     const m = forModel(); if (!m) return '';
-    const lines = m.steps.map((st) => st.n + '. ' + st.title + ' — ' + st.state + (st.operations.length ? ': ' + st.operations.join('; ') : ''));
+    const lines = m.steps.map((st) => st.n + '. ' + st.title + ' — ' + st.state + (st.operations.length ? ': ' + st.operations.join('; ') : '')
+      + (st.requirements.length ? '\n' + st.requirements.map((r) => '  - ' + r.id + ' (' + r.label + '): ' + r.state).join('\n') : ''));
     const geoLine = plan.geo ? geoPromptLine(plan.geo) : '';
     return '[YOUR PLAN — declared by you' + (plan.turn === turnNo && live ? ' in this turn' : ' in an earlier turn')
       + '; each state is what IntMap OBSERVED of the calls made under that step]\nGoal: ' + (m.goal || '(none given)') + '\n'
@@ -314,7 +368,7 @@ export function makeAtlasPlan(opts) {
   /* whether the plan promptBlock() puts in front of the model holds words written in a marked turn — see declare() */
   function carriesOutside() { return !!(plan && plan.outside === true); }
 
-  return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, started, settled, noteDrawing, endTurn,
+  return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, targetOfCall, started, settled, noteDrawing, endTurn,
     snapshot, forModel, promptBlock, carriesOutside, subscribe, geoPending: geoPendingNow, preflight: runPreflight };
 }
 
@@ -322,7 +376,12 @@ export function makeAtlasPlan(opts) {
 function geoPromptLine(g) {
   const gaps = gapsOf(g.spec).map((x) => x.code);
   const c = g.check;
-  return '\nGeo analysis: ' + (g.spec.question || '(no question stated)') + ' | not stated: ' + (gaps.length ? gaps.join(', ') : 'nothing')
+  const acquisition = g.spec.needs.filter((n) => n.source.format || n.source.scope)
+    .map((n) => n.id + ' ' + [n.source.kind, n.source.format, n.source.scope].filter(Boolean).join('/'));
+  return '\nGeo analysis: ' + (g.spec.question || '(no question stated)')
+    + (g.spec.environment ? ' | execution: ' + g.spec.environment : '')
+    + (acquisition.length ? ' | acquisition: ' + acquisition.join(', ') : '')
+    + ' | not stated: ' + (gaps.length ? gaps.join(', ') : 'nothing')
     + (c ? ' | availability: runnable=' + String(c.runnable) + '; ' + c.needs.map((n) => n.id + '=' + n.state + (n.fullCoverage ? '(coverage ' + n.fullCoverage + ')' : '')).join(', ')
       + (c.reasons.length ? ' — ' + c.reasons.join('; ') : '') : ' | availability: not checked (send geo.check:true to ask the sources)');
 }

@@ -17,7 +17,7 @@
  *    clock       { year | date:'YYYY-MM-DD' | live:true, why }  the master clock (`time`)
  *    comparison  { open, codes:[…], indicators:[…], why }   the statistics-comparison panel (`comparison`)
  *    drawn       [{ path, min, max, why, named? } | { anyOf:[{path,min,max}], why, named? }] — `named`: spellings of the ONE thing the
- *                shapes counted must be (read off `atlas.shapes.names`; only on `atlas.shapes.*` paths)
+ *                shapes counted must be. Each record in `atlas.shapes.items` supplies its own name, kind, basis, author and source.
  *                                                            a count read off the snapshot: `atlas.lines`,
  *                                                            `objects.kind:route` … (the product's own sections);
  *                                                            `atlas.shapes.<kind>:<basis>` counts the SHAPES by what
@@ -351,12 +351,23 @@ export function countAt(snap, path) {
 }
 
 /** a name as compared: case-folded, without spaces or punctuation (so 'Shinano River' and 'shinano-river' agree) */
-const normName = (v) => str(v).toLowerCase().replace(/[sp{P}p{S}]+/gu, '');
-/** the names the final map's shapes carry (`atlas.shapes.names`), normalised; null when the map did not list any */
-export function shapeNamesOf(snap) {
-  const a = sectionOf(snap, 'atlas');
-  const l = a && a.shapes && Array.isArray(a.shapes.names) ? a.shapes.names : null;
-  return l && l.length ? l.map(normName).filter(Boolean) : null;
+const normName = (v) => str(v).normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+/** Count features that satisfy the full criterion on the same record. A legacy mixed tally
+ * cannot establish which shape the name, basis and authorship belong to. */
+function countNamedShapes(snap, path, names) {
+  const shapes = sectionOf(snap, 'atlas')?.shapes;
+  const [kind, basis] = path.split('.').at(-1).split(':');
+  if (!Array.isArray(shapes?.items)) return countAt(snap, path) === 0 ? 0 : undefined;
+  const matching = shapes.items.filter((item) => {
+    if (item.kind !== kind || item.basis !== basis) return false;
+    if (item.author === 'user') return false;
+    const aliases = [item.target, item.name].map(normName).filter(Boolean);
+    return !aliases.length || aliases.some((alias) => names.includes(alias));
+  });
+  const observed = matching.filter((item) =>
+    item.author === 'atlas' && (basis !== 'real' || str(item.source).trim()) &&
+    [item.target, item.name].some((alias) => names.includes(normName(alias))));
+  return observed.length === matching.length ? observed.length : undefined;
 }
 
 /** is (lng, lat) inside the frame? The frame of a globe may cross the antimeridian (west > east) or span
@@ -548,26 +559,20 @@ export function gradeMap(ms, snapshot, ctx = {}) {
   if (ms.restyle) { const g = gradeRestyle(ms.restyle, snap, ctx.before); put('restyle:' + ms.restyle.kind, g.verdict, g.detail); }
   (ms.drawn || []).forEach((d, i) => {
     const alts = Array.isArray(d.anyOf) ? d.anyOf : [d];
-    const seen = alts.map((a) => ({ a, n: countAt(snap, a.path) }));
+    const names = Array.isArray(d.named) ? d.named.map(normName).filter(Boolean) : [];
+    const isShape = (path) => /^atlas\.shapes\.(area|line):/.test(path);
+    const seen = alts.map((a) => ({ a, n: names.length && isShape(a.path) ? countNamedShapes(snap, a.path, names) : countAt(snap, a.path) }));
     const read = seen.filter((s) => s.n !== undefined);
     const fits = (s) => (s.a.min == null || s.n >= s.a.min) && (s.a.max == null || s.n <= s.a.max);
     const range = (a) => (a.min != null ? '≥ ' + a.min : '') + (a.min != null && a.max != null ? ', ' : '') + (a.max != null ? '≤ ' + a.max : '');
     const label = 'drawn' + (ms.drawn.length > 1 ? '[' + i + ']' : '');
     if (read.some(fits)) {
       const s = read.find(fits);
-      /* (atlas-shape-identity) `named`: the shape(s) counted must be THE ONE asked for — any listed spelling, read off the
-         names the final map's shapes carry. A map that predates the names (no list) is unobserved, never a pass. */
-      const want = Array.isArray(d.named) ? d.named.map(normName).filter(Boolean) : [];
-      if (want.length) {
-        const have = shapeNamesOf(snap);
-        if (!have) put(label, 'unobserved', s.a.path + ' = ' + s.n + ', but the final map did not say which shapes they are');
-        else if (have.some((h) => want.some((w) => h.includes(w) || w.includes(h)))) put(label, 'match', s.a.path + ' = ' + s.n + ' (' + have.join(', ') + ')');
-        else put(label, 'mismatch', s.a.path + ' = ' + s.n + ' but the shapes are ' + have.join(', ') + ' — not ' + d.named.join(' / '));
-      } else put(label, 'match', s.a.path + ' = ' + s.n);
+      put(label, 'match', s.a.path + ' = ' + s.n + (names.length ? ' (' + d.named.join(' / ') + ')' : ''));
     }
     /* any-of: a mismatch only when EVERY alternative was read — an unread one might have held it */
     else if (read.length < seen.length) put(label, 'unobserved', seen.filter((s) => s.n === undefined).map((s) => s.a.path).join(', ') + ' not read' + (read.length ? '; ' + read.map((s) => s.a.path + ' = ' + s.n).join(', ') : ''));
-    else put(label, 'mismatch', read.map((s) => s.a.path + ' = ' + s.n + ' (' + range(s.a) + ')').join(' · '));
+    else put(label, 'mismatch', read.map((s) => s.a.path + ' = ' + s.n + ' (' + range(s.a) + ')').join(' · ') + (names.length ? ' for ' + d.named.join(' / ') : ''));
   });
   if (ms.era) {
     const e = ms.era;

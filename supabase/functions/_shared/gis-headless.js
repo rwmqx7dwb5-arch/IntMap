@@ -45,6 +45,7 @@ export function makeHeadlessGis(deps) {
   }
 
   return {
+    execution: async () => (await gis()).flow.executionOf('server'),
     ops: () => gate(async () => (await catalogue()).map((o) => ({ id: o.id, inputs: o.inputs, accepts: o.accepts, output: o.output, params: o.params }))),
     /* run({ op, inputs, params, names? }) — `names[i]` is where input i came from (a file's address, the task that made it): it is written into
        the provenance the GIS keeps for that input, so the manifest names the real source (it said `headless-input` for every file, measured
@@ -60,12 +61,19 @@ export function makeHeadlessGis(deps) {
         const ids = sets.map((features, i) => {
           const id = "in" + (i + 1);
           const name = arr(a.names)[i] ? String(arr(a.names)[i]).slice(0, 500) : "";
-          const added = g.data.add({ id, title: name || id, features, provenance: { kind: "import", file: name || "(unnamed input " + (i + 1) + ")", format: "geojson", readAt: deps.now() } });
+          const input = arr(a.lineage)[i] || {};
+          const provenance = { ...(isObj(input.provenance) ? input.provenance : {}), kind: "import", file: input.sources?.[0] || name || "(unnamed input " + (i + 1) + ")", format: "geojson", readAt: deps.now(), upstream: { task: input.from, version: input.version, sources: input.sources } };
+          const added = g.data.add({ id, title: name || id, features, provenance });
           if (added && added.ok === false) throw new HeadlessError("bad_input", String(added.why || "input refused"));
           return id;
         });
+        const step = { op: op.id, inputs: ids, params: isObj(a.params) ? a.params : {}, strict: a.strict === true };
+        if (step.strict && typeof g.semantics?.check !== 'function') throw new HeadlessError("semantic_check_unavailable", "Strict semantic validation could not be performed.");
         await g.geometry.ready();
-        const r = await g.flow.run({ op: op.id, inputs: ids, params: isObj(a.params) ? a.params : {} });
+        const r = await g.flow.run(step);
+        if (r?.why === "semantic-mismatch") {
+          throw new HeadlessError(r.why, arr(r.detail?.warnings).map((w) => w.message?.en || w.code).join(' ') || r.why);
+        }
         if (!r || !r.ok) throw new HeadlessError("op_refused", String((r && r.why) || "refused"));
         const ds = g.data.get(r.dataset.id);
         const features = arr(ds && (typeof ds.features === "function" ? ds.features() : ds.features)); /* js/gis-project.js reads the body the same way: rec.features() */

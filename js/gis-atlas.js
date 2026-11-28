@@ -34,6 +34,7 @@
    three worlds that file's header measures came to disagree. */
 import { FACETS, account, temporalMismatch } from './data-governance.js';
 import { jsonWithin } from './fetch-deadline.js';
+import { datasetPlanningDetails } from './gis-catalog-search.js';
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
@@ -114,7 +115,7 @@ export function makeGisAtlas(core) {
        one of them knows about evaporates. The only thing this function decides is WHICH PARTS OF THE
        RECORD ARE METADATA — never what a part means. */
     function datasetRow(ds) {
-      const row = { id: ds.id, title: ds.title, kind: ds.kind || 'vector', count: ds.count };
+      const row = { id: ds.id, title: ds.title, kind: ds.kind || 'vector', count: ds.count, ...datasetPlanningDetails(ds, core.raster, core.geometry) };
       if (ds.geometryType) row.geometryType = ds.geometryType;
       /* 幾何を持つ行の数。`geometryType:null` は「表」「空」「格子」の 3 つを 1 つの答えにするので、
          この欄が無ければ planner は座標を持たない統計表に buffer をかけて空の面を作る。 */
@@ -690,7 +691,7 @@ export function makeGisAtlas(core) {
       if (cache.has(raw)) return { ok: true, id: cache.get(raw) };
 
       /* 1. an id the registry already holds. */
-      const direct = data.get(raw);
+      const direct = data.get(raw) || (raw.startsWith('dataset:') ? data.get(raw.slice('dataset:'.length)) : null);
       if (direct) { cache.set(raw, direct.id); return { ok: true, id: direct.id }; }
 
       /* 2. a layer of the map, named as one. */
@@ -1182,7 +1183,7 @@ export function makeGisAtlas(core) {
         try {
           M = (await import('./gis-remote.js')).makeGisRemote({
             /* the CRS engine and the warp are looked up by the module itself at call time */
-            data: data, sources: SOURCES(), pipeline: P,
+            data: data, raster: core.raster, geometry: core.geometry, sources: SOURCES(), pipeline: P,
             /* the readers acquire() uses are the door's own — a grid or features at an address, through resolveRef */
             readGrid: (href, w) => resolveRef('url:' + href, 0, { kinds: ['raster'] }, makeCache(), { acquire: { bounds: w.bounds, width: w.width, height: w.height, band: w.band, signal: w.signal || undefined } }),
             readFeatures: (url, w) => resolveRef('ogc:' + url, 0, { kinds: ['vector'] }, makeCache(), { acquire: { bounds: w.bounds, limit: w.limit, time: w.time } }),
@@ -1368,6 +1369,7 @@ export function makeGisAtlas(core) {
       /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
          reader; `describe(ref)` is one source, `catalogue().layers` is all of them. */
       describe,
+      describeDataset: (id) => { const ds = data.get(id); return ds ? datasetRow(ds) : null; },
       /* the vocabularies, published from the file that decides them rather than copied into a check
          (the same argument js/gis-sources.js completenessValues/coverageReasons are written for) */
       prefetchSlots: () => PREFETCH_SLOTS.slice(),

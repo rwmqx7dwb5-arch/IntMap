@@ -283,7 +283,7 @@ function mount(scope, HOST, CONTEXT) {
      a list of ops written on the Atlas side — is the defect #R732 measured in the panel, where
      `ORDER` had four entries and DECL had nine. It needs no lazy door of its own: the whole of this
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
-  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, warp: warp, crs: crs, semantics: semantics, draw: (id, o) => draw(id, o) });
+  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, raster, geometry, warp: warp, crs: crs, semantics: semantics, draw: (id, o) => draw(id, o) });
 
   /* ⚠ (#R783) THE FIVE STAGES, AS THE FUNCTIONS THAT ACTUALLY DO THEM. The outside review drew the
      flow 「データを探す → 内容・時期・単位・取得可能範囲を確認する → 必要な条件で取得する → 共通 GIS
@@ -294,9 +294,36 @@ function mount(scope, HOST, CONTEXT) {
      ⚠ `find` ANSWERS TWO STAGES AND THAT IS NOT A SHORTCUT: js/gis-atlas.js's catalogue() states,
      for every dataset and every map layer, what it holds, its time declaration, its columns with
      their units and the window it can answer for. 探す and 確認する are one document there. */
+  /* The acquisition routes that each GIS host actually exposes. An operation's input and output
+     geometry are still declared by the operation itself. A route's supported scope is not a
+     statement about what a particular source has or whether an address will answer. */
+  const wholeGeoJson = Object.freeze({ formats: ['geojson'], scopes: ['whole'] });
+  const serverExecution = Object.freeze({
+    sources: Object.freeze({ inline: wholeGeoJson, url: wholeGeoJson, 'job-output': wholeGeoJson }),
+    strict: true,
+    semantics: false,
+  });
+  const browserExecution = Object.freeze({
+    sources: Object.freeze({
+      layer: { formats: null, scopes: ['whole', 'window', 'query'] },
+      dataset: { formats: null, scopes: ['whole'] },
+      upload: { formats: null, scopes: ['whole'] },
+      url: { formats: ['geotiff'], scopes: ['window'] },
+      ogc: { formats: ['geojson'], scopes: ['window'] },
+      stac: { formats: ['geojson'], scopes: ['window', 'query'] },
+      overture: { formats: ['parquet'], scopes: ['window', 'query'] },
+    }),
+    strict: true,
+    semantics: true,
+  });
   const flow = Object.freeze({
     find: atlas.catalogue,
     acquire: atlas.acquire,
+    executionOf: (environment) => {
+      if (environment === 'browser-gis') return browserExecution;
+      if (environment === 'server' || environment === 'job') return serverExecution;
+      return null;
+    },
     run: atlas.run,
     draw: atlas.draw,
     /* 「根拠・制約・再取得用の参照」 — js/gis-project.js manifest(), whose `gaps` are the 制約 part. */

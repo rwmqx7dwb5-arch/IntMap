@@ -26,13 +26,13 @@ export async function fetchGeoJson(raw, opts) {
       maxBytes: WHOLE_MAX_BYTES, timeoutMs: TIMEOUT_MS, signal: o.signal, headers: { Accept: "application/geo+json, application/json" },
       allowRedirect: async (next) => { const s = relayableUrl(next.toString(), publicHostname); return s.ok && await resolvesPublic(s.url.hostname, { signal: budget }); },
     });
-    if (!r.ok) return { ok: false, code: "upstream_" + r.status, text: "The host answered " + r.status + "." };
+    if (!r.ok) return { ok: false, category: r.status === 429 || r.status >= 500 ? "transient" : undefined, code: "upstream_" + r.status, text: "The host answered " + r.status + "." };
     if (/text\/html/i.test(r.contentType)) return { ok: false, code: "upstream_is_a_page", text: "That address is a web page, not a data file." };
     let json;
     try { json = JSON.parse(r.text()); } catch (_) { return { ok: false, code: "not_json", text: "That address did not return JSON." }; }
     return { ok: true, json };
   } catch (e) {
     const code = e instanceof RelayError ? e.code : "upstream_unreachable";
-    return { ok: false, code, text: "The file could not be read (" + code + ")." };
+    return { ok: false, code, category: code === "upstream_timeout" || code === "upstream_unreachable" ? "transient" : undefined, text: "The file could not be read (" + code + ")." };
   }
 }
