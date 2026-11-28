@@ -83,9 +83,14 @@ export function windowManager(HOST){
     __openObserver??=new ResizeObserver(entries=>{
       for(const {target:el,contentRect:r} of entries){
         if(!r.width||!r.height){ __openWindows.delete(el); clearOverlayTranslation(el); continue; }
-        if(__openWindows.has(el)||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
+        const placed=__openWindows.has(el);
+        if((placed&&!overlayTranslation(el))||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
         const position=getComputedStyle(el).position;
-        if(position!=='fixed'&&position!=='absolute') continue;
+        const floating=position==='fixed'||position==='absolute';
+        const fullWidthSheet=position==='fixed'&&el.offsetWidth>=document.documentElement.clientWidth;
+        /* A responsive sheet owns its edges. Drop a desktop nudge when the same window docks. */
+        if(!floating||fullWidthSheet){ __openWindows.delete(el); clearOverlayTranslation(el); continue; }
+        if(placed) continue;
         __openWindows.add(el);
         placeOpenedOverlay(el,document.getElementById('map-container'));
         _geoBump();
