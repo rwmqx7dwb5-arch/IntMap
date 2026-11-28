@@ -120,7 +120,7 @@ test('⑤ data.query in a worker asks the engine for no pins and returns the row
     assert.equal(r.ok, true); assert.equal(r.meta.drawn, false); assert.deepEqual(r.meta.query.rows, [{ name: 'A', v: { pop: 5 } }]);
     assert.equal(r.objectIds, undefined, 'no pin was made');
     const r2 = await entry('data.query').run({ from: 'cities' }, { source: 'atlas' }, K);
-    assert.deepEqual(asked[1], {}); assert.deepEqual(r2.objectIds, ['p1']); assert.equal(r2.meta.query, undefined);
+    assert.deepEqual(asked[1], {}); assert.deepEqual(r2.objectIds, ['p1']); assert.deepEqual(r2.meta.query.rows, [{ name: 'A', v: { pop: 5 } }]);
   } finally { delete window.IntMapQuery; delete window.IntMapLazy; }
 });
 

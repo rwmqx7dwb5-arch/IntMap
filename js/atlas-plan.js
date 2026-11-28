@@ -302,7 +302,8 @@ export function makeAtlasPlan(opts) {
     if (!['new', 'revise', 'continue', 'cancel'].includes(action)) return { ok: false, error: 'invalid_plan_action',
       message: 'Use action "new", "revise", "continue" or "cancel".' };
     const isNew = action === 'new';
-    if (isNew ? a.planId != null : (!before || (a.planId != null ? a.planId !== before.id : a.action != null || before.turn !== turnNo))) {
+    const canResume = action === 'continue' && a.planId != null;
+    if (isNew ? a.planId != null : (!before || (a.planId != null ? (!canResume && before !== plan) : a.action != null || before.turn !== turnNo))) {
       return { ok: false, error: 'plan_id_mismatch', message: isNew ? 'Start a new plan without planId.' : 'Use the current planId to revise or continue it.',
         planId: before?.id };
     }

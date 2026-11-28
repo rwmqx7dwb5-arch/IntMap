@@ -17,16 +17,17 @@ const read = (f) => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8')
 /** a fake adapter: one GeoJSON surface `s` read by layer `s-l`, camera over [0,0]-[10,10], a canvas whose pixel at the feature depends on visibility */
 function fake(o = {}) {
   const st = { vis: { 's-l': o.visible !== false }, op: 1, frames: 0 };
+  const outside = (o.west ?? 0) > 4 || (o.east ?? 10) < 2;
   const layer = Object.assign({ id: 's-l', type: 'fill', source: 's', paint: {} }, o.layer || {});
   const feats = o.features || [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[2, 2], [4, 2], [4, 4], [2, 4], [2, 2]]] } }];
   const canvas = { width: 200, height: 200, clientWidth: 200, clientHeight: 200,
-    snapshot() { const covered = !!o.covered, on = st.vis['s-l'] && st.op !== 0 && !o.paintsNothing && !covered; return () => (on ? [200, 0, 0, 255] : [10, 10, 10, 255]); } };
+    snapshot() { const covered = !!o.covered, on = st.vis['s-l'] && st.op !== 0 && !o.paintsNothing && !covered && !outside && !o.errors; return () => (on ? [200, 0, 0, 255] : [10, 10, 10, 255]); } };
   const a = {
     getStyle: () => ({ layers: [layer] }), isVisible: (id) => st.vis[id] !== false, setVisible: (id, v) => { st.vis[id] = !!v; },
     getPaint: (id, p) => (o.paint ? o.paint[p] : undefined), setPaint: (id, p, v) => { st.op = v === undefined ? 1 : v; if (o.paint) o.paint[p] = v; }, sourceData: () => ({ type: 'FeatureCollection', features: feats }),
     getBounds: () => ({ getWest: () => o.west ?? 0, getEast: () => o.east ?? 10, getSouth: () => 0, getNorth: () => 10 }),
     getZoom: () => o.zoom ?? 5, project: (p) => ({ x: p[0] * 20, y: 200 - p[1] * 20 }), getCanvas: () => canvas,
-    queryRenderedFeatures: () => (o.rendered === 0 ? [] : [{ layer: { id: 's-l' } }]),
+    queryRenderedFeatures: () => (o.rendered === 0 || outside || o.errors ? [] : [{ layer: { id: 's-l' } }]),
     redraw: o.noRedraw ? undefined : () => { st.frames++; },
   };
   const deps = { makeCanvas: () => { let snap = null; const cx = { drawImage(src) { snap = src.snapshot(); }, getImageData(x, y) { return { data: snap(x, y) }; } }; return { width: 200, height: 200, getContext: () => cx }; } };
@@ -46,9 +47,9 @@ test('① the five ways a held, visible-flagged surface is still not on the scre
   assert.equal((await fake({ layer: { minzoom: 8 } }).look()).surfaces.s.reason, 'zoom_range');
   assert.equal((await fake({ layer: { maxzoom: 5 } }).look()).surfaces.s.reason, 'zoom_range', 'maxzoom is exclusive');
   assert.equal((await fake({ west: 20, east: 30 }).look()).surfaces.s.reason, 'viewport');
-  const er = await fake({ errors: ['tile 404'] }).look(); assert.equal(er.surfaces.s.reason, 'error'); assert.deepEqual(er.surfaces.s.errors, ['tile 404']);
-  const cv = await fake({ covered: true }).look(); assert.equal(cv.surfaces.s.verdict, 'not_seen'); assert.equal(cv.surfaces.s.reason, 'covered', 'the renderer has it, the screen does not change');
-  const np = await fake({ paintsNothing: true, rendered: 0 }).look(); assert.equal(np.surfaces.s.reason, 'no_pixels');
+  const er = await fake({ errors: ['tile 404'] }).look(); assert.equal(er.surfaces.s.reason, 'renderer_error'); assert.deepEqual(er.surfaces.s.errors, ['tile 404']);
+  const cv = await fake({ covered: true }).look(); assert.equal(cv.surfaces.s.verdict, 'unconfirmed'); assert.equal(cv.surfaces.s.reason, 'no_pixel_change');
+  const np = await fake({ paintsNothing: true, rendered: 0 }).look(); assert.equal(np.surfaces.s.reason, 'no_pixel_change');
 });
 
 test('① a circle at opacity 0 with a visible stroke, and an expression opacity, are NOT reported invisible', async () => {
@@ -59,7 +60,7 @@ test('① a circle at opacity 0 with a visible stroke, and an expression opacity
 test('① COULD NOT TELL is never a failure (one-pass-or-a-reason §5)', async () => {
   const hidden = await fake({ live: false, rendered: 0 }).look(); assert.equal(hidden.surfaces.s.verdict, 'unconfirmed'); assert.deepEqual(hidden.notSeen, []);
   const noRedraw = await fake({ noRedraw: true, rendered: 0 }).look(); assert.equal(noRedraw.surfaces.s.verdict, 'unconfirmed', 'an adapter that cannot redraw is not a map that drew nothing');
-  const viaQuery = await fake({ live: false }).look(); assert.equal(viaQuery.surfaces.s.verdict, 'seen', 'the renderer reporting its features at the screen is evidence enough');
+  const viaQuery = await fake({ live: false }).look(); assert.equal(viaQuery.surfaces.s.verdict, 'unconfirmed', 'a hidden tab supplies no current frame');
   const unknown = await makeRenderWitness({}).look(fake().a, { observable: true, surfaces: { s: { owners: [], state: 'unknown', features: null } } }, {}, null, null); assert.equal(unknown.surfaces.s.verdict, 'unconfirmed');
   const no = await makeRenderWitness({}).look(null, { observable: false, surfaces: {} }, {}, null, null); assert.equal(no.observable, false);
 });
@@ -79,7 +80,7 @@ test('① wiring: facade member, error hearing, lazy chunk, Atlas result line, b
   assert.match(ge, /witness:q=>_witness\(q\)/); assert.match(ge, /import\('\.\/render-witness\.js'\)/); assert.match(ge, /a\.on\('error'/);
   const ce = read('js/cesium-engine.js'); assert.match(ce, /fire\('error',\{error:err\|\|new Error\(rec\.unpainted\),layerId:/, 'Cesium raises the error event the witness hears');
   for (const m of ['getPaint(', 'sourceData(', 'getBounds(', 'queryRenderedFeatures(', 'project(', 'getCanvas(']) assert.ok(ce.includes(m), 'cesium adapter has ' + m);
-  const con = read('js/atlas-console.js'); assert.match(con, /render\.witness\(\{sources:ids\}\)/); assert.match(con, /Drawn, but not visible on screen/);
+  const con = read('js/atlas-console.js'); assert.match(con, /render\.witness\(\{sources:ids,pixels:final,waitForCamera:final\}\)/); assert.match(con, /Screen visibility unconfirmed/);
   assert.match(con, /meta:r\.meta|r\.meta=Object\.assign\(\{\},r\.meta\|\|\{\},\{ seen:_sn \}\)/);
 });
 

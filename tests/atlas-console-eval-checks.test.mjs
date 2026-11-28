@@ -241,7 +241,7 @@ test('R733 ③ the note is rendered from that flag, in one line worded by why th
     assert.equal((say(s).replace(/<button[\s\S]*<\/button>/, '').match(/[.!?](\s|<)/g) || []).length, 1, s + ': one sentence, not a paragraph');
   }
   /* the press sends the follow-up through the console's own run(), and removes the button so it cannot be sent twice */
-  assert.match(CONSOLE_SRC, /closest\('\.atl-cut-go'\);[^\n]*\n\s*if\(cgo\)\{ cgo\.remove\(\); run\(L\('Continue from where you stopped\./, 'Continue is wired to run()');
+  assert.match(CONSOLE_SRC, /closest\('\.atl-cut-go'\);[^\n]*\n\s*if\(cgo\)\{[^\n]*__atlResume; cgo\.remove\(\); run\(L\('Continue from where you stopped\.[^\n]*\{resume\}/, 'Continue is wired to run()');
 });
 
 /* ── the clock is the third axis of the map, and it was the one behind a search ───────────── */

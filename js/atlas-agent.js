@@ -1985,8 +1985,10 @@ export function makeAtlasAgent() {
       const stoppedEarly = stopped === 'transport' || cutShort;
       const verificationPending = stoppedEarly && results.length > 0 && typeof opts.verify === 'function' &&
         (goalVerifiedAt !== operationProgress || trace.goalCheck === 'unobserved');
-      const completion = !String(text || '').trim() && !results.some((r) => r.ok === true) ? 'none'
-        : (unmet.length || verificationPending || (stoppedEarly && !String(text || '').trim())) ? 'partial'
+      const hasAnswer = Boolean(String(text || '').trim());
+      const hasOutput = produced.length > 0;
+      const completion = !hasAnswer && !hasOutput ? 'none'
+        : (unmet.length || verificationPending || !hasAnswer) ? 'partial'
         : trace.goalCheck === 'unobserved' ? 'unobserved' : 'complete';
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was

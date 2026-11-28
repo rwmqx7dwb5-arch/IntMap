@@ -35,7 +35,7 @@ test('atlas-completion ①: a "map" declared and never drawn ends output_unmet /
   assert.equal(out.trace.outputGate, 1);
   assert.equal(out.stopped, 'output_unmet', 'not "answered"');
   assert.equal(out.completion, 'partial');
-  assert.deepEqual(out.unmet, [{ kind: 'output', mode: 'map', code: 'map_not_drawn' }]);
+  assert.deepEqual(out.unmet, [{ kind: 'output', id: 'output:map', mode: 'map', code: 'map_not_drawn' }]);
   assert.equal(out.text, 'ここに地図で示しました。', 'the sentence Atlas wrote is returned as it stands');
   assert.equal(out.mapDrawn, false);
   assert.ok(!AGENT.CUT_STOPS.output_unmet, 'not a cut: the turn did not run out');
@@ -71,7 +71,7 @@ test('atlas-completion ③: a PLAN step observed failed makes the answered turn 
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute, messages: USER, plan });
   assert.equal(out.stopped, 'answered', 'stopped is unchanged — the plan is read into completion, not into stopped');
   assert.equal(out.completion, 'partial');
-  assert.deepEqual(out.unmet, [{ kind: 'goal', need: 'draw · {"x":"q"}', state: 'failed', why: 'failed' }]);
+  assert.deepEqual(out.unmet, [{ kind: 'goal', need: 'draw · q', state: 'failed', why: 'failed' }]);
 
   /* the same plan, every step observed completed → complete */
   const plan2 = makeAtlasPlan();

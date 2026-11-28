@@ -314,9 +314,9 @@ export const KERNELS = {
   'js/gis-network.js': { version: 'network-1', sha256: '116dc959977eaca475dbeb31652d5429a9b6d99b9d298dc7154c1327d167946d' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'f3a8a70462b3eba1449be8f86dc27278fb835af2861593c6bda58dbc87c715cc' },
   /* Source-map document decoding, affine calibration and extraction are independently versioned in the dataset recipe. */
-  'js/gis-map-source.js': { version: 'map-source-2', sha256: '37d258b972e64158d83142318d74383245dd3151c96b44f60ce2526b8ca0dbab' },
-  'js/gis-map-registration.js': { version: 'map-registration-2', sha256: 'f867c2a550f44266ee30c7eea83e38561a02bddf41b5183be4a03d2e5046311d' },
-  'js/gis-map-linework.js': { version: 'map-linework-2', sha256: '749fc7967aebaa2b0e14ddece1a6b7c03a8f02f76807b03cfa91ff3efdcb3cb0' },
+  'js/gis-map-source.js': { version: 'map-source-3', sha256: 'cedfa9450d69bfaef29d57bf08f39c937f078825987bf4513bde84f750da44b4' },
+  'js/gis-map-registration.js': { version: 'map-registration-3', sha256: 'a1bebdac04156ef7aea9d3c71ef87e0ff6b7755e9b3c22a36ab2d70125ed604c' },
+  'js/gis-map-linework.js': { version: 'map-linework-3', sha256: '86b38fcd64fbaa9f3f9cee7441ef50c0666f25b77d1430aa2b8106ecbd3ee22e' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a

@@ -275,8 +275,10 @@ export function makeAtlasWorkingMemory(o) {
     });
     (Array.isArray(t.unresolved) ? t.unresolved : []).forEach((u) => open(typeof u === 'string' ? u : textOf(u), 'unresolved', turnId));
     if (t.question && /[?？]\s*$/.test(String(t.reply || '').trim()) && t.awaiting) open('asked the reader: ' + s(t.reply, 300), 'user', turnId);
-    if (st.goal?.turnId === turnId) {
+    if (!st.goal || st.goal.turnId === turnId) {
       Object.keys(t.decisions || {}).forEach((k) => decide(k, t.decisions[k], 'wctx', turnId));
+    }
+    if (st.goal?.turnId === turnId) {
       if (Array.isArray(t.steps)) setSteps(t.steps);
       closeGoal(t.outcome || 'answered');
     }
