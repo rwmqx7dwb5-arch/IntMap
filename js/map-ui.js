@@ -3699,6 +3699,9 @@ export function geojsonUpload(HOST){
       if(why==='align-needs-4326'||why==='resample-source-not-4326') return IntMapLang.t(HOST.lang,"That grid is not in lon/lat yet — convert it first, then put the two on one grid","その格子はまだ経緯度ではありません。先に変換してから、2 つを 1 つの格子に合わせてください")+(detail&&detail.crs?' ('+detail.crs+')':'');
       if(why==='crs-unavailable') return IntMapLang.t(HOST.lang,"The coordinate-conversion library did not load, so this grid was not converted — nothing was guessed at","座標変換の部品を読み込めなかったため、この格子は変換していません。推測もしていません");
       if(why==='raster-unavailable') return IntMapLang.t(HOST.lang,"The grid module is not loaded, so this file was not read at all","格子の部品が読み込まれていないため、このファイルは読み取っていません");
+      if(why==='resample-quantity-incompatible') return IntMapLang.t(HOST.lang,"Area apportionment requires a total per source cell","面積按分には元の画素ごとの総量が必要です");
+      if(why==='raster-integrity-failed') return IntMapLang.t(HOST.lang,"Source and output values disagree at sampled coordinates","抽出した座標で入力と出力の値が一致しません");
+      if(why==='align-intersection-disconnected') return IntMapLang.t(HOST.lang,"The shared extent has separate longitude intervals","共通範囲は経度方向に分かれています");
       if(why==='resample-method-not-stated'||why==='resample-method-unknown') return IntMapLang.t(HOST.lang,"Say how the grid should be resampled — an interpolation nobody named is an answer nobody made","格子をどう再標本化するかを指定してください。誰も名づけていない補間は、誰も出していない答えです")+(detail&&detail.method?' ('+detail.method+')':'');
       /* ⚠ 「3」と「5」の中間の「4」は別の分類であって中間ではない。 A classification is not a scale,
          and smoothing one invents land-cover types nobody defined (docs/GIS-CORE.md §1.4 refuses the
