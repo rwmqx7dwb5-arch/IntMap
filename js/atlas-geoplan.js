@@ -24,6 +24,8 @@
  *  model; no operation is blocked, reordered or limited for it (CONSTITUTION.md §5).
  * ==========================================================================*/
 
+import { asBox, spatialRelation, temporalRelation, resolutionRelation } from './gis-catalog-search.js';
+
 const SOURCE_KINDS = ['layer', 'dataset', 'stac', 'ogc', 'overture', 'upload', 'url', 'inline', 'job-output', 'none'];
 const ENVIRONMENTS = ['browser-gis', 'python', 'server', 'job'];
 const COMPLETENESS = ['all', 'sample', 'any'];
@@ -148,6 +150,8 @@ export function gapsOf(spec) {
  */
 async function probeNeed(need, spec, deps) {
   const k = need.source.kind;
+  const t = need.time || (spec.time && (spec.time.at || (spec.time.from && spec.time.to ? spec.time.from + '/' + spec.time.to : spec.time.from || spec.time.to)));
+  const maxGsd = need.resolution?.unit === 'm' ? need.resolution.value : need.resolution?.unit === 'km' ? need.resolution.value * 1000 : null;
   if (!k) return { state: 'unknown', completeness: 'unstated', detail: 'source-not-stated' };
   if (k === 'none') return { state: 'unavailable', completeness: 'unstated', detail: 'the plan states there is no source' };
   if (k === 'upload') return { state: 'unknown', completeness: 'unstated', detail: 'an uploaded file is the reader\'s; nothing here can ask whether it exists' };
@@ -157,7 +161,22 @@ async function probeNeed(need, spec, deps) {
     try { row = need.source.ref ? await deps.describe(need.source.ref, k) : null; } catch (_) { return { state: 'unknown', completeness: 'unstated', detail: 'describe-threw' }; }
     if (!row) return { state: 'unavailable', completeness: 'unstated', detail: 'not-in-intmap' };
     const und = Array.isArray(row.undeclared) ? row.undeclared.map((u) => u && u.slot).filter(Boolean) : [];
-    return { state: 'available', completeness: 'unstated', detail: 'in-intmap', ref: row.ref || need.source.ref, undeclared: und };
+    const time = row.time;
+    const iso = (ms) => Number.isFinite(ms) && Math.abs(ms) <= 8.64e15 ? new Date(ms).toISOString() : null;
+    const interval = time?.kind === 'constant' && (Number.isFinite(time.start) || Number.isFinite(time.end)) ? [[iso(time.start), iso(time.end)]] : null;
+    const matches = {
+      spatial: spatialRelation(row.extent?.bbox || (row.bounds ? [row.bounds] : null), asBox(spec.region?.bounds)),
+      temporal: temporalRelation(row.extent?.time || interval, t),
+      resolution: need.resolution && maxGsd == null ? 'unreadable' : resolutionRelation(row.resolution, { maxGsd }),
+    };
+    const states = Object.values(matches);
+    const outside = states.includes('outside') || states.includes('misses');
+    const unknown = states.includes('unstated') || states.includes('unreadable');
+    const allowsSample = need.completeness === 'sample' || need.completeness === 'any';
+    const state = outside ? 'unavailable' : unknown ? 'unknown' : matches.spatial === 'overlaps' && !allowsSample ? 'partial' : 'available';
+    return { state, completeness: matches.spatial === 'overlaps' ? 'stated-partial' : 'unstated',
+      detail: outside ? 'held-data-does-not-meet-conditions' : unknown ? 'held-data-conditions-unverified' : 'in-intmap',
+      ref: row.ref || need.source.ref, undeclared: und, matches };
   }
   if (k === 'overture') {
     /* Overture is a theme/release, not a catalogue IntMap can ask: it is a plan to fetch from the Overture
@@ -174,13 +193,8 @@ async function probeNeed(need, spec, deps) {
   if (need.source.ref) req.q = need.source.ref;
   else if (need.what) req.q = need.what;
   if (spec.region && spec.region.bounds) req.bounds = spec.region.bounds;
-  const t = need.time || (spec.time && (spec.time.at || (spec.time.from && spec.time.to ? spec.time.from + '/' + spec.time.to : spec.time.from || spec.time.to)));
   if (t) req.time = t;
-  /* resolution in metres (js/gis-atlas.js search maxGsd). Only {value, unit m|km} converts; anything else is said so below, not guessed. */
-  if (need.resolution && isNum(need.resolution.value)) {
-    if (need.resolution.unit === 'm') req.maxGsd = need.resolution.value;
-    else if (need.resolution.unit === 'km') req.maxGsd = need.resolution.value * 1000;
-  }
+  if (maxGsd != null) req.maxGsd = maxGsd;
   let r = null;
   try { r = await deps.discover(req); } catch (e) { return { state: 'unknown', completeness: 'unproven', detail: 'discover-threw' }; }
   if (!r || r.ok === false) return { state: 'unknown', completeness: 'unproven', detail: 'discover-refused' + (r && r.why ? ':' + r.why : '') };
@@ -195,7 +209,6 @@ async function probeNeed(need, spec, deps) {
      for, and one that does not state a resolution does not meet a resolution that was asked for — both are "not stated", reported as such. */
   const wantsTime = !!t;
   const res = need.resolution;
-  const maxGsd = req.maxGsd == null ? null : req.maxGsd;
   const wantsRes = !!res;
   const resUnreadable = wantsRes && maxGsd == null;
   const cand = entries.map((e) => {

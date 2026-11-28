@@ -1083,7 +1083,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
              nothing moving is then the state it set out to reach — the verdict `not_rendered` would tell Atlas a correct
              answer failed and send it to ask again (.agents/rules/one-pass-or-a-reason.md §1). Only `true` counts: a
              painter that did not say it has made no such claim. */
-          if (raw && raw.meta && raw.meta.paintsNothing === true) return { status: 'completed', code: 'ok', observed: { paint: after || null, nothing: true }, html: html };
+          if (raw && raw.meta && raw.meta.paintsNothing === true) return { status: raw.meta.partial ? 'partial' : 'completed', code: raw.meta.code || 'ok', observed: { paint: after || null, nothing: true }, html: html };
           /* the dispatch says some of what it was asked for never resolved. ⚠ (#R742) THAT IS A
              STATEMENT ABOUT THE TARGETS, NOT ABOUT THE MAP: this used to return `not_rendered` without
              looking at the map at all, so thirteen oblasts drawn and one unresolved was reported as

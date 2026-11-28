@@ -33,6 +33,7 @@
  *  `bind` are the browser half.
  * ==========================================================================*/
 
+import { compareQuantity } from './atlas-evidence.js';
 import { IntMapLang } from './lang-registry.js';
 /* (safe-output-single-module) the ONE URL guard — js/safe-html.js publishes globalThis.IntMapSafe */
 import './safe-html.js';
@@ -199,7 +200,8 @@ export function makeAtlasAnswerSources(deps) {
       const tail = after.trimStart();
       if (unit && !(normalized(tail).startsWith(normalized(unit)) &&
           !/[a-z\d²³]/i.test(tail.slice(unit.length, unit.length + 1)))) continue;
-      const equivalent = item.facts?.length ? item.facts.filter((fact) => sameAt(token, fact.value)) : null;
+      const equivalent = item.facts?.length ? item.facts.filter((fact) => compareQuantity(
+        { value: token.value, unit }, { ...fact, unit: fact.unit || unit }, (_, value) => sameAt(token, value)).matches) : null;
       if (equivalent) {
         const matchingFacts = equivalent.filter((fact) => matchesPeriod(fact.period || item.date) &&
           (!fact.geography || namedPlaces.has(fact.geography)));

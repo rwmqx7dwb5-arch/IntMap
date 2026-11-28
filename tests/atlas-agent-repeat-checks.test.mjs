@@ -379,7 +379,7 @@ test('R760 ⑥ the painters that hold a named surface declare what they painted'
   /* ⚠ (#732) the declaration is a MEMBER of `meta`, and `meta` may say more than one thing — #732 added
      `resultKey` beside it and the old spelling (`…]}}`, i.e. «painted is the last member») failed a change
      that kept the declaration intact. The fact is that the painter declares; that is what is read. */
-  assert.match(src, /meta:\{painted:\{lines:\[_lnObj\.name\|\|_lnObj\.key\]\}[,}]/,
+  assert.match(src, /painted:\s*\{\s*lines:\s*labels\s*\}/,
     'drawLine states the course it drew');
   assert.match(src, /meta:\{painted:\{polys:\[_pgObj\.name\|\|_pgObj\.key\]\}[,}]/,
     'drawPolygon states the ring it drew');

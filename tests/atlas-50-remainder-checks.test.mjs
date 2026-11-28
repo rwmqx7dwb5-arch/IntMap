@@ -175,7 +175,7 @@ test('atlas-50-remainder ④ a course is the same line whichever end it is drawn
   const fwd = [[-21.94, 64.14], [18.42, -33.92]];
   assert.equal(K(fwd), K(fwd.slice().reverse()), 'Cape Town→Reykjavik is the line Reykjavik→Cape Town');
   assert.notEqual(K(fwd), K([[-21.94, 64.14], [18.42, -34.92]]), 'a different course is a different line');
-  assert.match(CONSOLE_SRC, /resultKey:'map\.line:'\+_lnKey/, 'the line states what it drew as its result identity');
+  assert.match(CONSOLE_SRC, /resultKey:\s*'map\.line:'\s*\+\s*keys\.sort\(\)\.join\('\|'\)/, 'the line states what it drew as its result identity');
 });
 test('atlas-50-remainder ④ a relabelled redraw of the same line is named as the same work, and nothing is refused', async () => {
   const AGENT = makeAtlasAgent();

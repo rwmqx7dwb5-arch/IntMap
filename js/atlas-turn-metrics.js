@@ -242,7 +242,7 @@ export function makeTurnRecorder(opt) {
       if (q && active === rec) lastTask.done = row.completion === 'complete';
       if (active === rec) active = null;
       if (turn && !announced) { announced = true; emit({ turn, row }); }
-      return row;
+      return out?.run?.stages?.length ? { ...row, effortStages: out.run.stages } : row;
     },
     recordFailure(error, turnKey, run) {
       if (announced) return null;

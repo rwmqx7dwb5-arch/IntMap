@@ -21,6 +21,7 @@
  *  is not there makes no edge (`unresolved`).
  * ==========================================================================*/
 import { makeEvidenceGraph, fingerprint } from './evidence-graph.js';
+import { compareQuantity } from './atlas-evidence.js';
 import * as dataImpact from './data-impact.js';
 import { assessDeliverable, observationLines } from './evidence-graph-deliver.js';
 
@@ -48,26 +49,36 @@ function datasetVersion(rec) {
  */
 export function bindGis(graph, data, opts) {
   opts = opts || {};
-  const ref = new Map();
+  const ref = new Map(), versions = new Map(), recording = new Set();
   const refused = [];
   let off = null;
 
   function record(rec) {
-    if (!rec || !rec.id) return null;
-    if (ref.has(rec.id)) return ref.get(rec.id);
+    if (!rec?.id || recording.has(rec.id)) return null;
+    const registryVersion = data.versionOf?.(rec.id);
+    const previous = ref.get(rec.id);
+    if (previous?.record === rec && previous?.registryVersion === registryVersion) return previous;
+    recording.add(rec.id);
+    try { return recordFresh(rec, registryVersion); }
+    finally { recording.delete(rec.id); }
+  }
+
+  function recordFresh(rec, registryVersion) {
     const p = rec.provenance || {};
     let r;
-    if (p.kind === 'op') {
+    if (p.kind === 'op' || (p.kind === 'compute' && p.inputs?.length)) {
       const inputs = [];
-      for (const i of (Array.isArray(p.inputs) ? p.inputs : [])) {
-        let n = ref.get(i);
-        if (!n && data && typeof data.get === 'function' && data.get(i)) n = record(data.get(i));
+      for (const id of (Array.isArray(p.inputs) ? p.inputs : [])) {
+        const expected = p.inputVersions?.find((entry) => entry.id === id)?.version;
+        const n = expected == null ? record(data.get?.(id)) || ref.get(id)
+          : versions.get(id)?.get(expected) || (data.versionOf?.(id) === expected ? record(data.get?.(id)) : null);
         if (n) inputs.push(n);
       }
-      if (!inputs.length) { refused.push({ id: rec.id, why: 'inputs-not-recorded' }); return null; }
+      if (!inputs.length || inputs.length !== p.inputs.length) { refused.push({ id: rec.id, why: 'inputs-not-recorded' }); return null; }
       r = graph.putDerived({
         type: 'gis_op', label: String(rec.title || p.op || rec.id), inputs,
-        calc: { op: p.op, opVersion: typeof opts.opVersion === 'function' ? opts.opVersion() : '', params: p.params || null },
+        calc: p.kind === 'compute' ? { op: 'compute.run', opVersion: p.runtime, params: { codeSha256: p.codeSha256, output: p.output, inputVersions: p.inputVersions } }
+          : { op: p.op, opVersion: typeof opts.opVersion === 'function' ? opts.opVersion() : '', params: p.params || null },
         output: { kind: rec.kind || 'vector', count: rec.count, geometryType: rec.geometryType, withGeometry: rec.withGeometry, fields: fieldShape(rec), coverage: p.coverage || null },
         meta: { dataset: rec.id, upstreams: p.upstreams || null, recordedAt: p.recordedAt || null },
       });
@@ -76,8 +87,12 @@ export function bindGis(graph, data, opts) {
       r = graph.putSource({ type: 'dataset', key: datasetKey(rec), label: rec.title || rec.id, version: v.version, versionBasis: v.basis, meta: { dataset: rec.id, kind: p.kind || 'unknown', rights: p.rights || null, at: p.at || p.readAt || p.retrievedAt || null } });
     }
     if (!r || !r.ok) { refused.push({ id: rec.id, why: (r && r.why) || 'failed' }); return null; }
-    const pin = { id: r.id, version: r.version };
+    const pin = { id: r.id, version: r.version, record: rec, registryVersion };
     ref.set(rec.id, pin);
+    if (registryVersion != null) {
+      if (!versions.has(rec.id)) versions.set(rec.id, new Map());
+      versions.get(rec.id).set(registryVersion, { id: r.id, version: r.version });
+    }
     return pin;
   }
 
@@ -85,8 +100,6 @@ export function bindGis(graph, data, opts) {
   if (data && typeof data.subscribe === 'function') off = data.subscribe((what, rec) => { if (what === 'add') record(rec); });
   return { refOf: (dsId) => ref.get(dsId)?.id || null, versionOf: (dsId) => ref.get(dsId)?.version || null, unbind: () => { if (off) off(); off = null; }, refused: () => refused.slice() };
 }
-
-const sameValue = (a, b) => a != null && b != null && isFinite(a) && isFinite(b) && Number(a) === Number(b);
 
 /**
  * recordAnswer(graph, {registry, claims, callId, model}) → {recorded:[ids], inference:n, uncited:n, unresolved:n}
@@ -98,15 +111,13 @@ export function recordAnswer(graph, args) {
   const out = { recorded: [], inference: 0, uncited: 0, unresolved: 0 };
   if (!registry || typeof registry.get !== 'function') return out;
 
-  const sourceOf = new Map();   /* registry record id → { node id, facts[] } or null */
+  const sourceOf = new Map();   /* registry record id → { id, version } or null */
   function nodeOfRecord(rec) {
     if (sourceOf.has(rec.id)) return sourceOf.get(rec.id);
     let res = null;
     const g = rec.graphRef ? graph.get(rec.graphRef) : null;
     if (g) {
-      /* the facts code attached to the record (a GIS result put in front of the model) and the node's own value */
-      res = { id: g.id, version: rec.graphVersion || undefined, values: (Array.isArray(rec.supportFacts) ? rec.supportFacts : []).map((f) => f.value)
-        .concat(g.kind === 'derived' && g.output && g.output.value != null ? [g.output.value] : []) };
+      res = { id: g.id, version: rec.graphVersion || undefined };
     } else {
       const facts = Array.isArray(rec.supportFacts) ? rec.supportFacts : [];
       const web = !!rec.canonicalUrl;
@@ -114,8 +125,8 @@ export function recordAnswer(graph, args) {
       const version = rec.sourceVersion ? [rec.retrievedAt, rec.sourceVersion].join('@') : rec.publishedAt || rec.validTime || (facts.length ? fingerprint(facts) : '');
       const basis = rec.sourceVersion ? 'retrieved-version' : rec.publishedAt ? 'published_at' : (rec.validTime ? 'valid_time' : 'content-facts');
       const s = graph.putSource({ type: web ? 'web_document' : 'app_data', key, label: rec.title || rec.publisher || key, version, versionBasis: basis,
-        retrievedVersion: !!rec.sourceVersion, meta: { title: rec.title || null, retrievedAt: rec.retrievedAt || null, origin: rec.origin, publisher: rec.publisher || null } });
-      res = s.ok ? { id: s.id, version: s.version, values: facts.map((f) => f.value) } : null;
+        retrievedVersion: !!rec.sourceVersion, meta: { title: rec.title || null, retrievedAt: rec.retrievedAt || null, origin: rec.origin, publisher: rec.publisher || null, primarySource: rec.primarySource || null } });
+      res = s.ok ? { id: s.id, version: s.version } : null;
     }
     sourceOf.set(rec.id, res);
     return res;
@@ -130,10 +141,10 @@ export function recordAnswer(graph, args) {
       const rec = registry.get(eid);
       if (!rec) { out.unresolved++; continue; }
       const n = nodeOfRecord(rec);
-      if (n) used.push(n);
+      if (n) used.push({ ...n, matched: (rec.supportFacts || []).some((f) => compareQuantity(m, f).matches) });
     }
     if (!used.length) { out.uncited++; continue; }
-    const backed = used.some((u) => u.values.some((v) => sameValue(v, m.value)));
+    const backed = used.some((u) => u.matched);
     const r = graph.putDerived({
       type: backed ? 'answer_number' : 'ai_inference',
       label: String(m.concept || m.seriesId || c.id || 'figure').slice(0, 120),
@@ -142,7 +153,7 @@ export function recordAnswer(graph, args) {
       output: { value: m.value, unit: m.unit || '', period: m.period || '', geography: m.geography || '', concept: m.concept || '', seriesId: m.seriesId || '' },
       meta: { callId: (args && args.callId) || null, turnId: (args && args.turnId) || null, model: (args && args.model) || null,
         /* which of the cited nodes themselves hold this value — what corroboration is counted from (js/evidence-graph-deliver.js) */
-        statedBy: used.filter((u) => u.values.some((v) => sameValue(v, m.value))).map((u) => u.id) },
+        statedBy: used.filter((u) => u.matched).map((u) => u.id) },
     });
     if (r.ok) { out.recorded.push(r.id); if (!backed) out.inference++; }
   }

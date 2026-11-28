@@ -682,7 +682,7 @@ export async function ask(req: Request): Promise<Response> {
   const observe = (outcome: string, extra: { incomplete?: string } = {}) =>
     recordHealth(db, { outcome, wallMs: Date.now() - startedAt, attempts, fallbackTo: fellBackTo, ...extra });
   try {
-    let out: { text: string; finishReason: string; incompleteReason?: string | null; webAttached?: boolean; webUsed?: boolean; webCount?: number; webSources?: number | null; webFailure?: string; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
+    let out: { text: string; finishReason: string; incompleteReason?: string | null; webAttached?: boolean; webUsed?: boolean; webCount?: number; webSources?: number | null; webFailure?: string; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; reasoningEffort?: string; output?: TurnItem[] };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
@@ -774,7 +774,7 @@ export async function ask(req: Request): Promise<Response> {
          visible instead of being believed. */
       /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
          They differ exactly when the fallback chain walked, which is the thing nobody could see. */
-      meta: { provider, model, modelServed: out.served || "", modelChosenBy: !tier.model && devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
+      meta: { provider, model, modelServed: out.served || "", ...(callId && out.reasoningEffort ? { reasoningEffort: out.reasoningEffort } : {}), modelChosenBy: !tier.model && devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-completion) whether the answer ENDED, in the provider's own words (providers/*.ts incompleteReason) —
            the text above is kept whole either way; js/atlas-agent.js reads these two as the reply's `finish` */
         status: out.incompleteReason ? "incomplete" : "complete", incompleteReason: out.incompleteReason || null,

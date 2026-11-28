@@ -32,7 +32,7 @@ test('atlas-goal-verifier: met, not observed and a throw all accept the turn as 
     const model = scripted([{ text: 'La Seine fait 777 km.', toolCalls: [] }]);
     const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER, verify });
     assert.equal(model.count(), 1, name);
-    assert.equal(out.completion, 'complete', name);
+    assert.equal(out.completion, check === 'met' ? 'complete' : 'unobserved', name);
     assert.equal(out.trace.goalCheck, check, name);
   }
 });

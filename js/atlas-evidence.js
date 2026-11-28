@@ -33,6 +33,20 @@
  *  that is wrong on purpose and watch it say so.
  * ==========================================================================*/
 
+const quantityText = (value) => String(value ?? '').normalize('NFKC').trim().replace(/\s+/gu, ' ');
+export function compareQuantity(claim, fact, matchesValue = (a, b) => Number.isFinite(a) && Number.isFinite(b) && a === b) {
+  const mismatch = [], unknown = [];
+  if (!matchesValue(claim.value, fact.value)) mismatch.push('value');
+  for (const field of ['concept', 'unit', 'period', 'geography', 'seriesId', 'basis', 'adjustment']) {
+    const expected = quantityText(claim[field]);
+    if (!expected) continue;
+    const actual = quantityText(fact[field]);
+    if (!actual) unknown.push(field);
+    else if ((field === 'unit' ? actual : actual.toLowerCase()) !== (field === 'unit' ? expected : expected.toLowerCase())) mismatch.push(field);
+  }
+  return { matches: !mismatch.length && !unknown.length, mismatch, unknown };
+}
+
 export function makeAtlasEvidence() {
   return (function () {
 
@@ -126,7 +140,8 @@ export function makeAtlasEvidence() {
     return {
       seriesId: clampText(f.seriesId || '', 80),
       concept: clampText(f.concept || '', 120),
-      value: isFinite(v) ? v : null,
+      value: f.value != null && isFinite(v) ? v : null,
+      adjustment: clampText(f.adjustment || '', 60),
       unit: clampText(f.unit || '', 40),
       basis: clampText(f.basis || '', 40),
       geography: clampText(f.geography || '', 80),
@@ -189,6 +204,7 @@ export function makeAtlasEvidence() {
           .map(normFact).filter(Boolean).slice(0, MAX_FACTS_PER_RECORD),
         status: rec.status === 'unreachable' ? 'unreachable' : (origin === 'hosted_web' ? 'verified' : 'provisional'),
         providerCitation: rec.providerCitation || null,
+        primarySource: canonicalizeUrl(rec.primarySource)?.key || null,
         /* (evidence-graph) the node a GIS/derived result carries in the lineage graph (js/evidence-graph.js) — an id code minted, never model text */
         graphRef: rec.graphRef ? clampText(rec.graphRef, 400) : null,
         ...(rec.graphVersion ? { graphVersion: clampText(rec.graphVersion, 120) } : {}),
@@ -254,6 +270,7 @@ export function makeAtlasEvidence() {
           retrievedAt: retrievedAt,
           dateType: s.dateType === 'gdelt_seen_date' ? 'retrieval_time' : (s.dateType || 'publication_date'),
           supportFacts: s.supportFacts || [],
+          primarySource: s.primarySource,
         });
         if (r) out.push(r);
       });

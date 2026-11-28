@@ -141,7 +141,7 @@ export function capabilityEntries(modules) {
       if (e.policy != null) Object.keys(e.policy).forEach(function (k) { if (POLICY_KEYS.indexOf(k) < 0) problems.push(where + ': ' + id + ' policy has an unknown field «' + k + '» (' + POLICY_KEYS.join(', ') + ')'); });
       seenId.add(id); if (spelling) seenSpelling.add(spelling);
       out.push({ ns: ns, id: id, row: e.row, schema: e.schema, run: e.run, doc: Array.isArray(e.doc) ? e.doc : [], phrases: e.phrases || null,
-        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null, ui: e.ui || null, commands: e.commands || null });
+        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null, ui: e.ui || null, commands: e.commands || null, independentRead: e.independentRead === true });
     });
   });
   if (problems.length) { const err = new Error('js/atlas-caps: ' + problems.join('; ')); err.problems = problems; throw err; }

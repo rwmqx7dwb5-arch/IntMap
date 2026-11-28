@@ -21,7 +21,7 @@ const { wantsContinue, agentContext, VISION_CONTINUE_RULE } = await import('../j
 const json = (o) => ({ ok: true, status: 200, headers: { get: (k) => (/content-type/i.test(k) ? 'application/json' : null) }, json: async () => o, text: async () => JSON.stringify(o), type: 'basic' });
 const world = [[-180, -90, 180, 90]];
 const dem = (id) => ({ id, title: 'Global DEM ' + id, description: 'Digital elevation model', keywords: ['elevation'], license: 'CC0-1.0', extent: { spatial: { bbox: world }, temporal: { interval: [['2011-01-01T00:00:00Z', null]] } }, summaries: { gsd: [30] } });
-const feature = (bbox) => ({ id: 'T1', bbox, properties: { datetime: '2024-06-01T00:00:00Z', gsd: 30 }, assets: { data: { href: 'https://data.test/T1.tif', type: 'image/tiff; application=geotiff; profile=cloud-optimized', roles: ['data'] } } });
+const feature = (bbox) => ({ id: 'T1', bbox, properties: { datetime: '2024-06-01T00:00:00Z', gsd: 30 }, assets: { data: { href: 'https://data.test/T1.tif', gsd: 30, type: 'image/tiff; application=geotiff; profile=cloud-optimized', roles: ['data'] } } });
 const WIN = [105.1, 21.1, 105.2, 21.2];
 
 /* two catalogues: `fast` answers at once; `slow` answers when the test releases it */
@@ -53,8 +53,9 @@ function setup(opts) {
 }
 const ASK = { q: 'elevation', bbox: WIN, maxGsd: 40, catalogs: ['fast', 'slow'], until: 'ready', width: 8, height: 8 };
 
-test('A1 until:ready returns a read-and-inspected candidate while the slow catalogue is still silent; follow finishes the list with the late one', async () => {
+test('A1 until:ready returns a read-and-inspected candidate while the slow catalogue is still silent; follow finishes the list with the late one', { timeout: 10_000 }, async (t) => {
   const { M, release } = setup();
+  t.after(release);
   const r = await M.search(ASK);
   assert.equal(r.ok, true);
   assert.ok(r.early, 'an early result');

@@ -182,6 +182,20 @@ const DECLINES = [
   /\b(?:geometry|shape|outline|boundary|course)\s+(?:is|was)\s+(?:not\s+(?:available|held|found)|unavailable)/i,
 ];
 
+function assertedQuantities(text, accepts) {
+  const clauses = norm(text).split(/[。；;!?！？\n]|\.(?!\d)/u);
+  const final = [], other = [];
+  for (const clause of clauses) {
+    const correction = /(?:\b(?:correct|final)\s+answer\b\s*(?:is\b|[:=])?|(?:正解|答え|結論)(?:は|[:：]))/iu.exec(clause);
+    const asserted = correction ? clause.slice(correction.index + correction[0].length) : clause;
+    for (const part of asserted.split(/[,、]|\b(?:but|rather than)\b/iu)) {
+      if (/\b(?:is|was|are)\s+(?:wrong|incorrect|false|not)\b|\b(?:not|instead of)\s+\d|(?:誤り|間違い|では(?:ない|ありません)|でなく|とは異な)/iu.test(part)) continue;
+      (correction ? final : other).push(...quantities(part).filter(accepts));
+    }
+  }
+  return final.length ? final : other;
+}
+
 /**
  * gradeAnswer(answer, reply) → { verdict: 'correct'|'incorrect'|'absent', expected, stated:[…] }
  *   answer  one row's `answer` from answer-key.json
@@ -197,13 +211,13 @@ export function gradeAnswer(answer, reply) {
     /* a head count is often written BEFORE its noun (「the population was 331,449,281」), so for a
        population answer a bare number counts too — from 10,000 up, which leaves out every year */
     const bareCount = (q) => a.unit === 'people' && q.unit === null && q.value >= 1e4;
-    const stated = quantities(text).filter((q) => (q.unit && acc[q.unit] != null) || bareCount(q))
+    const stated = assertedQuantities(text, (q) => (q.unit && acc[q.unit] != null) || bareCount(q))
       .map((q) => ({ value: q.value * (acc[q.unit] != null ? acc[q.unit] : 1), raw: q.raw }));
     if (!stated.length) return { verdict: 'absent', expected: describe(a), stated: [] };
     return { verdict: stated.some((q) => within(q.value, a)) ? 'correct' : 'incorrect', expected: describe(a), stated: stated.map((q) => q.raw) };
   }
   if (a.kind === 'count') {
-    const stated = quantities(text).filter((q) => Number.isInteger(q.value) && q.value < 1e6);
+    const stated = assertedQuantities(text, (q) => Number.isInteger(q.value) && q.value < 1e6);
     if (!stated.length) return { verdict: 'absent', expected: describe(a), stated: [] };
     return { verdict: stated.some((q) => q.value === a.value) ? 'correct' : 'incorrect', expected: describe(a), stated: stated.map((q) => q.raw) };
   }

@@ -108,10 +108,13 @@ export function datasetPlanningDetails(ds, raster, geometry) {
   const recorded = horizontal(p.bounds);
   const g = ds && ds.grid;
   const m = g && isNum(g.pixelLat) ? Math.abs(g.pixelLat) * 111320 : null;   /* 観測: 1 deg of meridian ≈ 111.32 km (js/gis-atlas.js pixelKmLat). 失効条件: an ellipsoid change */
+  const native = p.observation?.gsd;
+  const gridResolution = m ? { min: m, max: m, source: 'grid.pixelLat', unit: 'm' } : null;
   return {
     bounds: measured || recorded,
     boundsBasis: served && ds.kind === 'raster' ? 'served' : measured ? 'measured' : recorded ? 'recorded' : null,
-    resolution: m ? { min: m, max: m, source: 'grid.pixelLat', unit: 'm' } : null,
+    resolution: p.observation ? (isNum(native) && native > 0 ? { min: native, max: native, source: 'asset GSD', unit: 'm' } : null) : p.resampled ? null : gridResolution,
+    gridResolution,
     format: p.format || null,
     source: p.url || null,
     quality: ds.kind === 'raster'
@@ -134,6 +137,88 @@ export function localRecord(ds, raster, geometry) {
     ...facts, cloudCover: null,
     origin: 'held', catalogLabel: 'Datasets held in this session', count: ds.count == null ? null : ds.count,
   };
+}
+
+export function asBox(b) {
+  /* RFC 7946 §5: all southwest axes precede all northeast axes. The relationship here is horizontal. */
+  const axes = Array.isArray(b) && (b.length === 4 || b.length === 6) && b.every(isNum) ? b.length / 2 : 0;
+  const [w, s, e, n] = axes ? [b[0], b[1], b[axes], b[axes + 1]] : [b?.w, b?.s, b?.e, b?.n];
+  if (![w, s, e, n].every(isNum) || s < -90 || n > 90 || s > n) return null;
+  if (Math.abs(w) <= 180 && Math.abs(e) <= 180) return { w, s, e, n };
+  // The grid reader also accepts a continuous window unwrapped past the date line.
+  if (e < w || e - w > 360) return null;
+  if (e - w === 360) return { w: -180, s, e: 180, n };
+  const wrap = (lon) => Math.abs(lon) <= 180 ? lon : ((lon + 180) % 360 + 360) % 360 - 180;
+  return { w: wrap(w), s, e: wrap(e), n };
+}
+export const boundsOf = (b) => [b.w, b.s, b.e, b.n];
+/* lon ranges as 1–2 plain intervals so a box that crosses ±180 (w > e) is handled, not mangled */
+const lonSpans = (b) => (b.w <= b.e ? [[b.w, b.e]] : [[b.w, 180], [-180, b.e]]);
+export const splitBox = (b) => lonSpans(b).map(([w, e]) => ({ w, s: b.s, e, n: b.n }));
+export const hasArea = (b) => b.w < b.e && b.s < b.n;
+export function intersectBox(a, b) {
+  const w = Math.max(a.w, b.w), s = Math.max(a.s, b.s), e = Math.min(a.e, b.e), n = Math.min(a.n, b.n);
+  return w <= e && s <= n ? { w, s, e, n } : null;
+}
+/* Subtract from disjoint uncovered rectangles. Overlapping tile footprints count only once. */
+export function subtractBox(a, b) {
+  const hit = intersectBox(a, b);
+  if (!hit || (hasArea(a) && !hasArea(hit))) return [a];
+  const out = [];
+  if (a.w < hit.w) out.push({ ...a, e: hit.w });
+  if (hit.e < a.e) out.push({ ...a, w: hit.e });
+  if (a.s < hit.s) out.push({ ...hit, s: a.s, n: hit.s });
+  if (hit.n < a.n) out.push({ ...hit, s: hit.n, n: a.n });
+  return out;
+}
+/* the relation of what a collection STATES to what was asked — 'unstated' when it states nothing */
+export function spatialRelation(stated, asked) {
+  if (!asked) return 'not-asked';
+  const boxes = (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean).flatMap(splitBox);
+  if (!boxes.length) return 'unstated';
+  const windows = splitBox(asked);
+  if (!boxes.some((b) => windows.some((w) => intersectBox(b, w)))) return 'outside';
+  return boxes.reduce((gaps, b) => gaps.flatMap((w) => subtractBox(w, b)), windows).length ? 'overlaps' : 'covers';
+}
+export function extentIntersections(stated, asked) {
+  const out = [];
+  for (const b of stated.map(asBox).filter(Boolean)) {
+    const south = Math.max(b.s, asked.s), north = Math.min(b.n, asked.n);
+    if (south > north) continue;
+    for (const a of lonSpans(b)) for (const q of lonSpans(asked)) {
+      const west = Math.max(a[0], q[0]), east = Math.min(a[1], q[1]);
+      if (west <= east) out.push([west, south, east, north]);
+    }
+  }
+  return out;
+}
+export const ms = (s) => { const t = Date.parse(s); return isNum(t) ? t : null; };
+/* ⚠ A BARE YEAR / DATE IS THE WHOLE OF IT: "2023" is [2023-01-01, 2024-01-01), as everywhere here */
+export function timeSpan(t) {
+  if (t == null || t === '') return null;
+  const parts = String(t).split('/');
+  const one = (s, end) => {
+    if (s === '' || s === '..') return null;
+    const y = /^(-?\d{4})$/.exec(s), ym = /^(\d{4})-(\d{2})$/.exec(s), ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (y) return end ? Date.UTC(+y[1] + 1, 0, 1) : Date.UTC(+y[1], 0, 1);
+    if (ym) return end ? Date.UTC(+ym[1], +ym[2], 1) : Date.UTC(+ym[1], +ym[2] - 1, 1);
+    if (ymd) return end ? Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3] + 1) : Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3]);
+    return ms(s);
+  };
+  const a = one(parts[0], false), b = parts.length > 1 ? one(parts[1], true) : one(parts[0], true);
+  if ((parts[0] !== '' && parts[0] !== '..' && a == null) || (parts.length > 1 && parts[1] !== '' && parts[1] !== '..' && b == null)) return { bad: true };
+  return parts.length > 2 || (a != null && b != null && a > b) ? { bad: true } : { from: a, to: b };
+}
+export function temporalRelation(intervals, asked) {
+  if (asked == null || asked === '') return 'not-asked';
+  const want = timeSpan(asked);
+  if (!want || want.bad) return 'unreadable';
+  const list = (Array.isArray(intervals) ? intervals : []).filter((i) => Array.isArray(i));
+  if (!list.length) return 'unstated';
+  const spans = list.map((i) => ({ from: i[0] ? ms(i[0]) : null, to: i[1] ? ms(i[1]) : null }));
+  const hit = spans.some((s) => (s.to == null || want.from == null || s.to >= want.from)
+    && (s.from == null || want.to == null || (want.from === want.to ? s.from <= want.to : s.from < want.to)));
+  return hit ? 'overlaps' : 'outside';
 }
 
 /* ── the match ────────────────────────────────────────────────────────────────────────────────────── */

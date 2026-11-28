@@ -284,3 +284,27 @@ test('⑪ the project: a Python record is saved as a body with its recipe, re-ru
     delete globalThis.window.IntMapGisOps; delete globalThis.window.IntMapCompute; delete globalThis.window.IntMapData;
   }
 });
+
+test('raster reuse follows actual pixels and missing samples on the same grid', async () => {
+  const registry = makeGisDatasets();
+  let pixels = [270, 280];
+  const grid = registry.add({
+    id: 'reading', kind: 'raster', width: 2, height: 1,
+    grid: { west: 10, north: 20, pixelLng: 1, pixelLat: 1 },
+    bands: [{ name: 'reading', unit: 'K' }], read: () => Float32Array.from(pixels),
+  });
+  let starts = 0;
+  const host = sandbox((worker, job) => {
+    starts++;
+    const values = JSON.parse(job.inputsJson)[0].bands[0].values.filter(Number.isFinite);
+    worker.send({ t: 'done', ok: true, outputs: { result: JSON.stringify({ v: values.reduce((a, b) => a + b, 0) / values.length }) } });
+  }, registry);
+  const run = () => host.run({ code: 'result = sum(readings) / len(readings)', inputs: [grid.id] });
+  assert.equal((await run()).values.result.value, 275);
+  assert.equal((await run()).reused, true);
+  pixels = [300, 310];
+  assert.equal((await run()).values.result.value, 305);
+  pixels = [NaN, 310];
+  assert.equal((await run()).values.result.value, 310);
+  assert.equal(starts, 3);
+});

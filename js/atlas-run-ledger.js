@@ -67,7 +67,7 @@ export function makeRunLedger(opt) {
   const now = (opt && typeof opt.now === 'function') ? opt.now : () => Date.now();
   const startedAt = opt?.startedAt ?? now();
   const models = Object.create(null);   /* model id → { calls, costUsd, ms } */
-  const providerCallIds = new Set();
+  const providerCallIds = new Set(), stages = [];
   const tools = Object.create(null);    /* capability / tool name → { calls, ms, failed } */
   let modelCalls = 0, modelPending = 0, costUsd = 0, costUnknownCalls = 0, unpricedCalls = 0, modelMs = 0, webCalls = 0;
   let delegatedUsd = 0, delegatedTasks = 0;
@@ -89,7 +89,7 @@ export function makeRunLedger(opt) {
         throw e;
       } finally {
         modelPending--;
-        this.model({ model: meta?.modelServed || meta?.model || task, costUsd: meta?.costUsd,
+        this.model({ task, model: meta?.modelServed || meta?.model || task, served: meta?.modelServed, effort: meta?.reasoningEffort, costUsd: meta?.costUsd,
           costComplete: meta?.costComplete, priceKnown: meta?.priceKnown, ms: now() - began, web: meta?.webUsed });
       }
     },
@@ -98,6 +98,7 @@ export function makeRunLedger(opt) {
       c = c || {};
       modelCalls++;
       const id = str(c.model, 80) || 'unknown';
+      if (c.task) stages.push({ task: str(c.task, 80), model: str(c.served, 80) || null, effort: str(c.effort, 20) || null });
       const m = models[id] || (models[id] = { calls: 0, costUsd: 0, ms: 0 });
       m.calls++; m.ms += num(c.ms); modelMs += num(c.ms);
       if (typeof c.costUsd !== 'number' || !Number.isFinite(c.costUsd) || c.costComplete === false) costUnknownCalls++;
@@ -114,10 +115,11 @@ export function makeRunLedger(opt) {
       if (c.ok === false) t.failed++;
       const d = num(c.delegatedCostUsd);
       if (d) { delegatedUsd += d; }
+      costUnknownCalls += num(c.delegatedCostUnknownCalls);
       if (Number.isFinite(Number(c.delegatedTasks))) delegatedTasks += Math.max(0, Math.floor(Number(c.delegatedTasks)));
     },
     /* a worker that ended after the answer which left it running: its cost joins the delegated sum (its task was counted when it was listed) */
-    late(c) { const d = num(c); if (d) delegatedUsd += d; },
+    late(c, unknown) { delegatedUsd += num(c); costUnknownCalls += num(unknown); },
     /* one instant of the turn (see runMarkSink); a second report of the same name keeps the first */
     mark(name) { const k = str(name, 40); if (k && !(k in marks)) marks[k] = Math.max(0, now() - startedAt); return marks[k]; },
     marked(name) { return Object.prototype.hasOwnProperty.call(marks, String(name)); },
@@ -125,7 +127,7 @@ export function makeRunLedger(opt) {
       const rows = (o, f) => Object.keys(o).map((k) => Object.assign({ id: k }, o[k])).sort(f);
       return {
         wallMs: Math.max(0, now() - startedAt),
-        modelCalls: modelCalls + modelPending, modelMs, providerCallIds: Array.from(providerCallIds),
+        modelCalls: modelCalls + modelPending, modelMs, providerCallIds: Array.from(providerCallIds), stages: stages.slice(),
         /* the turn's own provider answers + what its delegated workers cost: two sums the reader can tell apart */
         costUsd: costUsd + delegatedUsd, parentCostUsd: costUsd, delegatedCostUsd: delegatedUsd, delegatedTasks,
         costUnknownCalls: costUnknownCalls + modelPending, unpricedCalls, webCalls,
@@ -163,7 +165,13 @@ export function makeRunHistory(max) {
   const cap = Number.isInteger(max) && max > 0 ? max : 50;
   const list = [];
   return {
-    add(s, label) { if (s && s.modelCalls) { list.push(Object.assign({ at: Date.now(), label: str(label, 120) }, s)); while (list.length > cap) list.shift(); } },
+    add(s, label) {
+      if (!s?.modelCalls) return null;
+      const row = Object.assign({ at: Date.now(), label: str(label, 120) }, s);
+      list.push(row);
+      while (list.length > cap) list.shift();
+      return { update(summary) { Object.assign(row, summary); } };
+    },
     all() { return list.slice(); },
     totals() { return list.reduce((m, r) => ({ runs: m.runs + 1, costUsd: m.costUsd + r.costUsd, wallMs: m.wallMs + r.wallMs }), { runs: 0, costUsd: 0, wallMs: 0 }); },
   };

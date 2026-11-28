@@ -43,7 +43,7 @@ const FULL = {
 };
 const collection = (spatial, temporal = 'overlaps', resolution = 'meets') => ({ ref: 'earth-search/flood', title: 'Flood', match: { spatial, temporal, resolution }, rights: { license: 'CC-BY-4.0' } });
 const doors = (o = {}) => Object.assign({
-  describe: async (ref) => (ref === 'layer:population' ? { ref, undeclared: [{ slot: 'time.axis' }] } : null),
+  describe: async (ref) => (ref === 'layer:population' ? { ref, bounds: [102, 20, 108, 24], extent: { time: [['2020-01-01', '2020-12-31']] }, resolution: { min: 100, max: 100, unit: 'm' } } : null),
   discover: async () => ({ ok: true, entries: [collection('covers')], catalogs: [{ id: 'es', answered: true, complete: true }] }),
   /* what the GIS declares: 'buffer' and 'zonal' run anywhere; 'rasterSlope' needs a screen, so no server lists it. python declares none (null). */
   opsOf: async (env) => (env === 'python' ? null : env === 'browser-gis' ? ['buffer', 'zonal', 'rasterSlope'] : ['buffer', 'zonal']),

@@ -359,10 +359,10 @@ export function makeAtlasTurnResults(deps) {
       return (visual || /[\p{L}\p{N}]/u.test(plainText(bare))) ? split.rest : '';
     }
     /* Has Atlas WRITTEN its answer? `completion` is what js/atlas-agent.js states of the turn: 'none' (no text), 'partial' (text, and goals it declared
-       that were not produced — which the reply names itself), 'complete'. Only 'none' — and a `say` that was written BEFORE the tools ran (no completion yet) —
+       that were not produced — which the reply names itself), 'unobserved' (the goal could not be verified), 'complete'. Only 'none' — and a `say` that was written BEFORE the tools ran (no completion yet) —
        leaves the reader without Atlas's words, so only there do the tools' sentences stay. (⚠ this read `'answered'` at first, which is a `stopped` value, never a
        `completion`: the feature was inert in production until a real reply showed the sentences still under the answer.) */
-    function written(say, completion) { return !!say && (completion === 'complete' || completion === 'partial'); }
+    function written(say, completion) { return !!say && (completion === 'complete' || completion === 'partial' || completion === 'unobserved'); }
     /* what a FAILED result says, in the words it already wrote for the reader — never the action's internal name */
     function unfinished(res) {
       const h = (res && res.html) || '';

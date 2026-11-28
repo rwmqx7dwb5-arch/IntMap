@@ -478,3 +478,37 @@ test('F3 the door never records an analysable state by itself: the only writers 
   assert.doesNotMatch(atlas, /record\([^)]*'analysis'/);
   assert.match(atlas, /P\.readSucceeded|readSucceeded\(P/);
 });
+
+test('strict satellite acquisition checks the chosen asset and scenes follows cloud-filtered pages', async () => {
+  const P = makeGisPipeline({});
+  const reads = [];
+  const bounds = [105, 21, 106, 22];
+  const footprint = [105.1, 21.1, 105.2, 21.2];
+  const asset = (name, gsd) => ({ href: 'https://data.test/' + name + '.tif', gsd, type: 'image/tiff; application=geotiff; profile=cloud-optimized', roles: ['data'] });
+  const scene = (id, cloud) => ({ id, bbox: bounds, properties: { datetime: '2024-06-01T00:00:00Z', gsd: 10, 'eo:cloud_cover': cloud },
+    assets: { coarse: asset('coarse', 60), fine: asset('fine', 10), unknown: asset('unknown') } });
+  const fallback = stacRoute();
+  const route = (url, init) => {
+    if (new URL(url).pathname === '/stac/collections') return json({ collections: [{ ...COLS[1], keywords: ['multispectral'] }], links: [] });
+    if (url.endsWith('/stac/collections/s2')) return json(COLS[1]);
+    if (url.endsWith('/stac/search')) return json({ features: [scene('cloudy', 95)], links: [{ rel: 'next', href: '?cursor=2' }] });
+    if (url.endsWith('/stac/search?cursor=2')) return json({ features: [scene('clear', 5)], links: [] });
+    return fallback(url, init);
+  };
+  const M = makeGisRemote({ fetch: fakeWorld({ route }), pipeline: P, readGrid: gridReader(P, good, reads) });
+  M.add({ kind: 'stac', id: 'test-sat', url: 'https://cat.test/stac' });
+  const options = { bbox: footprint, width: 8, height: 8, maxGsd: 20, maxCloud: 10, strict: true, time: '2024' };
+  for (const key of ['coarse', 'unknown']) {
+    const rejected = await M.acquire('test-sat/s2', { ...options, asset: key });
+    assert.equal(rejected.state.analysis, 'not-ready', key);
+  }
+  assert.equal(reads.length, 0);
+  const acquired = await M.acquire('test-sat/s2', options);
+  assert.equal(acquired.state.analysis, 'ready');
+  assert.equal(acquired.parts[0].item, 'clear');
+  assert.equal(acquired.parts[0].asset, 'fine');
+  assert.equal(acquired.parts[0].gsd, 10);
+  const listed = await M.scenes({ bbox: footprint, time: '2024', modality: 'optical', maxCloud: 10, catalogs: ['test-sat'] });
+  assert.deepEqual(listed.result.optical.scenes.map((row) => row.id), ['clear']);
+  assert.equal(listed.result.optical.collections[0].pages, 2);
+});

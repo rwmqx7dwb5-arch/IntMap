@@ -59,7 +59,7 @@ function resultText(c) {
   try { return JSON.stringify(c && c.result); } catch (_) { return ''; }
 }
 /** The capability a tool call reached: `run_capability {id}` names it; a core tool is its own name. */
-function capOfCall(c) {
+export function capOfCall(c) {
   const a = (c && c.args) || {};
   if (c && c.name === 'run_capability' && a.id) return str(a.id);
   return str(c && c.name);
@@ -300,13 +300,13 @@ export function judgeTurn(q, obs, ctx) {
   /* (atlas-eval-map-state) IS THE MAP RIGHT — a SEPARATE AXIS. The final map against the question's
      `mapState` (scripts/atlas-eval/map-state.mjs). It adds no failure: the words and the map are graded
      apart and reported apart, and a criterion the snapshot could not show is `unobserved`, never a miss. */
-  metrics.map = q.mapState ? gradeMap(q.mapState, obs.snapshot, { eraReference: ctx.eraReference, before: obs.before }) : null;
+  metrics.map = q.mapState ? gradeMap(q.mapState, obs.snapshot, { eraReference: ctx.eraReference, observeEra: ctx.observeEra, before: obs.before }) : null;
   /* (atlas-completion-verdict) the EARLIER turns of a conversation question (`q.earlier`): each one's own map, graded on the same
      separate axis — so a restyle that is unobserved because the line was never drawn says which turn did not draw it */
   metrics.earlier = Array.isArray(q.earlier) && q.earlier.length ? q.earlier.map((e, i) => {
     const o = Array.isArray(obs.earlier) ? obs.earlier[i] : null;
     const seen = !!(o && o.measured !== false);
-    return { text: e.text, measured: seen, stopped: seen ? str(o.stopped) : null, map: e.mapState ? (seen ? gradeMap(e.mapState, o.snapshot, { eraReference: ctx.eraReference }) : { verdict: 'unobserved', criteria: [], match: 0, mismatch: 0, unobserved: 1 }) : null };
+    return { text: e.text, measured: seen, stopped: seen ? str(o.stopped) : null, map: e.mapState ? (seen ? gradeMap(e.mapState, o.snapshot, { eraReference: ctx.eraReference, observeEra: ctx.observeEra }) : { verdict: 'unobserved', criteria: [], match: 0, mismatch: 0, unobserved: 1 }) : null };
   }) : null;
   if (contradictions) fail('observer', contradictions + ' result(s) said rendered:true and code:not_rendered at once (R802 §3)');
   if (centre) fail('resolution', centre + ' call(s) named a place and were answered about the map centre (R802 §5)');
@@ -548,6 +548,7 @@ export function verdictOf({ dryRun, turns, probes, regressions }) {
   const back = turns.some((t) => t.measured && !t.knownOpen && t.failures.some((f) => !GRADED[f.kind]))
     || (probes || []).some((p) => p.measured && !p.knownOpen && p.failures.length);
   if ((regressions && regressions.length) || back) return 'regressed';
+  if (sent.some((t) => !t.measured)) return 'incomplete';
   return 'ok';
 }
 

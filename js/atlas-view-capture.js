@@ -150,6 +150,7 @@ export function makeViewCapture(deps) {
       out.width = Math.round(cw * scale); out.height = Math.round(ch * scale);
       const ctx = out.getContext('2d');
       if (mapCv) ctx.drawImage(mapCv, 0, 0, mapCv.width, mapCv.height, 0, 0, out.width, out.height);
+      let overlays = include === 'screen' ? 'unobserved' : 'not-requested';
       if (include === 'screen') {
         /* (#R224) FETCHED HERE, NOT AT BOOT. html2canvas is 198 kB that only a capture needs. The
            overlay pass is SKIPPED if it cannot be had — a map-only picture is a smaller answer, not
@@ -161,10 +162,11 @@ export function makeViewCapture(deps) {
               onclone: (doc) => { try { if (o.markCapture !== false) doc.body.classList.add(CAPTURE_CLASS); } catch (_) { /* the clone is ours; a failure leaves the controls in the picture, not out of the reader's screen */ } },
               ignoreElements: (el) => el.tagName === 'CANVAS' || (el.classList && el.classList.contains('maplibregl-canvas')) });
             ctx.drawImage(ov, 0, 0, out.width, out.height);
+            overlays = 'composited';
           } catch (_) { /* the map alone is still a picture */ }
         }
       }
-      return { canvas: out, live: grabbed.live };
+      return { canvas: out, live: grabbed.live && !!mapCv, overlays };
     }
   }
 
@@ -232,7 +234,8 @@ export function makeViewCapture(deps) {
     function drawnLabels(cam) {
       var feats = null;
       try { feats = GE().coords.queryRenderedFeatures(); } catch (_) { return null; }
-      if (!feats || !feats.length) return { kept: [], dropped: 0, total: 0 };
+      if (!Array.isArray(feats)) return null;
+      if (!feats.length) return { kept: [], dropped: 0, total: 0 };
       var centrePx = null;
       try { if (cam && isFinite(cam.lat)) centrePx = GE().coords.project({ lng: +cam.lng, lat: +cam.lat }); } catch (_) { /* the distance is a nicety; the names are the point */ }
       var withPx = feats.map(function (f) {
@@ -308,7 +311,7 @@ export function makeViewCapture(deps) {
       } catch (_) { /* the ledger is a courtesy here; the picture is the point */ }
 
       var facts = {
-        frame: 'view-frame-' + (frames.length + 1), include: inc, capturedAt: new Date().toISOString(),
+        frame: 'view-frame-' + (frames.length + 1), include: inc, overlays: shot.overlays, capturedAt: new Date().toISOString(),
         reason: String(a.reason || '').slice(0, 300) || undefined,
         bbox: (vp && isFinite(vp.west)) ? { west: +vp.west, south: +vp.south, east: +vp.east, north: +vp.north } : undefined,
         center: (cam && isFinite(cam.lat)) ? { lat: +cam.lat, lng: +cam.lng } : undefined,
@@ -364,7 +367,8 @@ export function makeViewCapture(deps) {
         if (f.chronos) bits.push('Chronos date ' + f.chronos);
         p += 'image ' + (i + 1) + ' = ' + f.frame + ' ('
           + ((f.include === 'map') ? 'renderer frame only — no legends, no DOM overlays'
-            : 'the whole screen: map + legends, scale, markers, bands, timebar; controls hidden') + ')'
+            : f.overlays === 'composited' ? 'renderer frame and composited DOM; check the pixels for individual legends, scale and timebar'
+              : 'renderer frame only; overlay capture unavailable, so legend/scale/timebar cannot be verified by this picture') + ')'
           + (f.reason ? (' · you asked for it to: ' + f.reason) : '') + (bits.length ? (' · ' + bits.join(' · ')) : '') + '\n';
         /* ⚠⚠⚠ (#R589) THE GROUND TRUTH FOR THIS FRAME — what the map can actually say is in it, and
            an explicit statement when the answer is «nothing». Without these lines the model has a

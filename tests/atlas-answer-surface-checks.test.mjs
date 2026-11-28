@@ -88,7 +88,7 @@ test('⑦ 「回答が書かれた」の判定は、js/atlas-agent.js が実際�
   const decl = agent.match(/const completion = [^;]*;/);
   assert.ok(decl, 'js/atlas-agent.js が completion を宣言している');
   const values = [...new Set([...decl[0].matchAll(/'([a-z]+)'/g)].map((m) => m[1]))];
-  assert.deepEqual(values.sort(), ['complete', 'none', 'partial'], 'completion の値の集合が変わった——written() の読み方を見直す');
+  assert.deepEqual(values.sort(), ['complete', 'none', 'partial', 'unobserved'], 'completion の値の集合が変わった——written() の読み方を見直す');
   for (const v of values) assert.equal(TRES.written('回答です', v), v !== 'none', 'completion=' + v);
   assert.equal(TRES.written('回答です', ''), false, '実行前に書かれた say（completion がまだ無い）では文を外さない');
   assert.equal(TRES.written('回答です', undefined), false);
