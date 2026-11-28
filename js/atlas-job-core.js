@@ -315,7 +315,7 @@ export async function readJobArtifactValue(db, table, jobId, taskId, { value, ou
   }
 }
 export function inputView(i, o) {
-  const whole = JSON.stringify({ summary: i.summary, artifact: i.artifact, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data });
+  const whole = JSON.stringify({ state: i.state, code: i.code, summary: i.summary, artifact: i.artifact, findings: i.findings, facts: i.facts, notFound: i.notFound, gaps: i.gaps, sources: i.sources, data: i.data });
   if (whole.length <= INPUT_SHOW_CHARS) return { text: whole, ref: '', whole: null };
   const ref = 'input:' + String(i.from);
   const rows = tableOf(i.data);
@@ -340,9 +340,27 @@ export function workerPrompt(task, extra, opts) {
   return p + '\n\nToday is ' + new Date().toISOString().slice(0, 10) + '.';
 }
 
-/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } — the worker's answer held to the shape it was asked for.
-   `normalizeFacts` is the host's reader of the `facts` list (the page passes js/atlas-fact-merge.js; it needs the geo-object module, which has no
-   server twin yet). Without one, `facts` is [] — a server job carries findings, not matched facts. */
+/* A server job carries the worker's stated facts. The page can additionally normalize subject
+   identifiers and reconcile them across workers with its geo-object resolver. */
+function statedFacts(list) {
+  return (Array.isArray(list) ? list : []).flatMap((f) => {
+    if (!f || typeof f !== 'object' || !f.subject || !s(f.attribute, 80) ||
+        !(Number.isFinite(f.value) || typeof f.value === 'boolean' || (typeof f.value === 'string' && f.value.trim()))) return [];
+    const subject = { name: s(f.subject.name, 200) || undefined, ref: s(f.subject.ref, 120) || undefined };
+    const ids = Object.fromEntries(Object.entries(f.subject.ids || {}).filter(([k, v]) => /^[a-z0-9_-]+$/i.test(k) && typeof v === 'string')
+      .map(([k, v]) => [k, s(v, 120)]));
+    if (Object.keys(ids).length) subject.ids = ids;
+    if (!subject.name && !subject.ref && !subject.ids) return [];
+    const fact = { subject, attribute: s(f.attribute, 80), value: typeof f.value === 'string' ? s(f.value, 300) : f.value };
+    for (const [field, limit] of Object.entries({ unit: 40, at: 40, source: 500, retrievedAt: 40, scope: 40, basis: 40, aggregation: 40, evidenceId: 80 })) {
+      if (typeof f[field] === 'string' && f[field].trim()) fact[field] = s(f[field], limit);
+    }
+    if (typeof f.period?.from === 'string' && typeof f.period?.to === 'string') fact.period = { from: s(f.period.from, 40), to: s(f.period.to, 40) };
+    return [fact];
+  });
+}
+
+/* shapeOf(data, normalizeFacts?) → { ok, out } | { ok:false, why } */
 export function shapeOf(data, normalizeFacts) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, why: 'the answer was not a JSON object' };
   if (typeof data.summary !== 'string' || !data.summary.trim()) return { ok: false, why: '"summary" was missing or empty' };
@@ -367,7 +385,7 @@ export function shapeOf(data, normalizeFacts) {
     ? 'None of this worker\'s ' + findings.length + ' finding(s) carries a source together with the excerpt or raw values it rests on: what it says is its own statement, not evidence.'
     : 'This worker returned no finding with a source and an excerpt: its summary is its own statement, not evidence.');
   else if (evidence.unsourced) gaps.push(evidence.unsourced + ' of this worker\'s findings carry no source with an excerpt: those are its own statements, not evidence.');
-  return { ok: true, partial: data.status === 'partial', out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { notFound, evidence, gaps }) };
+  return { ok: true, partial: data.status === 'partial', out: Object.assign({ summary: s(data.summary, 4000), findings }, { facts: (typeof normalizeFacts === 'function' ? normalizeFacts : statedFacts)(data.facts) }, { notFound, evidence, gaps }) };
 }
 
 /* findingBasis(f) — THE ONE JUDGEMENT of whether a finding carries evidence, for the worker's own tally (shapeOf below) and for the turn's measurements

@@ -822,7 +822,7 @@ export function popArea(HOST){
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);
       const ring=[]; for(let i=0;i<=48;i++){ const a=i/48*2*Math.PI; ring.push([center[0]+Math.sin(a)*dLng, center[1]+Math.cos(a)*dLat]); }
       return {type:'Polygon',coordinates:[ring]}; }
-    return { estimate, circleGeom };
+    return { estimate, circleGeom, resolveYear: _year };
   })();
 }
 

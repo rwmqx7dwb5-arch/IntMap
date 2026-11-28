@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { makeAtlasAgent } from '../js/atlas-agent.js';
 import { makeAtlasToolSurface } from '../js/atlas-toolsurface.js';
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
-import webEntries from '../js/atlas-cap-web.js';
+import { CAPABILITY_MODULES } from '../js/atlas-caps-modules.js';
+import { capabilityEntries } from '../js/atlas-caps.js';
 import { makeAtlasVerify } from '../js/atlas-verify.js';
 import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
 
@@ -63,7 +64,7 @@ test('independent reads deliver the first result and start a dependent read befo
 
 test('shipped capability declarations admit isolated readers and keep portal state and map writers out', () => {
   const surface = makeAtlasToolSurface({
-    capabilities: makeAtlasCapabilities(), independentReads: new Set(webEntries.filter((e) => e.independentRead).map((e) => e.row[0])),
+    capabilities: makeAtlasCapabilities(), independentReads: new Set(capabilityEntries(CAPABILITY_MODULES).filter((e) => e.independentRead).map((e) => e.id)),
   });
   const footprintOf = (id) => surface.footprintOf(call(id, 'run_capability', { id }));
   assert.equal(footprintOf('web.render').readOnly, false);

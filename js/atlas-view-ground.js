@@ -216,11 +216,13 @@ export function makeViewGround() {
     if (!g) return '';
     var p = '';
     if (g.drawn && g.drawn.kept && g.drawn.kept.length) {
-      p += 'labels the renderer actually drew in this frame, nearest the centre first: '
+      p += 'names from features returned by the renderer, nearest the centre first (the image shows which names appear as text): '
         + g.drawn.kept.map(function (r) { return r.name + (r.kind ? (' [' + r.kind + ']') : ''); }).join(' · ')
         + (g.drawn.dropped ? (' (+' + g.drawn.dropped + ' more not listed)') : '') + '\n';
+    } else if (g.drawn) {
+      p += 'the renderer query returned no named features in this frame.\n';
     } else {
-      p += 'the renderer drew NO named label in this frame.\n';
+      p += 'rendered features could not be queried.\n';
     }
     if (g.framed && g.framed.kept && g.framed.kept.length) {
       p += 'named OpenStreetMap features overlapping this frame, largest-in-view first — «cover» is how much of the FRAME the footprint takes, «inView» how much of the FEATURE is on screen:\n';

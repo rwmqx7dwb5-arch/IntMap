@@ -1016,7 +1016,17 @@ export function makeAtlasAgent() {
       const ledger = opts.runLedger || makeRunLedger({ now: wallNow });
       /* (atlas-autonomy) a worker that ends after the answer which left it running still belongs to THIS turn's cost: the record is the same object the caller holds, refreshed in place */
       runMarkSink.current = (name) => { try { ledger.mark(name); } catch (_) { /* a record never breaks the turn */ } };   /* (atlas-child-loop-reuse) the instants a delegation reports — see atlas-run-ledger.js runMarkSink */
-      const recordLateCost = (usd) => { try { ledger.late(usd); if (trace.run) Object.assign(trace.run, ledger.summary()); } catch (_) { /* a record never breaks the turn */ } };
+      let historyRow;
+      const recordLateCost = (usd, unknown) => {
+        try {
+          ledger.late(usd, unknown);
+          if (trace.run) {
+            const { wallMs, ...costUpdate } = ledger.summary();
+            Object.assign(trace.run, costUpdate, { costUpdatedMs: wallMs });
+            historyRow?.update(trace.run);
+          }
+        } catch (_) { /* a record never breaks the turn */ }
+      };
       lateCostSink.current = recordLateCost;
       /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
          calls the reader waits through. Sizing hands in its receipt and the verifier reports its receipt below. */
@@ -1080,7 +1090,7 @@ export function makeAtlasAgent() {
           opts.signal.addEventListener('abort', onAbort, { once: true });
         }));
         return Promise.race(waiting).then((out) => {
-          if (out === cancelled || out === timedOut) p.then((late) => { if (late?.delegatedCostUsd) recordLateCost(late.delegatedCostUsd); }, () => {});
+          if (out === cancelled || out === timedOut) p.then((late) => { if (late?.delegatedCostUsd || late?.delegatedCostUnknownCalls) recordLateCost(late.delegatedCostUsd, late.delegatedCostUnknownCalls); }, () => {});
           return out;
         }).finally(() => {
           clearTimeout(tm);
@@ -1588,7 +1598,7 @@ export function makeAtlasAgent() {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
           spans.push([t0, now()]);
-          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); if (out && Array.isArray(out.delegated) && out.delegated.length) ledger.mark('parentReceived'); } catch (_) { /* a record never breaks the turn */ }
+          try { ledger.tool({ name: capOfCall(p.routed) || call.name, ms: wallNow() - toolW0, ok: !(out && out.ok === false), delegatedCostUsd: out && out.delegatedCostUsd, delegatedCostUnknownCalls: out && out.delegatedCostUnknownCalls, delegatedTasks: out && Array.isArray(out.delegated) ? out.delegated.length : undefined }); if (out && Array.isArray(out.delegated) && out.delegated.length) ledger.mark('parentReceived'); } catch (_) { /* a record never breaks the turn */ }
           if (!out || typeof out !== 'object') out = { ok: false, error: 'no_result', message: 'the tool returned nothing' };
           executedHere++;
           trace.executed++;
@@ -1952,7 +1962,7 @@ export function makeAtlasAgent() {
       const superseded = new Set(trace.goalCheck === 'met' && goalVerifiedAt === operationProgress
         ? goalPrev?.met.flatMap((m) => m.how.trim() ? (m.supersedes || []) : []) : []);
       const unmet = unmetOf(answerMode, produced, planSnap, ranModes, superseded).concat(goalUnmet);
-      const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : 'complete');
+      const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : trace.goalCheck === 'unobserved' ? 'unobserved' : 'complete');
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
          written — CUT_STOPS; not a cancelled turn, a transport failure, a question back to the reader or an
@@ -1969,8 +1979,8 @@ export function makeAtlasAgent() {
         } catch (_) { /* counting never breaks the turn */ }
       }
       trace.run = ledger.summary();   /* (job-cost-ledger) */
-      try { RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
-      return { text: String(text || ''), interim: interim.filter((x) => x.text !== String(text || '')), calls: trace.calls, results, trace, stopped, answerMode, run: trace.run,
+      try { historyRow = RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
+      return { text: String(text || ''), interim: interim.filter((x) => x.text !== String(text || '')), calls: trace.calls, results, trace, stopped: completion === 'unobserved' && stopped === 'answered' ? 'goal_unobserved' : stopped, answerMode, run: trace.run,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
         unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
         plan: PLAN ? planSnap : undefined };

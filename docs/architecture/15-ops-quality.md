@@ -83,8 +83,7 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 
 `.github/workflows/atlas-eval.yml` が毎晩、`scripts/atlas-eval.mjs` で本番の Atlas に記録済みの問い（`scripts/atlas-eval/questions.json`）を送り、各ターンを既存の観測口
 （`IntMapAtlasState.lastTurn()`・`IntMapAtlasDebug.lastPlan()`・`snapshot()`・包んだ `IntMapAtlasTools.makeExecute`）から読んで、記録した回が使った基準と前回の報告に照らす。判定は
-`scripts/atlas-eval/judge.mjs`（純粋。「打ち切り」「ターンの予算」「同じ呼び出し」は `js/atlas-agent.js` と `js/atlas-turn-results.js` から受け取る）。測れなかったターンは「測れない」で、全部
-測れなかった夜は赤。退行と記録済みの欠陥の再発は Issue 1 本に書き直される。セッションは Secret のリフレッシュトークンから作り（パスワードは扱わない）、回転したトークンを次の晩のために
+`scripts/atlas-eval/judge.mjs`（純粋。「打ち切り」「ターンの予算」「同じ呼び出し」は `js/atlas-agent.js` と `js/atlas-turn-results.js` から受け取る）。測れなかったターンは「測れない」で、全件を観測できなかった実行は `unmeasured`、一部のみ観測できた実行は `incomplete` と記録する。退行と記録済みの欠陥の再発は Issue 1 本に書き直される。セッションは Secret のリフレッシュトークンから作り（パスワードは扱わない）、回転したトークンを次の晩のために
 保存する。**正本は [`docs/TESTING.md`](../TESTING.md)「Atlas evaluation」、読み手は [`docs/MONITORING.md`](../MONITORING.md) §1d。**
 
 - **問題集は 2 つ**: 記録された問い（`questions.json`）と、検証済みの答えと出典を持つ問い（`scripts/atlas-eval/answer-key.json`。距離・所要時間・人口・日付・面積・標高・長さ・数・名前、日英。
@@ -102,7 +101,7 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
   コードの確認とどこでも述べる）。ライブの報告（`atlas-eval-report`）とは名前で区別する（`scripts/lib/nightly-status.mjs` `LIVE_REPORT`）。`data/service-status.json` の `atlasEval.offline` が
   件数を状態ページへ運ぶ。
 
-Auto と High 固定を比較する手動試験は、同じフロントエンドのビルド、ai-proxy の設定・モデルの版、アカウント条件、依頼と添付、データの版、成果物の判定条件を揃える。評価 CLI の `--effort-policy auto` と `--effort-policy high-fixed` を用い、画像を送るケースは同じ `--effort-images <file.json>` を両方に渡す。保存した報告は `--compare-effort <auto.json> <high.json>` で照合できる。送信から最初に使える表示と最終成果までの時間、原価の観測状況、実際の達成数を照合する。別に呼ぶ評価用の採点モデルは、回答ターン内の独立検証と区別する。
+Auto と High 固定を比較する手動試験は、同じフロントエンドのビルド、ai-proxy の設定・モデルの版、アカウント条件、依頼と添付、データの版、成果物の判定条件を揃える。評価 CLI の `--effort-policy auto` と `--effort-policy high-fixed` を用い、画像を送るケースは同じ `--effort-images <file.json>` を両方に渡す。保存した報告は `--compare-effort <auto.json> <high.json>` で照合できる。送信から最初に使える表示と最終成果までの時間、原価の観測状況、数値回答の正誤、実際の達成数を照合する。歴史地図の採点には、台本再生と本番評価で同じ版の境界資料を使う。別に呼ぶ評価用の採点モデルは、回答ターン内の独立検証と区別する。
 
 ### 15.7 上流の死活と、同梱データの鮮度
 

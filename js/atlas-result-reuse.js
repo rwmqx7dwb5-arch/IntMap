@@ -34,17 +34,10 @@ function stable(v) {
   return JSON.stringify(v === undefined ? null : v);
 }
 
-/* The content of one input record, hashed; null when it cannot be (then there is no key). `maxChars` is the most JSON
-   this will hash: past it the hashing costs more than a typical re-run saves. Observation 2026-11-20: none yet — it is
-   a bound on the shortcut's own cost; raise it when a measurement shows hashing cheaper than re-running. */
-export async function fingerprintRecord(rec, sha256Hex, maxChars) {
-  try {
-    if (!rec || typeof sha256Hex !== 'function') return null;
-    const feats = typeof rec.features === 'function' ? rec.features() : rec.features;
-    const body = stable({ kind: rec.kind || '', count: rec.count, fields: (rec.fields || []).map((f) => [f.name, f.type]), features: feats, grid: rec.grid || null, bands: rec.bands || null });
-    if (body.length > (maxChars || 8e6)) return null;
-    return await sha256Hex(body);
-  } catch (_) { return null; }
+/* Reuse only the bytes sent to the runtime, including dataset identity, fields and raster samples.
+   Keep the existing hash budget; a larger payload runs once without adding hashing overhead. */
+export async function fingerprintInput(json, sha256Hex) {
+  return json.length <= 8e6 ? sha256Hex(json) : null;
 }
 
 /* reuseKey({ kind, spec, inputs:[fingerprint…], conditions }, sha256Hex) → hex | null (any input unhashable → null) */

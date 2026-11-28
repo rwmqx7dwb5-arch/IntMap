@@ -207,7 +207,8 @@ test('R493 ②c: the prompt block gives the numbers, and says not to measure the
   assert.match(block, /Take every QUANTITY[\s\S]*never by measuring the picture/,
     'a picture is a poor ruler, and the model has to be told which half is which');
   /* the two pictures are described as what they are, so Atlas can tell a legend question from a data question */
-  assert.match(block, /map \+ legends, scale, markers, bands, timebar/);
+  assert.match(block, /overlay capture unavailable/);
+  assert.match(block, /rendered features could not be queried/);
   const V2 = ledger(SNAP);
   await V2.captureFrame({ include: 'map' });
   assert.match(V2.promptBlock(), /renderer frame only — no legends, no DOM overlays/);

@@ -255,8 +255,10 @@ export function makeCapabilityExecutor(o) {
       }
       ctx.emit('effect.done', { intent: intent.id, costUsd: 0, capability: cap });
       const text = s(out && (out.text != null ? out.text : htmlToText(out.html)), 4000);
-      if (!out || out.ok === false) return { state: 'failed', code: s(out && out.code, 60) || 'capability_failed', detail: { status: Number(out && out.status) || undefined }, summary: text };
-      return { state: 'done', summary: text, data: out.exec ? Object.assign({}, out.meta, { exec: out.exec }) : out.meta, calls: 0, costUsd: 0 };
+      const partial = out?.status === 'partial' || out?.exec?.status === 'partial' || out?.meta?.partial === true;
+      if (!partial && (!out || out.ok === false)) return { state: 'failed', code: s(out && out.code, 60) || 'capability_failed', detail: { status: out && out.status }, summary: text };
+      return { state: partial ? 'partial' : 'done', code: partial ? out.code || out.meta?.code || 'incomplete' : undefined,
+        summary: text, data: out.exec ? Object.assign({}, out.meta, { exec: out.exec }) : out.meta, calls: 0, costUsd: 0 };
     },
   };
 }

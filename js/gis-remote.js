@@ -65,7 +65,8 @@
 
 import { reachingFetch } from './gis-fetch.js';
 import { explainFetchFailure, describeResponse, looksLikeAPage } from './gis-http.js';
-import { toRecord, localRecord, searchRecords, resolutionRelation, modalitiesOf, isNonCommercial, MODALITIES } from './gis-catalog-search.js';
+import { toRecord, localRecord, searchRecords, resolutionRelation, modalitiesOf, isNonCommercial, MODALITIES,
+  asBox, boundsOf, splitBox, hasArea, intersectBox, subtractBox, extentIntersections, spatialRelation, ms, timeSpan, temporalRelation } from './gis-catalog-search.js';
 
 let acquisitionSeq = 0;
 
@@ -195,92 +196,7 @@ export function makeGisRemote(deps) {
 
     /* ── extents ──────────────────────────────────────────────────────────────────────────────── */
 
-    function asBox(b) {
-      /* RFC 7946 §5: all southwest axes precede all northeast axes. The relationship here is horizontal. */
-      const axes = Array.isArray(b) && (b.length === 4 || b.length === 6) && b.every(isNum) ? b.length / 2 : 0;
-      const [w, s, e, n] = axes ? [b[0], b[1], b[axes], b[axes + 1]] : [b?.w, b?.s, b?.e, b?.n];
-      if (![w, s, e, n].every(isNum) || s < -90 || n > 90 || s > n) return null;
-      if (Math.abs(w) <= 180 && Math.abs(e) <= 180) return { w, s, e, n };
-      // The grid reader also accepts a continuous window unwrapped past the date line.
-      if (e < w || e - w > 360) return null;
-      if (e - w === 360) return { w: -180, s, e: 180, n };
-      const wrap = (lon) => Math.abs(lon) <= 180 ? lon : ((lon + 180) % 360 + 360) % 360 - 180;
-      return { w: wrap(w), s, e: wrap(e), n };
-    }
-    const boundsOf = (b) => [b.w, b.s, b.e, b.n];
-    /* lon ranges as 1–2 plain intervals so a box that crosses ±180 (w > e) is handled, not mangled */
-    const lonSpans = (b) => (b.w <= b.e ? [[b.w, b.e]] : [[b.w, 180], [-180, b.e]]);
-    const splitBox = (b) => lonSpans(b).map(([w, e]) => ({ w, s: b.s, e, n: b.n }));
-    const hasArea = (b) => b.w < b.e && b.s < b.n;
-    function intersectBox(a, b) {
-      const w = Math.max(a.w, b.w), s = Math.max(a.s, b.s), e = Math.min(a.e, b.e), n = Math.min(a.n, b.n);
-      return w <= e && s <= n ? { w, s, e, n } : null;
-    }
-    /* Subtract from disjoint uncovered rectangles. Overlapping tile footprints count only once. */
-    function subtractBox(a, b) {
-      const hit = intersectBox(a, b);
-      if (!hit || (hasArea(a) && !hasArea(hit))) return [a];
-      const out = [];
-      if (a.w < hit.w) out.push({ ...a, e: hit.w });
-      if (hit.e < a.e) out.push({ ...a, w: hit.e });
-      if (a.s < hit.s) out.push({ ...hit, s: a.s, n: hit.s });
-      if (hit.n < a.n) out.push({ ...hit, s: hit.n, n: a.n });
-      return out;
-    }
-    function extentIntersections(stated, asked) {
-      const windows = splitBox(asked);
-      return (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean).flatMap(splitBox)
-        .flatMap((b) => windows.map((w) => intersectBox(b, w)).filter(Boolean)).map(boundsOf);
-    }
-    /* the relation of what a collection STATES to what was asked — 'unstated' when it states nothing */
-    function spatialRelation(stated, asked) {
-      if (!asked) return 'not-asked';
-      const boxes = (Array.isArray(stated) ? stated : []).map(asBox).filter(Boolean).flatMap(splitBox);
-      if (!boxes.length) return 'unstated';
-      const windows = splitBox(asked);
-      if (!boxes.some((b) => windows.some((w) => intersectBox(b, w)))) return 'outside';
-      return boxes.reduce((gaps, b) => gaps.flatMap((w) => subtractBox(w, b)), windows).length ? 'overlaps' : 'covers';
-    }
-    function extentIntersections(stated, asked) {
-      const out = [];
-      for (const b of stated.map(asBox).filter(Boolean)) {
-        const south = Math.max(b.s, asked.s), north = Math.min(b.n, asked.n);
-        if (south > north) continue;
-        for (const a of lonSpans(b)) for (const q of lonSpans(asked)) {
-          const west = Math.max(a[0], q[0]), east = Math.min(a[1], q[1]);
-          if (west <= east) out.push([west, south, east, north]);
-        }
-      }
-      return out;
-    }
-    const ms = (s) => { const t = Date.parse(s); return isNum(t) ? t : null; };
-    /* ⚠ A BARE YEAR / DATE IS THE WHOLE OF IT: "2023" is [2023-01-01, 2024-01-01), as everywhere here */
-    function timeSpan(t) {
-      if (t == null || t === '') return null;
-      const parts = String(t).split('/');
-      const one = (s, end) => {
-        if (s === '' || s === '..') return null;
-        const y = /^(-?\d{4})$/.exec(s), ym = /^(\d{4})-(\d{2})$/.exec(s), ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-        if (y) return end ? Date.UTC(+y[1] + 1, 0, 1) : Date.UTC(+y[1], 0, 1);
-        if (ym) return end ? Date.UTC(+ym[1], +ym[2], 1) : Date.UTC(+ym[1], +ym[2] - 1, 1);
-        if (ymd) return end ? Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3] + 1) : Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3]);
-        return ms(s);
-      };
-      const a = one(parts[0], false), b = parts.length > 1 ? one(parts[1], true) : one(parts[0], true);
-      if ((parts[0] !== '' && parts[0] !== '..' && a == null) || (parts.length > 1 && parts[1] !== '' && parts[1] !== '..' && b == null)) return { bad: true };
-      return parts.length > 2 || (a != null && b != null && a > b) ? { bad: true } : { from: a, to: b };
-    }
-    function temporalRelation(intervals, asked) {
-      if (asked == null || asked === '') return 'not-asked';
-      const want = timeSpan(asked);
-      if (!want || want.bad) return 'unreadable';
-      const list = (Array.isArray(intervals) ? intervals : []).filter((i) => Array.isArray(i));
-      if (!list.length) return 'unstated';
-      const spans = list.map((i) => ({ from: i[0] ? ms(i[0]) : null, to: i[1] ? ms(i[1]) : null }));
-      const hit = spans.some((s) => (s.to == null || want.from == null || s.to >= want.from)
-        && (s.from == null || want.to == null || (want.from === want.to ? s.from <= want.to : s.from < want.to)));
-      return hit ? 'overlaps' : 'outside';
-    }
+
 
     /* ── collections, normalised ──────────────────────────────────────────────────────────────── */
 
@@ -421,14 +337,15 @@ export function makeGisRemote(deps) {
     function assetRow(key, a) {
       const r = resolveHref(a && a.href);
       const type = a && a.type ? String(a.type) : null;
-      const bands = Array.isArray(a && a['raster:bands']) ? a['raster:bands'].map((b) => ({ data_type: b.data_type || null, unit: b.unit || null, nodata: b.nodata === undefined ? null : b.nodata, spatial_resolution: b.spatial_resolution || null })) : null;
+      const metadata = a?.bands || a?.['raster:bands'];
+      const bands = Array.isArray(metadata) ? metadata.map((b) => ({ data_type: b?.data_type || null, unit: b?.unit || null, nodata: b?.nodata ?? null, spatial_resolution: b?.gsd ?? b?.['raster:spatial_resolution'] ?? b?.spatial_resolution ?? null })) : null;
       return {
         key: key, type: type, roles: Array.isArray(a && a.roles) ? a.roles.slice() : [], title: a && a.title ? String(a.title) : null,
         href: r.href, hrefDerivedFrom: r.derivedFrom,
         /* ⚠ `cog` IS WHAT THE MEDIA TYPE SAYS, and the reader confirms it by opening the file; a TIFF
            that is not tiled with overviews still opens, and says so in the answer to cog() */
         cog: isCogType(type) && /cloud-optimized|cog/i.test(type),
-        tiff: isCogType(type), bands: bands,
+        tiff: isCogType(type), bands: bands, gsd: isNum(a?.gsd) && a.gsd > 0 ? a.gsd : null,
         /* a SAS-signed or token-protected asset cannot be fetched anonymously; the collection says so
            by an `msft:` / `auth:` member and the address is not usable as it stands */
         needsSigning: !!(a && Object.keys(a).some((k) => /^(auth|storage):/.test(k) && /schemes|requires/.test(k) && a[k]) ) || /\bsig=|X-Amz-Signature=/i.test(String(a && a.href)),
@@ -680,6 +597,25 @@ export function makeGisRemote(deps) {
       };
     }
 
+    async function* itemPages(o, first) {
+      let request = first, pages = 0;
+      const visited = new Set();
+      while (request && !o.signal?.aborted) {
+        if (!request.ok) { yield request; return; }
+        const signature = JSON.stringify([request.method, request.url, request.body, request.headers]);
+        if (visited.has(signature) || pages >= MAX_PAGES) {
+          yield refuse('item-pages-incomplete', { pages, reason: visited.has(signature) ? 'repeated-next-link' : 'page-guard' });
+          return;
+        }
+        visited.add(signature);
+        const page = await itemPage(o, request);
+        yield page;
+        if (!page.ok) return;
+        pages++;
+        request = nextItemRequest(first, request, page.next);
+      }
+    }
+
     /* ── search(): one question across the content, place, period, resolution and stated quality of every dataset ──
        req = {q, bbox, time, maxGsd, minGsd, maxCloud, licensed, kinds, origins, strict, catalogs, limit, local[], items:true}
        The catalogues are asked as discover() asks them (same cache, same «did not answer» report); the datasets this session
@@ -864,7 +800,18 @@ export function makeGisRemote(deps) {
         for (let i = 0; use.length < perMod && use.length < cands.length; i++) for (const l of lanes.values()) if (i < l.length && use.length < perMod) use.push(l[i]);
         const periodApplied = m !== 'dem' && o.time != null && o.time !== '';
         const lookups = await Promise.all(use.map(async (c) => {
-          const r = await items(c.rec.ref, { bbox: box, time: periodApplied ? o.time : null, maxCloud: m === 'optical' ? o.maxCloud : null, limit: limit, signal: o.signal || null });
+          const opts = { bbox: box, time: periodApplied ? o.time : null, maxCloud: m === 'optical' ? o.maxCloud : null, limit, signal: o.signal || null };
+          const p = parseRef(c.rec.ref);
+          let r = p.ok ? refuse('cancelled') : p;
+          if (p.ok) for await (const page of itemPages(opts, itemRequest(p, opts))) {
+            if (!page.ok) {
+              r = r.pages ? { ...r, incomplete: page.why } : page;
+              break;
+            }
+            r = { ...page, pages: (r.pages || 0) + 1, items: [...(r.items || []), ...page.items].slice(0, limit),
+              droppedByCloud: (r.droppedByCloud || 0) + page.droppedByCloud };
+            if (r.items.length >= limit) break;
+          }
           let other = null;
           if (r.ok && !r.items.length && !r.droppedByCloud && periodApplied) {
             const w = await items(c.rec.ref, { bbox: box, limit: 3, signal: o.signal || null });
@@ -877,7 +824,7 @@ export function makeGisRemote(deps) {
           const ref = c.rec.ref, lic = c.rec.rights || {};
           const row = { ref: ref, title: c.rec.title, catalog: c.rec.catalog, spatial: c.spatial, license: lic.license == null ? null : lic.license, licenseUrl: lic.licenseUrl || null };
           if (!r.ok) { row.answered = false; row.why = r.why; row.detail = r.detail || null; collections.push(row); continue; }
-          row.answered = true; row.scenes = r.items.length; row.matched = r.matched; row.continues = r.continues; row.droppedByCloud = r.droppedByCloud;
+          row.answered = true; row.scenes = r.items.length; row.matched = r.matched; row.continues = r.continues; row.pages = r.pages; row.incomplete = r.incomplete; row.droppedByCloud = r.droppedByCloud;
           if (other) row.atOtherTimes = other;
           collections.push(row);
           for (const it of r.items) {
@@ -896,6 +843,7 @@ export function makeGisRemote(deps) {
         if (!list.length) {
           if (!cands.length) none = { kind: 'no-collection', say: 'No collection in the catalogues asked states that it holds ' + m + ' data for this place' + (periodApplied ? ' and period' : '') + '.' + (silent.length ? ' ' + silent.map((c) => c.id).join(', ') + ' did not answer, which is 「訊けなかった」, not 「無い」.' : ' This is these catalogues, not a statement about the world.') };
           else if (unanswered.length === collections.length) none = { kind: 'not-answered', say: 'The collections that state this place did not answer (' + unanswered.map((c) => c.ref + ': ' + c.why).join('; ') + '). That is 「訊けなかった」, not 「無い」.' };
+          else if (collections.some((c) => c.continues || c.incomplete || !c.answered) || cands.length > use.length) none = { kind: 'search-incomplete', say: 'No matching scene in the catalogue pages examined; some collections or pages were not verified.' };
           else none = { kind: 'no-scene', say: 'The collections that state this place hold no scene' + (periodApplied ? ' in the period' : '') + (o.maxCloud != null && m === 'optical' ? ' at or under ' + o.maxCloud + '% cloud' : '') + '. ' + (collections.some((c) => c.droppedByCloud) ? collections.reduce((t, c) => t + (c.droppedByCloud || 0), 0) + ' scene(s) of the first page were cloudier (droppedByCloud). ' : '') + (collections.some((c) => c.atOtherTimes && c.atOtherTimes.scenes) ? 'They hold scenes at other times (atOtherTimes).' : 'The first page showed none at any time.') + ' This is these catalogues, not a statement about the world.' + (unanswered.length ? ' ' + unanswered.map((c) => c.ref).join(', ') + ' did not answer.' : '') };
         }
         out[m] = { modality: m, periodApplied: periodApplied, found: list.length, scenes: list, collections: collections, collectionsNotAsked: Math.max(0, cands.length - use.length), none: none };
@@ -903,7 +851,7 @@ export function makeGisRemote(deps) {
       return {
         ok: true, asked: { bbox: box, time: o.time == null || o.time === '' ? null : String(o.time), modality: asked, maxCloud: isNum(o.maxCloud) ? o.maxCloud : null, perModality: perMod, limit: limit },
         result: out, catalogs: report, excluded: excluded, unclassified: unclassified, worldCompleteness: 'unproven',
-        note: 'Dates, cloud and licences are what each catalogue STATES for the scene and collection, verbatim. «proprietary» is STAC for «the terms are at the licence link» — read them. Each collection answered ONE page (`continues`); `none` means none in the catalogues asked.',
+        note: 'Dates, cloud and licences are what each catalogue STATES for the scene and collection, verbatim. «proprietary» is STAC for «the terms are at the licence link» — read them. `continues` means more pages were offered; a partial search does not establish absence.',
       };
     }
 
@@ -960,7 +908,7 @@ export function makeGisRemote(deps) {
         const part = newPart(label, window);
         const url = asset.href, uk = 'url:' + url;
         const { ledgerKey } = part;
-        Object.assign(part, { item: item.id, asset: asset.key, ref: uk, datetime: item.datetime, cloud: item.cloud, gsd: matches.gsd, matches: { cloud: matches.cloud, resolution: matches.resolution, temporal: matches.temporal } });
+        Object.assign(part, { item: item.id, asset: asset.key, ref: uk, datetime: item.datetime, cloud: item.cloud, gsd: matches.gsd, sceneGsd: item.gsd, matches: { cloud: matches.cloud, resolution: matches.resolution, temporal: matches.temporal } });
         /* may an anonymous reader take it? asked of the file itself, in the host's words */
         const pr = await probeAsset(url, { signal: o.signal || null });
         if (!pr.ok) {
@@ -998,28 +946,30 @@ export function makeGisRemote(deps) {
         let gaps = [window];
         const parts = [];
         const first = itemRequest(p, { ...o, bbox: window, limit: 5 });
-        let request = first, stop = null, droppedByCloud = 0, pages = 0, intersecting = 0, candidates = 0;
+        let stop = null, droppedByCloud = 0, pages = 0, intersecting = 0, candidates = 0;
         const rejected = { time: 0, resolution: 0, assets: 0 };
-        const fallback = [], visited = new Set();
+        const fallback = [];
         const toCandidates = (item) => {
           const tile = asBox(item.bbox);
           const footprints = tile ? extentIntersections([tile], window).map(asBox).filter(hasArea) : [window];
           if (!footprints.length) return [];
           intersecting++;
-          const asset = o.asset ? item.assets.find((a) => a.key === o.asset) : item.assets.find((a) => a.cog && /^https:/.test(a.href));
-          if (!asset) { rejected.assets++; return []; }
+          const assets = o.asset ? item.assets.filter((a) => a.key === o.asset) : item.assets.filter((a) => a.cog && /^https:/.test(a.href));
+          if (!assets.length) { rejected.assets++; return []; }
           const statedTime = item.datetime?.split('/') || [];
           const temporal = temporalRelation(statedTime.length && Number.isFinite(ms(statedTime[0]))
             && (statedTime.length === 1 || statedTime[1] === '..' || Number.isFinite(ms(statedTime[1])))
             ? [[statedTime[0], statedTime.length === 1 ? statedTime[0] : statedTime[1]]] : [], o.time);
           if (temporal === 'outside' || (temporal === 'unstated' && o.strict)) { rejected.time++; return []; }
-          const bandGsd = asset.bands?.[o.band?.index ?? 0]?.spatial_resolution;
-          const rawGsd = bandGsd ?? item.gsd;
-          const gsd = isNum(rawGsd) && rawGsd > 0 ? rawGsd : null;
-          const resolution = resolutionRelation(gsd == null ? null : { min: gsd, max: gsd }, o);
-          if (resolution === 'misses' || (resolution === 'unstated' && o.strict)) { rejected.resolution++; return []; }
           const cloud = cloudMatch(item.cloud, o.maxCloud);
-          return footprints.map((footprint) => ({ item, asset, footprint, matches: { cloud, resolution, temporal, gsd } }));
+          return assets.flatMap((asset) => {
+            const bandGsd = asset.bands?.[o.band?.index ?? 0]?.spatial_resolution;
+            const rawGsd = bandGsd ?? asset.gsd;
+            const gsd = isNum(rawGsd) && rawGsd > 0 ? rawGsd : null;
+            const resolution = resolutionRelation(gsd == null ? null : { min: gsd, max: gsd }, o);
+            if (resolution === 'misses' || (resolution === 'unstated' && o.strict)) { rejected.resolution++; return []; }
+            return footprints.map((footprint) => ({ item, asset, footprint, matches: { cloud, resolution, temporal, gsd } }));
+          });
         };
         const readCandidate = async (c) => {
           if (o.signal?.aborted || !gaps.some((gap) => { const hit = intersectBox(gap, c.footprint); return hit && hasArea(hit); })) return;
@@ -1030,12 +980,7 @@ export function makeGisRemote(deps) {
         /* Prefer observations that verify the requested limits; an unknown value is an explicit fallback. */
         const unknowns = ({ matches }) => Object.values(matches).filter((m) => m === 'unstated').length;
         const triedParts = new Set();
-        while (request && gaps.length && !o.signal?.aborted) {
-          if (!request.ok) { stop = request; break; }
-          const signature = JSON.stringify([request.method, request.url, request.body, request.headers]);
-          if (visited.has(signature) || pages >= MAX_PAGES) { stop = refuse('item-pages-incomplete', { pages, reason: visited.has(signature) ? 'repeated-next-link' : 'page-guard' }); break; }
-          visited.add(signature);
-          const page = await itemPage(o, request);
+        for await (const page of itemPages(o, first)) {
           if (!page.ok) { stop = page; break; }
           pages++;
           droppedByCloud += page.droppedByCloud;
@@ -1047,7 +992,7 @@ export function makeGisRemote(deps) {
             if (unknowns(c)) fallback.push(c);
             else await readCandidate(c);
           }
-          request = nextItemRequest(first, request, page.next);
+          if (!gaps.length) break;
         }
         fallback.sort((a, b) => unknowns(a) - unknowns(b));
         for (const c of fallback) await readCandidate(c);

@@ -43,13 +43,13 @@ test('② one origin cited three times is one witness; a model figure no record 
   const g = makeEvidenceGraph();
   const reg = makeAtlasEvidence().makeEvidenceRegistry({ callId: 'c1', retrievedAt: '2026-11-20' });
   const [a, b, c] = reg.addClientSources([
-    { url: 'https://stats.example.org/a', title: 'A', date: '2026-01-01', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
-    { url: 'https://www.stats.example.org/b', title: 'B', date: '2026-01-02', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
-    { url: 'https://other.example.net/c', title: 'C', date: '2026-01-03', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
+    { url: 'https://stats.example.org/a', title: 'A', primarySource: 'https://stats.example.org/original', date: '2026-01-01', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
+    { url: 'https://www.stats.example.org/b', title: 'B', primarySource: 'https://stats.example.org/original', date: '2026-01-02', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
+    { url: 'https://other.example.net/c', title: 'C', primarySource: 'https://other.example.net/original', date: '2026-01-03', supportFacts: [{ concept: 'pop', value: 100, unit: 'n' }] },
   ]);
   const claims = [
-    { id: 'one', metric: { value: 100, unit: 'n', concept: 'same host' }, evidenceIds: [a.id, b.id] },
-    { id: 'two', metric: { value: 100, unit: 'n', concept: 'two hosts' }, evidenceIds: [a.id, c.id] },
+    { id: 'one', metric: { value: 100, unit: 'n', concept: 'pop' }, evidenceIds: [a.id, b.id] },
+    { id: 'two', metric: { value: 100, unit: 'n', concept: 'pop' }, evidenceIds: [a.id, c.id] },
     { id: 'mod', metric: { value: 55, unit: 'n', concept: 'invented' }, evidenceIds: [a.id] },
   ];
   const r = recordAnswer(g, { registry: reg, claims, callId: 'c1', turnId: 't1' });
@@ -60,7 +60,7 @@ test('② one origin cited three times is one witness; a model figure no record 
   assert.equal(s[2].support, 'model_only');
   const rep = assessDeliverable({ graph: g, datasets: [], answerNodes: r.recorded });
   assert.deepEqual(rep.gaps.map((x) => x.kind).sort(), ['conclusion-single-origin', 'conclusion-unsupported']);
-  assert.match(observationLines(rep).join('\n'), /built from 2 citations that are ONE origin/);
+  assert.match(observationLines(rep).join('\n'), /one identified original/);
   assert.match(observationLines(rep).join('\n'), /the model's own figure/);
   assert.deepEqual(evidenceRefsForTurn(g, 't1').sort(), r.recorded.slice().sort());
   assert.equal(assessSupport(g, ['nope'])[0].support, 'unobserved');

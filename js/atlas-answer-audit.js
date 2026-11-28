@@ -31,6 +31,7 @@
  *  nothing (#R318 ②).
  * ==========================================================================*/
 
+import { compareQuantity } from './atlas-evidence.js';
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 
 export function makeAtlasAnswerAudit() {
@@ -125,13 +126,18 @@ export function makeAtlasAnswerAudit() {
   }
 
   /** The recorded fact a figure in a sentence came from, if any of the cited records carries it. */
-  function matchFact(value, records) {
+  function matchFact(metric, records) {
+    let candidate = null;
     for (const r of records) {
-      for (const f of (r.supportFacts || [])) {
-        if (f.value != null && near(value, f.value)) return { fact: f, record: r };
+      for (const fact of (r.supportFacts || [])) {
+        if (!near(metric.value, fact.value)) continue;
+        const comparison = compareQuantity(metric, fact);
+        const hit = { fact, comparison };
+        if (comparison.matches) return hit;
+        if (!candidate || comparison.mismatch.length < candidate.comparison.mismatch.length) candidate = hit;
       }
     }
-    return null;
+    return candidate;
   }
 
   function anyFacts(records) { return records.some((r) => (r.supportFacts || []).length > 0); }
@@ -397,7 +403,7 @@ export function makeAtlasAnswerAudit() {
         if (tk.unitClass && declared && tk.unitClass !== declared) {
           push('metric.unit_mismatch', c.id + ': sentence says ' + (tk.unit || tk.unitClass) + ', metric says ' + m.unit, c.id);
         }
-        const hit = matchFact(tk.value, recs);
+        const hit = matchFact({ ...m, value: tk.value }, recs);
         if (!hit) {
           /* ⚠ THE TWO HALVES OF «UNSUPPORTED». When the cited records carry measured facts we can say a
              figure is WRONG; when they carry none (a news article has a headline, not a series) we can
@@ -406,6 +412,10 @@ export function makeAtlasAnswerAudit() {
           if (haveFacts) push('metric.value_unsupported', c.id + ': ' + tk.value + ' matches no recorded fact', c.id);
           else push('metric.value_unattributed', c.id + ': ' + tk.value, c.id);
           return;
+        }
+        if (!hit.comparison.matches) {
+          const fields = hit.comparison.mismatch.concat(hit.comparison.unknown);
+          push('metric.value_unattributed', c.id + ': ' + tk.value + ' is not supported for ' + fields.join(', '), c.id);
         }
         if (hit.fact.seriesId) matchedSeries.add(hit.fact.seriesId);
         if (hit.fact.basis) matchedBases.add(hit.fact.basis);

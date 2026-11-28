@@ -585,13 +585,18 @@ export function gradeMap(ms, snapshot, ctx = {}) {
       if (!boxes.length) put('era', 'mismatch', 'the frame does not reach [' + e.in.join(', ') + ']');
       else if (clock.live) put('era', 'mismatch', 'the clock is live: the reader sees today\'s subdivisions, not ' + e.year + '\'s');
       else if (clock.year == null) put('era', 'unobserved', 'the clock is travelling but its date was not read');
+      else if (ctx.observeEra && snap.eraAdmin?.active === false) put('era', 'mismatch', 'the historical subdivision renderer was inactive');
+      else if (ctx.observeEra && !Array.isArray(snap.eraAdmin?.names)) put('era', 'unobserved', 'historical subdivision data for the rendered map was unavailable');
       else {
         const units = (y) => { const m = new Map(); for (const b of boxes) for (const u of ctx.eraReference(y, round(b))) m.set(u.key, u); return m; };
         const want = units(e.year), shown = clock.year === e.year ? want : units(clock.year);
         const missing = [...want.values()].filter((u) => !shown.has(u.key)), extra = [...shown.values()].filter((u) => !want.has(u.key));
+        const observedNames = snap.eraAdmin?.names;
+        const missingObserved = ctx.observeEra ? (e.includes || []).filter((name) => !observedNames.includes(name)) : [];
         const names = (l) => l.slice(0, 5).map((u) => u.name).join(', ') + (l.length > 5 ? ' …' : '');
         if (!want.size) put('era', 'mismatch', 'the frame shows none of the units the record draws in ' + e.year);
         else if (missing.length || extra.length) put('era', 'mismatch', 'at ' + clock.year + ' the frame shows ' + shown.size + ' unit(s); ' + e.year + ' shows ' + want.size + (missing.length ? ' — missing ' + names(missing) : '') + (extra.length ? ' — not of ' + e.year + ': ' + names(extra) : ''));
+        else if (missingObserved.length) put('era', 'mismatch', 'historical units missing from the active map dataset: ' + missingObserved.join(', '));
         else put('era', 'match', want.size + ' unit(s) of ' + e.year + ' in the frame (the bundle reader; the OHM tile lines are not readable here)');
       }
     }
@@ -606,7 +611,7 @@ export function gradeMap(ms, snapshot, ctx = {}) {
  * derived from the criteria written (not listed): what a harness must capture so that none of them is
  * unobserved merely because it was never asked for.
  */
-export function sectionsRead(questions) {
+export function sectionsRead(questions, { observeEra = false } = {}) {
   const s = new Set();
   for (const q of questions || []) {
     const ms = q && q.mapState;
@@ -615,7 +620,7 @@ export function sectionsRead(questions) {
     if (ms.layers) s.add('activeLayers');
     if (ms.clock) s.add('time');
     if (ms.comparison) s.add('comparison');
-    if (ms.era) { s.add('time'); s.add('viewport'); }
+    if (ms.era) { s.add('time'); s.add('viewport'); if (observeEra) s.add('eraAdmin'); }
     if (Array.isArray(ms.objects) && ms.objects.length) s.add('objects');
     if (ms.restyle) s.add('objects');
     for (const d of ms.drawn || []) for (const a of (Array.isArray(d.anyOf) ? d.anyOf : [d])) s.add(str(a && a.path).split('.')[0]);

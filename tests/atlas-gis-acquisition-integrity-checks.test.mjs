@@ -15,7 +15,7 @@ const collection = {
 function item(id, bbox, cloud, gsd = 10) {
   return {
     id, bbox, properties: { datetime, 'eo:cloud_cover': cloud, gsd },
-    assets: { data: { href: 'https://pixels.test/' + id + '.tif', type: 'image/tiff; application=geotiff; profile=cloud-optimized' } },
+    assets: { data: { href: 'https://pixels.test/' + id + '.tif', gsd, type: 'image/tiff; application=geotiff; profile=cloud-optimized' } },
   };
 }
 

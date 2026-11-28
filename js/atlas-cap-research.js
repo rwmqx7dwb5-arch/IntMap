@@ -1205,8 +1205,15 @@ export default [
          ended done/partial answer from that record instead of running and paying again (`resumed`). `fresh:true` runs every task anew.
          The record is written each time a task ends, so an interruption loses only the tasks that had not ended. The list's identity is
          every contract's key (its `tools` grant included) and its `verify` flag (delegationKey). */
-      const store = pageDelegationStore();
-      const dKey = delegationKey(tasks, (names) => imagesShown(names, executorImages));   /* what the image names show NOW is part of the list's identity (atlas-delegate.js delegationKey) */
+      const readsMap = tasks.some((task) => task?.kind === 'capability' || task?.tools?.length);
+      const sessionInput = () => readsMap ? {
+        map: K.ASTATE?.snapshot({ only: ['camera', 'time', 'activeLayers', 'objects'] }),
+        points: K.HOST?.measurePoints || [],
+        circles: (K.HOST?.radiusItems || []).map(({ center, radiusKm }) => ({ center, radiusKm })),
+      } : null;
+      const keyOfInput = () => delegationKey(tasks, (names) => imagesShown(names, executorImages), sessionInput());
+      const dKey = keyOfInput();
+      const store = pageDelegationStore();   /* what the image names show NOW is part of the list's identity (atlas-delegate.js delegationKey) */
       /* (delegate-streaming) A LIST THAT IS STILL RUNNING IS ATTACHED TO, NOT STARTED AGAIN. "wait":"any" returns after the first task that
          brought findings; the rest keep running in this page, kept in liveRuns under the list's identity (dKey). The same list asked again,
          in the same turn, finds them there and waits for the rest — nothing is run or paid for twice. A list left running by an EARLIER turn
@@ -1218,7 +1225,7 @@ export default [
         if (store && a.fresh !== true) { try { prior = await store.get(dKey); } catch (_) { prior = null; } }
         const D = makeDelegation({ parent, executor, resume: prior || undefined, maxConcurrent: (pol && Number.isInteger(pol.maxConcurrent)) ? pol.maxConcurrent : null });
         let saving = Promise.resolve(), saves = 0;
-        const save = () => { saving = saving.then(() => store.save(dKey, D.snapshot())).then((ok) => { if (ok) saves++; }, () => {}); };
+        const save = () => { saving = saving.then(() => keyOfInput() === dKey && store.save(dKey, D.snapshot())).then((ok) => { if (ok) saves++; }, () => {}); };
         const unsave = store ? D.subscribe((e) => { if (e && e.kind === 'task.ended') save(); }) : () => {};
         /* CANCELLATION — the turn's signal stops every running task (a worker's request is aborted, a capability's run is handed
            the signal); the listener is removed when the list is over, so a later abort of an earlier turn does nothing here */
@@ -1272,7 +1279,7 @@ export default [
         const spent = D.spendUsd();
         try { progress({ text: t.map((x) => x.id + ' ' + stateWord(x.state)).join(' · ') + ' — ' + usd(spent), tasks: t, done: ended, total: t.length, costUsd: spent }); } catch (_) { /* a trace that cannot show it is not the work's problem */ }
       });
-      let results, verification = null, pendingIds = [], checkUsdNew = 0;
+      let results, verification = null, pendingIds = [], checkUsdNew = 0, checkUnknownNew = 0;
       try {
         /* "wait":"any" — answer as soon as one task has brought findings; "all" (the default) — when every task has ended */
         /* (atlas-child-loop-reuse) the instant the first usable piece arrived, for the turn's record (atlas-run-ledger.js runMarkSink) — read now, so a later turn is never handed it */
@@ -1304,7 +1311,7 @@ export default [
           }
           /* (atlas-child-loop-reuse) a checker an EARLIER early answer already handed to the turn's sink is not counted a second time in the ledger */
           entry.reported = entry.reported || new Set();
-          checkUsdNew = fu.reduce((m, r, i) => { if (!r || entry.reported.has('check:' + i)) return m; entry.reported.add('check:' + i); return m + (Number(r.costUsd) || 0); }, 0);
+          checkUsdNew = fu.reduce((m, r, i) => { if (!r || entry.reported.has('check:' + i)) return m; entry.reported.add('check:' + i); checkUnknownNew += r.costUnknownCalls || 0; return m + (Number(r.costUsd) || 0); }, 0);
         }
       } finally {
         unsub();
@@ -1320,7 +1327,7 @@ export default [
           h.promise.then((r) => {
             if (!r || r.reused || entry.reported.has(h.id)) return;
             entry.reported.add(h.id);
-            sink(Number(r.costUsd) || 0);
+            sink(Number(r.costUsd) || 0, r.costUnknownCalls || 0);
           }, () => {});
         });
         /* ⚠ (atlas-child-loop-reuse) …AND SO DOES A CHECKER. A `verify:true` task's checker starts the moment its task ends — often the fast task this
@@ -1331,7 +1338,7 @@ export default [
           Promise.resolve(fp).then((r) => {
             if (!r || r.reused || entry.reported.has('check:' + i)) return;
             entry.reported.add('check:' + i);
-            sink(Number(r.costUsd) || 0);
+            sink(Number(r.costUsd) || 0, r.costUnknownCalls || 0);
           }, () => {});
         });
       }
@@ -1341,7 +1348,9 @@ export default [
       /* a result answered from a task of THIS list (reused) is that task's own result again — its cost is counted once, with the task that ran */
       /* (delegate-streaming) a list asked about twice (wait:"any", then again for the rest) reports each task's cost in ONE of the two answers: the ledger the turn reads sums them */
       entry.reported = entry.reported || new Set();
-      const cost = results.filter((r) => !r.reused && r.state !== 'running' && !entry.reported.has(r.id)).reduce((m, r) => m + r.costUsd, 0);
+      const newReceipts = results.filter((r) => !r.reused && r.state !== 'running' && !entry.reported.has(r.id));
+      const cost = newReceipts.reduce((m, r) => m + r.costUsd, 0);
+      const costUnknownCalls = newReceipts.reduce((m, r) => m + (r.costUnknownCalls || 0), checkUnknownNew);
       results.forEach((r) => { if (r.state !== 'running') entry.reported.add(r.id); });
       /* WHAT THE RESULTS SAY TOGETHER (js/atlas-orchestrate.js integrate) — the card says what a reader should look at; the meta
          carries the same without repeating the findings and gaps the per-task list already carries (what is not carried is not seen
@@ -1411,6 +1420,7 @@ export default [
           rest: Object.hasOwn(delegatedMaterial, r.id) ? 'details.delegatedMaterial' : undefined,
           gaps: r.gaps, sources: r.sources, notFound: r.notFound, evidence: r.evidence, data: r.data, costUsd: r.costUsd, calls: r.calls, ms: r.ms, arrivedSecAgo: entry.arrivedAt.has(r.id) ? Math.round((Date.now() - entry.arrivedAt.get(r.id)) / 1000) : undefined })),
         delegationRun: dKey,
+        delegatedCostUnknownCalls: costUnknownCalls,
         delegatedCostUsd: cost + checkUsdNew,   /* the checkers are children too: the ledger the turn reads must hold what the card says */
         integrated,
         /* (delegate-child-loop) what was answered from the last run of the same list, and whether this run's record was kept */

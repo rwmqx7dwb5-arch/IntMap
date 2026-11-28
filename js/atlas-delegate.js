@@ -209,6 +209,7 @@ export function makeDelegation(o) {
       dataRef: payloads.has(id) ? artifact : undefined,
       artifact,
       costUsd: Math.max(0, Number(r && r.costUsd) || 0),
+      costUnknownCalls: Math.max(0, Number(r && r.costUnknownCalls) || 0),
       calls: Math.max(0, Number(r && r.calls) || 0),
       ms: Math.max(0, clock() - t0),
     });
@@ -267,9 +268,9 @@ export function makeDelegation(o) {
     const resumeNow = (prior) => {
       note('task.resumed', id, { from: prior.result.id || '', costUsd: Number(prior.result.costUsd) || 0, calls: Number(prior.result.calls) || 0 });
       /* what the first run spent was spent then; this run spent nothing, so the spend read off this log stays true */
-      return finish(id, t0, Object.assign({}, prior.result, { data: prior.result.dataRef ? prior.payload : prior.result.data, costUsd: 0, calls: 0 }));
+      return finish(id, t0, Object.assign({}, prior.result, { data: prior.result.dataRef ? prior.payload : prior.result.data, costUsd: 0, costUnknownCalls: 0, calls: 0 }));
     };
-    if (resumeByKey.has(key) && !c.inputs.length) {
+    if (resumeByKey.has(key) && !c.inputs.length && !(c.kind === 'capability' && resumeByKey.get(key).result.state === 'partial')) {
       entry.promise = Promise.resolve(resumeNow(resumeByKey.get(key)));
       settleForward(id, entry.promise);
       return { id, reused: false, resumed: true, promise: entry.promise, cancel() {} };
@@ -284,14 +285,14 @@ export function makeDelegation(o) {
         if (dep === entry || (!dep && !fwd)) return finish(id, t0, { state: 'failed', code: 'input_unknown', summary: 'No task named "' + i.from + '" was started in this delegation.' });
         const r = await (dep ? dep.promise : fwd.promise);
         if (r.state !== 'done' && r.state !== 'partial') return finish(id, t0, { state: 'failed', code: 'input_unavailable', summary: 'The task it starts from ("' + i.from + '") ended ' + r.state + '.' });
-        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: originalData(r), artifact: r.artifact });
+        inputs.push({ from: i.from, state: r.state, code: r.code, summary: r.summary, findings: r.findings, facts: r.facts, notFound: r.notFound, gaps: r.gaps, sources: r.sources, data: originalData(r), artifact: r.artifact });
       }
       if (controller.signal.aborted) return finish(id, t0, { state: 'cancelled' });
       const digest = inputsDigestOf(inputs);
       inputKeys.set(id, digest);
       if (resumeByKey.has(key) && c.inputs.length) {
         const rec = resumeByKey.get(key);
-        if (rec.inputs === digest) { entry.resumed = true; return resumeNow(rec); }
+        if (rec.inputs === digest && !(c.kind === 'capability' && rec.result.state === 'partial')) { entry.resumed = true; return resumeNow(rec); }
       }
       /* A capability task's arguments may name what an input produced (`@task:data.gis.dataset`) — the way one analysis step
          is handed the dataset the step before it made. Resolved here, from the inputs this task has just been given, and
@@ -396,7 +397,7 @@ export function makeDelegation(o) {
     workspace: { get: (id) => workspace.get(id) || null, all: () => Array.from(workspace.values()),
       read: (id) => { const r = workspace.get(id); return r ? { ...r, data: originalData(r) } : null; } },
     /* THE SPEND, read off the log: what each provider request of this delegation reported it cost */
-    spendUsd() { return log.all().filter((e) => e.kind === 'effect.done').reduce((m, e) => m + (Number(e.data.costUsd) || 0), 0); },
+    spendUsd() { return log.all().filter((e) => e.kind === 'effect.done' || e.kind === 'effect.failed').reduce((m, e) => m + (Number(e.data.costUsd) || 0), 0); },
   };
 }
 
@@ -410,14 +411,14 @@ export function makeDelegation(o) {
    is "the map frames of this turn", an attachment is a file name — so the same list asked after the reader moved the map or replaced the
    file is the same text and a different question; without what they show in the identity, the record of the old picture answered the new
    one (measured 2026-11-25: Osaka's result returned for a Tokyo frame, `resumed:true`, one model call in all). Absent = the names alone. */
-export function delegationKey(contracts, shown) {
+export function delegationKey(contracts, shown, session) {
   const list = (Array.isArray(contracts) ? contracts : []).map((raw) => {
     const nc = normaliseContract(raw);
     const k = nc.ok ? contractKey(nc.contract) : 'invalid:' + nc.error;
     const seen = (nc.ok && nc.contract.images && nc.contract.images.length && typeof shown === 'function') ? String(shown(nc.contract.images) || '') : '';
     return seen ? [k, !!(raw && raw.verify === true), seen] : [k, !!(raw && raw.verify === true)];
   });
-  return 'd-' + requestKey(stable(list), 'delegation').slice(2);
+  return 'd-' + requestKey(stable(session == null ? list : { list, session }), 'delegation').slice(2);
 }
 
 /* How long a written snapshot answers for its list. OBSERVATION: it is ai-proxy's TURN_TTL_S (900 s,
@@ -654,7 +655,7 @@ export function makeWorkerExecutor(o) {
     const abort = () => { try { controller.abort(); } catch (_) { /* ended */ } };
     if (outerSignal) { if (outerSignal.aborted) abort(); else outerSignal.addEventListener('abort', abort, { once: true }); }
     if (ctx.signal) { if (ctx.signal.aborted) abort(); else ctx.signal.addEventListener('abort', abort, { once: true }); }
-    let calls = 0, costUsd = 0, why = '';
+    let calls = 0, costUsd = 0, costUnknownCalls = 0, why = '';
     const sources = [];
     /* the grant: only ids the parent named AND the host classifies as read-only; with no lane, or no grant, the worker researches only */
     const allowed = cap ? (task.tools || []).filter((id) => cap.classify(id) === 'read') : [];
@@ -732,16 +733,19 @@ export function makeWorkerExecutor(o) {
              has a different key and is never handed this one's answer. */
           replayKey: requestKey(prompt + keyTail, webMode, task.model, task.effort) });
       } catch (e) {
-        if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, sources };
+        const reportedCost = e?.meta?.costUsd;
+        if (Number.isFinite(reportedCost) && reportedCost >= 0) costUsd += reportedCost;
+        if (!Number.isFinite(reportedCost) || e?.meta?.costComplete === false || e?.meta?.priceKnown === false) costUnknownCalls++;
+        if (controller.signal.aborted || (e && e.name === 'AbortError')) return { state: 'cancelled', calls, costUsd, costUnknownCalls, sources };
         const code = String((e && e.code) || '');
         /* (delegation-limits) WHY, as the server said it — measured 2026-11-19: a worker failed `provider_unavailable` after 90.7 s and
            nothing recorded whether its web search had timed out (the failed child's ledger row is released with its refund) */
         const m = (e && e.meta) || {};
         const detail = { timeout: m.timeout === true ? true : undefined, tooLarge: m.tooLarge === true ? true : undefined, status: Number(e && e.status) || undefined, model: m.model ? String(m.model).slice(0, 60) : undefined };
-        ctx.emit('effect.failed', { intent: intent.id, code, timeout: !!detail.timeout, status: detail.status || 0 });
-        if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+        ctx.emit('effect.failed', { intent: intent.id, code, timeout: !!detail.timeout, status: detail.status || 0, costUsd: reportedCost });
+        if (REFUSAL_CODES.includes(code)) return { state: 'refused', code, detail, summary: s(e && e.message, 400), calls, costUsd, costUnknownCalls, sources };
         /* the request may or may not have reached the provider: nothing came back to say which */
-        if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, sources };
+        if (code === 'network' || code === 'stream_broken' || (e && e.status === 0)) return { state: 'unobservable', code: code || 'network', detail, summary: s(e && e.message, 400), calls, costUsd, costUnknownCalls, sources };
         /* An OBSERVED transient failure, with a request left in the budget: try again, but not the same request. A web
            search that ran out its time is not asked to search again (it would meet the same wall); it is asked to answer
            from what the model knows, and the result says it was made without the web. Any other transient failure is
@@ -759,9 +763,10 @@ export function makeWorkerExecutor(o) {
           continue;
         }
         /* a transient failure with no different request left to make: stopped and said so — the same request again is not progress */
-        return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, sources };
+        return { state: 'failed', code: code || 'error', detail, summary: s(e && e.message, 400), gaps: retryable ? ['The request failed (' + (code || 'error') + ') and every different way of asking (without the web, shorter) had already been tried; it was not asked again the same way.'] : undefined, calls, costUsd, costUnknownCalls, sources };
       }
       const meta = (env && env.meta) || {};
+      if (!Number.isFinite(meta.costUsd) || meta.costComplete === false || meta.priceKnown === false) costUnknownCalls++;
       const c = Math.max(0, Number(meta.costUsd) || 0);
       costUsd += c;
       ctx.emit('effect.done', { intent: intent.id, costUsd: c, model: String(meta.modelServed || meta.model || ''), web: !!meta.webUsed });
@@ -883,7 +888,7 @@ export function makeWorkerExecutor(o) {
         };
         wanted.forEach((w, i) => pending.set(String(firstStep + i + 1), Promise.resolve().then(() => one(w, i))));
         const results = await Promise.all(pending.values());
-        if (cancelled || controller.signal.aborted) return { state: 'cancelled', calls, costUsd, sources };
+        if (cancelled || controller.signal.aborted) return { state: 'cancelled', calls, costUsd, costUnknownCalls, sources };
         wanted.forEach((w, i) => {
           const result = results[i];
           const from = String(firstStep + i + 1);
@@ -896,7 +901,7 @@ export function makeWorkerExecutor(o) {
           repeatRun += 1;
           if (repeatRun >= 2) {
             const raw = s(env && env.text, 4000);
-            return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, sources };
+            return { state: raw ? 'partial' : 'failed', code: 'repeated_calls', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker asked for answers it already had twice in a row and was stopped without findings; it had called: ' + Array.from(new Set(steps.map((x) => x.capability))).join(', ') + '.']), calls, costUsd, costUnknownCalls, sources };
           }
         }
         prompt = base(attempt + 1);
@@ -911,7 +916,7 @@ export function makeWorkerExecutor(o) {
         sh.why = material.why || 'the selected call returned no data';
       }
       if (sh.ok) {
-        const out = Object.assign({ state: sh.partial ? 'partial' : 'done', code: sh.partial ? 'incomplete' : undefined, calls, costUsd, sources }, sh.out);
+        const out = Object.assign({ state: sh.partial ? 'partial' : 'done', code: sh.partial ? 'incomplete' : undefined, calls, costUsd, costUnknownCalls, sources }, sh.out);
         if (material) {
           const { source, path, value } = material;
           out.data = atJobDataPath(path, value);
@@ -930,9 +935,9 @@ export function makeWorkerExecutor(o) {
         continue;
       }
       const raw = s(env && env.text, 4000);
-      return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, sources };
+      return { state: raw ? 'partial' : 'failed', code: 'shape', summary: raw, gaps: (degraded ? [degraded] : []).concat(['The worker did not return the requested shape (' + why + ')' + (same ? ', and returned the same output again after being told what was wrong, so it was not asked again.' : '.')]), calls, costUsd, costUnknownCalls, sources };
     }
-    return { state: 'failed', code: 'shape', summary: why, calls, costUsd, sources };
+    return { state: 'failed', code: 'shape', summary: why, calls, costUsd, costUnknownCalls, sources };
   }
   return {
     id: 'worker-model@page',

@@ -486,7 +486,7 @@ export function makeAtlasToolSurface(deps) {
     /* the `meta` names `mechanical` already states as fields of its own (or that are bookkeeping for the page, not facts about the result):
        carried above, so `details` does not say them twice. */
     var META_CARRIED = { status: 1, code: 1, permanent: 1, auditFindings: 1, auditNote: 1, produced: 1, unverified: 1, resultKey: 1, artifact: 1,
-      research: 1, web: 1, external: 1, finish: 1, retrieved: 1, webNote: 1, delegated: 1, delegatedCostUsd: 1, integrated: 1, maxChildren: 1, given: 1,
+      research: 1, web: 1, external: 1, finish: 1, retrieved: 1, webNote: 1, delegated: 1, delegatedCostUsd: 1, delegatedCostUnknownCalls: 1, integrated: 1, maxChildren: 1, given: 1,
       record: 1, unresolved: 1, painted: 1, operationId: 1, capabilityId: 1, brief: 1, category: 1, retryable: 1, message: 1, userGoalSatisfied: 1 };
     function mechanical(res, built) {
       var meta = (res && res.meta) || {};
@@ -553,6 +553,7 @@ export function makeAtlasToolSurface(deps) {
            and Atlas would have learned nothing from it (one-pass-or-a-reason §2 ②). */
         delegated: (meta.delegated && meta.delegated.length) ? meta.delegated : undefined,
         delegatedCostUsd: meta.delegated ? meta.delegatedCostUsd : undefined,
+        delegatedCostUnknownCalls: meta.delegated ? meta.delegatedCostUnknownCalls : undefined,
         /* (atlas-orchestration) WHAT THE RESULTS SAY TOGETHER — findings more than one worker found, places where their figures differ, who did
            not return and in what state, the deduplicated sources. Read off the same results as `delegated` and not derivable from one task's
            entry, so — carried the same way, or the model never sees it. */

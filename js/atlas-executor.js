@@ -488,11 +488,16 @@ function makeAtlasExecutor(HOST, CTX) {
             verdict = { status: 'failed', code: 'threw', observed: { error: (e && e.message) || 'error' } };
           }
           if (!verdict || typeof verdict !== 'object') verdict = { status: 'failed', code: 'no_verdict' };
+          if (raw?.ok !== false && raw?.exec?.status === 'partial' && verdict.status === 'completed') {
+            verdict = Object.assign({}, verdict, { status: 'partial', code: raw.meta?.code || 'incomplete' });
+          }
           op.verification = verdict;
 
           /* 10 — the structured result */
           var _base = Object.assign({
             operationId: operationId, capabilityId: cap.id,
+            objectIds: raw?.objectIds,
+            unresolved: raw?.exec?.unresolved,
             produced: (verdict.produced || (cap.produces || [])).slice(),
             observed: Object.assign({ before: op.before, after: op.after }, verdict.observed || null),
             /* (atlas-observer-undo) a reversible row is reversed by turn — js/atlas-state.js `undo()` — so the

@@ -23,7 +23,7 @@ import type { TurnReq, TurnItem } from "../turn.ts";
 let summaryRefused = false;
 let retentionRefused = false;   /* (atlas-orchestration-efficiency) a model refused prompt_cache_retention: stop sending it from this isolate */
 
-export async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
+export async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; incompleteReason: string | null; webAttached: boolean; webUsed: boolean; webCount: number; webSources: number | null; webFailure?: string; citations: WebCitation[]; schemaAttached: boolean; served?: string; reasoningEffort?: string; output?: TurnItem[] }> {
   // GPT-6 models (gpt-6.2-sol / gpt-6.1-terra / gpt-6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -317,5 +317,5 @@ export async function callOpenAI(model: string, key: string, prompt: string, sys
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, incompleteReason, webAttached: usedTools, webUsed: webCount > 0, webCount, webSources, ...(webFailure ? { webFailure } : {}), citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
+  return { text, finishReason, incompleteReason, reasoningEffort: effort, webAttached: usedTools, webUsed: webCount > 0, webCount, webSources, ...(webFailure ? { webFailure } : {}), citations, schemaAttached: usedJson === "schema", served: String(j?.model || ""), output };
 }

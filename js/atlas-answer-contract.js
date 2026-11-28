@@ -236,7 +236,7 @@ export function makeAtlasAnswerContract() {
     const out = {
       kind: inSet(m.kind, METRIC_KINDS, ''),
       seriesId: str(m.seriesId, 80), concept: str(m.concept, 160),
-      value: isFinite(v) ? v : null, unit: str(m.unit, 40),
+      value: m.value != null && isFinite(v) ? v : null, unit: str(m.unit, 40),
       basis: str(m.basis, 40), adjustment: str(m.adjustment, 60),
       geography: str(m.geography, 80), period: str(m.period, 40),
     };

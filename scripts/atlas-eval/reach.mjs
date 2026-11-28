@@ -50,6 +50,28 @@ export function reachOf(questions, CAPS) {
     someMissed: byQuestion.length - allFound, missedCaps, byQuestion };
 }
 
+/** Observe model-authored searches, capability choice, and execution against the lexical control. */
+export function turnReach(expected, trace, capabilityOf) {
+  const searches = (trace.calls || []).filter((call) => call.name === 'find_capability').map((call) => {
+    try {
+      const result = typeof call.resultText === 'string' ? JSON.parse(call.resultText) : call.result;
+      return Array.isArray(result?.matches) ? { query: call.args?.query || '', matches: result.matches } : null;
+    } catch (_) { return null; }
+  }).filter(Boolean);
+  return (expected || []).map(({ id, rank }) => {
+    const execution = (trace.operations || []).filter((op) => op.capabilityId === id).map((op) => ({ status: op.status, code: op.code }));
+    return {
+      id, originalLexicalRank: rank,
+      searches: searches.map((search) => {
+        const index = search.matches.findIndex((match) => match.id === id);
+        return { query: search.query, rank: index < 0 ? null : search.matches[index].rank ?? index + 1 };
+      }),
+      selected: execution.length > 0 || (trace.calls ? trace.calls.some((call) => capabilityOf(call) === id) : null),
+      execution,
+    };
+  });
+}
+
 /** the registry as the browser binds it (the catalogue the lexical search reads), from productModules(...) */
 export function boundRegistry(P) {
   const CAPS = P.makeAtlasCapabilities({});

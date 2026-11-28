@@ -475,7 +475,7 @@ function computeWorker(CFG, importModule, makeBridgeClient) {
 }
 
 /* ══ THE HOST ══════════════════════════════════════════════════════════════════════════════════ */
-import { reusableCode, fingerprintRecord, reuseKey, makeResultReuse } from './atlas-result-reuse.js';   /* (result-reuse) the same code on the same data is answered from the earlier run */
+import { reusableCode, fingerprintInput, reuseKey, makeResultReuse } from './atlas-result-reuse.js';   /* (result-reuse) the same code on the same data is answered from the earlier run */
 
 export function makeComputeSandbox(opts) {
   return (function () {
@@ -613,6 +613,7 @@ export function makeComputeSandbox(opts) {
         kind: 'compute', language: 'python',
         code: job.code, codeSha256: codeSha256,
         inputs: job.inputs.map((r) => r.id),
+        inputVersions: job.inputVersions,
         output: name,
         runtime: RUNTIME.name + '@' + RUNTIME.version,
         python: (raw && raw.python) || null,
@@ -623,7 +624,7 @@ export function makeComputeSandbox(opts) {
     }
 
     /* ── one worker, one run ──────────────────────────────────────────────────────────────────── */
-    function execute(job, signal, bridge) {
+    function execute(job, signal, bridge, inputsJson) {
       return new Promise((resolve) => {
         if (!WorkerCtor || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) { resolve(no('worker-unavailable')); return; }
         let w = null, url = null, timer = null, phase = 'boot', settled = false;
@@ -669,7 +670,7 @@ export function makeComputeSandbox(opts) {
         };
         w.onmessageerror = () => finish(no('worker-died', { message: 'message-not-cloneable' }));
         const msg = { t: 'run', job: { code: job.code, outputs: job.outputs, outputsNamed: job.outputsNamed,
-          inputsJson: JSON.stringify(job.inputs.map(payloadOf)) } };
+          inputsJson } };
         if (bridgeOk(bridge)) { msg.port = bridge.port; w.postMessage(msg, [bridge.port]); } else w.postMessage(msg);
       });
     }
@@ -688,22 +689,32 @@ export function makeComputeSandbox(opts) {
       const res = job.ok ? await runJob(job, runOpts) : job;
       const reg = registry();
       if (!res || typeof res !== 'object' || !reg || typeof reg.readRecord !== 'function') return res;
-      const read = job.ok ? job.inputs.map((rec) => reg.readRecord(rec.id, 'compute.run', !!res.ok, res.ok ? null : res.why)) : [];
+      const read = job.ok ? job.inputs.map((rec, index) => {
+        const observation = reg.readRecord(rec.id, 'compute.run', !!res.ok, res.ok ? null : res.why);
+        const input = job.inputVersions?.[index];
+        return input ? { ...observation, version: input.version } : observation;
+      }) : [];
       return Object.assign({}, res, { datasetsRead: read });
     }
 
     async function runJob(job, runOpts) {
       const ro = runOpts || {};
-      /* (result-reuse) THE KEY IS CODE + THE INPUTS' CONTENT + THE CONDITIONS. A rerun (fixedIds / only) restores specific records and is never answered from the cache. A hit is served only while every dataset it made is still in the registry, not stale, and the same size. */
+      if (ro.signal?.aborted) return no('cancelled');
+      /* (result-reuse) THE KEY IS CODE + THE INPUTS' CONTENT + THE CONDITIONS. A rerun (fixedIds / only) restores specific records and is never answered from the cache. A hit is served only while every dataset it made is still in the registry, not stale, and still on the version the run created. */
+      const reg0 = registry();
+      job.inputVersions = job.inputs.map((r) => ({ id: r.id, version: reg0?.versionOf?.(r.id) ?? null }));
+      let inputsJson;
+      try { inputsJson = JSON.stringify(job.inputs.map(payloadOf)); }
+      catch (e) { return no('input-unreadable', { message: String(e?.message || e) }); }
       let reuseK = null;
       if (!ro.fixedIds && !ro.only && !ro.bridge && reusableCode(job.code)) {
-        const fps = []; for (const r of job.inputs) fps.push(await fingerprintRecord(r, sha256Hex));
-        reuseK = await reuseKey({ kind: 'compute.run', spec: { code: job.code, outputs: job.outputs, title: job.title || '' }, inputs: fps, conditions: { runtime: RUNTIME.name + '@' + RUNTIME.version } }, sha256Hex);
-        const reg0 = registry();
-        const hit = reg0 && REUSE.get(reuseK, (v) => (v.datasets || []).every((d) => { const r = reg0.get(d.id); return r && !r.stale && r.count === d.count; }));
+        const input = await fingerprintInput(inputsJson, sha256Hex);
+        reuseK = await reuseKey({ kind: 'compute.run', spec: { code: job.code, outputs: job.outputs, named: job.outputsNamed, title: job.title || '' }, inputs: [input], conditions: { sources: job.inputVersions, runtime: RUNTIME.name + '@' + RUNTIME.version, execMs: job.execMs } }, sha256Hex);
+        if (ro.signal?.aborted) return no('cancelled');
+        const hit = reg0 && REUSE.get(reuseK, (v) => (v.datasets || []).every((d) => { const r = reg0.get(d.id); return r && !r.stale && d.version != null && reg0.versionOf?.(r.id) === d.version; }));
         if (hit) return hit;
       }
-      const raw = await execute(job, ro.signal || null, ro.bridge || null);
+      const raw = await execute(job, ro.signal || null, ro.bridge || null, inputsJson);
       const base = { stdout: raw.stdout || '', stderr: raw.stderr || '', stdoutCut: raw.stdoutCut || 0, stderrCut: raw.stderrCut || 0,
         timings: raw.timings || null, elapsedMs: raw.elapsedMs, refusedUrls: raw.refusedUrls || [], runtime: RUNTIME.name + '@' + RUNTIME.version };
       if (!raw.ok) return Object.assign(base, { bridge: (ro.bridge && ro.bridge.bridge && bridgeOk(ro.bridge)) ? { grants: ro.bridge.bridge.grants(), summary: ro.bridge.bridge.summary(), calls: ro.bridge.bridge.calls(), logOmitted: ro.bridge.bridge.logOmitted() } : null, ok: false, why: raw.why, observed: raw.observed, detail: raw.detail, phase: raw.phase });

@@ -2944,7 +2944,7 @@ export function atlasConsole(HOST){
         if(_ar?.status==='needs_input'&&_ar.inputRequest) _pendingInput={ result:_ar, bubble:ai, at:Date.now() };
         if(confirmation) r.meta=Object.assign({},r.meta,{confirmation:confirmation.choice});
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
-        const _drew=(!readOnly&&r.ok!==false)?_drewSince(_mark0):[];
+        const _drew=(!readOnly&&(r.ok!==false||_ar?.status==='partial'))?_drewSince(_mark0):[];
         /* ⚠ A NEW DRAWING IS NOT HIDDEN BY AN OLD SWITCH. The kind's layers are shared (nlq-*), and an earlier reply's chip turned them OFF; this run then painted into
            layers that stayed hidden — the thing was drawn, listed, and invisible, and its own chip read OFF. What this run just drew is shown (the reader asked for it just now). */
         _drew.forEach(d=>{ if(d.visible) return; try{ (d.surfaces||[]).forEach(s=>{ try{ GE().render.showSurface(s,true); }catch(_){} }); d.visible=_ovlVisible(d.kind); }catch(_){} });   /* (atlas-controls-receipts) through the painter, as the chip does */
@@ -3182,7 +3182,7 @@ export function atlasConsole(HOST){
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
         let rec=null; for(let i=list.length-1;i>=before&&!rec;i--){ if(list[i]&&list[i].act===action) rec=list[i]; }   /* ⚠ (atlas-turn-engine) THIS action's record, found by identity. It was `list[list.length-1]` — the last record filed, which is this action's only while one call runs at a time; js/atlas-agent.js now runs the calls of one reply together when their conflict keys do not overlap, and another call may file its record between this one's and this line */
         if(!rec) return {ok:false,error:'not_run',message:'the turn was superseded'};
-        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; try{ if(debug&&_asked) debug.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
+        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:rec.act?.__exec||null, objectIds:rec.act?.__result?.objectIds, unresolved:rec.act?.__result?.unresolved }; try{ if(debug&&_asked) debug.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
       _turnRunAction=_runOne;
       const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
       _liveTools=_tools; const _sys=SYS(_tools); const _c0=_agentCtx(initialMap); try{ WM.beginTurn(turn,q); }catch(_){}

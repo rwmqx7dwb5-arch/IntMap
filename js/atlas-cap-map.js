@@ -24,6 +24,35 @@ import { shapeBasisOf } from './atlas-shape-resolve.js';   /* (eval-shape-gradin
 
 import { mapAuthorship } from './atlas-shape-resolve.js';
 
+async function drawingPoints(args, geocode, signal) {
+  const coordinates = Array.isArray(args.points) && args.points.length;
+  const requested = coordinates ? args.points : args.places || [];
+  const points = [], unresolved = [], segments = [[]];
+  for (const [index, target] of requested.entries()) {
+    signal?.throwIfAborted();
+    let point = coordinates ? target : null;
+    // Retain the existing geocoder request budget and report every unexamined input.
+    let failed = false;
+    if (!coordinates && index < 12) {
+      try {
+        const hit = await geocode(String(target));
+        if (hit) point = [hit.lng, hit.lat];
+      } catch (_) { signal?.throwIfAborted(); failed = true; }
+    }
+    const valid = Array.isArray(point) && point.length >= 2 && point[0] != null && point[1] != null &&
+      Number.isFinite(+point[0]) && Number.isFinite(+point[1]) && Math.abs(+point[0]) <= 180 && Math.abs(+point[1]) <= 90;
+    if (!valid) {
+      unresolved.push({ index, target, reason: failed ? 'lookup-failed' : !coordinates && index >= 12 ? 'not-processed' : 'unresolved' });
+      if (segments.at(-1).length) segments.push([]);
+      continue;
+    }
+    const resolved = [+point[0], +point[1]];
+    points.push(resolved);
+    segments.at(-1).push(resolved);
+  }
+  return { points, unresolved, segments: segments.filter((segment) => segment.length >= 2) };
+}
+
 export default [
   {
     row: ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
@@ -834,20 +863,29 @@ export default [
     schema: () => ({ type: 'object', properties: { points: list(list(), 2), places: list(str(), 2), color: str(), width: num(0), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintLines = K.paintLines, GE = K.GE, note = K.note, esc = K.esc;
       { /* (#R72) free line drawing — AI-supplied coordinates or place names */
-          let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
-          if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
-          if(pts.length<2) return R(false, warn(L('Need at least two points','2点以上必要です','Mindestens zwei Punkte nötig','Нужно минимум две точки','Se necesitan al menos dos puntos')));
+          const { segments, unresolved } = await drawingPoints(a, geocode, dctx?.signal);
+          const missing = unresolved.map(({ index, target }) => typeof target === 'string' ? target : String(index + 1));
+          const detail = { unresolved: missing, pointsUnresolved: unresolved, geometries: [] };
+          if (!segments.length) return R(false, warn(L('Need at least two adjacent resolved points','連続して解決できた地点が2点以上必要です')), { exec: detail });
+          const pts = segments.flat();
           const col=a.color?parseColor(a.color):null;
           /* ⚠⚠⚠ (#R747) A LINE IS ITS COURSE, NOT ITS CAPTION — the rule `addPin` and `_radiusFromPoint`
              take in js/app-body.js. Measured: 「нарисуй линию」 Lisbon→Cape Town drew the SAME line five
              times because each retry carried a different label and colour. A redraw is a restyling. */
           /* ⚠ (#732) …AND A COURSE HAS NO DIRECTION: Cape Town→Reykjavik is the line Reykjavik→Cape Town already on the map, so the key is the smaller of the two readings */
-          const _lnK=ps=>{ const f=ps.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)), b=f.slice().reverse().join(' '), a=f.join(' '); return a<b?a:b; }, _lnKey=_lnK(pts);
+          const _lnK=ps=>{ const f=ps.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)), b=f.slice().reverse().join(' '), a=f.join(' '); return a<b?a:b; };
+          const keys = [], labels = [], ids = [];
+          for (const segment of segments) {
+          const _lnKey = _lnK(segment);
           const _lnSame=K._hlLines.find(l=>l&&l.geo&&l.geo.type==='LineString'&&_lnK(l.geo.coordinates||[])===_lnKey);
-          let _lnObj; if(_lnSame){ _lnObj=_lnSame; _lnSame.key=_lnKey; _lnSame.color=col||undefined; _lnSame.w=(a.width!=null&&isFinite(+a.width))?+a.width:3; if(String(a.label||'')) _lnSame.name=String(a.label||''); } else { _lnObj={geo:{type:'LineString',coordinates:pts},key:_lnKey,color:col||undefined,w:(a.width!=null&&isFinite(+a.width))?+a.width:3,name:String(a.label||'')}; K._hlLines.push(_lnObj); }   /* (#R760) the course IS the identity (see the note above) — js/atlas-era-highlight.js reads `name || key` */
+          let _lnObj; if(_lnSame){ _lnObj=_lnSame; _lnSame.key=_lnKey; _lnSame.color=col||undefined; _lnSame.w=(a.width!=null&&isFinite(+a.width))?+a.width:3; if(String(a.label||'')) _lnSame.name=String(a.label||''); } else { _lnObj={geo:{type:'LineString',coordinates:segment},provenance:mapAuthorship(dctx),key:_lnKey,color:col||undefined,w:(a.width!=null&&isFinite(+a.width))?+a.width:3,name:String(a.label||'')}; K._hlLines.push(_lnObj); }   /* (#R760) the course IS the identity (see the note above) — js/atlas-era-highlight.js reads `name || key` */
           const _lnId=(window._imHlLines&&window._imHlLines.tagId)?window._imHlLines.tagId(_lnObj):null;   /* the line is a map-object with an id from the moment it is drawn, like a polygon (#R120) */
+          keys.push(_lnKey); labels.push(_lnObj.name || _lnObj.key);
+          if (_lnId) ids.push(_lnId);
+          detail.geometries.push({ id: _lnId, geometry: _lnObj.geo });
+          }
           const okL=paintLines(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okL, okL?note(icon('pencil')+' '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn(''), okL?Object.assign({meta:{painted:{lines:[_lnObj.name||_lnObj.key]},resultKey:'map.line:'+_lnKey}},_lnId?{objectIds:[_lnId]}:null):null); }   /* (#732) `resultKey` = WHAT this call did, and a caption is not what it did: js/atlas-agent.js reads it to tell Atlas that a relabelled redraw is the line it already drew */   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/atlas-agent-repeat-checks.test.mjs (#R760) */
+          return R(okL, okL?note(icon('pencil')+' '+L('Line drawn','ラインを描画しました','Linie gezeichnet','Линия нарисована','Línea dibujada')+(a.label?(' — '+esc(a.label)):'')+' ('+pts.length+' pts)'):warn(''), { objectIds: ids, meta: { partial: missing.length > 0, code: missing.length ? 'partially_resolved' : undefined, painted: { lines: labels }, resultKey: 'map.line:' + keys.join('|') }, exec: { ...detail, status: missing.length ? 'partial' : undefined } }); }   /* (#732) `resultKey` = WHAT this call did, and a caption is not what it did: js/atlas-agent.js reads it to tell Atlas that a relabelled redraw is the line it already drew */   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/atlas-agent-repeat-checks.test.mjs (#R760) */
     },
   },
   {
@@ -858,15 +896,16 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { points: list(list(), 3), places: list(str(), 3), color: str(), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintPolys = K.paintPolys, GE = K.GE, note = K.note, esc = K.esc;
-      { let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
-          if(!pts.length&&Array.isArray(a.places)){ for(const pn of a.places.slice(0,12)){ const g=await geocode(String(pn)); if(g) pts.push([g.lng,g.lat]); } }
-          if(pts.length<3) return R(false, warn(L('Need at least three points','3点以上必要です','Mindestens drei Punkte nötig','Нужно минимум три точки','Se necesitan al menos tres puntos')));
+      { const { points: pts, unresolved } = await drawingPoints(a, geocode, dctx?.signal);
+          if (unresolved.length || pts.length < 3) return R(false, warn(L('A polygon needs at least three points and all requested vertices must resolve','ポリゴンには3点以上が必要で、指定された全頂点を解決する必要があります')), {
+            meta: { code: 'vertices_unresolved' }, exec: { unresolved: unresolved.map(({ index, target }) => typeof target === 'string' ? target : String(index + 1)), pointsUnresolved: unresolved },
+          });
           if(pts[0][0]!==pts[pts.length-1][0]||pts[0][1]!==pts[pts.length-1][1]) pts.push([pts[0][0],pts[0][1]]);
           const colP=a.color?parseColor(a.color):null;
-          const _pgKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' '); let _pgObj=K._hlPolys.find(p=>p&&p.key===_pgKey); if(_pgObj){ _pgObj.color=colP||undefined; if(String(a.label||'')) _pgObj.name=String(a.label||''); } else { _pgObj={geo:{type:'Polygon',coordinates:[pts]},key:_pgKey,color:colP||undefined,name:String(a.label||'')}; K._hlPolys.push(_pgObj); }   /* ⚠ (#R760) THE RING IS THE IDENTITY, AND A REDRAW OF IT IS A RESTYLING — the rule #R747 gave the line, which drawPolygon never got: measured locally, two identical `map.drawPolygon` calls left TWO polygons stacked on the map and both were reported `ok`, so nothing anywhere said the second one was the first one again */
+          const _pgKey=pts.map(p=>(+p[0]).toFixed(5)+','+(+p[1]).toFixed(5)).join(' '); let _pgObj=K._hlPolys.find(p=>p&&p.key===_pgKey); if(_pgObj){ _pgObj.color=colP||undefined; if(String(a.label||'')) _pgObj.name=String(a.label||''); } else { _pgObj={geo:{type:'Polygon',coordinates:[pts]},provenance:mapAuthorship(dctx),key:_pgKey,color:colP||undefined,name:String(a.label||'')}; K._hlPolys.push(_pgObj); }   /* ⚠ (#R760) THE RING IS THE IDENTITY, AND A REDRAW OF IT IS A RESTYLING — the rule #R747 gave the line, which drawPolygon never got: measured locally, two identical `map.drawPolygon` calls left TWO polygons stacked on the map and both were reported `ok`, so nothing anywhere said the second one was the first one again */
           const _pgId=(window._imHlPolys&&window._imHlPolys.tagId)?window._imHlPolys.tagId(_pgObj):null;   /* (#R120) drawn polygon becomes a referencable map-object */
           const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn(''), okPg?Object.assign({meta:{painted:{polys:[_pgObj.name||_pgObj.key]},resultKey:'map.polygon:'+_pgKey}},_pgId?{objectIds:[_pgId]}:null):null); }
+          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn(''), okPg?Object.assign({meta:{painted:{polys:[_pgObj.name||_pgObj.key]},resultKey:'map.polygon:'+_pgKey},exec:{geometries:[{id:_pgId,geometry:_pgObj.geo}]}},_pgId?{objectIds:[_pgId]}:null):null); }
     },
   },
   {

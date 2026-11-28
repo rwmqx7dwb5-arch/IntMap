@@ -5343,3 +5343,4 @@ uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管�
 独立検証点、分類不能画素の集計、取得済み原図の再利用を測る。`atlas-live-stream.spec.js` の原図ケースは、ログイン済みページを既存の試験と共有し、Atlas の
 ファイル取得から PDF 曲線・SVG 線と穴付き面の抽出、出典と期間の記録、参照面との IoU、次の GIS 演算までを
 ケース名に依存しない原図で通す。
+Atlas の実行整合性は、計算入力と欠損画素、地図入力に依存する再開、部分結果、数値の出典照合、GIS の互換性、評価の消化状況を `tests/atlas-execution-integrity-checks.test.mjs` などの対応する Node 検査で確認する。

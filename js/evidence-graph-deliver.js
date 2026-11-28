@@ -74,22 +74,37 @@ export function assessSupport(graph, nodeIds) {
     const n = graph && graph.get(id);
     if (!n || n.kind !== 'derived') { rows.push({ id, support: 'unobserved', citations: 0, independent: 0, statedBy: [], origins: [] }); continue; }
     const t = graph.trace(id);
-    const originsOf = (ids) => {
-      const set = new Set();
-      for (const i of ids) { const tt = graph.trace(i); if (tt.ok) for (const s of tt.sources) set.add(originOf(s)); }
-      return Array.from(set);
-    };
     const origins = t.ok ? Array.from(new Set(t.sources.map(originOf))) : [];
     const direct = n.inputs.map((i) => i.id);
-    const statedIds = n.meta && Array.isArray(n.meta.statedBy) ? n.meta.statedBy : null;
-    const statedBy = statedIds ? originsOf(statedIds) : [];
+    const statedIds = Array.isArray(n.meta?.statedBy) ? n.meta.statedBy : direct;
+    const originals = new Set(), publications = new Set();
+    for (const i of statedIds) {
+      const traced = graph.trace(i);
+      if (!traced.ok) continue;
+      for (const source of traced.sources) {
+        const publication = originOf(source);
+        if (publication) publications.add(publication);
+        if (source.type !== 'web_document') {
+          if (/^https?:\/\//i.test(source.key)) originals.add(source.key);
+          else if (publication) originals.add(publication);
+          continue;
+        }
+        const versions = new Set([...traced.steps, n].flatMap((step) =>
+          (step.inputs || []).filter((edge) => edge.id === source.id).map((edge) => edge.version)));
+        for (const entry of source.versions || []) {
+          if (versions.has(entry.version) && entry.meta?.primarySource) originals.add(entry.meta.primarySource);
+        }
+      }
+    }
+    const statedBy = [...originals];
     let support;
     if (n.type === 'ai_inference') support = 'model_only';
     else if (!origins.length) support = 'unobserved';
-    else if ((statedIds ? statedBy.length : origins.length) >= 2) support = 'corroborated';
-    else support = 'single';
+    else if (statedBy.length >= 2) support = 'corroborated';
+    else if (statedBy.length === 1) support = 'single';
+    else support = 'original_unverified';
     rows.push({ id, label: n.label, value: n.output && n.output.value != null ? n.output.value : null, type: n.type, support,
-      citations: direct.length, independent: origins.length, statedBy, origins });
+      citations: direct.length, independent: statedBy.length, publications: [...publications], statedBy, origins });
   }
   return rows;
 }
@@ -111,6 +126,7 @@ export function assessDeliverable(args) {
   }
   for (const c of conclusions) {
     if (c.support === 'model_only') gaps.push({ kind: 'conclusion-unsupported', what: c.label || c.id, have: 0, need: 1 });
+    else if (c.support === 'original_unverified') gaps.push({ kind: 'conclusion-origin-unverified', what: c.label || c.id });
     else if (c.support === 'single' && c.citations > 1 && c.independent <= 1) gaps.push({ kind: 'conclusion-single-origin', what: c.label || c.id, have: 1, need: c.citations });
   }
   return { datasets, conclusions, gaps };
@@ -130,7 +146,7 @@ export function observationLines(report) {
   }
   for (const c of (report && report.conclusions) || []) {
     const v = c.value != null ? ' = ' + c.value : '';
-    const why = { model_only: 'the model\'s own figure — no cited record states it', single: c.citations > 1 ? 'built from ' + c.citations + ' citations that are ONE origin' : 'one origin', corroborated: c.independent + ' independent origins', unobserved: 'origin not traceable' }[c.support];
+    const why = { model_only: 'the model\'s own figure — no cited record states it', single: (c.publications.length || 1) + ' publishing source(s) state it, with one identified original', corroborated: c.independent + ' independent origins', original_unverified: c.publications.length + ' publishing source(s) state it; original source independence is unverified', unobserved: 'origin not traceable' }[c.support];
     out.push('figure ' + (c.label || c.id) + v + ': ' + why);
   }
   return out;

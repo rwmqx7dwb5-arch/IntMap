@@ -86,7 +86,7 @@ async function wholeData(ctx, row) {
 /* the reads of a task: the outputs of its inputs, by id and version, and whether each was read whole */
 const readsOf = (inputs) => (inputs || []).map((i) => {
   const o = i?.artifact || i?.data?.output;
-  return o ? { id: o.id, version: o.version, count: o.count, ok: !(i.data && i.data.unreadable) } : { id: "task:" + i.from, version: digestOf(JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, data: i.data })), ok: true };
+  return o ? { id: o.id, version: o.version, count: o.count, ok: !(i.data && i.data.unreadable) } : { id: "task:" + i.from, version: digestOf(JSON.stringify({ state: i.state, code: i.code, summary: i.summary, findings: i.findings, facts: i.facts, notFound: i.notFound, gaps: i.gaps, data: i.data })), ok: true };
 });
 
 /* How many tasks of one job run at the same time. Observation 2026-11-20: research.delegate hands on 2 workers by default
@@ -443,7 +443,7 @@ async function runToolWorker(ctx, task, inputs) {
      atlas_job_artifacts — storeToolBody), as the JSON after "DATA: " in that body. Only the calls an argument names are read. → { list } | { why } */
   const DATA_MARK = "\nDATA: ";
   const handedOn = async (args, round = new Map()) => {
-    const list = (inputs || []).map((i) => ({ from: String(i.from), summary: i.summary, findings: i.findings, gaps: i.gaps, sources: i.sources, artifact: i.artifact, data: i.data, version: i.artifact?.version || i.data?.output?.version || "" }));
+    const list = (inputs || []).map((i) => ({ from: String(i.from), state: i.state, code: i.code, summary: i.summary, findings: i.findings, facts: i.facts, notFound: i.notFound, gaps: i.gaps, sources: i.sources, artifact: i.artifact, data: i.data, version: i.artifact?.version || i.data?.output?.version || "" }));
     for (const from of refsOf(args)) {
       const local = round.get(from);
       if (local) {
@@ -772,7 +772,7 @@ export async function runJob(ctx0) {
         /* each input is the dependency's WHOLE result — an output kept beside its row is read back in (wholeData) — with its sources, so a task that
            is handed it can name where it came from */
         const start = async () => {
-          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.outputSources || r.sources, artifact: r.data?.output, data: await wholeData(ctx, row) }; }));
+          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, state: row.status, code: row.code, summary: r.summary, findings: r.findings, facts: r.facts, notFound: r.notFound, gaps: r.gaps, sources: r.outputSources || r.sources, artifact: r.data?.output, data: await wholeData(ctx, row) }; }));
           return runTask(Object.assign({}, ctx, { requestVersion: Array.isArray(cp.amends) ? cp.amends.length : 0 }), t, inputs);
         };
         running.set(t.task_id, start().catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));
@@ -834,7 +834,7 @@ async function conclude(ctx, tasks, amendList) {
     tasks: tasks.map((t) => {
       const r = t.result || {};
       const o = r.data && r.data.output;
-      return { id: t.task_id, state: t.status, code: t.code || "", requestVersion: r.requestVersion || 0, conditionsVersion: condOf(t), stale: staleById.has(t.task_id), summary: r.summary || "", findings: r.findings || [], gaps: r.gaps || [], sources: r.sources || [], reads: r.reads || [], output: o || null };
+      return { id: t.task_id, state: t.status, code: t.code || "", requestVersion: r.requestVersion || 0, conditionsVersion: condOf(t), stale: staleById.has(t.task_id), summary: r.summary || "", findings: r.findings || [], facts: r.facts || [], notFound: r.notFound || [], gaps: r.gaps || [], sources: r.sources || [], reads: r.reads || [], output: o || null };
     }),
   };
   const everyCancelled = tasks.length > 0 && tasks.every((t) => t.status === "cancelled");

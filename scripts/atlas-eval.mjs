@@ -49,17 +49,18 @@
  * ==========================================================================*/
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { boundRegistry, reachOf, turnReach } from './atlas-eval/reach.mjs';
 import { execFileSync } from 'node:child_process';
 import {
-  judgeTurn, judgeProbe, metricsOf, badnessOf, advance, verdictOf, renderMarkdown, validateQuestionSet,
+  capOfCall, judgeTurn, judgeProbe, metricsOf, badnessOf, advance, verdictOf, renderMarkdown, validateQuestionSet,
 } from './atlas-eval/judge.mjs';
 import { rubricRequest, readRubric, validateAnswerKey } from './atlas-eval/grade.mjs';
-import { goldenOf } from './atlas-eval/replay.mjs';
+import { goldenOf, productModules } from './atlas-eval/replay.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
-import { sectionsRead } from './atlas-eval/map-state.mjs';
+import { eraReference, sectionsRead } from './atlas-eval/map-state.mjs';
 import { deliverablesOfTurn, completionRateOf, deliverableSectionsOf } from './atlas-eval/deliverables.mjs';
 import { expressionOf, factsLine, initiativeOf, drawnSwitches } from './atlas-eval/initiative.mjs';   /* (atlas-ui-parts) the initiative axis */
 
@@ -79,7 +80,7 @@ export async function productRules() {
   const { makeAtlasTurnResults } = await import('../js/atlas-turn-results.js');
   const A = makeAtlasAgent();
   const TR = makeAtlasTurnResults({});
-  return { cutStops: A.CUT_STOPS, turnBudgetMs: A.LIMITS.turnBudgetMs, toolTimeoutMs: A.LIMITS.toolTimeoutMs, callKey: TR.callKey };
+  return { cutStops: A.CUT_STOPS, turnBudgetMs: A.LIMITS.turnBudgetMs, toolTimeoutMs: A.LIMITS.toolTimeoutMs, callKey: TR.callKey, eraReference: eraReference(ROOT), observeEra: true };
 }
 
 export function loadQuestions() {
@@ -211,6 +212,14 @@ export const PAGE = {
     const t = S && S.lastTurn();
     let dbg = null; try { dbg = D && D.lastPlan(); } catch (_) { }
     let snap = null; try { snap = S.snapshot({ only: [...new Set(['atlas', 'activeLayers', 'camera'].concat(extra || []))] }); } catch (_) { }
+    if (snap && extra?.includes('eraAdmin')) {
+      try {
+        const history = window.IntMapTimeAdmin1;
+        const units = history?.currentFC()?.features;
+        snap.eraAdmin = history ? { active: history.active(), presentOn: history.presentOn(),
+          names: Array.isArray(units) && units.length ? [...new Set(units.map((unit) => unit.properties?.NAME).filter(Boolean))] : null } : null;
+      } catch (_) { snap.eraAdmin = null; }
+    }
     const b = document.querySelectorAll('.atl-b.a');
     return {
       turn: t ? {
@@ -478,6 +487,8 @@ async function evaluate() {
   const which = arg('--set', 'all');
   if (['all', 'records', 'answers'].indexOf(which) < 0) { console.error('atlas-eval: --set is all, records or answers'); process.exit(2); }
   const questions = askable(which).filter((q) => !only || only.has(q.id));
+  const registry = boundRegistry(await productModules((path) => import(pathToFileURL(join(ROOT, path)).href)));
+  const lexical = new Map(reachOf(questions, registry).byQuestion.map((row) => [row.id, row.expected]));
   if (Object.keys(images).some((id) => !questions.some((q) => q.id === id))) throw new Error('Every --effort-images case must be selected.');
   const rubric = has('--rubric');
   const recordDir = arg('--record') ? resolve(arg('--record')) : '';
@@ -517,7 +528,7 @@ async function evaluate() {
       if (deadlineMs && Date.now() - t0run + patienceMs > deadlineMs) { turns.push(judgeTurn(q, { measured: false, unmeasured: 'deadline', detail: 'started ' + Math.round((Date.now() - t0run) / 60000) + ' min into a ' + Math.round(deadlineMs / 60000) + '-min run' }, rules)); continue; }
       /* each question on a fresh page (askOnFreshPage) */
       const asked = await askOnFreshPage(S, q.text, { patienceMs, effortPolicy, images: Object.hasOwn(images, q.id) ? images[q.id] : undefined, earlier: (q.earlier || []).map((e) => e.text),
-        sections: [...new Set([...sectionsRead(questions), ...sectionsRead(questions.flatMap((x) => x.earlier || [])), ...deliverableSectionsOf(questions)])] });
+        sections: [...new Set([...sectionsRead(questions, rules), ...sectionsRead(questions.flatMap((x) => x.earlier || []), rules), ...deliverableSectionsOf(questions)])] });
       if (asked.unmeasured) { turns.push({ ...judgeTurn(q, asked.unmeasured, rules), ...(effortPolicy ? { effort: null } : {}) }); continue; }
       const obs = observeTurn(q, asked.raw, asked.askRes, asked.earlier);
       /* (atlas-quality-lab) the independent grade — only for a question with a verified answer, only when
@@ -543,6 +554,7 @@ async function evaluate() {
           firstUsefulMs: row.first_useful_ms,
           totalMs: row.completion === 'none' ? null : row.total_ms,
           outcomeMs: row.total_ms,
+          stages: row.effortStages || [],
         } : null;
       }
       if (recordDir) { const c = cassetteOf(q, obs, judged, { url, build, when: new Date().toISOString(), runUrl: arg('--run-url') || '' }); if (c) recorded.push(c); }
@@ -550,6 +562,7 @@ async function evaluate() {
         completion: obs.completion, unmet: obs.unmet,   /* (atlas-completion-verdict) the declaration as the turn recorded it — deliverables claimBasis says when it was derived */
         before: obs.before, earlier: obs.earlier ? obs.earlier.map((e) => (e.measured ? { stopped: e.stopped, reply: e.reply, operations: e.operations, snapshot: e.snapshot } : { unmeasured: e.unmeasured, detail: e.detail })) : undefined };
       judged.deliverables = deliverablesOfTurn(q, obs, rules);
+      if (obs.measured && lexical.has(q.id)) judged.reachStages = turnReach(lexical.get(q.id), obs, capOfCall);
       if (obs.measured) judged.expression = expressionOf(obs);   /* (atlas-ui-parts) the families of output the turn realized — a fact beside the grade, never a target */
       turns.push(judged);
       if (!obs.measured && obs.unmeasured === 'gate_refused') stopAll = 'the page refused ' + q.id + ' before Atlas ran: ' + obs.detail;
@@ -636,12 +649,13 @@ export function compareEffortReports(auto, fixed) {
       throw new Error('The request or its deliverable criteria differ for ' + a.id + '.');
     }
     const read = (t) => ({
+      answerVerdict: t.metrics?.grade?.verdict ?? null, stages: t.effort?.stages || [],
       firstUsefulMs: t.effort?.firstUsefulMs ?? null, totalMs: t.effort?.totalMs ?? null, outcomeMs: t.effort?.outcomeMs ?? null, totalCostMicros: t.effort?.costMicros ?? null,
       observedCostMicros: t.effort?.observedCostMicros ?? null, achievedTargets: t.deliverables?.present ?? null,
       requestedTargets: t.deliverables?.rows.length ?? null, unobservedTargets: t.deliverables?.unobserved ?? null,
     });
     const x = read(a), y = read(b);
-    const delta = Object.fromEntries(Object.keys(x).map((k) => [k, x[k] != null && y[k] != null ? x[k] - y[k] : null]));
+    const delta = Object.fromEntries(Object.keys(x).map((k) => [k, Number.isFinite(x[k]) && Number.isFinite(y[k]) ? x[k] - y[k] : null]));
     return { id: a.id, auto: x, highFixed: y, delta };
   });
   return { build: build(auto), url: auto.url, pairs };
