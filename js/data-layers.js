@@ -4822,13 +4822,6 @@ export function dataLayers(HOST){
     };
     function setLayerOpacity(id,v){
       opacities[id]=v;
-      const panelRange=document.getElementById('op-'+id);
-      if(panelRange&&panelRange.valueAsNumber!==v) panelRange.value=String(v);
-      document.querySelectorAll('[data-layer-opacity="'+CSS.escape(id)+'"]').forEach(row=>{
-        const range=row.querySelector('input'), val=row.querySelector('.dl-op-val');
-        if(range.valueAsNumber!==v) range.value=String(v);
-        val.textContent=Math.round(v*100)+'%';
-      });
       if(packageOf('dl-'+id)){ _pkgOpacity('dl-'+id,v); }   /* (layer-packages) the package's own, once it is here */
       else if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
         /* Keep no-data countries gray (0.45) — see addChoro for the "<= 0" reasoning. */
@@ -4852,6 +4845,13 @@ export function dataLayers(HOST){
       else if(id==='wind'){ try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
       else { if(GE().layers.has('lyr-'+id))GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }
+      const panelRange=document.getElementById('op-'+id);
+      if(panelRange&&panelRange.valueAsNumber!==v) panelRange.value=String(v);
+      document.querySelectorAll('[data-layer-opacity="'+CSS.escape(id)+'"]').forEach(row=>{
+        const range=row.querySelector('input'), val=row.querySelector('.dl-op-val');
+        if(range.valueAsNumber!==v) range.value=String(v);
+        val.textContent=Math.round(v*100)+'%';
+      });
       layerOpacityChanged(opacityCheckboxes.get(id),v);
     }
     /* ===== (#R19) Opacity for EVERY layer ("どのレイヤーも透明度選択ができるように") =====

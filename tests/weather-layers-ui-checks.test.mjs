@@ -106,12 +106,31 @@ test('R290 ⑫ the wind renderer does not rebuild itself for a resize to the sam
    `none` — css/intmap.css has hidden every slider in the Layers panel since #R16, and the ECMWF
    rows were never given the legend half of that rule. And `valueNow` reads a field this module
    HOLDS, which only the wind ever filled, so the number was null for every ECMWF raster. */
-/* 綴りのまま: 対象は js/weather.js の closure（凡例の DOM と地図の source / layer）の中で、ブラウザの外では走らない */
+/* 接続はソースで読み、共通の書き込みは描画・凡例・Atlas の観測を差して実行する。 */
 test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a field', () => {
   const w = WX(), e = EC(), r = codeOnly(read('js/map-readout.js'));
   assert.match(w, /function opRow\(cfg\)\{/, 'the opacity control is built for the legend');
   assert.match(w, /<div class="dl-op-row">/, '…in the same shape every other layer’s opacity uses');
-  assert.match(w, /if\(op\) op\.oninput=\(\)=>\{ const v=\+op\.value; state\[cfg\.id\]\.op=v; setOp\(cfg,v\);/);
+  assert.match(w, /op\.oninput=\(\)=>setOpacity\(cfg,op\.valueAsNumber\)/, 'the legend sends its selected opacity to the owner');
+  assert.match(w, /registerLayerOpacityAccess\(cb\.id,\(\)=>state\[l\.id\]\.op,v=>setOpacity\(l,v\)\)/, 'Atlas uses the same owner');
+  const writer = w.match(/function setOpacity\(cfg,op\)\{[\s\S]*?\n    \}/)?.[0];
+  assert.ok(writer, 'the shared opacity writer is present');
+  const cfg = { id: 'ec-temp' }, state = { 'ec-temp': { op: 1 }, 'ec-slp': { op: 0.75 } };
+  const range = () => ({ value: '1', get valueAsNumber() { return Number(this.value); } });
+  const dropdown = range(), slider = range(), label = { textContent: '100%' };
+  const doc = { getElementById: (id) => id === 'ec-op-' + cfg.id ? dropdown : null };
+  const boxes = { 'ec-temp': { querySelector: (sel) => sel === '.ec-oplg' ? slider : label } };
+  const paint = [], changes = [];
+  const setOpacity = new Function('state', 'setOp', 'document', 'boxes', 'layerOpacityChanged', 'return ' + writer)(
+    state, (layer, opacity) => paint.push([layer.id, opacity]), doc, boxes, (...change) => changes.push(change));
+  for (const opacity of [0, 0.43]) {
+    setOpacity(cfg, opacity);
+    assert.deepEqual([state[cfg.id].op, slider.valueAsNumber, dropdown.valueAsNumber], [opacity, opacity, opacity]);
+    assert.equal(label.textContent, Math.round(opacity * 100) + '%');
+    assert.deepEqual(paint.at(-1), [cfg.id, opacity]);
+    assert.deepEqual(changes.at(-1), ['dl-' + cfg.id, opacity]);
+  }
+  assert.equal(state['ec-slp'].op, 0.75, 'a different forecast layer keeps its own opacity');
   /* more than one variable can be held, so asking for the temperature cannot stop the wind */
   assert.match(e, /var frames = \[\];/);
   /* ⚠⚠ (#R290 追記) THE BUDGET HAS TO HOLD THE WIND'S PAIR **AND** ONE MORE. Measured on the

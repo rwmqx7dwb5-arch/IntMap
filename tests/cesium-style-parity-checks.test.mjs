@@ -97,6 +97,19 @@ test('Cesium applies opacity to both parts of a circle, to label ink and halo, a
   }
 });
 
+test('interpolate evaluates only the two paint outputs spanning the zoom', () => {
+  const steps = ['interpolate', ['linear'], ['zoom']];
+  const seen = [], properties = {};
+  for (let stop = 0; stop <= 200; stop++) {
+    Object.defineProperty(properties, 's' + stop, { get() { seen.push(stop); return stop; } });
+    steps.push(stop / 10, ['get', 's' + stop]);
+  }
+  assert.equal(S.evaluate(steps, { properties, zoom: 4.05 }), 40.5);
+  assert.deepEqual(seen.splice(0), [40, 41]);
+  assert.equal(S.evaluate(steps, { properties, zoom: 22 }), 200);
+  assert.deepEqual(seen, [200]);
+});
+
 test('collator / number-format / resolved-locale / within answer the way MapLibre does', () => {
   const ev = (e, c) => S.evaluate(e, c);
   // collator: case/diacritic-insensitive equality and ordering as the third argument

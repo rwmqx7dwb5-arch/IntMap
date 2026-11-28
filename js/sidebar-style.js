@@ -54,9 +54,14 @@ function applySidebarStyle(animate){ const s=window.imSidebarStyle;
      function and none of them may move the map by a pixel (CONSTITUTION §3). ⚠ AND THE OTHER SIDES ARE READ BEFORE THEY
      ARE WRITTEN: js/mobile-ui.js owns `bottom` for the sheet, so only `left` is decided here (`right` keeps #R160's
      one-time cleanup of a stray value). */
-  syncCameraInset();
+  scheduleCameraInset();
 }
 
+let insetFrame=0;
+function scheduleCameraInset(){
+  if(insetFrame) return;
+  insetFrame=requestAnimationFrame(()=>{ insetFrame=0; syncCameraInset(); });
+}
 function syncCameraInset(){
   try{ if(GE().camera.getPadding && GE().camera.setPadding && !isMobile()){ const cur=GE().camera.getPadding()||{};
     const want=Math.max(_glassInset(), floatingAtlasInset());
@@ -91,11 +96,17 @@ function _glassInset(){ try{
 (function(){ try{
   let was=document.body.className.indexOf('ws-mode')>=0;
   const sync=()=>{ try{ applySidebarStyle(false); }catch(_){} };
-  bus.on('intmap-sidebar-resize',syncCameraInset);
-  bus.on('intmap-atlas-float-visibility',syncCameraInset);
+  bus.on('intmap-sidebar-resize',scheduleCameraInset);
+  bus.on('intmap-atlas-float-visibility',scheduleCameraInset);
   const mapHost=document.getElementById('map-container');
-  if(mapHost&&typeof ResizeObserver!=='undefined') new ResizeObserver(syncCameraInset).observe(mapHost);
-  try{ GE().events.on('load',sync); }catch(_){}
+  if(mapHost&&typeof ResizeObserver!=='undefined') new ResizeObserver(scheduleCameraInset).observe(mapHost);
+  try{
+    const events=GE().events;
+    events.on('load',sync);
+    // Camera moves and renderer resizes can finish after the overlay changes its geometry.
+    events.on('resize',scheduleCameraInset);
+    events.on('moveend',()=>{ if(document.getElementById('atlas-float')?.classList.contains('on')) scheduleCameraInset(); });
+  }catch(_){}
   new MutationObserver(()=>{ const now=document.body.className.indexOf('ws-mode')>=0;
     if(now===was) return; was=now; sync(); if(!now) setTimeout(sync,450); })
     .observe(document.body,{attributes:true,attributeFilter:['class']});

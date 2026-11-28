@@ -115,8 +115,8 @@ export default [
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), value: num(0, 100), percent: num(0, 100), delta: num(-100, 100) }, anyOf: [{ required: ['name', 'value'] }, { required: ['name', 'percent'] }, { required: ['name', 'delta'] }] }),
-    async run(a, dctx, K) { const { resolveLayer, R, warn, L, esc, note, readLayerOpacity, writeLayerOpacity } = K;
-      const r=resolveLayer(a.name);
+    async run(a, dctx, K) { const { R, warn, L, esc, note, readLayerOpacity } = K;
+      const r=K.resolveLayer(a.name);
       if(!r) return R(false,warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||'')));
       const current=readLayerOpacity(r.cb.id);
       let v=null;
@@ -125,7 +125,7 @@ export default [
       if(v==null&&a.delta!=null&&current!=null){ const d=+a.delta; v=current+(Math.abs(d)>1?d/100:d); }
       if(current!=null&&v!=null&&Number.isFinite(v)){
         if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }
-        if(writeLayerOpacity(r.cb.id,v)) return R(true,note(icon('sliders')+' '+esc(r.label)+' '+Math.round(readLayerOpacity(r.cb.id)*100)+'%'));
+        if(K.writeLayerOpacity(r.cb.id,v)) return R(true,note(icon('sliders')+' '+esc(r.label)+' '+Math.round(readLayerOpacity(r.cb.id)*100)+'%'));
       }
       return R(false,warn(L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label)));
     },

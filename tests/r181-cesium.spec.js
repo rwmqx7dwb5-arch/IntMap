@@ -8,6 +8,8 @@
 // clips by 6%), which is exactly why they survived #R180's own browser suite.
 import { test, expect } from './helpers/app.js';
 import { bootEngine } from './helpers/engine.js';
+import { terrariumTile } from './helpers/network.js';
+import { PbfWriter } from 'pbf';
 
 const BOOT = { timeout: 90_000 };
 
@@ -312,26 +314,64 @@ test('R181 ⑦: a default session still transfers no Cesium and no engine errors
   expect(errors).toEqual([]);
 });
 
-/* the audit read `sourcedata` 12 against MapLibre's 95 and that looked like frequency — but the
-   payload carried only {sourceId}, and all three subscribers in the app test `e.isSourceLoaded`.
-   An event that fires with the wrong shape is an event that never fired. */
+/* Place labels and imagery both listen for loaded sources. Request fresh tiles so a previously
+   visited viewport or a live tile provider cannot decide whether the renderer has work to do. */
 test('R181 ③b: sourcedata says WHEN a source finished, not only that it changed', async ({ app }) => {
-  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
-  await page.evaluate(() => {
-    window.__sd = [];
-    window.IntMapGeoEngine.events.on('sourcedata', (e) => {
-      if (e && e.isSourceLoaded) window.__sd.push(e.sourceId);
-    });
-    window.IntMapGeoEngine.camera.jumpTo({ center: [20, 10], zoom: 2.5, pitch: 0, bearing: 0 });
+  const page = app.page;
+  const tile = new PbfWriter();
+  tile.writeMessage(3, (_, layer) => {
+    layer.writeStringField(1, 'points');
+    layer.writeMessage(2, (_, point) => {
+      point.writeVarintField(3, 1);
+      point.writePackedVarint(4, [9, 4096, 4096]);
+    }, null);
+    layer.writeVarintField(5, 4096);
+    layer.writeVarintField(15, 2);
+  }, null);
+  const vector = Buffer.from(tile.finish()), raster = terrariumTile(0);
+  const routes = '**/__r181-source-data/**';
+  const requested = new Set();
+  await page.route(routes, route => {
+    const mvt = route.request().url().endsWith('.pbf');
+    requested.add(mvt ? 'vector' : 'raster');
+    return route.fulfill({ contentType: mvt ? 'application/vnd.mapbox-vector-tile' : 'image/png', body: mvt ? vector : raster });
   });
-  await expect.poll(() => page.evaluate(() => window.__sd.length), { timeout: 45_000 })
-    .toBeGreaterThan(0);
-  /* `ofm` is the vector source the place-label and reference-overlay handlers wait on */
-  await expect.poll(() => page.evaluate(() => window.__sd.filter((s) => s === 'ofm').length),
-    { timeout: 45_000 }).toBeGreaterThan(0);
-  const kinds = await page.evaluate(() => [...new Set(window.__sd)].length);
-  expect(kinds, 'raster sources report it too — satellite.js\'s cross-fade waits on one')
-    .toBeGreaterThan(1);
+  try {
+    await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.style.cssText = 'position:absolute;left:0;top:0;width:320px;height:240px;';
+      document.body.append(host);
+      const E = window.IntMapGeoEngine.ui.createSubView({
+        container: host, center: [20, 10], zoom: 3, antialias: false,
+        style: { version: 8, sources: {}, layers: [] }
+      });
+      window.__sdView = { host, E };
+      if (!E) throw new Error('Could not initialize the Cesium source probe');
+      const url = location.origin + '/__r181-source-data/{z}/{x}/{y}';
+      E.layers.addSource('source-probe-vector', { type: 'vector', tiles: [url + '.pbf'], maxzoom: 0 });
+      E.layers.addSource('source-probe-raster', { type: 'raster', tiles: [url + '.png'], maxzoom: 0 });
+      window.__sd = [];
+      window.__sdListener = e => {
+        if (e.isSourceLoaded && e.sourceId.startsWith('source-probe-')) window.__sd.push(e.sourceId);
+      };
+      E.events.on('sourcedata', window.__sdListener);
+      E.layers.add({ id: 'source-probe-raster', type: 'raster', source: 'source-probe-raster' });
+      E.layers.add({ id: 'source-probe-vector', type: 'circle', source: 'source-probe-vector', 'source-layer': 'points' });
+    });
+    await expect.poll(() => [...requested].sort()).toEqual(['raster', 'vector']);
+    await expect.poll(() => page.evaluate(() => [...new Set(window.__sd)].sort()), { timeout: 30_000 })
+      .toEqual(['source-probe-raster', 'source-probe-vector']);
+  } finally {
+    await page.evaluate(() => {
+      const view = window.__sdView;
+      view?.E?.destroy();
+      view?.host.remove();
+      delete window.__sdView;
+      delete window.__sdListener;
+      delete window.__sd;
+    }).catch(() => {});
+    await page.unroute(routes);
+  }
 });
 
 test('R181 ⑦: the sky spec survives a round trip, so a flight can put it back', async ({ app }) => {
