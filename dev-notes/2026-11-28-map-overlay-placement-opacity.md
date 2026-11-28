@@ -1,0 +1,12 @@
+---
+title: 選んだ不透明度をすぐ反映し、凡例とポップアップの重なりを避ける
+date: 2026-11-28
+newsen: Opacity controls apply on the next map frame. New legends and popups look for space beside existing controls, and source preview links have no underline.
+newsjp: 不透明度を次の描画フレームから反映します。凡例とポップアップは空いている位置に開き、出典プレビューのリンクに下線を表示しません。
+---
+
+MapLibre の暗黙の 300 ミリ秒の遷移で、不透明度の表示が操作に追いつかなかった。共通の描画アダプターで不透明度を即時に更新し、衛星・気象画像の差し替えでは明示したフェードを使う。
+
+凡例、地図上のカード、出典プレビューは、既に表示されている UI の矩形から空き位置を探す。地図内に収まる空きがない場合は、重なり面積が小さい候補に置く。
+
+ブラウザー回帰試験で、最初の描画フレーム、連続操作、明示したフェード、Atlas・凡例・ポップアップの矩形を検査する。

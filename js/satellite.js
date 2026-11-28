@@ -89,8 +89,8 @@ export function satellite(HOST){
   function satSetOpacity(v){
     HOST.satState.opacity=v;
     const p=satProviderById(HOST.satState.providerId);
-    if(p&&p.id==='esri'){ if(GE().layers.has('layer-sat')) GE().layers.setPaint('layer-sat','raster-opacity',v); }
-    else if(HOST.satActive!==-1&&GE().layers.has('sat-fx-'+HOST.satActive)){ GE().layers.setPaint('sat-fx-'+HOST.satActive,'raster-opacity',v); }
+    if(p&&p.id==='esri'){ if(GE().layers.has('layer-sat')) GE().layers.setPaint('layer-sat','raster-opacity',v,{immediate:true}); }
+    else if(HOST.satActive!==-1&&GE().layers.has('sat-fx-'+HOST.satActive)){ GE().layers.setPaint('sat-fx-'+HOST.satActive,'raster-opacity',v,{immediate:true}); }
   }
   function satSelectProvider(id){
     const p=satProviderById(id); if(!p) return;

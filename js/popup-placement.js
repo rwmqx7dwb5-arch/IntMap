@@ -16,25 +16,55 @@
  *      nearly the whole map, or has pointer-events:none) is looked THROUGH, never counted. Nothing here names an id or
  *      a class, so a control added next year is avoided without anybody remembering to add it to a list.
  *
- *  ⚠ The numbers (gap 14 px, 0.9 wrapper ratio, scan cap 600, depth 4) are choices, not measurements: the gap is the
- *  breathing room between pin and card, 0.9 is "this element IS the map layer, not a control on it", the cap and depth
- *  only bound the cost of a scan on a page with thousands of DOM markers. None of them is a source of truth for
+ *  ⚠ The numbers (gap 14 px, 0.9 wrapper ratio, scan cap 600) are choices, not measurements: the gap is the
+ *  breathing room between pin and card, 0.9 is "this element IS the map layer, not a control on it", and the cap
+ *  bounds the cost of a scan on a page with thousands of DOM markers. None of them is a source of truth for
  *  anything else; they lapse the moment the pin or the layer structure changes.
  *
- *  Cesium: its overlay (js/cesium-engine.js makeOverlay) reads only a NUMERIC `offset` and always anchors the popup's
- *  bottom centre, so the side chosen here is advisory there — see the note in js/map-ui.js showPopup.
+ *  The renderer adapters both accept the same anchor and offset.
  * ==========================================================================*/
 
 const SIDES = ['right', 'left', 'above', 'below'];
 /* MapLibre's `anchor` is the part of the popup that touches the point */
 const ANCHOR = { right: 'left', left: 'right', above: 'bottom', below: 'top' };
-const GAP = 14, WRAPPER_RATIO = 0.9, SCAN_CAP = 600, DEPTH = 4, OUTSIDE_WEIGHT = 4;
+const GAP = 14, WRAPPER_RATIO = 0.9, SCAN_CAP = 600, OUTSIDE_WEIGHT = 4;
 
 const area = (r) => Math.max(0, r.right - r.left) * Math.max(0, r.bottom - r.top);
 function overlap(a, b) {
   const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
   const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
   return w > 0 && h > 0 ? w * h : 0;
+}
+
+/** Find the nearest free position to a preferred rectangle. The edges of the visible obstacles
+ *  and the frame partition the available positions, so the nearest free position can be found
+ *  by checking those edges and the preferred coordinates. If the screen is full, minimize overlap. */
+export function fitOverlay(preferred, bounds, obstacles, gap = 0) {
+  const w = preferred.right - preferred.left, h = preferred.bottom - preferred.top;
+  const left = bounds.left, top = bounds.top;
+  const right = Math.max(left, bounds.right - w), bottom = Math.max(top, bounds.bottom - h);
+  const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
+  const x = clamp(preferred.left, left, right), y = clamp(preferred.top, top, bottom);
+  const blocked = obstacles.map(r => ({ left:r.left - gap, right:r.right + gap, top:r.top - gap, bottom:r.bottom + gap }))
+    .filter(r => overlap(r, bounds) > 0);
+  const rect = (a, b) => ({ left:a, top:b, right:a + w, bottom:b + h });
+  const cost = r => blocked.reduce((sum, ob) => sum + overlap(r, ob), 0);
+  let best = rect(x, y), least = cost(best), distance = 0;
+  if (!least) return best;
+  const xs = new Set([x, left, right]), ys = new Set([y, top, bottom]);
+  for (const ob of blocked) {
+    xs.add(clamp(ob.left - w, left, right)); xs.add(clamp(ob.right, left, right));
+    ys.add(clamp(ob.top - h, top, bottom)); ys.add(clamp(ob.bottom, top, bottom));
+  }
+  for (const a of xs) for (const b of ys) {
+    const delta = (a - x) ** 2 + (b - y) ** 2;
+    if (!least && delta >= distance) continue;
+    const candidate = rect(a, b), score = cost(candidate);
+    if (score < least || (score === least && delta < distance)) {
+      best = candidate; least = score; distance = delta;
+    }
+  }
+  return best;
 }
 
 /** The popup's rectangle if it opens on `side` of a pin whose box is `pin` (the pin's tip is at `point`). */
@@ -72,15 +102,21 @@ export function choosePlacement(o) {
   const pin = o.pin || { w: 30, h: 38 }, gap = o.gap == null ? GAP : o.gap;
   const obs = Array.isArray(o.obstacles) ? o.obstacles : [];
   let best = null;
-  SIDES.forEach((side, rank) => {
+  SIDES.forEach(side => {
     const rect = rectFor(side, o.point, pin, o.size, gap);
     const inside = overlap(rect, o.bounds);
     let cost = (area(rect) - inside) * OUTSIDE_WEIGHT;
     for (const ob of obs) cost += overlap(rect, ob);
-    cost += rank;   /* the preference order: only decides between sides whose overlap is the same */
     if (!best || cost < best.cost) best = { side, rect, cost };
   });
   const opt = optionsFor(best.side, pin, gap);
+  if (best.cost) {
+    const pinRect = { left:o.point.x - pin.w / 2, right:o.point.x + pin.w / 2, top:o.point.y - pin.h, bottom:o.point.y };
+    const fit = fitOverlay(best.rect, o.bounds, [...obs, pinRect]);
+    opt.offset[0] += fit.left - best.rect.left;
+    opt.offset[1] += fit.top - best.rect.top;
+    best.rect = fit;
+  }
   return { side: best.side, anchor: opt.anchor, offset: opt.offset, rect: best.rect, cost: best.cost };
 }
 
@@ -98,38 +134,77 @@ export function collectObstacles(root, bounds, skip, deps) {
     rect: (el) => el.getBoundingClientRect(),
   }, deps || {});
   const skipSet = new Set(skip || []);
-  const out = [], seen = new Set();
+  const out = [], seen = new Set(), queue = [];
   let scanned = 0;
   const bArea = area(bounds);
 
-  function visit(el, depth) {
-    if (!el || seen.has(el) || skipSet.has(el) || scanned++ > SCAN_CAP) return;
+  function visit(el) {
+    if (!el || seen.has(el) || skipSet.has(el)) return;
+    scanned++;
     seen.add(el);
     let cs;
     try { cs = d.style(el); } catch (_) { return; }
-    if (!cs || cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0) return;
+    if (!cs || cs.display === 'none' || (cs.opacity !== '' && +cs.opacity === 0)) return;
     const r = d.rect(el);
-    if (!r || !(r.right > r.left) || !(r.bottom > r.top)) return;
+    if (!r || (cs.display !== 'contents' && !(r.right > r.left && r.bottom > r.top))) return;
     const positioned = cs.position === 'fixed' || cs.position === 'absolute';
     const layer = bArea > 0 && overlap(r, bounds) >= WRAPPER_RATIO * bArea;
     const passThrough = cs.pointerEvents === 'none';
-    const descend = () => {
-      if (depth >= DEPTH) return;
-      for (const c of Array.from(el.children || [])) visit(c, depth + 1);
-    };
+    const descend = () => { for (const child of Array.from(el.children || [])) queue.push(child); };
     /* a wrapper that is only a layer, or lets the pointer through, is looked THROUGH; its children decide */
-    if (layer || passThrough || !positioned) { descend(); return; }
+    const surface = el.hasAttribute?.('data-overlay-obstacle');
+    const containsSkipped = [...skipSet].some(node => el.contains?.(node));
+    if (cs.visibility === 'hidden' || containsSkipped || (!surface && (layer || passThrough || !positioned))) { descend(); return; }
     const hasControl = (el.matches && el.matches(INTERACTIVE)) || (el.querySelector && !!el.querySelector(INTERACTIVE));
     const hasText = !!(el.textContent && el.textContent.trim());
-    if ((hasControl || hasText) && overlap(r, bounds) > 0) {
+    if ((surface || hasControl || hasText) && overlap(r, bounds) > 0) {
       out.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
     } else descend();
   }
 
   [root, root && root.ownerDocument && root.ownerDocument.body].forEach((host) => {
-    if (host) for (const c of Array.from(host.children || [])) visit(c, 0);
+    if (host) for (const child of Array.from(host.children || [])) queue.push(child);
   });
+  // Look at sibling surfaces before traversing many nested DOM markers inside one map pane.
+  for (let i = 0; i < queue.length && scanned < SCAN_CAP; i++) visit(queue[i]);
   return out;
+}
+
+const translations = new WeakMap();
+
+export const overlayTranslation = el => translations.get(el);
+
+/** The last automatic nudge is separate from the owner's position and the renderer's transform. */
+export function clearOverlayTranslation(el) {
+  const translation = translations.get(el);
+  if (!translation) return { x:0, y:0 };
+  el.style.translate = translation.before;
+  translations.delete(el);
+  return translation;
+}
+
+export function translateOverlay(el, x, y) {
+  const previous = translations.get(el);
+  if (!x && !y) { clearOverlayTranslation(el); return; }
+  if (previous?.x === x && previous?.y === y) return;
+  translations.set(el, { x, y, before:previous?.before ?? el.style.translate });
+  el.style.translate = x + 'px ' + y + 'px';
+}
+
+export function placeOpenedOverlay(el, host, gap = 4) {
+  if (!el?.isConnected || !host) return;
+  clearOverlayTranslation(el);
+  const style = getComputedStyle(el);
+  if (style.visibility === 'hidden' || style.display === 'none') return;
+  const preferred = el.getBoundingClientRect();
+  if (!preferred.width || !preferred.height) return;
+  const frame = host.getBoundingClientRect();
+  const vp = host.ownerDocument.documentElement;
+  const bounds = { left:Math.max(0, frame.left), top:Math.max(0, frame.top),
+    right:Math.min(vp.clientWidth, frame.right), bottom:Math.min(vp.clientHeight, frame.bottom) };
+  if (area(bounds) === 0 || overlap(preferred, bounds) === 0) return;
+  const fit = fitOverlay(preferred, bounds, collectObstacles(host, bounds, [el]), gap);
+  translateOverlay(el, fit.left - preferred.left, fit.top - preferred.top);
 }
 
 /**

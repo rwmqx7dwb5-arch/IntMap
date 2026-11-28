@@ -8,6 +8,8 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 
+import { clearOverlayTranslation, overlayTranslation, placeOpenedOverlay } from './popup-placement.js';
+
 export function windowManager(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
      moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
@@ -27,7 +29,10 @@ export function windowManager(HOST){
        so panels "couldn't be moved" / "only moved left-right". Inline-!important beats stylesheet-
        !important, so the drag now fully controls BOTH axes on phones. data-dragged lets any
        :not([data-dragged]) auto-placement leave it alone. */
+    const dragOrigin=(x,y)=>{ const shift=overlayTranslation(panel);
+      return {x,y,l:panel.offsetLeft+(shift?.x||0),t:panel.offsetTop+(shift?.y||0)}; };
     const move=(cx,cy)=>{ if(!HOST.panelDrag)return; const c=clampTo(HOST.panelDrag.l+cx-HOST.panelDrag.x, HOST.panelDrag.t+cy-HOST.panelDrag.y);
+      clearOverlayTranslation(panel);
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
       panel.setAttribute('data-dragged','1'); _geoBump(); };   /* (#R311) this file just moved the panel — the cached rect is stale NOW, not one microtask later */
@@ -57,8 +62,8 @@ export function windowManager(HOST){
        workspace window's content, and the same answer for edge-resize below (which is also what
        「中で左右に動かせないように」 is asking for: with no resize and no drag, and `width:100%`,
        there is nothing left that can move it sideways). */
-    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; HOST.panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ HOST.panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
-    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; const tc=e.touches[0]; if(!tc)return; HOST.panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
+    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; HOST.panelDrag=dragOrigin(e.clientX,e.clientY); e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ HOST.panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()||isDocked(panel)) return; const tc=e.touches[0]; if(!tc)return; HOST.panelDrag=dragOrigin(tc.clientX,tc.clientY); e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
       const up=()=>{ HOST.panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
       document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
@@ -71,6 +76,23 @@ export function windowManager(HOST){
          replacing the native bottom-right-only `resize:both` grab-mark.
      makeDraggable auto-registers its panel; bigger windows (Atlas, Compare) also add edge-resize. ================= */
   const __winReg=new Set();
+  const __openWindows=new WeakSet();
+  let __openObserver;
+  function watchOpening(panel){
+    if(typeof ResizeObserver!=='function') return;
+    __openObserver??=new ResizeObserver(entries=>{
+      for(const {target:el,contentRect:r} of entries){
+        if(!r.width||!r.height){ __openWindows.delete(el); clearOverlayTranslation(el); continue; }
+        if(__openWindows.has(el)||el.dataset.dragged||el.__imAnchor||isDocked(el)) continue;
+        const position=getComputedStyle(el).position;
+        if(position!=='fixed'&&position!=='absolute') continue;
+        __openWindows.add(el);
+        placeOpenedOverlay(el,document.getElementById('map-container'));
+        _geoBump();
+      }
+    });
+    __openObserver.observe(panel);
+  }
   /* ══ ⚠⚠⚠ (#R258) THIS IS WHY THE SIDEBAR COULD NOT COME BACK TO THE FRONT ════════════════════════
      「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
        した場合はまた左サイドバーを前部に。」— reported in #R253, #R254, #R255 and again now. The
@@ -105,6 +127,7 @@ export function windowManager(HOST){
      name — 33 call sites across 22 files, and IM_HOST publishes it — and is that owner's `order`. */
   function bringToFront(el){ try{ window.IntMapStack.order(el); }catch(_){} }
   function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ window.IntMapStack.register(el); }catch(_){}
+    watchOpening(el);
     /* (#R238) a window that appears while the dock is on goes straight into it — see below.
        (#R239) …and is watched, so that switching it off later takes it back out again. */
     if(__dockOn) try{ _watchEl(el); _dockOne(el); }catch(_){} }
@@ -299,6 +322,8 @@ export function windowManager(HOST){
     try{ if(document.body.classList.contains('ws-mode')) return false; }catch(_){}
     const host=_dockHost(); if(!host) return false;
     try{
+      clearOverlayTranslation(el);
+      __openWindows.delete(el);
       __docked.set(el,{ parent:el.parentNode, next:el.nextSibling, css:el.getAttribute('style')||'' });
       /* ⚠⚠⚠ (#R239b) WATCH IT BEFORE IT MOVES, NOT AFTER. Measured on production: a legend that was
          already switched on when the mode was turned on stayed in the tab after its layer was
@@ -597,6 +622,7 @@ export function windowManager(HOST){
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing){ panel.style.cursor=''; panel.classList.remove('im-edge-hover'); } });
     const start=(e,d)=>{ e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
+      clearOverlayTranslation(panel);
       /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from
          left:50%). The old code pinned left to the VISUAL rect but LEFT THE TRANSFORM ON, so on grab the panel
          jumped half its width and drifted while resizing. Neutralise the transform + bottom/right anchors first,

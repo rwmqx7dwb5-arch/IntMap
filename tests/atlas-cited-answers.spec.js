@@ -146,6 +146,7 @@ test('⑤ a cited host is a chip with a card; the basemap credit is not a source
   await page.locator('#atlas-panel a.atl-sc').first().hover();
   await expect(page.locator('.atl-scard')).toBeVisible();
   const sourceLink = page.locator('.atl-scard .atl-scard-open');
+  await expect(sourceLink).toHaveCSS('text-decoration-line', 'none');
   await expect(sourceLink).toHaveAttribute('href', 'https://apnews.com/article/a1');
   await expect(sourceLink).toHaveText('Ceasefire talks continue');
   await expect(page.locator('.atl-scard')).not.toContainText(/Open the original article|元記事を開く/);

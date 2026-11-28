@@ -5,11 +5,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { choosePlacement, collectObstacles, optionsFor } from '../js/popup-placement.js';
+import { choosePlacement, collectObstacles, fitOverlay, optionsFor } from '../js/popup-placement.js';
 
 const bounds = { left: 0, top: 0, right: 1200, bottom: 800 };
 const size = { w: 200, h: 120 };
 const R = (l, t, r, b) => ({ left: l, top: t, right: r, bottom: b });
+
+test('a stack can clear the existing UI by moving on both axes', () => {
+  const frame = R(0, 0, 360, 280);
+  const desired = R(20, 24, 140, 124);
+  const obstacles = [R(0, 0, 170, 280), R(170, 0, 360, 108)];
+  assert.deepEqual(fitOverlay(desired, frame, obstacles, 4), R(174, 112, 294, 212));
+});
+
+test('an anchored popup can slide when none of its four nominal sides fits', () => {
+  const point = { x:180, y:140 };
+  const p = choosePlacement({
+    point, bounds:R(0, 0, 400, 300), size:{w:90,h:70}, pin:{w:18,h:24},
+    obstacles:[R(170, 0, 190, 300), R(0, 90, 400, 165)],
+  });
+  assert.ok(p.rect.top >= 165 || p.rect.bottom <= 90);
+  assert.ok(p.rect.left >= 190 || p.rect.right <= 170);
+});
 
 test('open ground: the popup opens on the right of the pin, centred on it', () => {
   const p = choosePlacement({ point: { x: 600, y: 400 }, size, bounds, obstacles: [] });

@@ -2737,8 +2737,6 @@ export function labelPopup(HOST){
       const moreBtn=(opts&&opts.more&&opts.more.label&&typeof opts.more.run==='function')?('<button class="plc-more" style="background:var(--input-bg);'+btnBase+'">'+window.IntMapSafe.html(String(opts.more.label))+'</button>'):'';
       const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
       const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button>${isoBtn}${moveBtn}${moreBtn}</div></div>`;
-      /* ⚠ Cesium's overlay reads a NUMERIC `offset` only and always anchors bottom-centre (js/cesium-engine.js makeOverlay),
-         so there the popup keeps its old place above the point and the pin stands under it; MapLibre honours both. */
       const _pin=_standPin(lngLat,name), _pl=_placeBeside(lngLat,html,_pin);
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup',anchor:_pl.anchor,offset:_pl.offset,onClose:()=>_dropPin(_pin&&_pin.mk)}).setLngLat(lngLat).setHTML(html));
         try{ if(popup.on) popup.on('close',()=>_dropPin(_pin&&_pin.mk)); }catch(_){}

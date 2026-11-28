@@ -135,7 +135,7 @@ export interface GeoEngineAdapterCore {
   removeLayer(id?: any): any;
   setVisible(id?: any, v?: any): any;
   isVisible(id?: any): any;
-  setPaint(id?: any, p?: any, v?: any): any;
+  setPaint(id?: any, p?: any, v?: any, options?: { immediate?: boolean }): any;
   setLayout(id?: any, p?: any, v?: any, o?: any): any;
   setOpacity(id?: any, v?: any): any;
   /** options.tapOwner — the owner a click handler runs for while holdTaps() is held (js/geo-engine.js _holdTaps) */
@@ -385,7 +385,7 @@ export interface GeoEngineLayers {
   remove(id?: any): any;
   setVisible(id?: any, v?: any): any;
   isVisible(id?: any): any;
-  setPaint(id?: any, p?: any, v?: any): any;
+  setPaint(id?: any, p?: any, v?: any, options?: { immediate?: boolean }): any;
   setLayout(id?: any, p?: any, v?: any, o?: any): any;
   setOpacity(id?: any, v?: any): any;
   addExtrusion(d?: any, b?: any): any;

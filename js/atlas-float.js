@@ -150,7 +150,7 @@ function ensureRoot() {
   ensureCss();
   root = document.createElement('section');
   root.id = 'atlas-float'; root.setAttribute('aria-label', 'Atlas');
-  card = document.createElement('div'); card.className = 'atl-float-card';
+  card = document.createElement('div'); card.className = 'atl-float-card'; card.setAttribute('data-overlay-obstacle', '');
   const bar = document.createElement('div'); bar.className = 'atl-float-bar';
   bar.appendChild(btn('atl-float-fold', SVG_FOLD, 'atlFloatFold', 'Collapse conversation', () => setFolded(!folded)));
   bar.appendChild(btn('atl-float-bg', SVG_BG, 'atlFloatBg', 'Frosted background behind the conversation', () => setBg(!bg)));

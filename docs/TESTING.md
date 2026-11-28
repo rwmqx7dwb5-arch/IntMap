@@ -5319,6 +5319,10 @@ uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管�
 **⑥ 失敗した取得は 0 でなく欠測** **⑦ 実在する 2 つの API 以外を名乗らない**。本物の `gis-datasets / gis-ops / gis-project` を使い、
 `gis` の扉と HTTP だけを差し替える。実 API への 1 回の疎通は 2026-11-20 に別途確認（検査は網に出ない）。
 
+### `tests/map-overlay-placement-opacity.spec.js`
+
+MapLibre の最初のフレームで連続した不透明度操作がそれぞれ反映されることと、明示したフェードが働くことを検査する。フローティング Atlas、凡例、座標にひも付くポップアップの表示矩形も比較する。出典カードのリンク装飾は `tests/atlas-cited-answers.spec.js` が検査する。
+
 ## CI の臨界経路・push 前の検査・merge 後の再実行 (`tests/verify-flow-efficiency-checks.test.mjs`)
 
 **測った 2026-11-25（直近 36 run）。** 1 回の CI は中央値 16 分。待ちを決めるのは最も遅い 1 本で、Regression 3 台は
