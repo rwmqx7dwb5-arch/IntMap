@@ -8,11 +8,10 @@
  *      · the camera is outside every reader's minzoom/maxzoom,
  *      · its features lie outside the viewport,
  *      · the renderer raised an error for its source or layer (a tile or paint that failed),
- *      · another layer covers it.
  *  and Atlas used to say 「描きました」 in all five. This file asks the renderer — the thing that
- *  painted — about each, and, when asked, LOOKS: it reads the frame as it is, renders one frame with the surface's
- *  layers at opacity 0 (in the same task, so that frame is never presented), puts the opacity back, and compares
- *  the pixels where the features are. Pixels that do not change are a surface that is not on the screen.
+ *  painted — about each, and, when asked, compares the frame with and without the surface.
+ *  A frame with changed pixels confirms visibility. Identical frames leave visibility unconfirmed:
+ *  the renderer may still be loading a source, or the surface may blend into its background.
  *  ⚠ OPACITY, NOT VISIBILITY. Measured in a real MapLibre (2026-11-24): a layer set `visibility:none` builds no
  *  buckets, so showing it again re-parses its tiles in a worker — the "on" frame after the toggle was still the
  *  "off" picture and the surface read as covered when it was plainly on screen. A paint property is applied in the
@@ -40,9 +39,6 @@ export function makeRenderWitness(deps) {
     symbol: ['icon-opacity', 'text-opacity'], raster: ['raster-opacity'], heatmap: ['heatmap-opacity'],
     'fill-extrusion': ['fill-extrusion-opacity'], hillshade: ['hillshade-exaggeration'],
   };
-  const SAMPLES = 10;          /* points of a surface's features that are projected and looked at — enough to see a pattern, few enough to be cheap */
-  const FAR_DEG = 3;           /* a visible point returns from project→unproject within a pixel or two (≤ 3° even at world zoom on a 1000 px globe, where 1 px ≈ 0.4°); the far side returns tens of degrees away */
-  const BOX = 4;               /* half-width in CSS px of the box a point is queried / compared in: a 1 px line is not hit by its exact pixel */
   const PIXEL_DELTA = 6;       /* 0..255 channel difference a point must change by to count as changed. Observed: antialiasing noise of an UNCHANGED re-render is 0 (same task, same state) — the margin is for 8-bit rounding of blended layers */
 
   function num(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
@@ -72,59 +68,46 @@ export function makeRenderWitness(deps) {
     return true;
   }
 
-  /* every [lng,lat] of a GeoJSON feature set, bounded: a surface of a million vertices is looked at by a stride */
-  function coords(data) {
-    const out = [];
-    const walk = (c, depth) => {
+  function extentOf(data) {
+    let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+    const walk = c => {
       if (!Array.isArray(c)) return;
-      if (typeof c[0] === 'number') { if (typeof c[1] === 'number') out.push([c[0], c[1]]); return; }
-      for (const x of c) walk(x, depth + 1);
+      if (Number.isFinite(c[0]) && Number.isFinite(c[1])) {
+        west = Math.min(west, c[0]); east = Math.max(east, c[0]);
+        south = Math.min(south, c[1]); north = Math.max(north, c[1]);
+      } else for (const part of c) walk(part);
     };
-    const feats = data && Array.isArray(data.features) ? data.features : (data && data.type === 'Feature' ? [data] : []);
-    for (const f of feats) { const g = f && f.geometry; if (!g) continue; if (g.type === 'GeometryCollection') { (g.geometries || []).forEach(h => walk(h && h.coordinates, 0)); } else walk(g.coordinates, 0); }
-    return out;
+    const visit = g => {
+      if (!g) return;
+      if (g.type === 'GeometryCollection') (g.geometries || []).forEach(visit);
+      else walk(g.coordinates);
+    };
+    if (data?.type === 'FeatureCollection') (data.features || []).forEach(f => visit(f?.geometry));
+    else if (data?.type === 'Feature') visit(data.geometry);
+    else visit(data);
+    return Number.isFinite(west) ? { west, east, south, north } : null;
   }
 
-  function boundsOf(a) {
-    try {
-      const b = a.getBounds(); if (!b) return null;
-      const r = { west: +b.getWest(), east: +b.getEast(), south: +b.getSouth(), north: +b.getNorth() };
-      return [r.west, r.east, r.south, r.north].every(isFinite) ? r : null;
-    } catch (_) { return null; }
-  }
-  function inBounds(p, b) {
-    if (!b) return null;
-    if (p[1] < b.south || p[1] > b.north) return false;
-    if (b.west <= b.east) return p[0] >= b.west && p[0] <= b.east;
-    return p[0] >= b.west || p[0] <= b.east;   /* the view crosses the antimeridian */
-  }
-
-  /* the points of the surface that are inside the viewport, as CSS px — an even stride over the vertices, then keep what projects onto the canvas */
-  function screenSamples(a, pts, bounds, W, H) {
-    const out = [];
-    const step = Math.max(1, Math.floor(pts.length / (SAMPLES * 6)));
-    for (let i = 0; i < pts.length && out.length < SAMPLES; i += step) {
-      const p = pts[i]; if (inBounds(p, bounds) === false) continue;
-      let s = null; try { s = a.project(p); } catch (_) { s = null; }
-      if (!s || !isFinite(s.x) || !isFinite(s.y)) continue;
-      if (s.x < 0 || s.y < 0 || s.x > W || s.y > H) continue;
-      /* on a globe the far side projects onto the disc too; a point that does not come back from the screen as the same place is behind the planet */
-      try { const u = a.unproject && a.unproject(s); if (u) { let dl = Math.abs(u.lng - p[0]) % 360; if (dl > 180) dl = 360 - dl; if (dl > FAR_DEG || Math.abs(u.lat - p[1]) > FAR_DEG) continue; } } catch (_) { /* no unproject: keep the point */ }
-      out.push({ x: s.x, y: s.y });
-    }
-    return out;
+  function intersectsView(a, id) {
+    // The bounding boxes can prove disjointness. A hit is only possible overlap.
+    const g = extentOf(a.sourceData(id)), b = a.getBounds();
+    if (!g || !b) return null;
+    const west = b.getWest(), east = b.getEast(), south = b.getSouth(), north = b.getNorth();
+    if (![west, east, south, north].every(Number.isFinite)) return null;
+    if (g.north < south || g.south > north) return false;
+    const end = east < west ? east + 360 : east;
+    const firstCopy = Math.ceil((west - g.east) / 360);
+    return g.west + 360 * firstCopy <= end;
   }
 
   /* the frame, read inside the tick it was drawn in — see js/atlas-view-capture.js for why it cannot be read later */
   function readFrame(a) {
     const c = a.getCanvas(); const g = deps.makeCanvas(c.width, c.height); const cx = g.getContext('2d', { willReadFrequently: true });
-    cx.drawImage(c, 0, 0); return { cx, scale: c.clientWidth ? c.width / c.clientWidth : 1 };
+    cx.drawImage(c, 0, 0); return { cx, width: c.width, height: c.height };
   }
-  function pixelAt(cx, x, y) { try { return cx.getImageData(Math.max(0, Math.round(x)), Math.max(0, Math.round(y)), 1, 1).data; } catch (_) { return null; } }
-
   /* the same task: the frame as it is, then the readers' opacity at 0 and one render, then the opacity put back and one render. The browser
      composites after the task, so the page is only ever presented with the opacity back. `readers` are layer objects (id, type). */
-  function compareFrames(a, readers, samples) {
+  function compareFrames(a, readers) {
     if (typeof a.redraw !== 'function' || !deps.makeCanvas || typeof a.setPaint !== 'function') return { ran: false };
     const props = []; readers.forEach(l => (OPACITY[l.type] || []).forEach(p => { if (p !== 'hillshade-exaggeration') props.push([l.id, p]); }));
     if (!props.length) return { ran: false };
@@ -133,24 +116,23 @@ export function makeRenderWitness(deps) {
     try { on = readFrame(a); } catch (_) { return { ran: false }; }
     const wasT = props.map(([id, p]) => { try { return a.getPaint(id, p + '-transition'); } catch (_) { return undefined; } });
     try {
-      props.forEach(([id, p]) => { try { a.setPaint(id, p + '-transition', { duration: 0, delay: 0 }); a.setPaint(id, p, 0); } catch (_) { } });
+      props.forEach(([id, p]) => { a.setPaint(id, p + '-transition', { duration: 0, delay: 0 }); a.setPaint(id, p, 0); });
       a.redraw(); off = readFrame(a);
-    } finally {
+    } catch (_) { return { ran: false }; } finally {
       /* the opacity goes back while the transition is still 0 (instant), THEN the transition is put back — changing the transition setting restarts a fade from the previous value, so the other order fades the layer in from 0 (measured) */
       props.forEach(([id, p], i) => { try { a.setPaint(id, p, was[i]); } catch (_) { } });
       try { a.redraw(); } catch (_) { }
       props.forEach(([id, p], i) => { try { a.setPaint(id, p + '-transition', wasT[i]); } catch (_) { } });
     }
-    if (!off || !on) return { ran: false };
-    let changed = 0, looked = 0; const k = on.scale;
-    for (const s of samples) {
-      for (const d of [[0, 0], [-BOX, 0], [BOX, 0], [0, -BOX], [0, BOX]]) {
-        const p1 = pixelAt(on.cx, (s.x + d[0]) * k, (s.y + d[1]) * k), p0 = pixelAt(off.cx, (s.x + d[0]) * k, (s.y + d[1]) * k);
-        if (!p1 || !p0) continue; looked++;
-        if (Math.abs(p1[0] - p0[0]) >= PIXEL_DELTA || Math.abs(p1[1] - p0[1]) >= PIXEL_DELTA || Math.abs(p1[2] - p0[2]) >= PIXEL_DELTA) { changed++; break; }
-      }
+    if (!off || on.width !== off.width || on.height !== off.height || !on.width || !on.height) return { ran: false };
+    const before = on.cx.getImageData(0, 0, on.width, on.height).data;
+    const after = off.cx.getImageData(0, 0, off.width, off.height).data;
+    let changed = 0;
+    for (let i = 0; i < before.length; i += 4) {
+      if (Math.abs(before[i] - after[i]) >= PIXEL_DELTA || Math.abs(before[i + 1] - after[i + 1]) >= PIXEL_DELTA ||
+          Math.abs(before[i + 2] - after[i + 2]) >= PIXEL_DELTA || Math.abs(before[i + 3] - after[i + 3]) >= PIXEL_DELTA) changed++;
     }
-    return { ran: looked > 0, changed, looked };
+    return { ran: true, changed, looked: before.length / 4 };
   }
 
   /**
@@ -163,66 +145,61 @@ export function makeRenderWitness(deps) {
     q = q || {};
     const out = { observable: !!(drawn && drawn.observable), surfaces: {}, seen: [], notSeen: [], unconfirmed: [] };
     if (!out.observable || !a) return out;
-    let style = null; try { style = a.getStyle(); } catch (_) { style = null; }
-    const layers = (style && style.layers) || [];
-    const bounds = boundsOf(a); let zoom = null; try { zoom = num(+a.getZoom()); } catch (_) { zoom = null; }
-    let W = 0, H = 0; try { const c = a.getCanvas(); W = c.clientWidth || c.width; H = c.clientHeight || c.height; } catch (_) { }
     const ids = Object.keys(drawn.surfaces || {});
-    const plan = [];
     for (const id of ids) {
       const s = drawn.surfaces[id];
-      const rec = { owners: (s.owners || []).slice(), state: s.state, features: s.features, verdict: 'unconfirmed', reason: '', opacity: null, inZoom: null, inView: null, rendered: null, pixels: null, errors: [] };
+      const rec = { owners: (s.owners || []).slice(), state: s.state, rev: s.rev, features: s.features, verdict: 'unconfirmed', reason: 'no_frame', opacity: null, inZoom: null, inView: null, rendered: null, pixels: null, errors: [] };
+      if (s.state === 'unknown') rec.reason = 'could_not_ask';
+      else if (s.state !== 'drawn') { rec.verdict = 'not_drawn'; rec.reason = s.state; }
       out.surfaces[id] = rec;
-      if (s.state === 'unknown') { rec.reason = 'could_not_ask'; continue; }
-      if (s.state !== 'drawn') { rec.verdict = 'not_drawn'; rec.reason = s.state; continue; }
-      const readers = layers.filter(l => l && l.source === id && (() => { try { return a.isVisible(l.id); } catch (_) { return false; } })());
-      const er = errors ? errors([id].concat(readers.map(l => l.id))) : [];
-      rec.errors = er;
-      /* opacity: every visible reader at literal 0 */
-      const ops = readers.map(l => opacityOf(a, l)); rec.opacity = ops.length && ops.every(v => v === 0) ? 0 : (ops.some(v => v === 1) ? 1 : null);
-      /* zoom: some reader's window contains the camera */
-      const zs = readers.map(l => zoomWindow(l, zoom)); rec.inZoom = zs.length && zs.every(v => v === false) ? false : (zs.some(v => v === true) ? true : null);
-      /* extent */
-      let pts = []; try { pts = coords(a.sourceData(id)); } catch (_) { pts = []; }
-      let samples = [];
-      if (pts.length && bounds) {
-        const visiblePts = pts.some(p => inBounds(p, bounds));
-        rec.inView = visiblePts; if (visiblePts) samples = screenSamples(a, pts, bounds, W, H);
-        /* a line crossing the viewport with no vertex inside it is in view though no point is: bbox test as the second chance */
-        if (!visiblePts) { let w = 1e9, e = -1e9, so = 1e9, n = -1e9; pts.forEach(p => { w = Math.min(w, p[0]); e = Math.max(e, p[0]); so = Math.min(so, p[1]); n = Math.max(n, p[1]); });
-          rec.inView = bounds.west <= bounds.east ? (e >= bounds.west && w <= bounds.east && n >= bounds.south && so <= bounds.north) : null; }
+    }
+    const inspect = live => {
+      if (!live) return;
+      let layers = [], zoom = null, canvas;
+      try { layers = a.getStyle()?.layers || []; zoom = num(a.getZoom()); canvas = a.getCanvas(); } catch (_) {}
+      const moving = a.isAnimating?.();
+      out.observedAt = new Date().toISOString();
+      for (const id of ids) {
+        const rec = out.surfaces[id];
+        if (rec.state !== 'drawn') continue;
+        const readers = layers.filter(l => { try { return l?.source === id && a.isVisible(l.id); } catch (_) { return false; } });
+        rec.errors = errors ? errors([id, ...readers.map(l => l.id)]) : [];
+        const ops = readers.map(l => opacityOf(a, l));
+        rec.opacity = ops.length && ops.every(v => v === 0) ? 0 : (ops.some(v => v === 1) ? 1 : null);
+        const liveReaders = readers.filter(l => zoomWindow(l, zoom) !== false);
+        rec.inZoom = readers.length && !liveReaders.length ? false : (liveReaders.some(l => zoomWindow(l, zoom) === true) ? true : null);
+        const width = canvas?.clientWidth || canvas?.width, height = canvas?.clientHeight || canvas?.height;
+        if (width && height && liveReaders.length) {
+          try {
+            const hits = a.queryRenderedFeatures([[0, 0], [width, height]], { layers: liveReaders.map(l => l.id) });
+            if (Array.isArray(hits)) rec.rendered = hits.length;
+          } catch (_) {}
+        }
+        if (rec.rendered > 0) rec.inView = true;
+        else if (!moving) {
+          try { rec.inView = intersectsView(a, id); } catch (_) {}
+        }
+        if (rec.opacity === 0) { rec.verdict = 'not_seen'; rec.reason = 'opacity_0'; continue; }
+        if (moving) { rec.reason = 'camera_moving'; continue; }
+        if (rec.inZoom === false) { rec.verdict = 'not_seen'; rec.reason = 'zoom_range'; continue; }
+        if (q.pixels === false && rec.rendered > 0) { rec.verdict = 'seen'; rec.reason = 'rendered'; continue; }
+        if (q.pixels !== false && liveReaders.length) {
+          try {
+            const cmp = compareFrames(a, liveReaders);
+            if (cmp.ran) rec.pixels = { changed: cmp.changed, looked: cmp.looked };
+          } catch (_) {}
+        }
+        if (rec.pixels?.changed > 0) { rec.verdict = 'seen'; rec.reason = 'pixels_changed'; }
+        else if (rec.inView === false && rec.rendered === 0) { rec.verdict = 'not_seen'; rec.reason = 'viewport'; }
+        else if (rec.errors.length) rec.reason = 'renderer_error';
+        else rec.reason = rec.pixels ? 'no_pixel_change' : 'no_frame';
       }
-      /* the renderer's own count of what it put at those points */
-      const live = readers.filter(l => rec.inZoom !== false).map(l => l.id);
-      if (samples.length && live.length && typeof a.queryRenderedFeatures === 'function') {
-        let n = 0; try { for (const s2 of samples.slice(0, 6)) { const h = a.queryRenderedFeatures([[s2.x - BOX, s2.y - BOX], [s2.x + BOX, s2.y + BOX]], { layers: live }); n += (h && h.length) || 0; } rec.rendered = n; } catch (_) { rec.rendered = null; }
-      }
-      plan.push({ id, rec, readers: readers.map(l => l.id), readerLayers: readers, samples });
-    }
-    /* the structural reasons first — each is an observation, and each makes the frame comparison unnecessary */
-    const wantPixels = q.pixels !== false;
-    const toLook = [];
-    for (const p of plan) {
-      const r = p.rec;
-      if (r.errors.length) { r.verdict = 'not_seen'; r.reason = 'error'; }
-      else if (r.opacity === 0) { r.verdict = 'not_seen'; r.reason = 'opacity_0'; }
-      else if (r.inZoom === false) { r.verdict = 'not_seen'; r.reason = 'zoom_range'; }
-      else if (r.inView === false) { r.verdict = 'not_seen'; r.reason = 'viewport'; }
-      else if (wantPixels && p.samples.length && p.readers.length) toLook.push(p);
-      else if (r.rendered > 0) { r.verdict = 'seen'; r.reason = 'rendered'; }
-      else r.reason = r.inView === null ? 'extent_unknown' : 'no_frame';
-    }
-    if (toLook.length && frame) {
-      await new Promise(res => { try { frame(live => { try {
-        if (!live) { res(); return; }
-        for (const p of toLook) { const c = compareFrames(a, p.readerLayers, p.samples); p.rec.pixels = c.ran ? { changed: c.changed, looked: c.looked } : null; }
-      } catch (_) { /* a frame that could not be compared is unconfirmed, below */ } res(); }); } catch (_) { res(); } });
-    }
-    for (const p of toLook) {
-      const r = p.rec, px = r.pixels;
-      if (!px) { if (r.rendered > 0) { r.verdict = 'seen'; r.reason = 'rendered'; } else r.reason = 'no_frame'; continue; }
-      if (px.changed > 0) { r.verdict = 'seen'; r.reason = 'pixels_changed'; }
-      else { r.verdict = 'not_seen'; r.reason = r.rendered > 0 ? 'covered' : 'no_pixels'; }
+    };
+    if (ids.some(id => out.surfaces[id].state === 'drawn') && frame) {
+      await new Promise(resolve => {
+        try { frame(live => { try { inspect(live); } finally { resolve(); } }); }
+        catch (_) { resolve(); }
+      });
     }
     ids.forEach(id => { const v = out.surfaces[id].verdict; if (v === 'seen') out.seen.push(id); else if (v === 'not_seen' || v === 'not_drawn') out.notSeen.push(id); else out.unconfirmed.push(id); });
     return out;

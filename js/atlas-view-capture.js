@@ -99,7 +99,7 @@ export function makeViewCapture(deps) {
        fires zero times in 700 ms, no 'render' event arrives, and the read produces 628/628 sampled
        pixels of (0,0,0). A black rectangle handed to a vision model is not a failed capture, it is a
        CONFIDENT WRONG ANSWER — «the map is dark». The caller has to be able to tell the two apart. */
-    const grabRendererFrame = (GE2) => new Promise((res) => {
+    const grabRendererFrame = (GE2, measure) => new Promise((res) => {
       const grab = (live) => {
         try {
           const c = GE2().render.canvas();
@@ -109,7 +109,9 @@ export function makeViewCapture(deps) {
           cx.drawImage(c, 0, 0);
           try { const wb = document.getElementById('wind-bg-canvas'); if (wb && wb.style.display !== 'none' && wb.width) cx.drawImage(wb, 0, 0, g.width, g.height); } catch (_) { /* the wind layer is optional */ }
           try { const wc = document.getElementById('wind-canvas'); if (wc && wc.style.display !== 'none' && wc.width) cx.drawImage(wc, 0, 0, g.width, g.height); } catch (_) { /* idem */ }
-          res({ canvas: g, live: !!live });
+          let observed;
+          try { if (live && measure) observed = measure(); } catch (_) {}
+          res({ canvas: g, live: !!live, observed });
         } catch (_) { res({ canvas: null, live: false }); }
       };
       /* (#R768) the once-render-or-timeout wait is the ENGINE's, not this file's — js/geo-engine.js
@@ -134,7 +136,10 @@ export function makeViewCapture(deps) {
     {
       /* let in-flight tiles finish so the picture is of a finished frame rather than a half-loaded one */
       if (typeof o.waitIdle === 'function') { try { await o.waitIdle(o.waitIdleMs || 2500); } catch (_) { /* idle is a courtesy, not a precondition */ } }
-      const grabbed = await grabRendererFrame(GE);
+      if (include === 'screen') {
+        try { if (window.IntMapVendor) await window.IntMapVendor.html2canvas(); } catch (_) { /* map frame remains available */ }
+      }
+      const grabbed = await grabRendererFrame(GE, o.measure);
       const mapCv = grabbed.canvas;
       /* ══ ⚠⚠ (#R231, kept verbatim) ONE COORDINATE SYSTEM, TAKEN FROM THE BOX BOTH LAYERS OCCUPY ══
          The output was sized from the RENDERER'S BACKING STORE while the overlay pass was scaled from
@@ -155,18 +160,17 @@ export function makeViewCapture(deps) {
         /* (#R224) FETCHED HERE, NOT AT BOOT. html2canvas is 198 kB that only a capture needs. The
            overlay pass is SKIPPED if it cannot be had — a map-only picture is a smaller answer, not
            a failed one. */
-        try { if (window.IntMapVendor) await window.IntMapVendor.html2canvas(); } catch (_) { /* offline / blocked */ }
         if (typeof html2canvas !== 'undefined') {
           try {
+            let aligned = true;
             const ov = await html2canvas(cont, { backgroundColor: null, useCORS: true, logging: false, scale,
-              onclone: (doc) => { try { if (o.markCapture !== false) doc.body.classList.add(CAPTURE_CLASS); } catch (_) { /* the clone is ours; a failure leaves the controls in the picture, not out of the reader's screen */ } },
+              onclone: (doc) => { if (o.overlayMatches) aligned = o.overlayMatches(grabbed.observed); try { if (o.markCapture !== false) doc.body.classList.add(CAPTURE_CLASS); } catch (_) { /* the clone is ours; a failure leaves the controls in the picture, not out of the reader's screen */ } },
               ignoreElements: (el) => el.tagName === 'CANVAS' || (el.classList && el.classList.contains('maplibregl-canvas')) });
-            ctx.drawImage(ov, 0, 0, out.width, out.height);
-            overlays = 'composited';
+            if (aligned) { ctx.drawImage(ov, 0, 0, out.width, out.height); overlays = 'composited'; }
           } catch (_) { /* the map alone is still a picture */ }
         }
       }
-      return { canvas: out, live: grabbed.live && !!mapCv, overlays };
+      return { canvas: out, live: grabbed.live && !!mapCv, overlays, observed: grabbed.observed };
     }
   }
 
@@ -269,9 +273,8 @@ export function makeViewCapture(deps) {
       }
     }
 
-    async function gatherGround(facts) {
-      var g = {};
-      try { g.drawn = drawnLabels(facts && facts.center); } catch (_) { /* the framed channel still runs */ }
+    async function gatherGround(facts, labels) {
+      var g = { drawn: labels };
       try { Object.assign(g, await framedFeatures(facts)); } catch (_) { g.framedError = 'lookup threw'; }
       return g;
     }
@@ -285,7 +288,20 @@ export function makeViewCapture(deps) {
       } catch (_) { /* fall through to the capture, which answers for itself */ }
       var inc = (String(a.include || '').trim() === 'map') ? 'map' : 'screen';
       var shot = { canvas: null, live: false };
-      try { shot = await captureCanvas({ GE: GE, include: inc, waitIdle: waitIdle, waitIdleMs: 2200 }) || shot; } catch (_) { /* answered below, as a refusal rather than a black rectangle */ }
+      const cameraKey = s => JSON.stringify([s?.camera, s?.viewport, s?.time?.travelDate, s?.activeLayers]);
+      const measure = () => {
+        const capturedAt = new Date().toISOString();
+        const s = snapshot ? snapshot() : null;
+        let labels = null, surfaces = null;
+        try { labels = drawnLabels(s?.camera); } catch (_) {}
+        try {
+          const report = GE().render.drawn({});
+          if (report.observable) surfaces = report.drawn.map(id => ({ id, rev: report.surfaces[id]?.rev }));
+        } catch (_) {}
+        return { capturedAt, state: s, cameraKey: cameraKey(s), labels, surfaces };
+      };
+      const overlayMatches = captured => !snapshot || (captured && captured.cameraKey === cameraKey(snapshot()));
+      try { shot = await captureCanvas({ GE: GE, include: inc, waitIdle: waitIdle, waitIdleMs: 2200, measure, overlayMatches }) || shot; } catch (_) { /* answered below */ }
       var cv = shot.canvas;
       /* ⚠⚠⚠ A FRAME THAT DID NOT COME FROM A RENDER TICK IS NOT A PICTURE OF THE MAP — it is an
          undrawn WebGL buffer, which reads as solid black (see grabRendererFrame). Measured in a tab
@@ -302,16 +318,13 @@ export function makeViewCapture(deps) {
         ? L('The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.', '見に行った時点で地図が描画されていませんでした（ページが背面にあるため、取得できるフレームがありません）。IntMap を前面にしてもう一度お尋ねください。', 'Die Karte hat nicht gezeichnet — die Seite ist im Hintergrund, es gab kein Bild aufzunehmen.', 'В момент съёмки карта не отрисовывалась — страница в фоне, кадра не было.', 'El mapa no estaba dibujando: la página está en segundo plano y no había fotograma que capturar.')
         : L('Could not read the map frame — the renderer gave nothing back.', '地図のフレームを読み取れませんでした（レンダラから画像が返りませんでした）。', 'Der Kartenframe konnte nicht gelesen werden — der Renderer gab nichts zurück.', 'Не удалось прочитать кадр карты — рендерер ничего не вернул.', 'No se pudo leer el fotograma del mapa: el renderizador no devolvió nada.') };
 
-      /* the machine reading of the SAME instant, so the image never has to be measured */
-      var cam = null, vp = null, layers = null, tm = null;
-      try {
-        var s = snapshot ? snapshot() : null; cam = s && s.camera; vp = s && s.viewport; tm = s && s.time;
-        layers = (s && Array.isArray(s.activeLayers))
-          ? s.activeLayers.map(function (l) { return l && l.label; }).filter(Boolean) : null;
-      } catch (_) { /* the ledger is a courtesy here; the picture is the point */ }
-
+      const captured = shot.observed;
+      const s = captured?.state;
+      const cam = s?.camera, vp = s?.viewport, tm = s?.time;
+      const layers = Array.isArray(s?.activeLayers) ? s.activeLayers.map(l => l?.label).filter(Boolean) : null;
       var facts = {
-        frame: 'view-frame-' + (frames.length + 1), include: inc, overlays: shot.overlays, capturedAt: new Date().toISOString(),
+        frame: 'view-frame-' + (frames.length + 1), include: inc, overlays: shot.overlays,
+        capturedAt: captured?.capturedAt, surfaces: captured?.surfaces || undefined,
         reason: String(a.reason || '').slice(0, 300) || undefined,
         bbox: (vp && isFinite(vp.west)) ? { west: +vp.west, south: +vp.south, east: +vp.east, north: +vp.north } : undefined,
         center: (cam && isFinite(cam.lat)) ? { lat: +cam.lat, lng: +cam.lng } : undefined,
@@ -326,7 +339,7 @@ export function makeViewCapture(deps) {
          Everything above this line describes the CAMERA; none of it describes the WORLD, and a
          question like 「これなに」 is about the world. See js/atlas-view-ground.js for the measured
          failure and why the empty result is reported as loudly as a full one. */
-      facts.ground = await gatherGround(facts);
+      facts.ground = await gatherGround(facts, captured?.labels);
 
       frames.push({ url: url, facts: facts });
 

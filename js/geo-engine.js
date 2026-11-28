@@ -2762,14 +2762,18 @@ function _redrawLocalGlyphs(m,cover){
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
    /* ══ DID IT REACH THE SCREEN? (render.witness — js/render-witness.js, fetched on first ask) ═══════════════════════
       `drawn()` says a surface is in the renderer and its layer is not hidden; `witness()` adds what makes it invisible anyway — opacity 0, outside the
-      zoom range or the viewport, a renderer error against its source/layer, a covering layer — and, when asked, compares a frame with its layers off
+      zoom range or the viewport, or evidence from its pixels. When asked, it compares a frame with its layers off
       against one with them on (same task, so the page is never presented with them off). Errors are heard from the first claim: a surface that failed to
       paint has already said so by the time anyone asks. Both adapters fire 'error' with sourceId / layerId. */
    let _F=null; const _errLog=[]; const _heard=new WeakSet();
    const _hearErrors=()=>{ try{ const a=A(); if(!a||_heard.has(a)||typeof a.on!=='function') return; _heard.add(a); a.on('error',e=>{ try{ _errLog.push({ source:(e&&e.sourceId)||'', layer:(e&&e.layerId)||'', message:String((e&&e.error&&e.error.message)||(e&&e.message)||'error').slice(0,200) }); if(_errLog.length>60) _errLog.shift(); }catch(_){} }); }catch(_){} };
-   const _witness=async q=>{ _hearErrors(); const d=surfacesDrawn(A,_claims,q); const m=await import('./render-witness.js');
+   const _witness=async q=>{ _hearErrors(); const m=await import('./render-witness.js'); const a=A();
+     if(q?.waitForCamera!==false&&a?.isAnimating?.()) await new Promise(resolve=>{
+       const done=()=>{ clearTimeout(timer); try{ a.off('moveend',done); }catch(_){} resolve(undefined); };
+       const timer=setTimeout(done,1200); try{ a.on('moveend',done); if(!a.isAnimating()) done(); }catch(_){ done(); }
+     });
      const w=m.makeRenderWitness({ makeCanvas:(cw,ch)=>{ const c=document.createElement('canvas'); c.width=cw; c.height=ch; return c; } });
-     return w.look(A(),d,q,ids=>_errLog.filter(x=>ids.indexOf(x.source)>=0||ids.indexOf(x.layer)>=0).map(x=>x.message),fn=>{ try{ _F.render.onNextFrame(1200,fn); }catch(_){ fn(false); } }); };
+     return w.look(A(),surfacesDrawn(A,_claims,q),q,ids=>_errLog.filter(x=>ids.indexOf(x.source)>=0||ids.indexOf(x.layer)>=0).map(x=>x.message),fn=>{ try{ _F.render.onNextFrame(1200,fn); }catch(_){ fn(false); } }); };
    const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
    let _looking=null;         /* the layers.witness() pass running now, told every layer id it asks about — see there */
    const _shownBy=new Set();  /* layers.onVisibility() subscribers — told every write that shows or hides a layer, see there */

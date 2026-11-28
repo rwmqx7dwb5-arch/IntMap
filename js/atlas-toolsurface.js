@@ -28,6 +28,7 @@
 import { makeCapabilityBridge, attachBridge, clientSource } from './cap-bridge.js';   /* (cap-bridge) a program calls capabilities through the SAME makeExecute — see openProgramBridge */
 import './atlas-model-prefetch.js';   /* registers model.run's reading */
 import { hasPrefetch, startPrefetch } from './atlas-prefetch.js';   /* (atlas-orchestration-efficiency) a call's reading, started when its reply is parsed */
+import { numberEvidence } from './atlas-number-evidence.js';
 import { searchSkills, readSkill, parseSkillQuery, skillReadiness, skillById } from './atlas-skills.js';   /* (atlas-skills) how-to material beside the capabilities; read a section at a time */
 
 export function makeAtlasToolSurface(deps) {
@@ -583,6 +584,10 @@ export function makeAtlasToolSurface(deps) {
         if (j === undefined || j === '{}' || j === '[]' || j === '""') return;
         (details || (details = {}))[k] = JSON.parse(j);
       });
+      if (Array.isArray(meta.provenance)) {
+        const quantities = meta.provenance.flatMap(numberEvidence);
+        if (quantities.length) (details || (details = {})).numberEvidence = quantities;
+      }
       if (details) out.details = details;
       /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
          a capability whose registry row PRODUCES the map, and whose run the observer marked
@@ -608,6 +613,10 @@ export function makeAtlasToolSurface(deps) {
       if ((out.status === 'completed' || out.status === 'partial') && Array.isArray(out.produced) && out.produced.length) {
         out.producedModes = out.produced.slice();
         if (out.producedModes.indexOf('map') >= 0) out.changedMap = true;
+      }
+      if (ok && /<table(?:\s|>)/i.test(res?.html || '')) {
+        const modes = out.producedModes ||= [];
+        if (!modes.includes('table')) modes.push('table');
       }
       /* (atlas-turn-engine) an UNOBSERVED call is not a failure and carries no `error`: it ran, and
          whether it took effect could not be seen. js/atlas-agent.js writes the note that says so, and

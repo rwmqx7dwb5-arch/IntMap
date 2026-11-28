@@ -250,13 +250,13 @@ export function makeAtlasAgent() {
       /* ⚠ THE SAME RULE THE OUTPUT GATE USES (`made`, below): a call that RAN and could not be seen is a call that was made. The gate accepted it
          and this list then reported the map as «not done» over a drawing the reader was looking at (one-pass-or-a-reason §2 ①). */
       if (asked && !asked.some((m) => produced.indexOf(m) >= 0 || (ran || []).indexOf(m) >= 0)) {
-        out.push({ kind: 'output', mode: answerMode, code: GATE_CODE[answerMode] || 'output_not_produced' });
+        out.push({ kind: 'output', id: 'output:' + answerMode, mode: answerMode, code: GATE_CODE[answerMode] || 'output_not_produced' });
       }
-      if (planSnap && planSnap.thisTurn && Array.isArray(planSnap.steps)) {
+      if (planSnap && planSnap.thisTurn && !planSnap.cancelled && Array.isArray(planSnap.steps)) {
         planSnap.steps.forEach((st) => {
           if (st && st.requirements?.length) {
             st.requirements.filter((r) => r.state !== 'completed').forEach((r) => {
-              out.push({ kind: 'goal', id: r.id, need: r.label, state: r.state, callId: r.callId });
+              out.push({ kind: 'goal', id: r.id, planId: planSnap.id, need: r.label, state: r.state, why: r.code, callId: r.callId });
             });
             return;
           }
@@ -269,8 +269,8 @@ export function makeAtlasAgent() {
           if (!st || st.state === 'completed' || st.state === 'noop' || st.state === 'pending' || st.state === 'unobserved') return;
           const unfinished = (st.workItems || []).filter((o) => o.state !== 'completed' && o.state !== 'unobserved');
           const missing = unfinished.filter((o) => !superseded.has(o.callId));
-          if (missing.length && missing.every((o) => o.work)) missing.forEach((o) => out.push({ kind: 'goal', need: st.title + ' · ' + o.work, state: o.state, why: o.code }));
-          else if (missing.length || !unfinished.length) out.push({ kind: 'step', n: st.n, title: st.title, state: st.state });
+          if (missing.length && missing.every((o) => o.target)) missing.forEach((o) => out.push({ kind: 'goal', need: st.title + ' · ' + o.target, state: o.state, why: o.code }));
+          else if (missing.length || !unfinished.length) out.push({ kind: 'step', n: st.n, title: st.title, state: st.state, why: missing[0]?.code });
         });
       }
       return out;
@@ -804,6 +804,7 @@ export function makeAtlasAgent() {
          the case where trying again is right. */
       const TR = makeAtlasTurnResults({});
       const doneCalls = Object.create(null);
+      const mapReceipts = new Map(opts.resume?.mapReceipts || []);
       /* ══ (atlas-result-delivery) A REUSED ANSWER IS TRUE ONLY WHILE NOTHING IT DEPENDS ON HAS BEEN WRITTEN ═════
          `doneCalls` used to hold a call for the rest of the turn, so `flyTo A → flyTo B → flyTo A` (and a layer toggled on, off, on; a
          time travelled 1500, 1900, 1500) never ran its third call and was told, falsely, that the app had not changed. The registry already
@@ -974,10 +975,10 @@ export function makeAtlasAgent() {
       const interim = [];
       trace.outputGate = 0;
       let goalVerifiedAt = -1;   /* a re-read of an unchanged operation record is the same observation twice */
-      let goalPrev = null;       /* …and what that read found ({met, unmet}), shown to the next read so it judges whether the work Atlas did since closed the gap */
+      let goalUnmet = (opts.resume?.unmet || []).filter((u) => u.kind === 'goal' && u.id && !u.planId);
+      let goalPrev = goalUnmet.length ? { met: [], unmet: goalUnmet } : null;
       let goalRounds = 0;
       let goalAt = -1;           /* results.length when the finding was put to Atlas (-1: it was not) */
-      let goalUnmet = [];        /* …and what it found, when the bounce was not taken or ran out: carried into `unmet` */
       /* (atlas-completion-verdict) EACH FINDING HAS AN IDENTITY, AND IS PUT TO ATLAS ONCE. A finding is named by an id the first time it is read
          (g1, g2 …); a later reading that finds the same need says so by that id ("prev", js/atlas-goal-verify.js) or by the same words. A finding
          already put to Atlas has had its answer — Atlas did the work, or answered as it stands — and is not sent back again: sending it back
@@ -987,6 +988,7 @@ export function makeAtlasAgent() {
       const goalIds = [];        /* [{ id, key }] every finding named so far this turn */
       const goalPut = Object.create(null);   /* id → true once that finding has been put to Atlas */
       const goalKey = (need) => String(need || '').toLowerCase().split(' ').filter(Boolean).join(' ');   /* no pattern: this loop reads no reply by regex (tests/atlas-agent-loop-checks R663 ⑥) */
+      goalUnmet.forEach((u) => goalIds.push({ id: u.id, key: goalKey(u.need) }));
       const knownGoalId = (u) => {
         const prev = String((u && u.prev) || '').trim();
         if (prev && goalIds.some((g) => g.id === prev)) return prev;
@@ -995,7 +997,9 @@ export function makeAtlasAgent() {
       const goalIdOf = (u) => {
         const known = knownGoalId(u);
         if (known) return known;
-        const id = 'g' + (goalIds.length + 1);
+        let n = goalIds.length + 1;
+        while (goalIds.some((g) => g.id === 'g' + n)) n++;
+        const id = 'g' + n;
         goalIds.push({ id, key: goalKey(u && u.need) });
         return id;
       };
@@ -1031,7 +1035,7 @@ export function makeAtlasAgent() {
       /* (atlas-orchestration-efficiency) THE CALLS MADE AROUND THE LOOP ARE THE TURN'S CALLS. The effort-sizing call before the first step and the independent reader after the answer are model
          calls the reader waits through. Sizing hands in its receipt and the verifier reports its receipt below. */
       (!opts.runLedger && Array.isArray(opts.preCalls) ? opts.preCalls : []).forEach((c) => { try { ledger.model(c); } catch (_) { /* a ledger that cannot take a row is not the turn's problem */ } });
-      if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
+      if (PLAN) { try { PLAN.beginTurn({ request: opts.request || lastUserText(opts.messages), resumePlanId: opts.resume?.planId }); } catch (_) { /* a ledger never breaks the turn */ } }
       const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
       /* ⚠ (atlas-legacy-protocol-removal) THE NOTE FOR CALLS WRITTEN INTO THE MESSAGE. Nothing written there runs, and
@@ -1127,6 +1131,7 @@ export function makeAtlasAgent() {
             signal: opts.signal,
             effort: nextEffort,      /* (atlas-unbounded-execution) undefined unless the previous reply declared it */
             maxOutput: nextOutput,
+            hasNumberEvidence: results.some((r) => r.details?.numberEvidence?.length),
           });
         } catch (e) {
           /* A transport failure is the ONE thing the loop cannot hand back to Atlas — there is
@@ -1276,7 +1281,7 @@ export function makeAtlasAgent() {
             let usage;
             const verifyT0 = wallNow();
             try {
-              v = await opts.verify({ request: lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
+              v = await opts.verify({ request: opts.resume?.request || lastUserText(opts.messages), text: answerHere, answerMode, produced: results.reduce((a, r) => { producedBy(r).forEach((m) => { if (a.indexOf(m) < 0) a.push(m); }); return a; }, []), results: results.slice(), previous: goalPrev, round: goalRounds,
                 context: verifierContext,
                 onUsage: (meta) => { usage = proxyUsage(meta); },
                 context: verifierContext,
@@ -1526,6 +1531,20 @@ export function makeAtlasAgent() {
           /* (#R489) …and the identity check, after `reject` has confirmed the call is well formed
              so a malformed repeat still gets its own schema note. See `doneCalls` above. */
           const ckey = p.ckey;
+          const fromCheckpoint = mapReceipts.get(ckey);
+          const earlierDrawing = (p.planStep >= 0 && PLAN?.previousDrawing?.(ckey, opts.drawingPresent)) ||
+            (fromCheckpoint && opts.drawingPresent?.(fromCheckpoint.objectIds) ? fromCheckpoint : null);
+          if (earlierDrawing && !stale(ckey, p.fp)) {
+            trace.reused++;
+            executedHere++;
+            const rec = { ...earlierDrawing, id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
+              note: 'This drawing already exists for this request. Continue from the recorded result and verify any open requirements.' };
+            if (PLAN && p.planStep >= 0) {
+              PLAN.started(call.id, { ...p.planBinding, step: p.planStep, capability: capOfCall(p.routed), key: ckey, target: p.planTarget });
+              PLAN.settled(call.id, rec);
+            }
+            return rec;
+          }
           if (isDone(ckey, p.fp)) {
             trace.reused++;
             const prior = doneCalls[ckey];
@@ -1606,6 +1625,7 @@ export function makeAtlasAgent() {
           const rec = Object.assign({ id: call.id, name: call.name }, out, { id: call.id, name: call.name });
           if (p.fp.readOnly === true && requestVersion != null) rec.requestVersion = requestVersion;
           noteWrite(p.fp);   /* (atlas-result-delivery) it ran: whatever it writes is now a reason to run an earlier identical call again */
+          if (ckey && rec.producedModes?.includes('map') && rec.objectIds?.length) mapReceipts.set(ckey, rec);
           /* ⚠ ONLY A SUCCESS IS REMEMBERED. Freezing a failure would turn a transient network error
              into a permanent one for the rest of the turn, which is the opposite of the point.
              ⚠⚠⚠ (#R551) AND A PARTIAL IS NOT A SUCCESS. `ok` is derived from `status` (#R318), so a
@@ -1911,7 +1931,7 @@ export function makeAtlasAgent() {
                (tool_choice "none"): an empty list would change the prefix the provider caches on
                the one call that re-sends the whole turn, and would leave the transcript naming
                functions the request no longer declares */
-            tools: offered(), step: finalStep, signal: opts.signal, final: true,
+            tools: offered(), step: finalStep, signal: opts.signal, final: true, hasNumberEvidence: results.some((r) => r.details?.numberEvidence?.length),
           });
           /* ⚠ (#R802) AND A CALL THAT CAME BACK WITH NOTHING DOES NOT ERASE WHAT THE TURN HAD. On the
              empty-`text` path this is the same assignment it always was (「」 over 「」); on the new one
@@ -1962,7 +1982,12 @@ export function makeAtlasAgent() {
       const superseded = new Set(trace.goalCheck === 'met' && goalVerifiedAt === operationProgress
         ? goalPrev?.met.flatMap((m) => m.how.trim() ? (m.supersedes || []) : []) : []);
       const unmet = unmetOf(answerMode, produced, planSnap, ranModes, superseded).concat(goalUnmet);
-      const completion = !String(text || '').trim() ? 'none' : (unmet.length ? 'partial' : trace.goalCheck === 'unobserved' ? 'unobserved' : 'complete');
+      const stoppedEarly = stopped === 'transport' || cutShort;
+      const verificationPending = stoppedEarly && results.length > 0 && typeof opts.verify === 'function' &&
+        (goalVerifiedAt !== operationProgress || trace.goalCheck === 'unobserved');
+      const completion = !String(text || '').trim() && !results.some((r) => r.ok === true) ? 'none'
+        : (unmet.length || verificationPending || (stoppedEarly && !String(text || '').trim())) ? 'partial'
+        : trace.goalCheck === 'unobserved' ? 'unobserved' : 'complete';
       /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
          turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
          written — CUT_STOPS; not a cancelled turn, a transport failure, a question back to the reader or an
@@ -1982,7 +2007,10 @@ export function makeAtlasAgent() {
       try { historyRow = RUN_HISTORY.add(trace.run, opts.label); } catch (_) { /* a record never breaks the turn */ }
       return { text: String(text || ''), interim: interim.filter((x) => x.text !== String(text || '')), calls: trace.calls, results, trace, stopped: completion === 'unobserved' && stopped === 'answered' ? 'goal_unobserved' : stopped, answerMode, run: trace.run,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
-        unmet, completion, outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
+        unmet, completion, verificationPending, resumedFrom: opts.resume?.turnId, mapReceipts: Array.from(mapReceipts),
+        acknowledged: Object.keys(MODE_NEEDS).filter((m) => MODE_NEEDS[m].some((x) => produced.includes(x))).map((m) => 'output:' + m)
+          .concat(goalVerifiedAt === operationProgress ? goalPrev?.met.filter((m) => m.how.trim()).map(knownGoalId) || [] : []),
+        outputIncomplete: !!(trace.incomplete && trace.incomplete.length),
         plan: PLAN ? planSnap : undefined };
     }
 

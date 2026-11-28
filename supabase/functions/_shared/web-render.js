@@ -149,7 +149,7 @@ export async function render(input, deps) {
     if (!ho && got.assets) {
       const actual = new Set(got.assets.map(({ href }) => href));
       page.assets = [...got.assets, ...page.assets.filter(({ href }) => !actual.has(href))].slice(0, LIMITS.files);
-      page.assetObservation = { status: got.coverage, matches: got.assets.length };
+      page.assetObservation = { status: got.coverage, matches: got.assets.length, ...(got.unverifiedJson ? { unverifiedJson: got.unverifiedJson } : {}) };
     }
     state.url = url; state.page = refTable(page);
 

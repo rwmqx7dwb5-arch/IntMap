@@ -181,6 +181,17 @@ async function loadImages(ctx, task) {
 /* the ONE way a request goes out: with the invocation's start (its time window), the signal, and the lease kept */
 const ask = (ctx, system, prompt, o) => keepLease(ctx, () => ctx.callModel(system, prompt, Object.assign({ signal: ctx.signal, startedAt: ctx.t0 }, o)));
 
+async function settleRequest(ctx, task, reserved, { env, error, round }) {
+  const requestedEffort = task.contract?.effort || null;
+  const billed = env ? ctx.money.actual(env.usage, env.model) : error?.costUnknown === false ? 0 : null;
+  const actual = Number.isFinite(billed) ? billed : null;
+  await rpc(ctx.db, "atlas_job_settle", { p_job: ctx.job.id, p_holder: ctx.holder, p_reserved: reserved, p_actual: actual });
+  await event(ctx.db, ctx.job, "task.provider", { task: task.task_id, round, execution: "server", requestedEffort,
+    effectiveEffort: env?.effort || error?.effort || null, model: env?.model || error?.model || null,
+    confirmedMicros: actual, releasedMicros: reserved });
+  return actual ?? 0;
+}
+
 async function event(db, job, kind, data) {
   try { await db.from("atlas_job_events").insert({ job_id: job.id, user_id: job.user_id, kind, data: data || {} }); } catch (_) { /* a record that fails never fails the work */ }
 }
@@ -212,7 +223,7 @@ async function runCapabilityTask(ctx, task, inputs) {
      `done` with `result.parked` and the page applies it through the same executor a turn uses when the reader returns (js/atlas-jobs-client.js applyParked).
      Which capabilities may be parked is DERIVED from the registry (atlas-cap-classes.js ← js/atlas-server-class.js), never listed here. */
   if (park) {
-    return fin("done", "parked", { summary: "Saved for the page: " + s(c.capability, 80) + " " + s(stable(ra.args), 300) + " — it changes the map, so it is applied when you next open IntMap.", findings: [], gaps: [], sources: [], parked: { capability: s(c.capability, 80), args: ra.args } });
+    return fin("done", "parked", { summary: "Saved for the browser: " + s(c.capability, 80) + " — application is checked when the job is viewed in IntMap.", findings: [], gaps: [], sources: [], parked: { capability: s(c.capability, 80), args: ra.args } });
   }
   /* the outputs of this task's inputs, by the names the page would use for them (the task id, the output id) — a twin that takes datasets reads them
      by name (data.gis), the way the page's data.gis reads a dataset by its id */
@@ -498,9 +509,9 @@ async function runToolWorker(ctx, task, inputs) {
     st.calls += 1;
     let env;
     try {
-      env = await ask(ctx, ctx.system, prompt, { web: st.web, maxOutput: contract.maxOutput, images: shown.urls });
+      env = await ask(ctx, ctx.system, prompt, { web: st.web, maxOutput: contract.maxOutput, images: shown.urls, effort: contract.effort });
     } catch (e) {
-      await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
+      await settleRequest(ctx, task, est, { error: e, round: st.calls });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), round: st.calls });
       const wait = rateWaitMs(ctx, e, rl);
       if (wait) { await event(db, job, "task.rate_wait", { task: task.task_id, ms: wait }); await keepLease(ctx, () => sleepMs(ctx, wait)); continue; }
@@ -513,9 +524,7 @@ async function runToolWorker(ctx, task, inputs) {
       return finish(isRefusal(e) ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources, toolCalls: st.entries.length });
     }
     retried = false;
-    const actual = money.actual(env.usage, env.model);
-    st.cost += actual;
-    await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: actual });
+    st.cost += await settleRequest(ctx, task, est, { env, round: st.calls });
     const sourceCount = sources.length;
     (Array.isArray(env.citations) ? env.citations : []).forEach(addSource);
     const parsed = parseJson(env.text);
@@ -667,6 +676,14 @@ async function runTask(ctx, task, inputs) {
   const started = await rpc(db, "atlas_job_task_start", { p_job: job.id, p_holder: holder, p_task: task.task_id });
   if (started !== true) return { state: "skipped" };
   const contract = task.contract || {};
+  const pageTask = contract.kind === "capability" && !ctx.capabilities?.has(contract.capability) && capClass(contract.capability) === "parkable";
+  const browserInput = inputs.find((input) => input.parked && (!pageTask || refsOf(contract.args).includes(input.from)));
+  if (browserInput) {
+    await rpc(db, "atlas_job_task_finish", { p_job: job.id, p_holder: holder, p_task: task.task_id, p_status: "refused", p_code: "browser_input_required",
+      p_result: { summary: "Input " + browserInput.from + " (" + browserInput.parked.capability + ") requires the browser.", blockedBy: browserInput.from },
+      p_cost: 0, p_calls: 0 });
+    return { state: "refused" };
+  }
   if (contract.kind === "capability") return runCapabilityTask(ctx, task, inputs);
   /* a worker with tools, or one whose input is too long to show (it is given read_step to read the rest), runs the tool loop */
   if ((Array.isArray(contract.tools) && contract.tools.length) || (inputs || []).some((i) => inputView(i, { read: true }).whole)) return runToolWorker(ctx, task, inputs);
@@ -693,9 +710,9 @@ async function runTask(ctx, task, inputs) {
     calls += 1;
     let env;
     try {
-      env = await ask(ctx, system, prompt, { web, maxOutput: contract.maxOutput, images: shown.urls });
+      env = await ask(ctx, system, prompt, { web, maxOutput: contract.maxOutput, images: shown.urls, effort: contract.effort });
     } catch (e) {
-      await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: 0 });
+      await settleRequest(ctx, task, est, { error: e, round: calls });
       await event(db, job, "task.request_failed", { task: task.task_id, code: s(e && e.code, 40), attempt });
       const wait = rateWaitMs(ctx, e, rl);
       if (wait) { await event(db, job, "task.rate_wait", { task: task.task_id, ms: wait }); await keepLease(ctx, () => sleepMs(ctx, wait)); attempt -= 1; continue; }   /* a rate limit is not one of the two attempts */
@@ -706,9 +723,7 @@ async function runTask(ctx, task, inputs) {
       }
       return finish(isRefusal(e) ? "refused" : "failed", s(e && e.code, 40) || "error", { summary: s(e && e.message, 400), findings: [], gaps: [], sources });
     }
-    const actual = money.actual(env.usage, env.model);
-    cost += actual;
-    await rpc(db, "atlas_job_settle", { p_job: job.id, p_holder: holder, p_reserved: est, p_actual: actual });
+    cost += await settleRequest(ctx, task, est, { env, round: calls });
     (Array.isArray(env.citations) ? env.citations : []).forEach((c) => { if (c && c.url && !sources.some((x) => x.url === c.url)) sources.push({ url: s(c.url, 500), title: s(c.title, 200) }); });
     const sh = shapeOf(parseJson(env.text));
     if (sh.ok) return finish(web && !sh.partial ? "done" : "partial", !web ? "degraded" : sh.partial ? "incomplete" : "", Object.assign({}, sh.out, { sources, web: !!web }));
@@ -772,7 +787,7 @@ export async function runJob(ctx0) {
         /* each input is the dependency's WHOLE result — an output kept beside its row is read back in (wholeData) — with its sources, so a task that
            is handed it can name where it came from */
         const start = async () => {
-          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, state: row.status, code: row.code, summary: r.summary, findings: r.findings, facts: r.facts, notFound: r.notFound, gaps: r.gaps, sources: r.outputSources || r.sources, artifact: r.data?.output, data: await wholeData(ctx, row) }; }));
+          const inputs = await Promise.all((t.deps || []).map(async (d) => { const row = byId.get(d) || {}; const r = row.result || {}; return { from: d, state: row.status, code: row.code, summary: r.summary, findings: r.findings, facts: r.facts, notFound: r.notFound, gaps: r.gaps, sources: r.outputSources || r.sources, parked: r.parked, artifact: r.data?.output, data: await wholeData(ctx, row) }; }));
           return runTask(Object.assign({}, ctx, { requestVersion: Array.isArray(cp.amends) ? cp.amends.length : 0 }), t, inputs);
         };
         running.set(t.task_id, start().catch(() => ({ state: "error" })).then((r) => ({ id: t.task_id, r })));
@@ -830,6 +845,7 @@ async function conclude(ctx, tasks, amendList) {
         : "[built on a piece computed before the reader's change (" + st.readStale.join(", ") + ")] ") + sm;
     }).filter(Boolean).concat(missed.map((t) => "[piece " + t.task_id + " ended " + t.status + (t.code ? " (" + t.code + ")" : "") + "]")).join("\n\n"),
     incomplete: missed.map((t) => ({ id: t.task_id, state: t.status, code: t.code || "" })),
+    awaitingApplication: ok.filter((t) => t.result?.parked).map((t) => t.task_id),
     stale,
     tasks: tasks.map((t) => {
       const r = t.result || {};

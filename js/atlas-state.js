@@ -25,6 +25,7 @@
  *  resolve by ID rather than by re-reading a sentence. #R119 put `lastObjects` on `_wctx` for
  *  exactly one of these; this is that idea for all of them.
  * ==========================================================================*/
+import { fingerprint } from './evidence-graph.js';
 import { makeViewGround } from './atlas-view-ground.js';   /* (#R589) the coordinate precision the zoom actually earns — see the note at the state line below */
 
 /* (time-compare-lapse) whether the clock is being played — js/time-lapse.js, fetched beside this module (a small chunk of
@@ -499,16 +500,24 @@ export function makeAtlasState(HOST) {
       });
       /* the surfaces painters CLAIM with the renderer (js/geo-engine.js render.claim/drawn) — a drawing
          that appeared is taken off with the claimant's own remover. Each is fingerprinted by its feature
-         count and first feature, so a drawing the turn REPLACED reads as changed, not as the same. */
+         content, so changes to any feature are detected and a restored copy reads as the same. */
+      var surfaceFingerprints = new WeakMap();
+      function surfaceFingerprint(data) {
+        if (!data || typeof data !== 'object') return null;
+        if (surfaceFingerprints.has(data)) return surfaceFingerprints.get(data);
+        var fp = fingerprint(data);
+        surfaceFingerprints.set(data, fp);
+        return fp;
+      }
       API.registerRestorer('surfaces', { covers: [],   /* additions only */
         capture: function () {
           var E = GE(); var R = E && E.render; if (!R || typeof R.drawn !== 'function') return null;
           var r = R.drawn({}); if (!r || !r.observable) return null;
           var out = {};
           r.drawn.forEach(function (id) {
-            var s = r.surfaces[id], first = '';
-            try { var d = E.layers.sourceData(id); first = (d && d.features && d.features[0]) ? JSON.stringify(d.features[0]).slice(0, 400) : ''; } catch (_) { first = ''; }
-            out[id] = { n: s.features, first: first };
+            var s = r.surfaces[id], fingerprint = null;
+            try { fingerprint = surfaceFingerprint(E.layers.sourceData(id)); } catch (_) { /* content unavailable */ }
+            out[id] = { n: s.features, fingerprint: fingerprint || s.rev || null };
           });
           return out;
         },
@@ -1338,8 +1347,9 @@ export function makeAtlasState(HOST) {
       target.undoSections = restored.concat(threw);
       if (currentTurnId != null) mark(currentTurnId, 'performedUndo', true);
       var chk = API.undoCheck(target.turnId);
-      return { ok: true, turnId: target.turnId, question: target.question, restored: restored,
-        unresolved: chk ? chk.unresolved : threw };
+      var unresolved = chk ? chk.unresolved : threw;
+      return { ok: true, turnId: target.turnId, question: target.question,
+        restored: restored.filter(function (n) { return unresolved.indexOf(n) < 0; }), unresolved: unresolved };
     };
     /* undoCheck(turnId) — capture again and hold every section the undo touched against the snapshot */
     /* ══ WHAT NO RESTORER CAN SEE IS NAMED FROM THE LEDGER, NOT LEFT SILENT ═══════════════════════════

@@ -258,6 +258,7 @@ server’s copy names a different entry. So:
 ```bash
 node scripts/release-state.mjs          # 3 面を測る（npm run release:state）
 node scripts/release-state.mjs --check  # 食い違いなら exit 1 / 測れなければ exit 2
+node scripts/release-state.mjs --function <name> --check # 指定した Edge Function を再照合（複数指定可）
 node scripts/release-state.mjs --diff <function>   # その関数の実際の差分
 ```
 

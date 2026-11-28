@@ -66,7 +66,31 @@ export function bindGis(graph, data, opts) {
   function recordFresh(rec, registryVersion) {
     const p = rec.provenance || {};
     let r;
-    if (p.kind === 'op' || (p.kind === 'compute' && p.inputs?.length)) {
+    if (p.kind === 'map-reconstruction' && (p.mapSource || p.source)) {
+      const original = p.mapSource || {};
+      const sourceKey = original.url || original.attachment || p.source;
+      const sha = original.sha256 || p.sourceSha256;
+      const source = graph.putSource({
+        type: original.url ? 'web_document' : 'dataset', key: sourceKey, label: original.name || sourceKey,
+        version: sha, versionBasis: 'sha256',
+        meta: { retrievedAt: p.retrievedAt, licence: p.licence || null, representation: original.representation },
+      });
+      if (!source.ok) { refused.push({ id: rec.id, why: source.why }); return null; }
+      const inputs = [{ id: source.id, version: source.version }];
+      for (const id of p.inputs || []) {
+        const expected = p.inputVersions?.find(entry => entry.id === id)?.version;
+        const n = expected == null ? record(data.get?.(id)) || ref.get(id)
+          : versions.get(id)?.get(expected) || (data.versionOf?.(id) === expected ? record(data.get?.(id)) : null);
+        if (!n) { refused.push({ id: rec.id, why: 'inputs-not-recorded' }); return null; }
+        inputs.push(n);
+      }
+      r = graph.putDerived({
+        type: 'gis_op', label: rec.title || rec.id, inputs,
+        calc: { op: 'map.reconstruct', params: { recipe: p.recipe, provenanceSha256: p.output?.provenanceSha256, quality: p.quality } },
+        output: { ...p.output, quality: p.quality, count: rec.count, geometryType: rec.geometryType },
+        meta: { dataset: rec.id },
+      });
+    } else if (p.kind === 'op' || (p.kind === 'compute' && p.inputs?.length)) {
       const inputs = [];
       for (const id of (Array.isArray(p.inputs) ? p.inputs : [])) {
         const expected = p.inputVersions?.find((entry) => entry.id === id)?.version;

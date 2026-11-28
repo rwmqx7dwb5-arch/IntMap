@@ -51,10 +51,12 @@ export const PLAN_TOOL = {
     + 'Start a separate request with {"action":"new","goal","steps":[short titles in the reader\'s language],"current":1}, in the same reply as its first calls. '
     + 'Use {"action":"continue","planId":id,"current":n} to select a step or retry work on the same request. '
     + 'Use {"action":"revise","planId":id,...changed fields} to change an existing plan. The current plan ID is in the tool result and the plan block. '
+    + 'Use {"action":"cancel","planId":id} only when the reader cancels that request. '
     + 'A request that one or two calls answer needs no plan. '
     + 'For reusable work set scope to the actual target, period and input IDs and versions. Supply the same scope only when all are unchanged. '
     + 'Use stepScopes:[{step,scope}] to reuse individual unaffected steps when the overall scope changes. '
-    + 'Declare each required deliverable as {id,step,label,receipts:[{capability?,args?,result?,mode?}]}. '
+    + 'Declare every deliverable in the original request before doing the work: {id,step,label,output?,target?,classification?,representation?,verification?,receipts:[{capability?,args?,result?,mode?}]}. '
+    + 'Use short reader-facing labels. For separate targets or classifications declare separate IDs. Set representation to point, line or area when required, and verification to true when an independent check is owed. Match the actual result, such as the row or feature for that target, its geometry, class or verification receipt. Intent or counts alone do not establish these properties. '
     + 'Each receipt is an alternative: match the real tool arguments or structured result using exact values for identifying fields (target, measure, period); include mode such as "map" when the output must be observed. '
     + 'For example, args:{country:"DEU",metric:"population",year:2020} can cover one country, metric and year across sources. For a batch, match the row or item in the result for each requirement. '
     + 'Use target to label attempts. Coverage comes from matching receipts, including results produced under another step. '
@@ -67,14 +69,14 @@ export const PLAN_TOOL = {
   parameters: {
     type: 'object',
     properties: {
-      action: { type: 'string', enum: ['new', 'revise', 'continue'] },
+      action: { type: 'string', enum: ['new', 'revise', 'continue', 'cancel'] },
       planId: { type: 'integer', minimum: 1 },
       goal: { type: 'string' },
       steps: { type: 'array', items: { type: 'string', minLength: 1 } },
       current: { type: 'integer', minimum: 1 },
       scope: { type: 'object' },
       stepScopes: { type: 'array', items: { type: 'object', properties: { step: { type: 'integer', minimum: 1 }, scope: { type: 'object' } }, required: ['step', 'scope'] } },
-      requirements: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, step: { type: 'integer', minimum: 1 }, label: { type: 'string' }, receipts: { type: 'array', items: RECEIPT_SCHEMA } }, required: ['id', 'step', 'label'] } },
+      requirements: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, step: { type: 'integer', minimum: 1 }, label: { type: 'string' }, output: { type: 'string' }, target: { type: 'string' }, classification: { type: 'string' }, representation: { type: 'string', enum: ['point', 'line', 'area'] }, verification: { type: 'boolean' }, receipts: { type: 'array', items: RECEIPT_SCHEMA } }, required: ['id', 'step', 'label'] } },
       target: { type: 'string' },
       geo: { type: 'object' },
     },
@@ -132,6 +134,26 @@ function observes(op, receipt) {
   return op.state === 'completed' || (op.state === 'partial' && !!receipt.result);
 }
 
+const REPRESENTATION = { Point: 'point', MultiPoint: 'point', LineString: 'line', MultiLineString: 'line', Polygon: 'area', MultiPolygon: 'area' };
+function representationOf(value) {
+  return value?.representation || value?.shape || REPRESENTATION[value?.geometryType || value?.geometry?.type];
+}
+function recordsIn(value) {
+  if (!value || typeof value !== 'object') return [];
+  const children = Object.values(value).flatMap(recordsIn);
+  return Array.isArray(value) ? children : [value, ...children];
+}
+function supportsDemand(requirement, result) {
+  const { target, representation, classification, verification } = requirement;
+  if (!target && !representation && !classification && !verification) return true;
+  return recordsIn(result).some((record) => {
+    if (target && ![record.target, record.name, record.id, record.subject].includes(target)) return false;
+    if (representation && representationOf(record) !== representation) return false;
+    if (classification && (record.classification || record.role) !== classification) return false;
+    return !verification || record.verified === true;
+  });
+}
+
 /**
  * makeAtlasPlan() -> ledger
  *
@@ -141,8 +163,11 @@ function observes(op, receipt) {
 export function makeAtlasPlan(opts) {
   const geoProbe = (opts && opts.geoProbe) || null;   /* tests inject the doors; the app reads them off window at call time (js/atlas-geoplan.js defaultProbe) */
   let plan = null;            /* {id, goal, steps:[{title, ops:[], touched}], current (0-based), turn} */
+  const plans = new Map();
+  const session = globalThis.crypto?.randomUUID?.() || String(Date.now());
   let seq = 0;
   let turnNo = 0;
+  let request = '';
   let live = false;           /* a turn is running */
   let geoPending = false;     /* a `geo.check` was declared and has not been run */
   let activeThisTurn = false; /* Atlas said, in THIS turn, which step its calls serve */
@@ -201,10 +226,16 @@ export function makeAtlasPlan(opts) {
 
   function requirementStates(st, work) {
     return st.requirements.map((r) => {
-      const observed = work.findLast((o) => r.receipts.some((receipt) => observes(o, receipt)));
+      const observed = work.findLast((o) => r.receipts.some((receipt) => {
+        const needsResult = r.target || r.representation || r.classification || r.verification;
+        const modes = o.receipt?.producedModes;
+        if (needsResult && !receipt.result) return false;
+        if (r.output && !modes?.includes(r.output)) return false;
+        return supportsDemand(r, receipt.result) && observes(o, receipt);
+      }));
       const attempt = observed || work.findLast((o) => o.target === r.id);
       const state = observed ? 'completed' : attempt?.state === 'completed' ? 'unobserved' : attempt?.state || 'pending';
-      return { ...r, state, callId: attempt?.callId || null, artifact: observed?.artifact };
+      return { ...r, state, code: observed ? undefined : attempt?.code, callId: attempt?.callId || null, artifact: observed?.artifact };
     });
   }
 
@@ -216,13 +247,17 @@ export function makeAtlasPlan(opts) {
       const requirements = requirementStates(st, work);
       return { n: i + 1, title: st.title, state: stepState(st, i, requirements, workByStep[i]), requirements,
         ops: st.ops.map((o) => ({ callId: o.callId, capability: o.cap, state: o.state, code: o.code || undefined, turn: o.turn, draw: o.draw || null, work: o.work || undefined })),
-        workItems: workByStep[i].map((o) => ({ callId: o.callId, capability: o.cap, work: o.work, state: o.state, code: o.code })) };
+        workItems: workByStep[i].map((o) => ({
+          callId: o.callId, capability: o.cap, work: o.work, target: o.target || Object.values(o.args || {})
+            .filter((v) => typeof v === 'string' || typeof v === 'number').map(String).join(' · ').slice(0, 140),
+          state: o.state, code: o.code,
+        })) };
     });
     const requirements = steps.flatMap((st) => st.requirements);
     const missing = requirements.filter((r) => r.state !== 'completed').map((r) => r.id);
     return {
       geo: plan.geo ? { spec: plan.geo.spec, gaps: gapsOf(plan.geo.spec), check: plan.geo.check } : null,
-      id: plan.id, goal: plan.goal, current: plan.current + 1, live, turn: plan.turn, thisTurn: plan.turn === turnNo,
+      id: plan.id, requestKey: plan.requestKey, version: plan.version, request: plan.request, cancelled: plan.cancelled, goal: plan.goal, current: plan.current + 1, live, turn: plan.turn, thisTurn: plan.turn === turnNo,
       /* WHO WROTE THE LIST: `thisTurn` says the plan was touched in this turn (a call that only moved `current` counts); `declaredThisTurn` says this turn
          WROTE the steps. The checklist a reader sees is the second one — a question that merely continues an earlier plan did not make that list. */
       declaredThisTurn: plan.declaredTurn === turnNo,
@@ -234,7 +269,16 @@ export function makeAtlasPlan(opts) {
   /* beginTurn() — js/atlas-agent.js runTurn, before its first step. Which step the calls serve is a
      statement about THIS turn: a call made in a later turn that never mentioned the plan is not filed
      under whatever step an earlier turn left current. */
-  function beginTurn() { turnNo++; live = true; activeThisTurn = false; if (plan) plan.target = ''; emit({ type: 'turn', phase: 'begin' }); }
+  function beginTurn(info) {
+    turnNo++; live = true; activeThisTurn = false; request = String(info?.request || '');
+    if (info?.resumePlanId != null && plans.has(info.resumePlanId) && !plans.get(info.resumePlanId).cancelled) {
+      plan = plans.get(info.resumePlanId);
+      plan.turn = turnNo;
+      activeThisTurn = true;
+    }
+    if (plan) plan.target = '';
+    emit({ type: 'turn', phase: 'begin' });
+  }
 
   /* declare(args) -> the tool's record. Runs where the loop reads the reply, IN CALL ORDER, so a plan
      call earlier in a reply decides which step the calls after it serve. */
@@ -245,7 +289,7 @@ export function makeAtlasPlan(opts) {
   function declare(args, facts) {
     const a = (args && typeof args === 'object') ? args : {};
     const o = !!(facts && facts.outside === true);
-    const before = plan;
+    const before = a.planId == null ? plan : plans.get(a.planId);
     const steps = Array.isArray(a.steps) ? a.steps.map((s) => typeof s === 'string' ? s.trim() : '') : null;
     if (a.steps != null && (!steps?.length || steps.some((s) => !s))) return { ok: false, error: 'invalid_steps',
       message: 'Give at least one step, and give every step a title.' };
@@ -255,13 +299,22 @@ export function makeAtlasPlan(opts) {
     const implicitNew = !before || (steps && a.planId == null && (before.turn !== turnNo ||
       (a.goal != null && normTitle(a.goal) !== normTitle(before.goal))));
     const action = a.action ?? (implicitNew ? 'new' : edits ? 'revise' : 'continue');
-    if (!['new', 'revise', 'continue'].includes(action)) return { ok: false, error: 'invalid_plan_action',
-      message: 'Use action "new", "revise" or "continue".' };
+    if (!['new', 'revise', 'continue', 'cancel'].includes(action)) return { ok: false, error: 'invalid_plan_action',
+      message: 'Use action "new", "revise", "continue" or "cancel".' };
     const isNew = action === 'new';
     if (isNew ? a.planId != null : (!before || (a.planId != null ? a.planId !== before.id : a.action != null || before.turn !== turnNo))) {
       return { ok: false, error: 'plan_id_mismatch', message: isNew ? 'Start a new plan without planId.' : 'Use the current planId to revise or continue it.',
         planId: before?.id };
     }
+    if (action === 'cancel') {
+      plan = before;
+      plan.cancelled = true;
+      plan.turn = turnNo;
+      activeThisTurn = false;
+      emit({ type: 'plan' });
+      return { ok: true, planId: plan.id, cancelled: true };
+    }
+    if (!isNew && before.cancelled) return { ok: false, error: 'plan_cancelled', message: 'This request was cancelled.' };
     if (isNew && !steps) return { ok: false, error: 'missing_steps', message: 'A new plan needs steps.' };
     if (action === 'continue' && edits) return { ok: false, error: 'invalid_plan_update', message: 'Use action "revise" to change the plan.' };
     if ((a.scope != null && !isRecord(a.scope)) || (a.geo != null && !isRecord(a.geo)) ||
@@ -296,6 +349,8 @@ export function makeAtlasPlan(opts) {
     const oldRequirements = isNew ? [] : before.steps.flatMap((st, i) => reusable(i) ? st.requirements : []);
     const requirements = a.requirements ? a.requirements.map((r) => ({
       id: typeof r?.id === 'string' ? r.id.trim() : '', label: typeof r?.label === 'string' ? r.label.trim() : '', step: r?.step,
+      ...Object.fromEntries(['output', 'target', 'classification', 'representation'].filter((k) => typeof r?.[k] === 'string' && r[k].trim()).map((k) => [k, r[k].trim()])),
+      ...(r?.verification === true ? { verification: true } : {}),
       receipts: r?.receipts == null ? [] : r.receipts,
     })) : oldRequirements;
     if (requirements.some((r) => !r.id || !r.label || !Number.isInteger(r.step) || r.step < 1 || r.step > titles.length ||
@@ -316,12 +371,15 @@ export function makeAtlasPlan(opts) {
       return { title, requirements: requirements.filter((r) => r.step === i + 1), scope: stepScope || (reuse ? candidate.scope : undefined),
         ops: reuse ? candidate.ops : [], touched: !!(reuse && candidate.touched), token: reuse ? candidate.token : {} };
     });
-    plan = { id: isNew ? ++seq : before.id, goal, geo, scope: scope ?? (keepWork ? before.scope : null),
+    const id = isNew ? ++seq : before.id;
+    plan = { id, requestKey: isNew ? session + '/' + id : before.requestKey, request: isNew ? request : before.request,
+      version: isNew ? 1 : before.version + Number(action === 'revise' && (edits || changedGeo)), goal, geo, scope: scope ?? (keepWork ? before.scope : null),
       current, target, steps: nextSteps, declaredTurn: steps ? turnNo : before.declaredTurn,
       outside: o || !!(!isNew && before.outside) };
     if (a.geo) geoPending = a.geo.check === true;
     else if (!geo) geoPending = false;
     plan.turn = turnNo;
+    plans.set(id, plan);
     plan.steps[plan.current].touched = true;
     activeThisTurn = true;
     emit({ type: 'plan' });
@@ -349,6 +407,14 @@ export function makeAtlasPlan(opts) {
   function targetOfCall() { return activeThisTurn ? plan?.target || '' : ''; }
   function bindingOfCall() {
     return activeThisTurn && plan ? { planId: plan.id, stepToken: plan.steps[plan.current].token } : {};
+  }
+
+  function previousDrawing(key, stillPresent) {
+    if (!activeThisTurn || !key || typeof stillPresent !== 'function') return null;
+    const previous = latestPerWork(plan.steps.flatMap((st) => st.ops)).findLast((o) => o.key === key && o.turn !== turnNo);
+    const rec = previous?.receipt;
+    return rec?.producedModes?.includes('map') && rec.objectIds?.length &&
+      (previous.state === 'completed' || previous.state === 'partial') && stillPresent(rec.objectIds) ? rec : null;
   }
 
   /* started / settled — the loop around ONE call that reaches the app (not the plan tool itself) */
@@ -409,17 +475,18 @@ export function makeAtlasPlan(opts) {
   /* the plan as the model reads it — in a tool result, and every step after (promptBlock) */
   function forModel() {
     const s = snapshot(); if (!s) return null;
-    return { planId: s.id, goal: s.goal, current: s.current, coverage: s.coverage,
+    return { planId: s.id, requestVersion: s.version, goal: s.goal, current: s.current, coverage: s.coverage,
       steps: s.steps.map((st) => ({ n: st.n, title: st.title, state: st.state,
         requirements: st.requirements, operations: operationLines(plan.steps[st.n - 1].ops) })) };
   }
   function promptBlock() {
     const m = forModel(); if (!m) return '';
+    if (plan.cancelled) return '[PLAN ' + m.planId + ' WAS CANCELLED BY THE READER]\n';
     const lines = m.steps.map((st) => st.n + '. ' + st.title + ' — ' + st.state + (st.operations.length ? ': ' + st.operations.join('; ') : '')
       + (st.requirements.length ? '\n' + st.requirements.map((r) => '  - ' + r.id + ' (' + r.label + '): ' + r.state).join('\n') : ''));
     const geoLine = plan.geo ? geoPromptLine(plan.geo) : '';
     return '[YOUR PLAN — declared by you' + (plan.turn === turnNo && live ? ' in this turn' : ' in an earlier turn')
-      + '; each state is what IntMap OBSERVED of the calls made under that step]\nPlan ID: ' + m.planId + '\nGoal: ' + (m.goal || '(none given)') + '\n'
+      + '; each state is what IntMap OBSERVED of the calls made under that step]\nPlan ID: ' + m.planId + ' · version ' + m.requestVersion + '\nGoal: ' + (m.goal || '(none given)') + '\n'
       + lines.join('\n') + geoLine + (m.coverage.total ? '\nRequired deliverables observed: ' + m.coverage.completed + '/' + m.coverage.total : '')
       + '\nCurrent step: ' + m.current + (activeThisTurn ? '' : ' (inactive this turn — start a new plan or continue this plan by ID to file calls under a step)')
       + '\n"unobserved" means the call ran and its effect could not be seen; "noop" means the step was current and nothing ran under it.\n\n';
@@ -430,7 +497,7 @@ export function makeAtlasPlan(opts) {
   /* whether the plan promptBlock() puts in front of the model holds words written in a marked turn — see declare() */
   function carriesOutside() { return !!(plan && plan.outside === true); }
 
-  return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, targetOfCall, bindingOfCall, started, settled, noteDrawing, endTurn,
+  return { TOOL: PLAN_TOOL, beginTurn, declare, attribute, targetOfCall, bindingOfCall, previousDrawing, started, settled, noteDrawing, endTurn,
     snapshot, forModel, promptBlock, carriesOutside, subscribe, geoPending: geoPendingNow, preflight: runPreflight };
 }
 

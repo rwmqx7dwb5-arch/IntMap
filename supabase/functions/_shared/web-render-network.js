@@ -1,11 +1,16 @@
 // One fresh Browser Run connection for a public render. An operated session is
-// never attached, and the browser returns no request headers or response bodies.
+// never attached, and only classification results leave this module.
 import { browseUrlAllowed, geographicKind, LIMITS } from "./web-browse.js";
 import { cdpClient } from "./web-session.js";
 
 const MAX_HOSTS = 80;
 const MAX_REQUESTS = 500;
 const WAIT_MS = 12000;
+// Eight 512-KiB JSON bodies fit within a 4-MiB per-target DevTools buffer.
+// Larger, evicted, or unfinished responses remain unverified leads.
+const JSON_PROBES = 8;
+const JSON_BYTES = 512 * 1024;
+const JSON_MIME = /^application\/(?:json|[a-z0-9.-]+\+json)(?:\s*;|$)/i;
 const WEB_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const CREDENTIAL_NAME = /(?:auth|token|signature|secret|password|credential|session|api.?key|^sig$|^key$|^x-amz-|^x-goog-)/i;
 const PRIVATE_HEADER = /^(?:cookie2?|authorization|proxy-authorization)$|(?:api.?key|auth.?token|secret)/i;
@@ -24,6 +29,18 @@ function hasCredentials(headers) {
   return Object.keys(headers || {}).some((name) => PRIVATE_HEADER.test(name));
 }
 
+function structuredGeographicJson(body, base64Encoded) {
+  if (typeof body !== "string" || body.length > Math.ceil(JSON_BYTES * 4 / 3) + 4) return null;
+  let j;
+  const bytes = base64Encoded ? Uint8Array.from(atob(body), c => c.charCodeAt(0)) : new TextEncoder().encode(body);
+  if (bytes.length > JSON_BYTES) return null;
+  try { j = JSON.parse(new TextDecoder().decode(bytes)); } catch (_) { return null; }
+  const isFeature = f => f?.type === "Feature" && Object.hasOwn(f, "geometry");
+  if (isFeature(j) || (j?.type === "FeatureCollection" && Array.isArray(j.features) && j.features.every(isFeature))) return "geojson";
+  if (j?.type === "Topology" && Array.isArray(j.arcs) && j.objects && typeof j.objects === "object") return "topojson";
+  return false;
+}
+
 export async function observeRender(target, options, { cfg, resolvesPublic, openNetworkSocket, signal, limits }) {
   if (!anonymousUrl(target.href)) return { code: "not_allowed" };
   const endpoint = "wss://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(cfg.accountId) + "/browser-run/devtools/browser?keep_alive=10000";
@@ -38,6 +55,7 @@ export async function observeRender(target, options, { cfg, resolvesPublic, open
   }
 
   const requests = new Map(), wire = new Map(), replies = new Map(), guarded = new Set();
+  const finished = new Set();
   let limited = false, documentStatus = 0;
   let root, mainFrame;
   // Observe the request before it is sent, then require a successful HTTP
@@ -77,18 +95,24 @@ export async function observeRender(target, options, { cfg, resolvesPublic, open
     const url = anonymousUrl(response.url);
     if (!url || requested !== url.href || [...url.searchParams.keys()].some((key) => !PUBLIC_QUERY.test(key))) return;
     const kind = geographicKind(url, response.mimeType);
-    if (!kind || OMIT_KINDS.has(kind) || /^(?:text\/html|application\/xhtml)/i.test(response.mimeType)) return;
+    const genericJson = (type === "XHR" || type === "Fetch") && (!kind || kind === "json") && JSON_MIME.test(response.mimeType);
+    if ((!genericJson && (!kind || OMIT_KINDS.has(kind))) || /^(?:text\/html|application\/xhtml)/i.test(response.mimeType)) return;
     // Other protobuf resources such as map glyphs share the file extension.
     if (kind === "pbf" && !/(?:\.osm|\/\d+\/\d+\/\d+)\.pbf$/i.test(url.pathname)) return;
     if (replies.size === MAX_REQUESTS) { limited = true; return; }
-    replies.set(id, { href: url.href, kind, via: "network-response" });
+    replies.set(id, { href: url.href, kind, requestId, sid, genericJson });
   });
-  for (const event of ["Network.loadingFailed", "Network.loadingFinished"]) cdp.on(event, ({ requestId }, sid) => requests.delete(sid + ":" + requestId));
+  cdp.on("Network.loadingFailed", ({ requestId }, sid) => requests.delete(sid + ":" + requestId));
+  cdp.on("Network.loadingFinished", ({ requestId, encodedDataLength }, sid) => {
+    const id = sid + ":" + requestId;
+    requests.delete(id);
+    if (replies.get(id)?.genericJson && encodedDataLength <= JSON_BYTES) finished.add(id);
+  });
 
   async function guard(sid) {
     guarded.add(sid);
     const send = (method, params) => cdp.send(method, params, sid);
-    await send("Network.enable");
+    await send("Network.enable", { maxResourceBufferSize: JSON_BYTES, maxTotalBufferSize: JSON_BYTES * JSON_PROBES });
     await send("Network.setBypassServiceWorker", { bypass: true });
     await send("Fetch.enable", { patterns: [{ urlPattern: "*" }], handleAuthRequests: true });
     await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
@@ -151,13 +175,31 @@ export async function observeRender(target, options, { cfg, resolvesPublic, open
         if (!options.fullPage || shot.clip) shotB64 = (await send("Page.captureScreenshot", shot)).data;
       } catch (_) { /* a screenshot is optional */ }
     }
-    const assets = new Map();
+    const assets = new Map(), generic = new Map();
     for (const [id, asset] of replies) {
       if (!wire.get(id) || assets.has(asset.href)) continue;
+      if (asset.genericJson) {
+        if (!generic.has(asset.href) || finished.has(id)) generic.set(asset.href, { id, asset });
+        continue;
+      }
       if (assets.size === LIMITS.files) { limited = true; break; }
-      assets.set(asset.href, asset);
+      assets.set(asset.href, { href: asset.href, kind: asset.kind, via: "network-response" });
     }
-    return { html: result.result.value, shotB64, url: url.href, status: documentStatus, assets: [...assets.values()], coverage: limited ? "partial" : "observed" };
+    const pending = [...generic.values()].filter(({ asset }) => !assets.has(asset.href));
+    const probes = pending.filter(({ id }) => finished.has(id)).slice(0, JSON_PROBES);
+    let unverifiedJson = pending.length - probes.length;
+    const confirmed = await Promise.all(probes.map(async ({ asset }) => {
+      try {
+        const body = await cdp.send("Network.getResponseBody", { requestId: asset.requestId }, asset.sid, 1500);
+        return { href: asset.href, kind: structuredGeographicJson(body.body, body.base64Encoded) };
+      } catch (_) { return { kind: null }; }
+    }));
+    for (const { href, kind } of confirmed) {
+      if (kind === null || (kind && assets.size === LIMITS.files)) unverifiedJson++;
+      else if (kind) assets.set(href, { href, kind, via: "network-response" });
+    }
+    return { html: result.result.value, shotB64, url: url.href, status: documentStatus, assets: [...assets.values()],
+      coverage: limited || unverifiedJson ? "partial" : "observed", unverifiedJson };
   }
 
   try { return await capture(); }

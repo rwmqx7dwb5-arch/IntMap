@@ -274,8 +274,8 @@ test('⑥ (notebook-hidden) the notebook is not shown, and the answered turns ar
 });
 
 /* Geography recovery shares the already booted, signed-in Atlas page. */
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="80" viewBox="0 0 100 80">
-<path fill="#35a870" fill-rule="evenodd" d="M 10 10 H 80 V 60 H 10 Z M 30 30 H 50 V 40 H 30 Z"/>
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80">
+<g id="wooded-area" style="fill:#35a870;fill-rule:evenodd" transform="translate(2,3)"><path d="M 8 7 H 78 V 57 H 8 Z M 28 27 H 48 V 37 H 28 Z"/></g>
 <g transform="translate(2 3)"><path id="survey-trace" fill="none" stroke="#5500ff" d="M 15 62 H 30 L 70 68"/></g>
 </svg>`;
 
@@ -288,7 +288,7 @@ const distortedSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height
 const rasterMarks = [[5,5],[90,5],[5,75],[90,75],[40,12],[65,55]].map((pixel,i) => ({ pixel, name:'Marsh marker '+(i+1) }));
 
 function vectorPdf() {
-  const commands = '0.2 0.4 0.6 RG\n2 w\n10 10 m\n30 30 50 55 80 70 c\nS\n';
+  const commands = '0.2 0.4 0.6 RG\n2 w\n10 10 m\n30 30 50 55 80 70 c\nS\nq [4 2] 0 d 10 60 m 60 64 l S Q\n';
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -340,12 +340,21 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
       type: 'Feature', properties: { featureClass: 'woodland' },
       geometry: { type: 'Polygon', coordinates: [ring(10,10,80,60), ring(30,30,50,40)] },
     }] });
-    const georef = { control: [[0,0], [100,0], [0,80], [100,80]].map(tie), check: [tie([43,29])], maxErrorM: 0.001 };
+    const georef = { control: [[0,0], [100,0], [0,80], [100,80]].map(tie), check: [{ ...tie([43,29]), evidence: 'independent-observation' }], maxErrorM: 0.001 };
     const extract = (record, extra) => fetchFile({ mapSource: { action: 'extract', source: record.source.id, ...georef, ...extra } });
     const a = await extract(area, { legend: [{ label: 'woodland', color: '#35a870' }], reference: { dataset: reference.id, field: 'featureClass' }, crop: [0, 0, 100, 61], period: { start: '1980', end: '1985' } });
     const l = await extract(area, { method: 'linework', legend: [{ label: 'survey', elementIds: ['survey-trace'] }] });
+    const vectorArea = await extract(area, { method: 'linework', legend: [
+      { id: 'woods', label: 'woodland', geometry: 'Polygon', elementIds: ['wooded-area'] },
+      { id: 'meadow', label: 'meadow', color:'#97ad58', geometry: 'Polygon', elementIds: ['no-such-group'] },
+    ] });
     const pdf = await read(pdfUrl);
-    const p = await extract(pdf, { method: 'linework', legend: [{ label: 'river', color: '#336699' }] });
+    const p = await extract(pdf, { method: 'linework', legend: [
+      { label: 'river', color: '#336699', dash: 'solid' }, { label: 'seasonal', color: '#336699', dashArray: [4,2] },
+    ] });
+    const ambiguous = await extract(pdf, { method: 'linework', legend: [
+      { label: 'river', color: '#336699' }, { label: 'seasonal', color: '#336699' },
+    ] });
     const canvas = document.createElement('canvas');
     canvas.width = 100; canvas.height = 80;
     const context = canvas.getContext('2d');
@@ -375,15 +384,40 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
       legend:[{ label:'embankment', elementIds:['embankment'] }] } });
     const featuresOf = (r) => G.data.get(r.exec?.mapSource?.dataset?.id)?.features();
     const measured = a.ok ? await G.atlas.run({ op: 'measure', inputs: [a.exec.mapSource.dataset.id], params: { what: 'area' } }) : null;
-    return { area, pdf, a, l, p, z, n, v, nonlinearLines:featuresOf(n), rasterFeatures: featuresOf(z), areaFeatures: featuresOf(a), svgLines: featuresOf(l), pdfLines: featuresOf(p),
+    const display = await G.atlas.draw({ dataset: vectorArea.exec.mapSource.dataset.id });
+    const vectorFeatures = featuresOf(vectorArea);
+    const body = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(vectorFeatures)));
+    const vectorFingerprint = [...new Uint8Array(body)].map(n => n.toString(16).padStart(2, '0')).join('');
+    return { area, pdf, a, l, p, z, n, v, vectorArea, display, vectorFeatures, vectorFingerprint, ambiguous, nonlinearLines:featuresOf(n), rasterFeatures: featuresOf(z), areaFeatures: featuresOf(a), svgLines: featuresOf(l), pdfLines: featuresOf(p),
       measurement: measured?.ok };
   }, { marks:surveyMarks, rasterMarks });
   expect(evidence.area.size).toMatchObject({ width: 100, height: 80, origin: 'top-left' });
   expect(evidence.area.preview.frame).toBeTruthy();
+  expect(evidence.area.vectorSelectors.elementIds).toContain('wooded-area');
+  expect(evidence.vectorArea.ok, JSON.stringify(evidence.vectorArea)).toBe(true);
+  const structural = evidence.vectorArea.exec.mapSource;
+  expect(structural.quality.classification).toMatchObject({ field: 'classId', missingClassIds: ['meadow'],
+    classes: [{ id: 'woods', color: '#35a870', selectedShapes: 1, registeredFeatures: 1 },
+      { id: 'meadow', selectedShapes: 0, registeredFeatures: 0 }],
+    unclassified: { missingSelectors: 1 } });
+  expect(evidence.display).toMatchObject({ ok:true, legend:{field:'classId', classes:[
+    {id:'woods',label:'woodland',color:'#35a870',count:1},{id:'meadow',label:'meadow',color:'#97ad58',count:0},
+  ]} });
+  expect(evidence.vectorFeatures[0].geometry.coordinates).toHaveLength(2);
+  expect(evidence.vectorFeatures[0].properties).toMatchObject({ classId: 'woods', sourceElementId: 'wooded-area' });
+  expect(structural.output).toMatchObject({ id: structural.dataset.id, version: structural.dataset.version, sha256: evidence.vectorFingerprint });
+  expect(structural.dataset.provenance.output.sha256).toBe(evidence.vectorFingerprint);
+  expect(structural.dataset.provenance.output.provenanceSha256).toBe(structural.output.provenanceSha256);
+  expect(evidence.pdf.vectorSelectors.strokeStyles.map(row => row.dash).sort()).toEqual(['dashed','solid']);
+  expect(evidence.ambiguous.exec.mapSource.detail.classification.unclassified.ambiguous).toBe(2);
+  expect(evidence.ambiguous.exec.mapSource.detail.classification.missingClassIds).toEqual(['river','seasonal']);
   expect(evidence.a.ok, JSON.stringify(evidence.a)).toBe(true);
   expect(evidence.areaFeatures[0].geometry.coordinates).toHaveLength(2);
   expect(evidence.a.exec.mapSource.quality.reference.results[0].iou).toBeCloseTo(1, 7);
   expect(evidence.a.exec.mapSource.quality.positional.independent.rmseM).toBeLessThan(0.001);
+  expect(evidence.a.exec.mapSource.quality.positional.independentlyCheckedErrorM).toBeLessThan(0.001);
+  expect(evidence.a.exec.mapSource.quality.positional.checkEvidence['independent-observation'].pixelBounds)
+    .toEqual([43, 29, 43, 29]);
   expect(evidence.a.exec.mapSource.dataset.time.kind).toBe('constant');
   expect(evidence.a.exec.mapSource.dataset.sourceCrs).toBeNull();
   expect(evidence.a.exec.mapSource.dataset.provenance.recipe.transform.crs).toBe('EPSG:4326');
@@ -393,6 +427,7 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
   expect(evidence.svgLines[0].geometry.coordinates[0][0]).toBeCloseTo(17.17);
   expect(evidence.svgLines[0].geometry.coordinates[0][1]).toBeCloseTo(41.35);
   expect(evidence.p.ok, JSON.stringify(evidence.p)).toBe(true);
+  expect(evidence.pdfLines.map(f => f.properties.classId)).toEqual(['river','seasonal']);
   expect(evidence.pdfLines[0].geometry.coordinates.length).toBeGreaterThan(2);
   expect(evidence.pdfLines[0].geometry.coordinates[0][0]).toBeCloseTo(17.10);
   expect(evidence.pdfLines[0].geometry.coordinates.at(-1)[1]).toBeCloseTo(41.90);
@@ -407,6 +442,8 @@ test('Atlas recovers geographic features from unseen SVG, PDF and PNG sources', 
   expect(evidence.nonlinearLines[0].geometry.coordinates.length).toBeGreaterThan(10);
   expect(evidence.nonlinearLines[0].geometry.coordinates[0][0]).toBeCloseTo(19.15+(22/120)**2/4, 8);
   expect(evidence.v.ok, JSON.stringify(evidence.v)).toBe(true);
+  expect(evidence.v.exec.mapSource.quality.positional.independentlyCheckedErrorM).toBeNull();
+  expect(evidence.v.exec.mapSource.quality.positional.checkEvidence['shared-visual-reading'].count).toBeGreaterThan(0);
   expect(evidence.v.exec.mapSource.quality.positional).toMatchObject({
     transformModel:'affine', controlSource:{method:'visual-landmark-estimates',model:'source-markers-fixture'},
     independent:{count:1}, accepted:true,

@@ -664,6 +664,13 @@ export const ATL_FILE = (function () {
    *  `encodeImage` is injected because canvas is the one capability this module cannot supply —
    *  the app passes compressImage, a test passes whatever it wants to observe.
    */
+  // Keep the browser File apart from the serializable model payload. A vision
+  // image can be compressed while source-map extraction still sees its bytes.
+  function withOriginal(record, file) {
+    Object.defineProperty(record, 'originalFile', { value: file });
+    return record;
+  }
+
   async function read(file, opts) {
     opts = opts || {};
     const name = String((file && file.name) || 'file'), size = (file && file.size) || 0;
@@ -715,12 +722,15 @@ export const ATL_FILE = (function () {
        below, which is how an SVG the canvas refuses still reaches the model as its source. */
     if (/^image\//.test(ty)) {
       const u = await encode(opts, file);
-      if (u) return { kind: 'image', name: name, size: size, dataUrl: u };
+      if (u) return withOriginal({ kind: 'image', name: name, size: size, dataUrl: u }, file);
     }
     if (/^(audio|video)\//.test(ty)) return { kind: 'unsupported', name: name, size: size, why: 'media' };
     const t = decodeText(buf);
-    if (t) return textDesc(name, size, t, 'text');
-    if (!/^image\//.test(ty)) { const u = await encode(opts, file); if (u) return { kind: 'image', name: name, size: size, dataUrl: u }; }
+    if (t) {
+      const record = textDesc(name, size, t, 'text');
+      return record.kind === 'text' && (/\.svg$/i.test(name) || ty === 'image/svg+xml') ? withOriginal(record, file) : record;
+    }
+    if (!/^image\//.test(ty)) { const u = await encode(opts, file); if (u) return withOriginal({ kind: 'image', name: name, size: size, dataUrl: u }, file); }
     /* ⚠ A PICTURE THIS BROWSER COULD NOT DRAW IS NOT "BINARY" — it is the one case #R540 exists to
        stop being silent, so it keeps its own reason and its own sentence. */
     return { kind: 'unsupported', name: name, size: size, why: /^image\//.test(ty) ? 'image-undecodable' : 'binary' };

@@ -1386,6 +1386,7 @@ atlas-answer-pipeline.js          Atlas — 台帳 → 1 回の呼び出し → 
                                   監査は回答を書き換えず・削らず・問い直さない。所見は Atlas が読んで判断する
 atlas-answer-render.js            Atlas — 構造化回答の描画（#R350）。引用記号と出典カードはレジストリからのみ生成し、
                                   モデルが書いた URL はリンクにしない
+atlas-number-evidence.js          Atlas — 数値・単位と証拠 ID を結び付け、回答の引用が語順だけに左右されないようにする。
 atlas-answer-sources.js           Atlas — 道具を使った回答の出典。実行した道具の結果（meta.provenance）・描かれた国境の記録・
                                   地図の出典表記から一覧を作り、返った値と等しい本文の数字に [n] を付け、線の出自カードと引用を開く
 ```

@@ -36,7 +36,7 @@
    作らないため。おかげでこのファイルは何も import せず、循環参照も作らない。 */
 export const ATTACH_LOG = (function () {
   /* {turn, rec} の並び。rec は ATL_FILE.read が返したものそのもの（写しを作らない）。
-     画像は data URL の文字列でしか渡ってこないので、ここで最小の記録に包む。 */
+     貼り付けの data URL と、ファイル添付のレコードを同じ画像の記録に包む。 */
   let log = [];
   const CAP = 48;   /* js/atlas-console.js の _hist と同じ数。会話の記憶が 2 つの長さを持つ状態を作らない */
 
@@ -64,9 +64,15 @@ export const ATTACH_LOG = (function () {
      取り寄せ不能になる（実測）。名前は台帳が発行する識別子であって、長さの計算ではない。 */
   let imgSeq = 0;
 
-  /** このターンに添付されたものを台帳に載せる。imgs は data URL の配列、files は read() の記録。 */
+  /** imgs accepts pasted data URLs and image records returned by read(). */
   function remember(turn, imgs, files) {
-    (imgs || []).forEach((u) => { if (u) log.push({ turn: turn, rec: { kind: 'image', name: 'image-' + (++imgSeq), dataUrl: u } }); });
+    for (const entry of imgs || []) {
+      const dataUrl = typeof entry === 'string' ? entry : entry?.dataUrl;
+      if (!dataUrl) continue;
+      const rec = { kind: 'image', name: 'image-' + (++imgSeq), dataUrl };
+      if (entry.originalFile) Object.defineProperty(rec, 'originalFile', { value: entry.originalFile });
+      log.push({ turn, rec });
+    }
     (files || []).forEach((f) => { if (f) log.push({ turn: turn, rec: f }); });
     /* ⚠ 会話は終わらない（「新しい会話」でモジュールが作り直される経路はこの製品に無い）。
        台帳は会話履歴 `_hist` と同じ 48 件で頭を落とす——1 件 8 MB の PDF を無限に抱えないため。
@@ -164,6 +170,7 @@ export const ATTACH_LOG = (function () {
     if (!n) return null;
     const all = earlier(turn + 1);
     return all.find((r) => _nm(r.name) === n)
+      || all.find((r) => _nm(r.originalFile?.name) === n)
       || all.find((r) => _nm(r.name).indexOf(n) >= 0)
       || all.find((r) => _namedIn(n, _nm(r.name))) || null;
   }

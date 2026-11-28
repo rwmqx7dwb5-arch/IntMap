@@ -158,6 +158,29 @@ test('R738 ① an attribute colouring reaches the fill, the line AND the circle 
   assert.ok(inExpr.has(lg.missing.color.toLowerCase()), 'the legend names a missing colour the map does not use');
 });
 
+test('a declared source legend keeps every class, including classes with no geometry', async () => {
+  const { R, UP, rules } = await boot();
+  const classes = Array.from({length: 19}, (_, i) => ({
+    id: 'unit-' + i, label: 'Land unit ' + i, color: '#' + (0x123456 + 2123 * i).toString(16),
+  }));
+  const features = classes.slice(0, -1).map(c => feat({ id: c.id }));
+  features.push(feat({ id: 'unspecified' }));
+  const spec = {field:'id', classes};
+  const { ok, legend } = UP.classify(features.map(f => f.properties.id), spec, rules);
+  assert.equal(ok, true);
+  assert.deepEqual(legend.classes.map(({id,label,color})=>({id,label,color})), classes);
+  assert.equal(legend.classes.at(-1).count, 0);
+  assert.equal(legend.other.count, 1);
+  const put = UP.add(fc(features), 'Land cover', null, {spec, legend});
+  const defined = [...R.layers.values()].filter(l => l.source === put.sid);
+  assert.equal(defined.length, 3);
+  for (const layer of defined) {
+    const colours = Object.values(layer.paint).flatMap(coloursIn);
+    for (const c of classes) assert.ok(colours.includes(c.color));
+  }
+  assert.equal(UP.classify([], {field:'id', classes:[...classes, classes[0]]}, rules).why, 'invalid-classes');
+});
+
 test('R738 ① a null spec puts the layer back to its single colour', async () => {
   const { R, UP } = await boot();
   const put = UP.add(fc([feat({ k: 'a' }), feat({ k: 'b' })]), 'reset.geojson');

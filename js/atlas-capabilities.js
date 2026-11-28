@@ -2714,7 +2714,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         return post({ op: 'search', catalog: cat.hash, q: q }, signal).then(function (j) {
           if (j.state !== 'catalog_unknown') return j;
           var prior = _seeds.get(cat.hash);
-          if (prior && !(prior.attempts === 1 && /^(unreachable|http_50[234])$/.test(prior.state))) {
+          if (prior && !(prior.attempts === 1 && /^(unreachable|store_unavailable|http_50[234])$/.test(prior.state))) {
             return { state: prior.state === 'running' ? 'catalog_indexing' : ('catalog_seed_' + prior.state) };
           }
           var seed = { catalog: cat.hash, state: 'running', at: Date.now(), attempts: (prior ? prior.attempts : 0) + 1 };

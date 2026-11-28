@@ -69,7 +69,7 @@ export function atPath(root, path) {
   const parts = p.match(/[^.[\]]+/g) || [];
   let cur = root;
   for (const k of parts) {
-    if (cur == null || typeof cur !== 'object' || !(k in cur)) return { found: false };
+    if (cur == null || typeof cur !== 'object' || !Object.hasOwn(cur, k)) return { found: false };
     cur = cur[k];
   }
   return { found: true, value: cur };
@@ -78,6 +78,21 @@ export function atPath(root, path) {
 function pathKey(path) {
   const p = String(path || '$').replace(/^\$\.?/, '');
   return (p.match(/[^.[\]]+/g) || []).join('\u0000');
+}
+
+/* Retain tables independently of their surrounding text and diagnostics. */
+function tableParts(rec) {
+  const tables = {};
+  function walk(value, path, depth = 0) {
+    if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 6) return;
+    if (Array.isArray(value.rows) && Array.isArray(value.columns)) {
+      tables[path] = { rows: value.rows, columns: value.columns, sources: value.sources, provenance: value.provenance };
+      return;
+    }
+    for (const [key, nested] of Object.entries(value)) walk(nested, path ? path + '.' + key : key, depth + 1);
+  }
+  walk(rec, '');
+  return textOf(tables);
 }
 /* the shape of a result in one line: keys and the size of each array/object — what is in it, not what it means */
 function shapeLine(rec) {
@@ -107,7 +122,9 @@ export function wmTurnRecord(turnId, question, out, wctx, planSnap, ledgerTurn) 
   const stopped = String(out.stopped || '');
   return { turnId: turnId, question: question, reply: out.text || '', unmet: out.unmet, unresolved: ledgerTurn && ledgerTurn.unresolved,
     decisions: dec, outside: out.externalContentSeen === true,
-    steps: planSnap && planSnap.steps ? planSnap.steps.map((x) => ({ title: x.title, state: x.state })) : undefined,
+    plan: planSnap?.thisTurn ? planSnap : undefined,
+    steps: planSnap?.thisTurn ? planSnap.steps.map((x) => ({ title: x.title, state: x.state })) : undefined,
+    resumedFrom: out.resumedFrom, acknowledged: out.acknowledged,
     awaiting: stopped === 'awaiting_user',
     outcome: stopped === 'awaiting_user' ? 'asked' : (String(out.completion || '') || (stopped ? 'stopped' : 'answered')) };
 }
@@ -158,6 +175,8 @@ export function makeAtlasWorkingMemory(o) {
     const numbers = numericLeaves(rec);
     st.results[ref] = { ref: ref, turnId: turnId, callId: String(callId), name: s(name, 80), args: s(textOf(args || {}), 300), size: text.length,
       shape: s(shapeLine(rec), 200), headline: headlineOf(rec), status: s(rec.status || (rec.ok === false ? 'failed' : 'ok'), 16), numbers: numbers, text: text, evicted: false };
+    const tables = tableParts(rec);
+    if (tables && tables !== '{}' && tables.length <= L.persistChars) st.results[ref].tables = tables;
     st.done.push({ turnId: turnId, callId: String(callId), name: s(name, 80), args: s(textOf(args || {}), 300), status: st.results[ref].status, ref: ref, headline: st.results[ref].headline });
     if (st.done.length > L.done) st.done.splice(0, st.done.length - L.done);
     evict(); later();
@@ -171,6 +190,13 @@ export function makeAtlasWorkingMemory(o) {
       const r = st.results[refs[i]];
       if (!r.text) continue;
       total -= r.text.length; r.text = ''; r.evicted = true;
+    }
+    let retained = 0;
+    for (const ref of refs.reverse()) {
+      const r = st.results[ref];
+      if (!r.tables) continue;
+      if (retained + r.tables.length <= L.persistChars) retained += r.tables.length;
+      else delete r.tables;
     }
   }
   /* pin — a figure the job depends on, with the address of the original it came from. `ref`+`path` is checked
@@ -197,8 +223,11 @@ export function makeAtlasWorkingMemory(o) {
   }
   function open(text, kind, turnId) {
     const t = s(text, 400); if (!t) return null;
-    const dup = st.open.find((x) => x.text === t && x.state === 'open'); if (dup) return dup;
-    const rec = { id: 'o' + (++st.seq), text: t, kind: s(kind || 'owed', 16), turnId: turnId == null ? (st.goal && st.goal.turnId) : turnId, state: 'open' };
+    const type = s(kind || 'owed', 16);
+    const turn = turnId ?? st.goal?.turnId;
+    const dup = st.open.find((x) => x.text === t && x.kind === type && x.state === 'open' && (type === 'job' || x.turnId === turn));
+    if (dup) return dup;
+    const rec = { id: 'o' + (++st.seq), text: t, kind: type, turnId: turn, state: 'open' };
     st.open.push(rec); if (st.open.length > L.open) st.open.splice(0, st.open.length - L.open);
     return rec;
   }
@@ -210,17 +239,48 @@ export function makeAtlasWorkingMemory(o) {
     if (t.outside === true) st.outside = true;      /* a fact about the turn, as js/atlas-console.js records it: outside content was in front of the model */
     st.turns.push({ turnId: turnId, question: s(t.question, 20000), reply: s(t.reply, 20000), at: Date.now() });
     if (st.turns.length > L.turns) st.turns.splice(0, st.turns.length - L.turns);
-    /* a turn's owed items replace the previous turn's: what is unmet NOW is the truth, and what it no longer lists was met */
-    st.open.forEach((x) => { if (x.state === 'open' && x.kind !== 'user' && x.kind !== 'job') x.state = 'resolved';   /* 'job': a background job is owed until it is read at its end (js/atlas-job-products.js), not until the next turn */ });
-    (Array.isArray(t.unmet) ? t.unmet : []).forEach((u) => open(u?.kind === 'goal' ? s(u.need, 220)
+    const plan = t.plan;
+    if (plan?.requestKey) {
+      const requirements = plan.cancelled ? [] : plan.steps.flatMap((step) => step.requirements || []);
+      const byId = new Map(requirements.map((r) => [r.id, r]));
+      for (const row of st.open) {
+        if (row.state !== 'open' || row.requestKey !== plan.requestKey) continue;
+        const observed = byId.get(row.deliverable);
+        if (plan.cancelled) row.state = 'cancelled';
+        else if (observed?.state === 'completed' && plan.version === row.requestVersion) row.state = 'resolved';
+        else if (plan.version > row.requestVersion) row.state = 'superseded';
+      }
+      for (const r of requirements) {
+        if (r.state === 'completed') continue;
+        const current = st.open.find((row) => row.state === 'open' && row.requestKey === plan.requestKey && row.requestVersion === plan.version && row.deliverable === r.id);
+        const fields = { requestKey: plan.requestKey, planId: plan.id, requestVersion: plan.version, deliverable: r.id,
+          demand: { output: r.output, target: r.target, classification: r.classification, representation: r.representation, verification: r.verification },
+          progress: r.state, reason: r.code, updatedTurnId: turnId };
+        if (current) Object.assign(current, fields);
+        else {
+          st.open.push({ id: 'o' + (++st.seq), text: s(r.label, 400), kind: 'deliverable', turnId, state: 'open', ...fields });
+          if (st.open.length > L.open) st.open.splice(0, st.open.length - L.open);
+        }
+      }
+    }
+    const unresolved = (Array.isArray(t.unmet) ? t.unmet : []).filter((u) => !u.planId);
+    for (const row of st.open) {
+      if (row.state === 'open' && row.turnId === t.resumedFrom && row.needId && t.acknowledged?.includes(row.needId)) row.state = 'resolved';
+    }
+    unresolved.forEach((u) => {
+      const row = open(u?.kind === 'goal' ? s(u.need, 220)
       : u?.kind === 'step' ? 'step ' + u.n + ' "' + s(u.title, 80) + '" ' + u.state
-        : 'output ' + s(u && u.mode, 40) + ' not produced (' + s(u && u.code, 40) + ')', 'unmet', turnId));
+        : 'output ' + s(u && u.mode, 40) + ' not produced (' + s(u && u.code, 40) + ')', 'unmet', t.resumedFrom ?? turnId);
+      if (row && u.id) row.needId = u.id;
+    });
     (Array.isArray(t.unresolved) ? t.unresolved : []).forEach((u) => open(typeof u === 'string' ? u : textOf(u), 'unresolved', turnId));
     if (t.question && /[?？]\s*$/.test(String(t.reply || '').trim()) && t.awaiting) open('asked the reader: ' + s(t.reply, 300), 'user', turnId);
-    Object.keys(t.decisions || {}).forEach((k) => decide(k, t.decisions[k], 'wctx', turnId));
-    if (Array.isArray(t.steps)) setSteps(t.steps);
+    if (st.goal?.turnId === turnId) {
+      Object.keys(t.decisions || {}).forEach((k) => decide(k, t.decisions[k], 'wctx', turnId));
+      if (Array.isArray(t.steps)) setSteps(t.steps);
+      closeGoal(t.outcome || 'answered');
+    }
     (Array.isArray(t.evidence) ? t.evidence : []).forEach(addEvidence);
-    closeGoal(t.outcome || 'answered');
     save();
   }
   function dropFrom(turnId) {        /* a rewound conversation: what those turns settled goes with them */
@@ -252,9 +312,18 @@ export function makeAtlasWorkingMemory(o) {
        answered from it; anything else still says the body is gone, and the message carries the indexed values, not only their paths. */
     if (!r.text && path) {
       const want = pathKey(path);
+      if (r.tables) {
+        for (const [root, table] of Object.entries(JSON.parse(r.tables))) {
+          const prefix = pathKey(root);
+          if (prefix && want !== prefix && !want.startsWith(prefix + '\u0000')) continue;
+          const hit = atPath(table, want.slice(prefix.length).replace(/^\u0000/, '').replace(/\u0000/g, '.'));
+          if (hit.found) return { ok: true, text: ref + ' ' + path + ' = ' + textOf(hit.value), fromTable: true };
+        }
+      }
       const hit = (r.numbers || []).find((n) => pathKey(n.path) === want);
       if (hit) return { ok: true, text: ref + ' ' + path + ' = ' + textOf(hit.value) + ' (from the index of numbers; the rest of the body was dropped to stay within memory)', fromIndex: true };
     }
+    if (!r.text && !path && r.tables) return { ok: true, text: 'Retained tables from ' + ref + ' (outside the original result body): ' + r.tables, fromTable: true };
     if (!r.text) return { ok: false, error: 'body_evicted', message: 'The body of ' + ref + ' (' + r.name + ', ' + r.size + ' characters) was dropped to stay within memory. Its numbers are still here (read it with a path from: '
       + r.numbers.slice(0, 8).map((n) => n.path + '=' + n.value).join(', ') + '); to read the rest, run ' + r.name + ' again with ' + r.args + '.', numbers: r.numbers };
     if (path) {
@@ -274,7 +343,8 @@ export function makeAtlasWorkingMemory(o) {
     const add = (title, lines, olderLabel) => { if (lines.length) secs.push({ title: title, lines: lines, older: olderLabel }); };
     if (st.goal) add('MOST RECENT GOAL (before this request)', [s(st.goal.request, 600)].concat(st.goal.steps.length ? ['steps: ' + st.goal.steps.map((x, i) => (i + 1) + '. ' + x.title + (x.state ? ' [' + x.state + ']' : '')).join(' / ')] : []));
     const openNow = st.open.filter((x) => x.state === 'open');
-    add('STILL OPEN (owed or asked, not yet resolved)', openNow.map((x) => '- (' + x.kind + ', turn ' + x.turnId + ') ' + x.text), 'open');
+    add('STILL OPEN (owed or asked, not yet resolved)', openNow.map((x) => '- (' + x.kind + ', turn ' + x.turnId + ') ' + x.text
+      + (x.deliverable ? ' [plan ' + x.planId + ' v' + x.requestVersion + '/' + x.deliverable + ': ' + x.progress + (x.reason ? ' (' + x.reason + ')' : '') + '] ' + JSON.stringify(x.demand) : '')), 'open');
     /* decisions the live [WORKING CONTEXT] already prints are mirrored in the snapshot but not repeated here */
     const dec = Object.keys(st.decisions).map((k) => st.decisions[k]).filter((d) => d.by !== 'wctx');
     add('DECIDED (conditions fixed so far — still in force unless the reader changes them)', dec.map((d) => '- ' + d.key + ': ' + s(fmtVal(d.value), 300) + ' (turn ' + d.turnId + ', ' + d.by + ')'), 'decisions');
@@ -340,6 +410,7 @@ export function makeAtlasWorkingMemory(o) {
       const c = snapshot();
       const refs2 = Object.keys(c.results).sort((a, b) => c.results[b].turnId - c.results[a].turnId);
       let total = 0;
+      refs2.forEach((k) => { const r = c.results[k]; if (!r.tables) return; if (total + r.tables.length > L.persistChars) delete r.tables; else total += r.tables.length; });
       refs2.forEach((k) => { const r = c.results[k]; if (!r.text) return; if (total + r.text.length > L.persistChars) { r.text = ''; r.evicted = true; } else total += r.text.length; });
       store.setItem(key, JSON.stringify(c)); return true;
     } catch (_) { return false; }

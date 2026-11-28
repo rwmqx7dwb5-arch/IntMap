@@ -111,16 +111,19 @@ test('compaction is stated: a block over budget names what it left out and the d
   assert.ok(all.includes('{t1.c1}') && all.includes('{t40.c40}'), 'the whole record does not list everything the block left out');
 });
 
-test('open items: what a turn left owed stays until a later turn no longer owes it; the reader\'s question stays until answered', () => {
+test('open items survive an unrelated answer and close only on observed delivery for the resumed request', () => {
   const WM = makeAtlasWorkingMemory({});
   WM.beginTurn(1, 'draw the map and the chart');
-  WM.recordTurn({ turnId: 1, question: 'draw the map and the chart', reply: 'map drawn', unmet: [{ kind: 'output', mode: 'chart', code: 'not_produced' }] });
+  WM.recordTurn({ turnId: 1, question: 'draw the map and the chart', reply: 'map drawn', unmet: [{ kind: 'output', id: 'output:chart', mode: 'chart', code: 'not_produced' }] });
   assert.match(WM.block(), /output chart not produced/);
-  WM.beginTurn(2, 'now the chart');
-  WM.recordTurn({ turnId: 2, question: 'now the chart', reply: 'chart drawn', unmet: [] });
+  WM.beginTurn(2, 'which units are these?');
+  WM.recordTurn({ turnId: 2, question: 'which units are these?', reply: 'Kilometres.', unmet: [] });
+  assert.match(WM.block(), /output chart not produced/);
+  WM.beginTurn(3, 'now the chart');
+  WM.recordTurn({ turnId: 3, question: 'now the chart', reply: 'chart drawn', unmet: [], resumedFrom: 1, acknowledged: ['output:chart'] });
   assert.ok(!/output chart not produced/.test(WM.block()), 'a met item stayed open');
-  WM.beginTurn(3, 'plan my trip');
-  WM.recordTurn({ turnId: 3, question: 'plan my trip', reply: 'Where to?', awaiting: true });
+  WM.beginTurn(4, 'plan my trip');
+  WM.recordTurn({ turnId: 4, question: 'plan my trip', reply: 'Where to?', awaiting: true });
   assert.match(WM.block(), /asked the reader: Where to\?/);
 });
 

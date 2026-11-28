@@ -67,6 +67,26 @@ test('③ a real dataset registry: op output traces to the imported data', () =>
   assert.equal(g2.staleness(bind2.refOf(c.id)).cause, 'input-stale');   /* two links up from the replaced layer */
 });
 
+test('a reconstructed map pins the original version and the recipe used for the displayed geometry', () => {
+  const g = makeEvidenceGraph(), data = makeGisDatasets(), bound = bindGis(g, data);
+  const url = 'https://survey.example.test/map.svg';
+  const make = (sourceSha256, maxAllowedM) => data.add({
+    title: 'Survey zones', features:[{type:'Feature', geometry:{type:'Point',coordinates:[1,2]},properties:{class:'A'}}],
+    provenance:{
+      kind:'map-reconstruction', source:url, sourceSha256, mapSource:{url, sha256:sourceSha256},
+      recipe:{method:'linework'}, quality:{positional:{maxAllowedM}}, output:{sha256:'stable-geometry'},
+    },
+  });
+  const a = bound.refOf(make('first-version', 200).id);
+  const b = bound.refOf(make('second-version', 200).id);
+  const c = bound.refOf(make('second-version', 100).id);
+  assert.equal(new Set([a,b,c]).size, 3);
+  const nodes = [a,b,c].map(id=>g.get(id));
+  assert.equal(nodes[0].inputs[0].id, nodes[1].inputs[0].id);
+  assert.deepEqual(nodes.map(node=>node.inputs[0].version), ['first-version','second-version','second-version']);
+  assert.equal(nodes[2].output.quality.positional.maxAllowedM, 100);
+});
+
 test('④ an answer number traces through the GIS chain; unbacked / uncited / unknown ids are told apart', () => {
   const g = makeEvidenceGraph(), data = makeGisDatasets();
   const bind = bindGis(g, data);

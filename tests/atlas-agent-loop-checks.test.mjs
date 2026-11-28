@@ -708,7 +708,7 @@ test('R511 ③: the same contradiction from the same unchanged reply is handed b
      and the unmet output is listed (tests/atlas-completion-agent.part.test.mjs). Was 'answered'. */
   assert.equal(out.stopped, 'output_unmet');
   assert.equal(out.completion, 'partial');
-  assert.deepEqual(out.unmet, [{ kind: 'output', mode: 'mixed', code: 'output_not_produced' }]);
+  assert.deepEqual(out.unmet, [{ kind: 'output', id: 'output:mixed', mode: 'mixed', code: 'output_not_produced' }]);
   /* (atlas-unbounded-execution) no count bounds the bounce: it ends because the second reply is the first one again, with
      nothing run in between — the loop KNOWS nothing new is coming */
   assert.equal(out.trace.outputGate, 1);
