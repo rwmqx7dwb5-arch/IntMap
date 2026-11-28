@@ -269,6 +269,16 @@ test('a new legend and renderer popup use unoccupied positions beside floating A
     const target = E.coords.unproject([r.left - canvas.left + 80, r.top - canvas.top + 80]);
     E.ui.addPopup({ className:'overlay-test-popup', closeOnClick:false, anchor:'bottom' }, target,
       '<div style="width:155px;height:100px">Popup at a selected place</div>');
+    const host = document.getElementById('map-container');
+    const frame = host.getBoundingClientRect();
+    const card = document.createElement('section');
+    card.id = 'overlay-test-window';
+    card.style.cssText = 'position:absolute;width:160px;height:110px;';
+    card.style.left = r.left - frame.left + 'px';
+    card.style.top = r.top - frame.top + 'px';
+    card.textContent = 'Tools for the displayed data';
+    host.append(card);
+    window.registerWindow(card);
   });
   const popup = page.locator('.overlay-test-popup');
   await expect(popup).toBeVisible();
@@ -276,20 +286,6 @@ test('a new legend and renderer popup use unoccupied positions beside floating A
     const r = await popup.boundingBox();
     return overlap(await atlas.boundingBox(), r) + overlap(await legend.boundingBox(), r);
   }).toBe(0);
-
-  await page.evaluate(() => {
-    const host = document.getElementById('map-container');
-    const opened = host.querySelector('#overlay-test-legend').getBoundingClientRect();
-    const frame = host.getBoundingClientRect();
-    const card = document.createElement('section');
-    card.id = 'overlay-test-window';
-    card.style.cssText = 'position:absolute;width:160px;height:110px;';
-    card.style.left = opened.left - frame.left + 'px';
-    card.style.top = opened.top - frame.top + 'px';
-    card.textContent = 'Tools for the displayed data';
-    host.append(card);
-    window.registerWindow(card);
-  });
   await expect.poll(async () => {
     const r = await page.locator('#overlay-test-window').boundingBox();
     if (!r) return -1;

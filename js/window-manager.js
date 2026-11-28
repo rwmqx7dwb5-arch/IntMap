@@ -8,7 +8,7 @@
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
 
-import { clearOverlayTranslation, placeOpenedOverlay } from './geo-engine.js';
+import { clearOverlayTranslation, finishOverlayMove, placeOpenedOverlay } from './geo-engine.js';
 
 export function windowManager(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
@@ -86,6 +86,7 @@ export function windowManager(HOST){
       if(Number.isFinite(start)) el.style[near]=(start+delta)+'px';
       if(Number.isFinite(end)) el.style[far]=(end-delta)+'px';
     }
+    finishOverlayMove(el,['left','right','top','bottom']);
   }
   function watchOpening(panel){
     if(typeof ResizeObserver!=='function') return;
@@ -97,8 +98,11 @@ export function windowManager(HOST){
         if(position!=='fixed'&&position!=='absolute') continue;
         if(position==='fixed'&&el.offsetWidth>=document.documentElement.clientWidth) continue;
         __openWindows.add(el);
-        placeOpenedOverlay(el,document.getElementById('map-container'),4,shiftWindow);
-        _geoBump();
+        requestAnimationFrame(()=>{
+          if(!el.isConnected||el.dataset.dragged||el.__imAnchor||isDocked(el)) return;
+          placeOpenedOverlay(el,document.getElementById('map-container'),4,shiftWindow);
+          _geoBump();
+        });
       }
     });
     __openObserver.observe(panel);
