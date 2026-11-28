@@ -40,7 +40,7 @@ test('① the independent reader receives English as it was written (the lost ba
   let seen = '';
   const v = makeGoalVerify({ ask: async (p) => { seen = p; return { data: { unmet: [] } }; } });
   await v({ request: 'Show where   salinity\n rises in the Baltic Sea', text: 'Salinity rises toward the Danish straits.', results: [] });
-  assert.match(seen, /Show where salinity rises in the Baltic Sea/, 'the request reached the reader intact, its whitespace folded');
+  assert.ok(seen.includes('Show where   salinity\n rises in the Baltic Sea'), 'the request reached the reader intact');
   assert.match(seen, /Salinity rises toward the Danish straits\./);
   assert.doesNotMatch(seen, /alinity ri e/);
 });
@@ -81,11 +81,14 @@ test('③ the same finding is put to Atlas once, whatever words the reader uses 
 });
 
 test('③ a finding the work closed leaves the turn complete; a new finding after the work is put to Atlas', async () => {
-  const closed = await drive((vc) => (vc === 1 ? { unmet: [{ need: 'Okinawa', why: 'could not place: Okinawa', seen: 'missing' }] } : { unmet: [] }));
+  const closed = await drive((vc) => (vc === 1 ? { unmet: [{ need: 'Okinawa', why: 'could not place: Okinawa', seen: 'missing' }] }
+    : { unmet: [], met: [{ need: 'Okinawa', how: 'the new map includes Okinawa' }] }));
   assert.equal(closed.bounces, 1);
   assert.equal(closed.out.completion, 'complete');
   assert.deepEqual(closed.out.unmet, []);
-  const fresh = await drive((vc) => (vc === 1 ? { unmet: [{ need: 'Okinawa' }] } : vc === 2 ? { unmet: [{ need: 'the legend', prev: '' }] } : { unmet: [] }));
+  const fresh = await drive((vc) => (vc === 1 ? { unmet: [{ need: 'Okinawa' }] }
+    : vc === 2 ? { unmet: [{ need: 'the legend' }], met: [{ need: 'Okinawa', how: 'the new map includes Okinawa' }] }
+    : { unmet: [], met: [{ need: 'the legend', how: 'the new map shows the legend' }] }));
   assert.equal(fresh.bounces, 2, 'a need no reading named before is a new finding');
   assert.equal(fresh.out.completion, 'complete');
 });

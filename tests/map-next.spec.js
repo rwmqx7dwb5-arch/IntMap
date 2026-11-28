@@ -149,6 +149,31 @@ test('my map: draw, name, link, receive, keep, reload, export, analyse', async (
   expect(prov.kind).toBe('sketch'); expect(prov.author).toBe('reader');
 });
 
+test('Atlas observes a selected My Map line after its coordinates are edited', async ({ page }) => {
+  await boot(page);
+  const id = await page.evaluate(async () => {
+    await window.IntMapLazy.need('myMap');
+    await window.IntMapLazy.need('atlasConsole');
+    const { id } = window.IntMapMyMap.add({ kind: 'line', name: 'Survey transect', coords: [[45, -13], [46, -12]] });
+    window.IntMapMyMap.zoomTo(id);
+    return id;
+  });
+  const context = () => page.evaluate(() => {
+    const S = window.IntMapAtlasState;
+    return S.focusObjects(S.snapshot({ only: ['objects'] }).objects);
+  });
+  const before = (await context()).find((row) => row.id === 'mm_' + id);
+  const roundPositions = (positions) => positions.map((point) => point.map((axis) => Number(axis.toFixed(6))));
+  expect(before).toMatchObject({ name: 'Survey transect', createdBy: 'user' });
+  expect(roundPositions(before.endpoints)).toEqual([[45, -13], [46, -12]]);
+  expect(before.selectedAt).toBeTruthy();
+  await page.evaluate((fid) => window.IntMapMyMap.edit(fid, { coords: [[45, -13], [47, -11]] }), id);
+  const after = (await context()).find((row) => row.id === 'mm_' + id);
+  expect(after).toMatchObject({ createdAt: before.createdAt, lastEditedBy: 'user' });
+  expect(roundPositions(after.endpoints)).toEqual([[45, -13], [47, -11]]);
+  expect(after.lastEditedAt).toBeTruthy();
+});
+
 test('my map on a phone: every control in the panel is reachable by a finger', async ({ browser }) => {
   test.setTimeout(120_000);
   const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });

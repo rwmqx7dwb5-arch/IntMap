@@ -7,4 +7,10 @@
 //  web.search / longform — which also ask the model — kept the reader's key whoever called them, so a worker's search was charged to the parent turn.
 //    modelCallKey(dctx, K) → { turnId, parentTurnId? }   (spread into askAIJSONEnvelope's options)
 // ============================================================================
-export const modelCallKey = (dctx, K) => (dctx && dctx.turnKey ? { turnId: dctx.turnKey, parentTurnId: K._curTurnKey } : { turnId: K._curTurnKey });
+export function modelCallKey(dctx, K) {
+  const key = dctx?.turnKey || K._curTurnKey;
+  const split = String(key || '').indexOf('~');
+  // The worker executor constructs the child key from its origin. The current page turn can
+  // have changed by the time the worker asks for another capability.
+  return split > 0 ? { turnId: key, parentTurnId: key.slice(0, split) } : { turnId: key };
+}

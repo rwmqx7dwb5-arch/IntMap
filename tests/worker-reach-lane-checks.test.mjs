@@ -149,10 +149,11 @@ test('⑦ web.fetchFile in a worker keeps the download for inspection without dr
   const src = 'https://example.test/resources/observations.csv';
   const b64 = Buffer.from('latitude,longitude,height\n12,35,100\n').toString('base64');
   const asked = [];
+  const sha256 = 'a'.repeat(64);
   const realFetch = globalThis.fetch;
   const endpoint = window.SUPABASE_URL;
   window.SUPABASE_URL = 'https://relay.test';
-  globalThis.fetch = async () => ({ status: 200, json: async () => ({ ok: true, file: { b64, name: 'observations.csv', type: 'text/csv', url: src } }) });
+  globalThis.fetch = async () => ({ status: 200, json: async () => ({ ok: true, file: { b64, name: 'observations.csv', type: 'text/csv', url: src, sha256 } }) });
   window.GeoJSONUpload = { handle: async ([file], opts) => {
     asked.push({ text: await file.text(), ...opts });
     return [{ ok: true, format: 'csv', features: 1, datasetId: 'ds-retained', layer: opts.draw ? 27 : null,
@@ -166,7 +167,7 @@ test('⑦ web.fetchFile in a worker keeps the download for inspection without dr
     assert.equal(r.ok, true);
     assert.deepEqual(r.exec.web.dataset, { id: 'ds-retained', format: 'csv', rows: 1, layer: null,
       label: 'observations.csv', bounds: [35, 12, 35, 12], quality: { rowsWithoutGeometry: 0 } });
-    assert.deepEqual(asked[0], { text: 'latitude,longitude,height\n12,35,100\n', quiet: true, draw: false, inspect: true, source: src });
+    assert.deepEqual(asked[0], { text: 'latitude,longitude,height\n12,35,100\n', quiet: true, draw: false, inspect: true, source: src, sourceSha256: sha256 });
     const parent = await cap.run({ url: src }, { source: 'atlas' }, K);
     assert.equal(parent.exec.web.dataset.layer, 27);
   } finally {

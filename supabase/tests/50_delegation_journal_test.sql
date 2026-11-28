@@ -27,7 +27,7 @@ end $$;
 -- ── ① the table ───────────────────────────────────────────────────────────────
 select has_table('public', 'ai_delegation_journal', 'ai_delegation_journal exists');
 select columns_are('public', 'ai_delegation_journal',
-  array['id', 'user_id', 'root_key', 'child_key', 'task', 'outcome', 'code', 'http_status', 'model', 'latency_ms', 'input_tokens', 'output_tokens', 'cost_micros', 'web', 'created_at', 'cached_tokens', 'web_searches'],
+  array['id', 'user_id', 'root_key', 'child_key', 'task', 'outcome', 'code', 'http_status', 'model', 'latency_ms', 'input_tokens', 'output_tokens', 'cost_micros', 'web', 'created_at', 'cached_tokens', 'web_searches', 'cost_complete', 'call_id'],
   'the journal has the columns the console and the proxy agree on');
 select ok((select c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
             where n.nspname = 'public' and c.relname = 'ai_delegation_journal'), 'RLS is on');
@@ -55,7 +55,7 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
             where n.nspname = 'public' and p.proname in ('log_ai_delegation', 'purge_ai_delegation_journal')
               and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute'))),
   0, 'anon and authenticated cannot execute the writer or the purge');
-select ok(has_function_privilege('service_role', 'public.log_ai_delegation(uuid, text, text, text, text, text, integer, text, integer, integer, integer, bigint, boolean, integer, integer)', 'execute'), 'service_role can write');
+select ok(has_function_privilege('service_role', 'public.log_ai_delegation(uuid, text, text, text, text, text, integer, text, integer, integer, integer, bigint, boolean, integer, integer, boolean, text)', 'execute'), 'service_role can write');
 
 -- ── ② who reads what ─────────────────────────────────────────────────────────
 -- fixtures for the overview, owned by the administrator account; one row is outside any 7-day window

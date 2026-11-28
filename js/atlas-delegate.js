@@ -45,7 +45,7 @@ export const RESULT_STATES = Object.freeze(['done', 'partial', 'failed', 'refuse
    each an observed answer from the server, so a task that meets one is `refused`, not `failed`. */
 export const REFUSAL_CODES = Object.freeze(['delegation_off', 'delegation_key', 'delegation_parent', 'delegation_children', 'turn_calls', 'turn_cost', 'bad_task']);
 
-import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, dataManifest, priorStands, failureWhy, resolveArgs, refsOf } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
+import { s, stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, cycleMembers, shapeOf as coreShapeOf, workerSystem, workerPrompt, inputView, dataManifest, jobDataVersion, selectJobData, atJobDataPath, priorStands, failureWhy, resolveArgs, refsOf } from './atlas-job-core.js';   /* (atlas-durable-jobs) the contract and the worker's text — the part the server runs too */
 export { stable, CONTRACT_KINDS, IMAGE_VIEW, normaliseContract, contractKey, resolveArgs };
 /* the page holds a worker's answer to the shape of js/atlas-job-core.js, with its `facts` read by js/atlas-fact-merge.js */
 export function shapeOf(data) { return coreShapeOf(data, normalizeFacts); }
@@ -80,6 +80,15 @@ function makeEventLog(now) {
    meta is a few hundred bytes to a few kB; 20000 characters is generous. Above it, the result carries a reference to the whole structured value. */
 const DATA_MAX_CHARS = 20000;
 
+function artifactOf(id, data, origin, sources) {
+  const gis = data?.gis;
+  const path = origin?.path || (data?.result?.type === 'FeatureCollection' ? ['result'] : []);
+  const value = path.reduce((item, key) => item?.[key], data);
+  return dataManifest(gis?.dataset || data?.record?.id || origin?.resultKey || 'task:' + id, value, {
+    taskId: id, path, sources: origin?.sources ?? sources, provenance: gis?.record?.provenance ?? data?.provenance ?? origin?.provenance, origin,
+  });
+}
+
 /* (delegate-reread) what a worker is shown of one capability answer, and how much one re-read returns. Observation 2026-11-26: the cut was
    3000 characters of text plus 1500 of data, which is what SHOW_CHARS keeps in total; READ_CHARS is one request's worth of reading
    (about 3-4k tokens) so a re-read cannot itself outgrow the prompt. Expires with: a change to the worker prompt's size or to ai-proxy's input fence. */
@@ -112,7 +121,7 @@ export function makeDelegation(o) {
      returned Tokyo, the downstream got the earlier Osaka analysis back; a forced re-run gave Tokyo). The record therefore carries a DIGEST of what
      the task was actually handed, and a task with inputs is answered from the record only when the inputs it has just received digest the same.
      A record from before this field existed (inputs unknown) does not answer a task that has inputs: it runs. */
-  const inputsDigestOf = (inputs) => (Array.isArray(inputs) && inputs.length) ? requestKey(stable(inputs.map((i) => ({ from: i.from, summary: i.summary, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data }))), 'inputs') : '';
+  const inputsDigestOf = (inputs) => inputs.length ? requestKey(stable(inputs), 'inputs') : '';
   const inputKeys = new Map();  // id → digest of the inputs the task was run (or resumed) with
   const keys = new Map();       // id → contractKey, for snapshot()
   let n = 0;
@@ -170,7 +179,7 @@ export function makeDelegation(o) {
     let data;
     if (r && r.data !== undefined) {
       let txt = '';
-      try { txt = stable(r.data); } catch (_) { txt = ''; }
+      try { txt = JSON.stringify(r.data); } catch (_) { txt = ''; }
       if (txt) { try { data = JSON.parse(txt); } catch (_) { data = undefined; } }
       if (data !== undefined && txt.length > DATA_MAX_CHARS) {
         payloads.set(id, data);
@@ -178,23 +187,27 @@ export function makeDelegation(o) {
       }
     }
     const dropped = !!(r && r.data !== undefined && data === undefined && !payloads.has(id));
+    const whole = payloads.has(id) ? payloads.get(id) : data;
+    const sources = Array.isArray(r && r.sources) ? r.sources.slice() : [];
+    const artifact = whole === undefined ? undefined : artifactOf(id, whole, r?.origin ?? r?.artifact?.origin, sources);
     const res = Object.freeze({
-      id, state: RESULT_STATES.includes(r && r.state) ? r.state : 'failed',
-      code: (r && r.code) || undefined,
+      id, state: dropped && r.state === 'done' ? 'partial' : RESULT_STATES.includes(r && r.state) ? r.state : 'failed',
+      code: dropped ? 'output_unserializable' : (r && r.code) || undefined,
       detail: (r && r.detail && typeof r.detail === 'object') ? Object.freeze(Object.fromEntries(Object.entries(r.detail).filter(([, v]) => v !== undefined))) : undefined,
       summary: s(r && r.summary, 4000),
-      findings: Array.isArray(r && r.findings) ? r.findings.slice(0, 40) : [],
-      facts: normalizeFacts(r && r.facts).slice(0, 200),   /* (fact-merge) claims as data: js/atlas-fact-merge.js */
-      gaps: (Array.isArray(r && r.gaps) ? r.gaps.slice(0, 20).map((g) => s(g, 400)).filter(Boolean) : [])
+      findings: Array.isArray(r && r.findings) ? r.findings.slice() : [],
+      facts: normalizeFacts(r && r.facts),   /* (fact-merge) claims as data: js/atlas-fact-merge.js */
+      gaps: (Array.isArray(r && r.gaps) ? r.gaps.map((g) => s(g, 400)).filter(Boolean) : [])
         .concat(dropped ? ['The raw data of this result could not be serialized.'] : []),
-      sources: Array.isArray(r && r.sources) ? r.sources.slice(0, 40) : [],
+      sources,
       /* (atlas-parallel-truth) EVIDENCE, NOT A VERDICT — what the worker looked for and did not find, and how much of what it said
          rests on a source with its excerpt (js/atlas-job-core.js shapeOf counts it). Carried as the worker gave them; absent for a
          result that is not a worker's answer (a capability task's evidence is its `data`). */
-      notFound: Array.isArray(r && r.notFound) ? r.notFound.slice(0, 20) : [],
+      notFound: Array.isArray(r && r.notFound) ? r.notFound.slice() : [],
       evidence: (r && r.evidence && typeof r.evidence === 'object') ? Object.freeze(Object.assign({}, r.evidence)) : undefined,
       data,
-      dataRef: payloads.has(id) ? dataManifest(id, payloads.get(id)) : undefined,
+      dataRef: payloads.has(id) ? artifact : undefined,
+      artifact,
       costUsd: Math.max(0, Number(r && r.costUsd) || 0),
       calls: Math.max(0, Number(r && r.calls) || 0),
       ms: Math.max(0, clock() - t0),
@@ -203,6 +216,8 @@ export function makeDelegation(o) {
     note('task.ended', id, { state: res.state, code: res.code || '', costUsd: res.costUsd, calls: res.calls, ms: res.ms });
     return res;
   }
+
+  const originalData = (r) => r.dataRef ? payloads.get(r.id) : r.data;
 
   /* FORWARD NAMES — a task may name, as an input, a task that appears LATER in the same list. run() declares every id of
      its list before any task starts; a name in this map is a task that is about to be started, and waiting on it is
@@ -269,7 +284,7 @@ export function makeDelegation(o) {
         if (dep === entry || (!dep && !fwd)) return finish(id, t0, { state: 'failed', code: 'input_unknown', summary: 'No task named "' + i.from + '" was started in this delegation.' });
         const r = await (dep ? dep.promise : fwd.promise);
         if (r.state !== 'done' && r.state !== 'partial') return finish(id, t0, { state: 'failed', code: 'input_unavailable', summary: 'The task it starts from ("' + i.from + '") ended ' + r.state + '.' });
-        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: r.dataRef ? payloads.get(r.id) : r.data });
+        inputs.push({ from: i.from, summary: r.summary, findings: r.findings, gaps: r.gaps, sources: r.sources, data: originalData(r), artifact: r.artifact });
       }
       if (controller.signal.aborted) return finish(id, t0, { state: 'cancelled' });
       const digest = inputsDigestOf(inputs);
@@ -378,7 +393,8 @@ export function makeDelegation(o) {
       }));
     },
     log,
-    workspace: { get: (id) => workspace.get(id) || null, all: () => Array.from(workspace.values()) },
+    workspace: { get: (id) => workspace.get(id) || null, all: () => Array.from(workspace.values()),
+      read: (id) => { const r = workspace.get(id); return r ? { ...r, data: originalData(r) } : null; } },
     /* THE SPEND, read off the log: what each provider request of this delegation reported it cost */
     spendUsd() { return log.all().filter((e) => e.kind === 'effect.done').reduce((m, e) => m + (Number(e.data.costUsd) || 0), 0); },
   };
@@ -595,7 +611,7 @@ function toolSection(allowed, describe, steps, remaining, canFind, canCall) {   
   p += '\n\nCAPABILITIES YOU MAY CALL (read-only IntMap operations; nothing else, and none that changes the map): ' + (allowed.length ? allowed.join(', ') : '(none yet)') + '.';
   allowed.forEach((id) => { let d = ''; try { d = typeof describe === 'function' ? s(describe(id), 1200) : ''; } catch (_) { d = ''; } if (d) p += '\n  ' + id + ' arguments: ' + d; });
   p += '\nTo call them, return ONLY {"calls":[{"capability":"<id>","args":{...}}, …]} instead of the findings. Put independent calls in ONE request; their results come back in the order you listed them.';
-  p += '\nPass whole call results in arguments as "@<n>:data.<path>" (n is the call number), or use "@<task id>:data.<path>" for an input. To pass a successful call’s data to the next task, add "output":"@<n>:data" alongside your final summary. The output is kept separately from your summary.';
+  p += '\nPass whole call results in arguments as "@<n>:data.<path>" (n is the call number), or use "@<task id>:data.<path>" for an input. Input findings and their lineage can also be passed with "@<task id>:findings" and "@<task id>:artifact". To pass a successful call’s data or a specific part to the next task, add "output":"@<n>:data" or "output":"@<n>:data.<path>" alongside your final summary.';
   if (canFind) p += '\nTo look for a capability you do not have, put {"capability":"' + FIND + '","args":{"query":"<a few words for what you need>"}} in "calls": IntMap searches its whole registry, and every read-only match becomes one you may call from your next request on (the others are named with the reason you may not call them).';
   } else {
     /* (atlas-child-loop-reuse) A WORKER WITH NO CAPABILITY STILL READS WHAT IT WAS HANDED. A material longer than the prompt shows is kept whole here
@@ -804,7 +820,16 @@ export function makeWorkerExecutor(o) {
               const prior = await dependency;
               if (prior.material) handoff.push({ from: name, ...prior.material });
             }
-            const resolved = resolveArgs(w.args, handoff);
+            const readArtifacts = new Map(), readSources = [];
+            const resolved = resolveArgs(w.args, handoff, { annotate(value, source, from) {
+              const a = source.artifact;
+              if (a || (source.origin && value?.type === 'FeatureCollection')) readArtifacts.set(from, {
+                from, id: a?.id || source.origin.resultKey || from, version: a?.version || jobDataVersion(value),
+              });
+              const inherited = a?.sources || source.origin?.sources || source.sources;
+              if (Array.isArray(inherited)) readSources.push(...inherited);
+              return value;
+            } });
             if (!resolved.ok) {
               const notYet = refs.some((name) => /^\d+$/.test(name) && Number(name) > firstStep && !handoff.some((item) => item.from === name));
               return { ok: false, why: notYet ? 'transient' : '', text: resolved.why };
@@ -833,7 +858,16 @@ export function makeWorkerExecutor(o) {
               let execShown = '';
               if (out && out.exec && ok) { let j = ''; try { j = JSON.stringify(out.exec); } catch (_) { j = ''; } if (j) execShown = '\nRESULT: ' + shownWithRef(j, ref + 'r'); }
               const why = failureWhy(out);
-              return { ok, why, material: ok ? { data: out?.meta, summary: out?.text } : undefined, text: shownWithRef(whole, ref) + execShown + (why === 'transient' ? '\n[this failure is of the moment (the capability says so): the same call may be made again]' : '') };
+              const data = out?.exec == null ? out?.meta : { ...out.meta, exec: out.exec };
+              const provenance = out?.meta?.provenance ?? out?.meta?.gis?.record?.provenance;
+              const ownSources = out?.meta?.sources;
+              const file = provenance?.url || provenance?.file;
+              const sourceUrls = readSources.concat(Array.isArray(ownSources) ? ownSources : [],
+                typeof file === 'string' && /^https?:\/\//i.test(file) ? [file] : [])
+                .map((source) => typeof source === 'string' ? source : source?.url).filter(Boolean);
+              const origin = { capability: w.capability, resultKey: out?.meta?.resultKey, revision: out?.meta?.artifact?.revision,
+                provenance, sources: [...new Set(sourceUrls)], inputs: [...readArtifacts.values()] };
+              return { ok, why, material: ok ? { data, summary: out?.text, origin } : undefined, text: shownWithRef(whole, ref) + execShown + (why === 'transient' ? '\n[this failure is of the moment (the capability says so): the same call may be made again]' : '') };
             } catch (e) {
               if (controller.signal.aborted) { cancelled = true; return { ok: false, text: 'cancelled' }; }
               ctx.emit('effect.failed', { intent: ti.id, code: 'threw' });
@@ -871,18 +905,18 @@ export function makeWorkerExecutor(o) {
       const sh = shapeOf(env && env.data);
       const selected = env?.data?.output;
       const callMaterials = [...materials.values()].filter((entry) => Number(entry.from) > 0 && steps[Number(entry.from) - 1]?.hasData);
-      if (sh.ok && selected != null && !/^@\d+:data(?:\.|$)/.test(typeof selected === 'string' ? selected : '')) {
-        sh.ok = false;
-        sh.why = '"output" must name a successful call, e.g. "@2:data"';
-      }
-      const material = sh.ok && selected != null ? resolveArgs({ output: selected }, callMaterials) : null;
-      if (material && (!material.ok || material.args.output === undefined)) {
+      const material = sh.ok && selected != null ? selectJobData(selected, callMaterials) : null;
+      if (material && !material.ok) {
         sh.ok = false;
         sh.why = material.why || 'the selected call returned no data';
       }
       if (sh.ok) {
-        const out = Object.assign({ state: 'done', calls, costUsd, sources }, sh.out);
-        if (material) out.data = material.args.output;
+        const out = Object.assign({ state: sh.partial ? 'partial' : 'done', code: sh.partial ? 'incomplete' : undefined, calls, costUsd, sources }, sh.out);
+        if (material) {
+          const { source, path, value } = material;
+          out.data = atJobDataPath(path, value);
+          out.origin = { ...source.origin, ref: selected, path };
+        }
         if (degraded) { out.state = 'partial'; out.code = 'degraded'; out.gaps = [degraded].concat(out.gaps || []); }
         return out;
       }

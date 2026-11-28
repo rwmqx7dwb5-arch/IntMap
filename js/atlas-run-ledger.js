@@ -51,24 +51,57 @@ export const lateCostSink = { current: null };
    It observes and never decides: no call waits, starts or stops because of it. */
 export const runMarkSink = { current: null };
 
+const turnLedgers = new Map();
+
+export function registerRunLedger(turnKey, ledger) {
+  turnLedgers.set(turnKey, ledger);
+  return () => turnLedgers.delete(turnKey);
+}
+
+export function observeAtlasProviderCall(options, callId, call) {
+  const ledger = turnLedgers.get(options?.turnId);
+  return ledger ? ledger.ask(() => call(true), options.task, callId) : call(false);
+}
+
 export function makeRunLedger(opt) {
   const now = (opt && typeof opt.now === 'function') ? opt.now : () => Date.now();
-  const startedAt = now();
+  const startedAt = opt?.startedAt ?? now();
   const models = Object.create(null);   /* model id → { calls, costUsd, ms } */
+  const providerCallIds = new Set();
   const tools = Object.create(null);    /* capability / tool name → { calls, ms, failed } */
-  let modelCalls = 0, costUsd = 0, costUnknownCalls = 0, unpricedCalls = 0, modelMs = 0, webCalls = 0;
+  let modelCalls = 0, modelPending = 0, costUsd = 0, costUnknownCalls = 0, unpricedCalls = 0, modelMs = 0, webCalls = 0;
   let delegatedUsd = 0, delegatedTasks = 0;
   const marks = Object.create(null);   /* name → ms since the turn started, the first time it happened */
   return {
-    /* one provider answer: { model, costUsd, priceKnown, ms, web } — costUsd undefined when the proxy did not say */
+    /* Wrap the request itself so an error, a repair and a review each leave one observation.
+       Still-pending requests at cancellation have unknown cost until the server journal arrives. */
+    async ask(call, task, callId) {
+      const began = now();
+      let meta;
+      if (callId) providerCallIds.add(callId);
+      modelPending++;
+      try {
+        const reply = await call();
+        meta = reply?.meta;
+        return reply;
+      } catch (e) {
+        meta = e?.meta;
+        throw e;
+      } finally {
+        modelPending--;
+        this.model({ model: meta?.modelServed || meta?.model || task, costUsd: meta?.costUsd,
+          costComplete: meta?.costComplete, priceKnown: meta?.priceKnown, ms: now() - began, web: meta?.webUsed });
+      }
+    },
+    /* one provider request or loop observation; costUsd is a floor if usage was only partially reported */
     model(c) {
       c = c || {};
       modelCalls++;
       const id = str(c.model, 80) || 'unknown';
       const m = models[id] || (models[id] = { calls: 0, costUsd: 0, ms: 0 });
       m.calls++; m.ms += num(c.ms); modelMs += num(c.ms);
-      if (c.costUsd === undefined || c.costUsd === null || !Number.isFinite(Number(c.costUsd))) costUnknownCalls++;
-      else { m.costUsd += num(c.costUsd); costUsd += num(c.costUsd); }
+      if (typeof c.costUsd !== 'number' || !Number.isFinite(c.costUsd) || c.costComplete === false) costUnknownCalls++;
+      if (Number.isFinite(c.costUsd)) { m.costUsd += num(c.costUsd); costUsd += num(c.costUsd); }
       if (c.priceKnown === false) unpricedCalls++;
       if (c.web) webCalls++;
     },
@@ -92,10 +125,10 @@ export function makeRunLedger(opt) {
       const rows = (o, f) => Object.keys(o).map((k) => Object.assign({ id: k }, o[k])).sort(f);
       return {
         wallMs: Math.max(0, now() - startedAt),
-        modelCalls, modelMs,
+        modelCalls: modelCalls + modelPending, modelMs, providerCallIds: Array.from(providerCallIds),
         /* the turn's own provider answers + what its delegated workers cost: two sums the reader can tell apart */
         costUsd: costUsd + delegatedUsd, parentCostUsd: costUsd, delegatedCostUsd: delegatedUsd, delegatedTasks,
-        costUnknownCalls, unpricedCalls, webCalls,
+        costUnknownCalls: costUnknownCalls + modelPending, unpricedCalls, webCalls,
         models: rows(models, (a, b) => b.costUsd - a.costUsd || b.calls - a.calls),
         tools: rows(tools, (a, b) => b.ms - a.ms || b.calls - a.calls),
         marks: Object.assign({}, marks),

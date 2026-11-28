@@ -132,7 +132,7 @@ test('atlas-plan-on-map ② a call still in flight when the turn ends was not se
   P.started('x1', { step: 0, capability: 'map.highlight' });
   P.endTurn('aborted');
   assert.equal(P.snapshot().steps[0].state, 'stopped');
-  P.beginTurn(); P.declare({ current: 2 });
+  P.beginTurn(); P.declare({ action: 'continue', planId: P.snapshot().id, current: 2 });
   P.started('x2', { step: 1, capability: 'view.flyTo' });
   P.endTurn('answered');
   assert.equal(P.snapshot().steps[1].state, 'unobserved');
@@ -157,7 +157,7 @@ test('atlas-plan-on-map ③ the plan goes back to the model: in the plan call\'s
   /* the next turn: 「手順 2 をやり直して」 — a call made without naming a step is not filed under one */
   const r2 = await turn([
     calls({ id: 'b0', name: 'map_view', args: { place: 'Osaka' } }),
-    calls({ id: 'p3', name: 'plan', args: { current: 2 } }, { id: 'b1', name: 'highlight', args: { country: 'Japan' } }),
+    calls({ id: 'p3', name: 'plan', args: { action: 'continue', planId: PLAN.snapshot().id, current: 2 } }, { id: 'b1', name: 'highlight', args: { country: 'Japan' } }),
     answer('やり直しました'),
   ], async () => verdict('completed'), { plan: PLAN });
   assert.deepEqual(r2.out.plan.steps.map((x) => x.state), ['completed', 'completed'], 'the retry in the later turn replaced the failure');
@@ -184,7 +184,7 @@ test('a new request cannot inherit completion merely by giving its steps the sam
   P.settled('ca', { ok: true, capability: 'data.value' });
   P.endTurn();
   P.beginTurn();
-  P.declare({ goal: 'Verify the same population', steps: ['Fetch population'], scope: { inputs: { population: 'v1' }, period: 2020, target: 'CA' } });
+  P.declare({ action: 'revise', planId: P.snapshot().id, goal: 'Verify the same population', steps: ['Fetch population'], scope: { inputs: { population: 'v1' }, period: 2020, target: 'CA' } });
   assert.equal(P.snapshot().steps[0].state, 'completed', 'explicitly unchanged inputs can be reused');
   P.endTurn();
   P.beginTurn();
@@ -221,7 +221,7 @@ test('a period revision can retain only steps whose input scope is explicitly pr
   }
   p.endTurn();
   p.beginTurn();
-  p.declare({ goal: 'Map 1780', steps, scope: { period: 1780 }, stepScopes: [terrain] });
+  p.declare({ action: 'revise', planId: p.snapshot().id, goal: 'Map 1780', steps, scope: { period: 1780 }, stepScopes: [terrain] });
   assert.deepEqual(p.snapshot().steps.map((step) => step.ops.length), [1, 0]);
 });
 
@@ -229,7 +229,12 @@ test('different methods can close one required deliverable without closing anoth
   const p = makeAtlasPlan();
   const { out } = await turn([
     calls(
-      { id: 'p', name: 'plan', args: { steps: ['Place both locations'], requirements: [{ id: 'pier', step: 1, label: 'Wharf' }, { id: 'yard', step: 1, label: 'Rail yard' }], target: 'pier' } },
+      { id: 'p', name: 'plan', args: { steps: ['Place both locations'], requirements: [
+        { id: 'pier', step: 1, label: 'Wharf', receipts: [
+          { args: { place: 'Wharf from catalog' }, mode: 'map' }, { args: { country: 'Wharf from survey' }, mode: 'map' },
+        ] },
+        { id: 'yard', step: 1, label: 'Rail yard', receipts: [{ args: { place: 'Rail yard from catalog' }, mode: 'map' }] },
+      ], target: 'pier' } },
       { id: 'a', name: 'map_view', args: { place: 'Wharf from catalog' } },
       { id: 'p2', name: 'plan', args: { target: 'yard' } },
       { id: 'b', name: 'map_view', args: { place: 'Rail yard from catalog' } },
@@ -240,6 +245,26 @@ test('different methods can close one required deliverable without closing anoth
   assert.equal(out.completion, 'partial');
   assert.deepEqual(out.unmet.map((u) => u.need), ['Rail yard']);
   assert.equal(out.plan.steps[0].requirements[0].callId, 'c');
+});
+
+test('the agent counts observed country, measure and period receipts independently of attempt labels', async () => {
+  const countries = ['DEU', 'FRA', 'ITA', 'AUT', 'CHE'];
+  const args = (country) => ({ country, metric: 'population', year: 2020 });
+  const requirements = countries.map((country) => ({ id: country, step: 1, label: country,
+    receipts: [{ result: { details: { figure: args(country) } } }] }));
+  const lookup = (id, country, fallback) => ({ id, name: 'run_capability',
+    args: { id: 'data.value', args: fallback ? { country, what: 'population' } : { country, metric: 'population' } } });
+  const { out } = await turn([
+    calls({ id: 'p', name: 'plan', args: { action: 'new', goal: 'Populate all five countries', steps: ['Fetch five values'], requirements, target: 'FRA' } },
+      ...countries.map((country) => lookup('first-' + country, country, false))),
+    calls(lookup('fallback-DEU', 'DEU', true)),
+    answer('One value is available.'),
+  ], async (a) => a.country === 'DEU' && a.what ? { ok: true, meta: { figure: { ...args('DEU'), value: 83_160_871 } } } : verdict('failed', []),
+  { plan: makeAtlasPlan(), verify: async () => null });
+  assert.deepEqual(out.plan.coverage, { completed: 1, total: 5, missing: countries.slice(1) });
+  assert.equal(out.completion, 'partial');
+  assert.deepEqual(out.unmet.map((u) => u.id), countries.slice(1));
+  assert.equal(out.plan.steps[0].requirements[0].callId, 'fallback-DEU');
 });
 
 test('an unrelated machine note does not withdraw a confirmed shortfall', async () => {
@@ -258,10 +283,22 @@ test('an observed deliverable settles the request even if a preparatory retrieva
     { ...answer('The district boundary is visible.'), answerMode: 'map' },
   ], async (a) => a.country ? verdict('completed') : verdict('failed', []), {
     plan: makeAtlasPlan(),
-    verify: async () => ({ met: [{ need: 'Draw the district', how: 'The observed district polygon is visible' }], unmet: [] }),
+    verify: async () => ({ met: [{ need: 'Draw the district', how: 'The observed district polygon is visible', supersedes: ['a'] }], unmet: [] }),
   });
   assert.equal(out.completion, 'complete');
   assert.equal(out.plan.steps[0].state, 'failed');
+});
+
+test('verification of an unrelated result preserves the unconfirmed plan work', async () => {
+  const { out } = await turn([
+    calls({ id: 'p', name: 'plan', args: { steps: ['Measure reed beds'] } },
+      { id: 'a', name: 'map_view', args: { place: 'East salt marsh' } }),
+    answer('The separately requested date is 1914.'),
+  ], async () => verdict('failed', []), {
+    plan: makeAtlasPlan(), verify: async () => ({ met: [{ need: 'State the date', how: 'answer' }], unmet: [] }),
+  });
+  assert.equal(out.completion, 'partial');
+  assert.match(out.unmet[0].need, /East salt marsh/);
 });
 
 test('rewording a promised map is not progress toward its production', async () => {

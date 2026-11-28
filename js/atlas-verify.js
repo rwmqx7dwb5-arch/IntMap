@@ -373,6 +373,8 @@ export function makeAtlasVerify(HOST, CTX) {
       const ledger = D.ledger || null;
       const GE = D.GE, GEOBJ = D.GEOBJ, L = D.L;
       return async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
+      const stale=()=>ctx.signal?.aborted||ctx.isCurrent?.()===false;
+      if(stale()) return '';
       /* (#R156) CODE-SIDE GEO GATE — 「地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で
          検証する / 数学・コード・文書モードでは地点抽出処理自体を呼ばない」. A non-geographic content class
          (math/code/document/photo/language/conceptual) returns immediately: NO place extraction, NO
@@ -453,13 +455,14 @@ export function makeAtlasVerify(HOST, CTX) {
           const _narrow=(it.country&&_atlNorm(it.country)!==_atlNorm(it.name))?it.country:'';
           if(!g&&it.src==='structured'){ try{ const r=await geocode([it.name,_narrow].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; infra=true; } }
           if(!g){ const s=await _atlGeocodeStrict(it.name,it.src==='structured'?_narrow:''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous) ambiguous=true; else if(s.reason==='network'){ infraFail++; infra=true; } }
+          if(stale()) return '';
           if(ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; }
           if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src,at:[g.lng,g.lat]}); continue; } seenCell.add(cell);
             newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:(g.prov||'geocoded_point'))}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src,at:[g.lng,g.lat],fresh:true}); }
           else spots.push({name:it.name,verdict:'unplaced',reason:(infra?'infra':'not_found'),src:it.src}); }
         let painted=null;
         if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
-          try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } painted=!!ok; }catch(_){ painted=false; }
+          try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); if(stale()) return ''; ok=paintPois(); } painted=!!ok; }catch(_){ painted=false; }
           if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) GE().camera.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
         /* ══ (atlas-completion) LOCATED IS NOT DRAWN ══════════════════════════════════════════════════════════════
            A spot used to become 「mapped」 the moment it had a coordinate, so when every paint failed the reply still said

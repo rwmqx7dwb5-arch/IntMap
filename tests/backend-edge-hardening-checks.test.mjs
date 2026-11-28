@@ -127,7 +127,7 @@ test('R801 ③ ai-proxy settles the turn before answering, and every attempt clo
   /* (atlas-live-stream) the success return is a VALUE — sent as the JSON body, or as the stream's `done`
      event — so the settle stands before that value; tests/atlas-live-stream-checks ② runs both ways and
      checks that `done` is read only after settle_ai_turn was called */
-  assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return (json\(\{|\{ status: 200, body: \{)/, 'settle() must run at the success return, immediately before the answer leaves');
+  assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return response;/, 'settle() must run at the success return, immediately before the answer leaves');
   const refund = proxy.slice(proxy.indexOf('const refund = async'), proxy.indexOf('const settle = async'));
   /* (security-review-nov) a keyed attempt closes its turn whether it charged or not — the ledger refunds only when the LAST
      attempt closes without an answer, and never after one (refund_ai_turn → 'answered'); a turn-less call asks only when it charged */

@@ -738,7 +738,7 @@ export function makeComputeSandbox(opts) {
         const want = ro.fixedIds && ro.fixedIds[m.name];
         const title = job.title ? (job.outputs.length > 1 ? job.title + ' · ' + m.name : job.title) : 'Python · ' + m.name;
         const rec = reg.add({ id: want || null, title: title, features: m.features, provenance: provenanceFor(job, raw, m.name, codeSha256, m.nonFinite, bridgeInfo) });
-        datasets.push({ name: m.name, id: rec.id, title: rec.title, count: rec.count, withGeometry: rec.withGeometry,
+        datasets.push({ name: m.name, id: rec.id, version: reg.versionOf?.(rec.id), title: rec.title, count: rec.count, withGeometry: rec.withGeometry,
           geometryType: rec.geometryType, fields: (rec.fields || []).map((f) => ({ name: f.name, type: f.type })), nonFinite: m.nonFinite });
       }
       const result = Object.assign(base, { bridge: bridgeOut, ok: true, observed: true, datasets: datasets, values: values, packages: raw.packages || [], python: raw.python || null, codeSha256: codeSha256 });

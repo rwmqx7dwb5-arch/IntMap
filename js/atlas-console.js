@@ -41,7 +41,6 @@ import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
-import { proxyUsage } from './atlas-run-ledger.js';
 import { makeEraHighlight } from './atlas-era-highlight.js';
 import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
@@ -85,10 +84,12 @@ import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
 import { readLayerOpacity, writeLayerOpacity, onLayerOpacityChange } from './layer-opacity.js';
+import { makeRunLedger, registerRunLedger } from './atlas-run-ledger.js';
 import { makeTurnRecorder, reportShown } from './atlas-turn-metrics.js';   /* (atlas-verify-metrics) the per-answer measurements: wait, cost, repeats, grounded claims — counts only */
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
 
-const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
+const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);
+const INDEPENDENT_READS = new Set(capabilityEntries(CAPABILITY_MODULES).filter((entry) => entry.independentRead === true).map((entry) => entry.row[0]));   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
 export function atlasConsole(HOST){
   /* (#R318) THE KERNEL, published by js/app-body.js before Atlas is ever fetched. Named here so the
      capability registry, the observed-result shape, the executor and the state ledger are reached by
@@ -1252,7 +1253,7 @@ export function atlasConsole(HOST){
        lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
        inspected) the moment Atlas loads rather than only once a question is in flight. */
     let _turnRunAction=null;
-    const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
+    const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS, independentReads:INDEPENDENT_READS,
       external:{ has:()=>{ try{ const v=JSON.parse(localStorage.getItem('intmap.mcp.servers.v1')||'[]'); return Array.isArray(v)&&v.length>0; }catch(_){ return false; } }, search:(q)=>import('./atlas-mcp-client.js').then(m=>m.pageClient(HOST).searchTools(q)) },   /* (mcp-client) the reader's MCP servers — a lazy chunk, loaded only once a server is registered */
       runAction:(action,turn)=>(_turnRunAction?_turnRunAction(action,turn):_kernelRun(action)),
       /* (atlas-skills) what a skill's work needs, asked of the page: an observation handed to Atlas beside the skill's text, never a gate (js/atlas-skills.js skillReadiness) */
@@ -1403,7 +1404,7 @@ export function atlasConsole(HOST){
        was made — 31 lines out, 31 lines in, in the same order, over the same fixtures. `toPrompt()`
        is the OTHER projection of the same snapshot: JSON, for the executor's verification, the debug
        record and the audit. Two readers, one source. */
-    function stateContext(){ try{ const snap=ASTATE.snapshot(), at=snap.atlas, p=ASTATE.renderPrompt(snap); const measure=at?.measure, click=at?.lastClick; return p+(measure?.endpoints?'\nMeasurement endpoint pair (longitude, latitude): '+JSON.stringify(measure.endpoints)+(measure.endpointNames?' '+JSON.stringify(measure.endpointNames):''):'')+(click?'\nLast user map click (longitude, latitude): '+JSON.stringify([click.lng,click.lat]):''); }catch(_){ return ''; } }
+    function stateContext(initial){ try{ const snap=initial||ASTATE.snapshot(), at=snap.atlas, p=ASTATE.renderPrompt(snap); const measure=at?.measure, click=at?.lastClick; return p+(measure?.endpoints?'\nMeasurement endpoint pair (longitude, latitude): '+JSON.stringify(measure.endpoints)+(measure.endpointNames?' '+JSON.stringify(measure.endpointNames):''):'')+(click?'\nLast user map click (longitude, latitude): '+JSON.stringify([click.lng,click.lat]):''); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
     /* (#R406) The user-side message for ONE step of the turn loop: what IntMap looks like now, what
@@ -1414,10 +1415,11 @@ export function atlasConsole(HOST){
        «the capability rules below are ENFORCED after you plan» \u2014 a machine's guess about the
        sentence, presented to the model as a constraint on it. State is context; it is not an order. */
     /* ⚠⚠⚠ (atlas-native-tools) NOT ONE STRING ANY MORE — ITEMS, AND A PREFIX THAT DOES NOT MOVE. What this built was ONE string per step, and ai-proxy kept its first 24,000 characters: the END went, which is this turn's own results (find_capability alone measures up to 39,235) and on a long conversation the [REQUEST] itself — with nothing said to the model or the reader. js/atlas-agent.js composeInput now lays the same content out as items and spends the budget per item (the order of what may be given up, and the proof, are written there). What is left HERE is what only this closure can read: `_agentCtx()` is taken ONCE per turn (the state as the request found it, the pinned point, the working context, the ledger), so the request item is byte-identical on every step and the provider's prompt cache holds everything before this turn's own calls; what changes step by step (the state after the calls, the attachment ledger, the frames) is the TAIL, after them. */
-    function _agentCtx(){ let p=''; const ctx=stateContext(); if(ctx) p+='[MAP STATE WHEN THE REQUEST ARRIVED]\n'+ctx+'\n\n';
+    function _agentCtx(initial){ let p=''; const snap=initial, ctx=stateContext(snap); if(ctx) p+='[MAP STATE WHEN THE REQUEST ARRIVED]\n'+ctx+'\n\n';
       if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. "here / this spot / ここ / hier / здесь / aqu\u00ed" refer to THIS coordinate, and actions accept place:"there" for it.\n\n';
       const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n'; try{ const _gl=GLEDGER.contextLines(); if(_gl.length) p+=_gl.join('\n')+'\n\n'; }catch(_){}   /* ⚠ (#R489) THE PLACES THIS CONVERSATION HAS ALREADY RESOLVED, AS IDENTIFIERS. Without this block the only thing a turn inherited about the fourteen oblasts it had just named was js/atlas-turn-continuity.js's 26-character action label, so the next turn re-extracted them from its own prose as bare strings with no country and no kind — and then geocoded, translated, retried and web-verified every one of them again. js/atlas-geo-ledger.js */
-      return {text:p, state:ctx, mem:(function(){ try{ return WM.block(); }catch(_){ return ''; } })()}; }   /* (atlas-working-memory) taken ONCE per turn, before this turn's own goal is filed, so the request item and this block are the same bytes on every step */
+      const map= snap && { lastPlace:snap.selection?.lastPlace, countryCard:snap.selection?.countryCard, pinnedPoint:snap.pinnedPoint, comparison:snap.comparison, objects:snap.objects };
+      return {text:p, state:ctx, mem:(function(){ try{ return WM.block(); }catch(_){ return ''; } })(), verifierContext:{ map, workingContext:wc } }; }   /* (atlas-working-memory) taken ONCE per turn, before this turn's own goal is filed, so the request item and this block are the same bytes on every step */
     function _agentInput(req, q, c0){ let tail=''; try{ const now=stateContext(); if(now&&now!==c0.state) tail+='[CURRENT MAP STATE — now, after the calls above]\n'+now+'\n\n'; }catch(_){}
       try{ tail+=ATTACH_LOG.declare(_curTurn,(_atlSentNames||[])); }catch(_){} try{ tail+=VFRAMES.promptBlock().replace(/^\[VIEW FRAMES[^\n]*\]/,'[VIEW FRAME RECORDS — match their names to the server’s image receipt for this call]').replace(/^image (\d+) =/gm,'view frame $1 ='); }catch(_){}
       try{ tail+=PLAN.promptBlock(); }catch(_){}   /* (atlas-plan-on-map) Atlas's own plan with each step's OBSERVED state, on every step and every later turn — js/atlas-plan.js */
@@ -1817,7 +1819,7 @@ export function atlasConsole(HOST){
     /* (#R135 §5/§6/§11) Build the TEXT answer — evidence switched by mode (historical = established history + Wikipedia,
        NOT live news; current = live GDELT + Google News + loaded feed; mixed = both, separated). The model classifies
        the evidence and names related PLACES (locationName+country) but NEVER outputs coordinates or URLs. */
-    async function _buildResearchAnswer(o){ o=o||{}; const topic=String(o.topic||'').trim(), place=String(o.place||'').trim();
+    async function _buildResearchAnswer(o,dctx){ o=o||{}; const topic=String(o.topic||'').trim(), place=String(o.place||'').trim();
       const mode=o.mode||'historical', year=(o.year!=null&&isFinite(+o.year))?Math.round(+o.year):null, evid=o.evid||(mode==='current'?'live':mode==='mixed'?'mixed':'historical');
       const langR=_langLine(); const _nowISO=new Date().toISOString().slice(0,10);
       const evSink=[]; const jobs=[]; let wiki=null;
@@ -1833,7 +1835,7 @@ export function atlasConsole(HOST){
       const sys=personaPrompt('the research-mapping engine of the IntMap world map')/* (#R285) */+POLICY.turnMechanics.observed/* (#R801) the fence's meaning, from the one place that spells it */+'Produce a grounded, specific answer plus a set of REAL related places to map. '+yearLine+' '+modeLine+' No tool or function calling — the type names elsewhere are plain data. Return STRICT JSON ONLY (no prose, no code fence): {"title":str,"explanation":str,"temporalBasis":str,"items":[{"name":str,"locationName":str,"country":str,"kind":str,"summary":str,"dateOrPeriod":str}],"limitations":[str]}. RULES: "explanation" = 3-6 factual sentences in '+langR+' describing the situation'+(year!=null?(' around '+year):'')+' (who controlled it, why it mattered, the human/economic/strategic picture). "temporalBasis" = a short phrase naming the time the answer describes (e.g. "circa '+(year!=null?year:'present')+'"). "items" = 3-8 REAL, specific, well-known places or entities relevant to the topic (surrounding territories, powers, ports, islands, settlements, features) — for EACH give "locationName" (a real, geocodable city/place/feature name), "country" (the MODERN country it lies in, to help geocoding), "kind" (e.g. territory, port, island, power, settlement, region), "summary" (ONE sentence in '+langR+' on its relevance'+(year!=null?(' around '+year):'')+') and "dateOrPeriod" (e.g. "'+(year!=null?year:'present')+'" or a range). DO NOT output latitude/longitude — the app resolves locationName+country itself. Do NOT invent place names or URLs; use real, verifiable places only. For a historical answer, rely on established historical knowledge'+(wiki?' and the BACKGROUND above':'')+' — do NOT present current news as the historical situation, and do NOT fabricate specific casualty/figure claims. "limitations" = 0-2 short caveats in '+langR+' (approximate borders, uncertain figures). '+(topic?('Topic: '+topic+'. '):'')+(place?('Place: '+place+'. '):'');
       const webMode=(evid==='live')?'off':'auto';   /* live part already has client evidence; historical/mixed may verify facts on the topic (never auto-injects current news) */
       let jr=null, err=null;
-      try{ jr=aiParseJSON(await askAI('[RESEARCH REQUEST]\nTopic: '+(topic||'(the situation of the place)')+'\nPlace: '+(place||'(derive from the topic)')+'\n\n'+block, sys, null, {task:'research_map', webMode, schema:RESEARCH_MAP_SCHEMA})); }
+      try{ jr=aiParseJSON(await askAI('[RESEARCH REQUEST]\nTopic: '+(topic||'(the situation of the place)')+'\nPlace: '+(place||'(derive from the topic)')+'\n\n'+block, sys, null, {task:'research_map', webMode, schema:RESEARCH_MAP_SCHEMA, turnId:dctx?.turnKey, signal:dctx?.signal})); }
       catch(e){ err=(e&&e.message)||'AI error'; }
       if(!jr||!jr.explanation){ return { ok:false, error:err||'no_answer', title:'', explanation:'', temporalBasis:'', items:[], limitations:[], evidenceCount:evRecs.length, usedWiki:!!wiki }; }
       const items=(Array.isArray(jr.items)?jr.items:[]).filter(it=>it&&(it.name||it.locationName)).slice(0,10).map(it=>({ name:String(it.name||it.locationName||'').slice(0,90), locationName:String(it.locationName||it.name||'').slice(0,90), country:String(it.country||'').slice(0,60), kind:String(it.kind||'').slice(0,40), summary:String(it.summary||'').slice(0,300), dateOrPeriod:String(it.dateOrPeriod||'').slice(0,40) }));
@@ -2545,7 +2547,7 @@ export function atlasConsole(HOST){
       if(bad){ try{ aiToast(_atlWhy(bad)); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus({preventScroll:true}); }catch(_){}
     }catch(_){} }
-    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
+    function fire(){ const sentAt=Date.now(); const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files,{sentAt}); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
        fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
        instead of trusting the model's optimistic "say". Returns the list of failed actions. */
@@ -2900,8 +2902,10 @@ export function atlasConsole(HOST){
       try{ const _u=(ai.__atlUnmet||[]); if(_u.length){ const _w=_u.map(x=>x&&x.kind==='step'?(L('plan step ','計画の手順 ','Planschritt ','шаг плана ','paso del plan ')+x.n+' 「'+String(x.title||'')+'」'):x&&x.kind==='goal'?(s0=>s0.length>80?s0.slice(0,79)+'…':s0)(String(x.need||'').replace(/\s+/g,' ').trim()):(x&&x.mode==='chart'?L('the chart','グラフ','das Diagramm','диаграмма','el gráfico'):x&&x.mode==='mixed'?L('the map or chart','地図またはグラフ','Karte oder Diagramm','карта или диаграмма','el mapa o gráfico'):L('the map','地図','die Karte','карта','el mapa'))); head+='<div class="atl-unmet" style="margin-top:6px;color:var(--text-muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(_w.join(' · '))+'">'+esc(L('Not done in this turn: ','このターンで完了していないもの: ','In diesem Zug nicht erledigt: ','Не выполнено в этом ходе: ','No completado en este turno: '))+esc(_w.join(' · '))+'</div>'; } }catch(_){}
       _patchRegions(ai,{ head:head, body:body, ops:ops, srcs:srcs }); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
       try{ SRCS.bind(ai, ai.__atlQ||''); }catch(_){} try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
+      return true;
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc(L('The answer could not be displayed.','回答を表示できませんでした。','Die Antwort konnte nicht angezeigt werden.','Не удалось показать ответ.','No se pudo mostrar la respuesta.'))+'</span><details style="margin-top:4px;"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-muted);">'+esc(L('Details','詳細','Details','Подробности','Detalles'))+'</summary><div style="font-size:11.5px;color:var(--text-muted);">'+esc((e&&e.message)||'error')+'</div></details>'; }catch(_){} } }
-    async function runActions(ai, say, acts, gen, awaitInput){
+    async function runActions(ai, say, acts, gen, awaitInput, readOnly){
+      const superseded=()=>gen!=null&&gen!==_runGen;
       const results=[]; const fails=[]; let cancelled=false;
       const turnId=_curTurn, turnKey=_curTurnKey, turnSignal=_abortCtl?.signal;
       const _turnMark=_surfaceMark();   /* (atlas-controls-receipts) the map as this run found it: whose drawing was still on it */
@@ -2919,6 +2923,7 @@ export function atlasConsole(HOST){
         const signal=_linkSignals(turnSignal,a.__callSignal);
         try{ const _cap=CAPS.resolve(a.type); const _args={}; Object.keys(a).forEach(k=>{ if(k!=='type'&&k.slice(0,2)!=='__') _args[k]=a[k]; });
           _ar=await EXEC.execute(_cap?_cap.id:a.type, _args, {source:'atlas', turnId, turnKey, externalContent:a.__externalContent===true, signal});
+          if(superseded()||signal?.aborted) return fails;
           if(_ar?.status==='needs_input'&&_ar.code==='needs_confirm'){
             confirmation=_requestConfirmation(ai,_ar,signal);
             const decision=await (awaitInput?awaitInput(confirmation.decision):confirmation.decision);
@@ -2927,6 +2932,7 @@ export function atlasConsole(HOST){
           }
           r=RESULTS.toLegacy(_ar); }
         catch(e){ r=R(false, warn(esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); }
+        if(superseded()||signal?.aborted) return fails;
         if(!r||typeof r!=='object') r=R(true, String(r||''));
         if(_ar){ try{ a.__result=_ar; if(_ar.status!=='completed') a.__status=_ar.status; }catch(_){} }
         /* ⚠ A STEP THAT IS WAITING ON THE USER IS NOT A FAILURE, AND MUST NOT BE REPAIRED AS ONE.
@@ -2938,21 +2944,23 @@ export function atlasConsole(HOST){
         if(_ar?.status==='needs_input'&&_ar.inputRequest) _pendingInput={ result:_ar, bubble:ai, at:Date.now() };
         if(confirmation) r.meta=Object.assign({},r.meta,{confirmation:confirmation.choice});
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
-        const _drew=(r.ok!==false)?_drewSince(_mark0):[];
+        const _drew=(!readOnly&&r.ok!==false)?_drewSince(_mark0):[];
         /* ⚠ A NEW DRAWING IS NOT HIDDEN BY AN OLD SWITCH. The kind's layers are shared (nlq-*), and an earlier reply's chip turned them OFF; this run then painted into
            layers that stayed hidden — the thing was drawn, listed, and invisible, and its own chip read OFF. What this run just drew is shown (the reader asked for it just now). */
         _drew.forEach(d=>{ if(d.visible) return; try{ (d.surfaces||[]).forEach(s=>{ try{ GE().render.showSurface(s,true); }catch(_){} }); d.visible=_ovlVisible(d.kind); }catch(_){} });   /* (atlas-controls-receipts) through the painter, as the chip does */
         if(_drew.length){ const _sn=await _witnessDrew(_drew);
+          if(superseded()||signal?.aborted) return fails;
           if(_sn){ r.meta=Object.assign({},r.meta||{},{ seen:_sn });
             if(_sn.bad.length){ const _rs=[]; _sn.bad.forEach(b=>{ const t=_whyText(b.reason); if(_rs.indexOf(t)<0) _rs.push(t); });
               r.html=(r.html||'')+warn(L('Drawn, but not visible on screen: ','描きましたが、画面には見えていません: ')+esc(_rs.join(' / '))+(_sn.bad.some(b=>b.errors&&b.errors.length)?' ('+esc(_sn.bad.map(b=>(b.errors||[])[0]).filter(Boolean)[0]||'')+')':'')); } } }
+        if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         if(confirmation) _paintHeld(confirmation.host,_ar,r.html||'');
-        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, drew:_drew.map(d=>Object.assign({what:actLabel(a)},d))}); try{ reportShown(results[results.length-1]); }catch(_){}   /* (atlas-verify-metrics) the first operation that shows something usable ends «the wait for the first useful result» */   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
+        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, drew:_drew.map(d=>Object.assign({what:actLabel(a)},d))});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ results.forEach(rr=>(rr.drew||[]).forEach(d=>{ if(!d.visible||!d.kind) return; const reg=ai.__atlDrewSurf||(ai.__atlDrewSurf=Object.create(null)); const S=reg[d.kind]||(reg[d.kind]=[]); (d.surfaces||[]).forEach(s=>{ if(S.indexOf(s)<0) S.push(s); }); })); }catch(_){}   /* (atlas-controls-receipts) the turn's receipt, by source id: what its chip switches */
-      try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=_ovlOf(a&&a.type); if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
+      try{ const mapped=[]; acts.forEach(a=>{ if(readOnly||fails.indexOf(a)>=0) return; let ks=_ovlOf(a&&a.type); if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
         results.forEach(rr=>{ (rr.drew||[]).forEach(d=>{ if(d.visible&&mapped.indexOf(d.kind)<0) mapped.push(d.kind); }); });   /* (atlas-drew-record) what the map says this turn drew, whether or not the capability declared a chip */
         if(mapped.length){ try{ ai.__ovlSnap=Object.assign(ai.__ovlSnap||{}, _ovlSnapshot(mapped)); try{ ai.__viewSnap=ASTATE.snapshot({only:['camera','time','activeLayers']}); }catch(_){}   /* ⚠ (#R543) THE VIEW THE SHAPES WERE DRAWN IN, alongside the shapes. The overlay snapshot has existed since #R118 and the chip repaints it, but it never carried where the camera was or WHAT THE CLOCK WAS SET TO — so a reply about 1950 was repainted over whatever year the reader had since moved to, which is a different claim, not that reply's map. `ASTATE.snapshot` is the observer that already reads these three sections, so capture cannot drift from what the state block reports. js/atlas-msg-tools.js puts it back. */ mapped.forEach(k=>{
           /* (#R127) TRUE INDEPENDENT COEXISTENCE on the DRAW path ("新しいものが追加されたときに古いものが勝手にオフに
@@ -2977,7 +2985,8 @@ export function atlasConsole(HOST){
       if(ai.__atlSay==null) ai.__atlSay=say||'';   /* the FIRST say leads; a later repair say never overrides it */
       if(cancelled) ai.__atlCancelled=true;
       if(gen!=null&&gen!==_runGen){ _markCancelled(ai); return fails; }
-      _atlCompose(ai);
+      const displayed=_atlCompose(ai);
+      if(displayed) results.forEach(r=>reportShown(r,turnKey));
       return fails;
     }
     /* (#R115) Compare-indicator resolver — "Compare the USA, China and India — GDP, defense and population"
@@ -3050,10 +3059,10 @@ export function atlasConsole(HOST){
          work order: "AI処理上どうしても既定指示が必要なら、API境界でのみ非表示のシステム指示として付与する". */
       const _imgDefault=L('Read and analyze this image. If it is a document, a maths/science problem, a table or text, transcribe it accurately and solve or explain it.','この画像を読み取って分析してください。文書・数学／理科の問題・表・テキストであれば、正確に書き起こして解くか説明してください。','Lies und analysiere dieses Bild. Wenn es ein Dokument, eine Mathe-/Naturwissenschaftsaufgabe, eine Tabelle oder Text ist, transkribiere es genau und löse oder erkläre es.','Прочитайте и проанализируйте это изображение. Если это документ, математическая/научная задача, таблица или текст — точно расшифруйте и решите или объясните.','Lee y analiza esta imagen. Si es un documento, un problema de matemáticas/ciencias, una tabla o texto, transcríbelo con precisión y resuélvelo o explícalo.');
       return (q?('The user says: '+q+'\n\n'):('[No text was typed — default instruction] '+_imgDefault+'\n\n'))+'Read the attached image(s) carefully and respond per your instructions: classify the content, transcribe any text/math EXACTLY (flag uncertain glyphs), solve or analyze it with LaTeX + Markdown, emit verifiable checks for any computable result, and include "places" ONLY if the content is genuinely geographic.'; }
-    async function _atlVisionTurn(ai, q, imgs, gen, atts){
-      const opts=Object.assign({task:'vision_read',effortHint:'high',imageDetail:'high',signal:(_abortCtl?_abortCtl.signal:undefined)},atts||{});   /* (#R540) the re-examination round reuses this very object, so the attachments ride along with it */
+    async function _atlVisionTurn(ai, q, imgs, gen, atts, turnKey, ask){
+      const opts=Object.assign({task:'vision_read',effortHint:'high',imageDetail:'high',turnId:turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)},atts||{});   /* (#R540) the re-examination round reuses this very object, so the attachments ride along with it */
       try{ ai.innerHTML=stageDots('read'); PROG.phase(ai,'read'); }catch(_){}
-      let env=null; try{ env=await askAIJSONEnvelope(_visionPrompt(q),_visionSYS(),imgs,opts); }
+      let env=null; try{ env=await ask(_visionPrompt(q),_visionSYS(),imgs,opts); }
       catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
       if(gen!==_runGen){ _markCancelled(ai); return; }
       let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks);
@@ -3061,7 +3070,7 @@ export function atlasConsole(HOST){
          返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
       if(vr.ran && vr.failed.length){ try{ if(gen===_runGen){ ai.innerHTML=stageDots('verify'); PROG.phase(ai,'verify'); }
         const guide='\n\n[SELF-CHECK FAILED] Your emitted check(s) did NOT hold when recomputed EXACTLY on the client: '+vr.failed.map(f=>f.label+' ('+f.detail+')').join('; ')+'. RE-EXAMINE the corresponding region of the image, re-transcribe those exact entries (watch 1/7, 0/O, signs and fraction bars), redo the computation, and return corrected JSON whose checks actually pass. If the image does not support the calculation, withdraw it in "answer", name unreadable entries in "uncertain", and omit the unsupported result and its check.';
-        const env2=await askAIJSONEnvelope(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
+        const env2=await ask(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
         if(gen!==_runGen){ _markCancelled(ai); return; }
         if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
           if(d2.answer.trim() && !vr2.failed.length && (vr2.ran || !d2.checks.length)){ d=d2; vr=vr2; env=env2; } }
@@ -3072,12 +3081,12 @@ export function atlasConsole(HOST){
       if(!vr.failed.length) try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);
       if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
-        try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls}); }catch(_){}
+        try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls,isCurrent:()=>gen===_runGen}); }catch(_){}
         if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) GE().camera.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:900}); } }catch(_){} } }
       if(gen===_runGen){ ai.innerHTML=html; if(!wantsContinue(d)) recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
-      return wantsContinue(d)?d:null;   /* the reader asked for tools: run() carries on into the agent loop with this reading */
+      return d;
     }
-    async function run(q,imgs,files,options={}){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
+    async function run(q,imgs,files,options={}){ const sentAt=options?.sentAt ?? Date.now(); q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
       files=(Array.isArray(files)?files:[]).filter(f=>f&&(f.kind==='doc'?typeof f.b64==='string':typeof f.text==='string')).slice(0,ATL_FILE.LIMITS.files+ATL_FILE.LIMITS.docs);   /* (#R158/#R540) text attachments AND provider-native documents */
       if(!q&&!imgs.length&&!files.length) return;
       /* ⚠⚠ (#R540) THE ATTACHMENTS ARE THEIR OWN CHANNELS NOW, NOT MORE PROMPT TEXT. #R158 glued them into the prompt, which ai-proxy slices at MAX_PROMPT (24,000) — so four 60,000-character files were cut mid-word with nothing said to the reader OR the model. Same shape as #R285's system prompt, same fix: a bound of their own. The bubble and history still keep only the reader's own words plus a chip. */
@@ -3099,7 +3108,15 @@ export function atlasConsole(HOST){
          many calls one key may carry, so a client that reuses a key gains nothing.
          `supersede` is the other half of the same idea: the previous turn's unfinished operations
          are replaced rather than left to land on top of this turn's answer (§12). */
-      const _turnKey=(_curTurnKey='t'+turn+'-'+Math.floor(Date.now()/1000)); try{ EXEC.supersede(turn); }catch(_){} try{ ASTATE.beginTurn(turn,q); }catch(_){} try{ window.IntMapOS.emit({ kernel:'atlas', phase:'turn', turnId:turn }); }catch(_){}   /* (anonymous-usage-counts) a question was sent — announced on the kernel bus with its turn id and NOTHING of the question; js/usage-counts.js counts it */   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
+      const _turnKey=(_curTurnKey='atlas-'+crypto.randomUUID());
+      const _experiment=effortExperiment(options?.effortPolicy);
+      const _mode=_experiment?.useProductionAuto?'auto':EFFORT.get();
+      const _ledger=makeRunLedger({ now:()=>Date.now(), startedAt:sentAt });
+      const _mrec=makeTurnRecorder({ question:(imgs.length||files.length)?'':q, turnKey:_turnKey, startedAt:sentAt });
+      const _measure=(row)=>{ if(row&&gen===_runGen&&_atlasDbg) _atlasDbg.measurement={ row, turnKey:_turnKey, effortPolicy:_experiment?options.effortPolicy:null }; };
+      const _releaseLedger=registerRunLedger(_turnKey,_ledger);
+      try{ EXEC.supersede(turn); }catch(_){} try{ ASTATE.beginTurn(turn,q); }catch(_){} try{ window.IntMapOS.emit({ kernel:'atlas', phase:'turn', turnId:turn }); }catch(_){}   /* (anonymous-usage-counts) a question was sent — announced on the kernel bus with its turn id and NOTHING of the question; js/usage-counts.js counts it */   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
+      const initialMap=ASTATE.snapshot();
       try{ chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) _markCancelled(b); }); }catch(_){}
       /* (#R231) 「画像については…吹き出しで囲わなくてそのまま表示でいい」 — the image row is its own
          element. It keeps the `u` class (_scrollUserTop reads previousElementSibling.classList) and
@@ -3109,7 +3126,8 @@ export function atlasConsole(HOST){
       if(q||files.length) bubble('u',(files.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;'+(q?'margin-bottom:6px;':'')+'">'+files.map(f=>'<span class="atl-fchip atl-fchip-msg" data-atlvid="'+esc(ATTACH_STORE.put(f))+'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span></span>').join('')+'</div>':'')+esc(q),{turn:turn,q:q,imgs:imgs,files:files,edit:true});   /* (#R158) file chips are named, not shown, so they stay in the bubble with the text; (#R298) this bubble carries the whole request, so this is the one Edit re-runs */
       /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
          in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
-      _abortCtl=newTurnController(_abortCtl);   /* ⚠⚠⚠ (#R452) a second question REPLACES the first — it used to be overwritten WITHOUT being aborted, so a turn nobody would see kept running. js/atlas-deadlines.js has the measurement */
+      _abortCtl=newTurnController(_abortCtl);
+      const _turnSignal=_abortCtl?.signal;   /* ⚠⚠⚠ (#R452) a second question REPLACES the first — it used to be overwritten WITHOUT being aborted, so a turn nobody would see kept running. js/atlas-deadlines.js has the measurement */
       _setGoBusy(true);
       try{
       /* ══ (#R406) ATLAS DRIVES THE TURN ═══════════════════════════════════════════════════════
@@ -3123,35 +3141,51 @@ export function atlasConsole(HOST){
       _atlasDbg={ toolCalls:[], rejected:0, actionOutcomes:[], steps:[], replies:[], dispatches:[] };   /* (atlas-quality-lab) `replies` and `dispatches` are the two sides of this turn as they happened — what the model said at each step and what the dispatch returned — so scripts/atlas-eval.mjs --record can save the turn as a cassette that replays with no model (scripts/atlas-eval/replay.mjs) */ _atlasOutcomes=_atlasDbg.actionOutcomes; VFRAMES.reset();   /* (#R493) a frame is a fact about a MOMENT; the previous turn's moment is gone */
       /* ⚠ (#R447) THE THIRD HAND-WRITTEN COPY OF THE QUOTA RULE STOOD HERE — a mirror of the server's counter that this page never re-read, so a wrong one ended the turn with the daily-limit message and NOT ONE request sent. aiQuotaBlocked() is the one answer, and it ASKS; missing, it fails OPEN, because ai-proxy holds the authority and refusing on a number nobody sent is the defect this replaced. */
       let _aiReady=false; try{ _aiReady = !!(typeof HOST.user!=='undefined'&&HOST.user) && !(typeof aiQuotaBlocked==='function' && await aiQuotaBlocked()); }catch(_){ _aiReady=false; }
+      if(gen!==_runGen) return;
       if(!_aiReady){
         try{ if(typeof aiGate==='function') aiGate(); }catch(_){}   /* opens the login modal / shows the daily-limit toast */
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof HOST.user!=='undefined'&&HOST.user)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
       /* (#R156) IMAGE → the dedicated vision pipeline, which is its own reader and not this loop. */
       _imgCtx='';   /* what the image reader concluded, when it asked for tools (js/atlas-image-continue.js) */
-      const _turnPhotos=imgs.length?ATTACH_LOG.earlier(turn+1).filter(f=>f.kind==='image').slice(0,imgs.length).reverse():[]; if(imgs.length){ const aiv=_pend(bubble('a',stageDots('read')),'read'); let _vd=null; try{ _vd=await _atlVisionTurn(aiv,q,turnAttachmentImages(null,_turnPhotos),gen,_atts); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen){ try{ PROG.done(aiv); }catch(_){} msgTools(aiv,q); } if(!(_vd&&gen===_runGen)) return; _imgCtx=agentContext(_vd); }
+      const _turnPhotos=imgs.length?ATTACH_LOG.earlier(turn+1).filter(f=>f.kind==='image').slice(0,imgs.length).reverse():[];
+      if(imgs.length){
+        const aiv=_pend(bubble('a',stageDots('read')),'read');
+        const reading=await _atlVisionTurn(aiv,q,turnAttachmentImages(null,_turnPhotos),gen,_atts,_turnKey,askAIJSONEnvelope);
+        if(gen!==_runGen) return;
+        try{ PROG.done(aiv); }catch(_){} msgTools(aiv,q);
+        if(!reading){ _measure(_mrec.recordFailure({code:'vision_failed'},_turnKey,_ledger.summary())); return; }
+        if(!wantsContinue(reading)){
+          const completion=String(reading.answer||'').trim()?'complete':'none';
+          _measure(_mrec.recordAnswer({completion,text:reading.answer,stopped:'answered',run:_ledger.summary()},_turnKey));
+          ASTATE.endTurn(turn,{reply:reading.answer,status:'answered',completion,request:q,aiCalls:_ledger.summary().modelCalls});
+          return;
+        }
+        _imgCtx=agentContext(reading);
+      }
       const ai=_pend(bubble('a',stageDots('think')),'think'); try{ LIVE.watch(EXEC); LIVE.begin(ai); }catch(_){}   /* (atlas-live-stream) the clock the measured wait is read from starts with the reply */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));   /* (#R117) reasoning budget, not meaning: it picks an effort tier and decides nothing about the request */
-      const _experiment=effortExperiment(options?.effortPolicy), _preCalls=[]; let _effort=_experiment?.base||EFFORT.pick(_cplx);
+      let _effort=_experiment?.base||EFFORT.pick(_cplx,_mode);   /* how hard this turn thinks: the reader's pick, or — on auto — what one small low-effort call decides about THIS request (js/atlas-effort.js); only a failed call falls back to the complexity guess above */
       /* (atlas-orchestration-efficiency) A SHORT, PLAIN REQUEST IS NOT SIZED BY A SEPARATE MODEL CALL. The sizing call is a full round trip the reader waits through before step 1 (8 s at most; measured one extra call per turn), and for a request this short with one clause the answer is the server's default effort — which Atlas raises itself, on the step that needs it, with `next_effort`. Long or multi-clause requests (`_cplx`) and anything carrying an attachment keep the sizing call. */
       const _sizeIt=(_effort!==undefined)||(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length+(imgs&&imgs.length||0))>0;
-      if(!_experiment&&EFFORT.get()==='auto'&&_sizeIt){ const _te0=Date.now(); let usage; try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length), turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined), fallback:_effort, onUsage:meta=>{ usage=proxyUsage(meta); } }); }catch(_){} _preCalls.push({ ...usage, model:usage?.model||'atlas_effort', ms:Date.now()-_te0 }); }
+      if(!_experiment?.base&&_mode==='auto'&&_sizeIt){ try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, mode:_mode, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length), turnId:_turnKey, signal:_turnSignal, fallback:_effort }); }catch(_){} }
+      if(gen!==_runGen) return;
       /* ⚠ ONE TOOL CALL BECOMES THE SAME ACTION OBJECT THE DISPATCH HAS ALWAYS RUN, so every pin,
          overlay, panel and rendering behaviour is the one that shipped — and its MECHANICAL result
          is what goes back to Atlas. */
       const _ranActions=[];
-      const _runOne=async(action,turn)=>{ action.__externalContent=!!(turn&&turn.externalContentSeen); action.__callSignal=(turn&&turn.callSignal)||undefined; let _asked=null; try{ if(_atlasDbg) _asked=JSON.parse(JSON.stringify(action,(k,v)=>String(k).slice(0,2)==='__'?undefined:v)); }catch(_){}   /* (atlas-quality-lab) the action AS THE SURFACE BUILT IT, before the dispatch adds its own stamps — the key a replay answers it by */   /* (#R801) stamped UNCONDITIONALLY from the agent's turn record, so a `__externalContent` the model wrote into its arguments is overwritten rather than read; `__` keys never reach the executor's arguments (below) nor `callKey` */ const before=((ai.__atlResults||[]).length);
+      const _runOne=async(action,turn)=>{ if(gen!==_runGen) return {ok:false,error:'aborted'}; const debug=_atlasDbg; action.__externalContent=!!(turn&&turn.externalContentSeen); action.__callSignal=(turn&&turn.callSignal)||undefined; let _asked=null; try{ if(_atlasDbg) _asked=JSON.parse(JSON.stringify(action,(k,v)=>String(k).slice(0,2)==='__'?undefined:v)); }catch(_){}   /* (atlas-quality-lab) the action AS THE SURFACE BUILT IT, before the dispatch adds its own stamps — the key a replay answers it by */   /* (#R801) stamped UNCONDITIONALLY from the agent's turn record, so a `__externalContent` the model wrote into its arguments is overwritten rather than read; `__` keys never reach the executor's arguments (below) nor `callKey` */ const before=((ai.__atlResults||[]).length);
         /* Alternative answers for one declared deliverable share a card. Separate targets can share a plan step. */
         if(!action.__goalKey&&TRES.ANSWER_TYPES[action.type]&&turn?.planTarget) action.__goalKey='goal:'+_turnKey+':'+turn.planStep+':'+turn.planTarget;
         _ranActions.push(action);
-        await runActions(ai,'',[action],gen,turn?.awaitInput);
+        await runActions(ai,'',[action],gen,turn?.awaitInput,turn?.readOnly);
         const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
         let rec=null; for(let i=list.length-1;i>=before&&!rec;i--){ if(list[i]&&list[i].act===action) rec=list[i]; }   /* ⚠ (atlas-turn-engine) THIS action's record, found by identity. It was `list[list.length-1]` — the last record filed, which is this action's only while one call runs at a time; js/atlas-agent.js now runs the calls of one reply together when their conflict keys do not overlap, and another call may file its record between this one's and this line */
         if(!rec) return {ok:false,error:'not_run',message:'the turn was superseded'};
-        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; try{ if(_atlasDbg&&_asked) _atlasDbg.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
+        const _ans={ ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; try{ if(debug&&_asked) debug.dispatches.push({ action:_asked, out:JSON.parse(JSON.stringify(_ans)) }); }catch(_){} return _ans; };
       _turnRunAction=_runOne;
       const _tools=TOOLS.baseTools();   /* (atlas-turn-engine) the same declarations every turn — nothing on the page is written into them */
-      _liveTools=_tools; const _sys=SYS(_tools); const _c0=_agentCtx(); try{ WM.beginTurn(turn,q); }catch(_){}
+      _liveTools=_tools; const _sys=SYS(_tools); const _c0=_agentCtx(initialMap); try{ WM.beginTurn(turn,q); }catch(_){}
       /* ⚠ (atlas-turn-engine) THE REAL LAYER NAMES, AS INPUT AND AS A CHECK — NOT AS PART OF THE DECLARATION. They were set as set_layer's `name.enum`, which made the tool list (and ai-proxy's prompt-cache key, a hash of it) move whenever the page did. js/atlas-toolsurface.js liveEnum keeps them enforced (js/atlas-agent.js `reject` reads `check`) and returns the sentence that puts them in front of the model in the request item — input, after the cached prefix */
       try{ _c0.stable=(_c0.stable||'')+TOOLS.liveEnum(_tools,'set_layer','name',layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean)); }catch(_){}
       try{ const _dp=_delegationPolicy; if(_dp&&_dp.mode) _c0.stable=(_c0.stable||'')+'\nDelegation (research.delegate) on this server: '+(_dp.mode==='off'?'switched off — research the pieces yourself.':(_dp.mode==='independent'?((_n=>(_n(_dp.maxChildren)?('at most '+(+_dp.maxChildren)+' worker task(s) per request'+(_n(_dp.childMaxCalls)?(', each up to '+(+_dp.childMaxCalls)+' model call(s)'):'')+(_n(_dp.maxConcurrent)?(', '+(+_dp.maxConcurrent)+' running at a time'):'')+' — group the pieces into that many tasks.'):('there is no fixed number of worker tasks — create as many as the request needs'+(_n(_dp.maxConcurrent)?(' (they run '+(+_dp.maxConcurrent)+' at a time)'):'')+(_n(_dp.childMaxCalls)?('; each may make up to '+(+_dp.childMaxCalls)+' model call(s)'):'')+'.')))(v=>v!=null&&v!==''&&isFinite(+v)&&+v>0)):'workers share the model calls of this request.'))+((_dp.mode!=='off'&&Array.isArray(_dp.models)&&_dp.models.length)?(' Models a worker task may name in "model" (USD per 1M tokens input/output): '+_dp.models.map(m=>m.id+' '+m.usdPerMTok.input+'/'+m.usdPerMTok.output).join('; ')+'.'):''); }catch(_){}   /* (delegation-limits) the server's worker policy, as it last reported it — so Atlas plans within it instead of meeting a refusal. (atlas-native-tools) both lines are fixed for the turn, so every step re-sends the same prefix — see _agentCtx */
@@ -3169,28 +3203,27 @@ export function atlasConsole(HOST){
          was reachable only by a malformed answer — which it then misread as an old server. An answer that is not
          protocol 2 is now a transport failure (js/ai-core.js aiCallServerFull), reported as one. */
       let _heldPhotos=[], _heldFiles=[];
-      const _model=async(req)=>{ try{ PROG.phase(ai,req?.final?'write':'think'); }catch(_){}
+      const _model=async(req)=>{ if(gen!==_runGen) return null; try{ PROG.phase(ai,req?.final?'write':'think'); }catch(_){}
         const built=_agentInput(req,q,_c0);
         const _tImgs=turnAttachmentImages(VFRAMES.urls(),_atlRecallImgs.concat(_heldPhotos),_turnPhotos);
-        const effortHint=_experiment?_experiment.next(req?.effort):(EFFORT.get()==='auto'&&req?.effort)||_effort;
+        const effortHint=_experiment?.next?_experiment.next(req?.effort):(_mode==='auto'&&req?.effort)||_effort;
         const _o={task:'atlas_turn',files:turnTextFiles(_atts.recalledFiles,_heldFiles.concat(_atts.files)),
           docs:_atts.docRefs?undefined:_atts.docs,docRefs:_atts.docRefs,webMode:'auto',effortHint,
           maxOutputHint:req?.maxOutput||undefined,turnId:_turnKey,signal:_abortCtl?.signal,stream:LIVE.hooks(ai)};
         const env=await askAIJSONEnvelope('',_sys,_tImgs,Object.assign({},_o,{ protocol:2, input:built.input, schema:AGENT.FINAL_SCHEMA, toolChoice:(req&&req.final)?'none':undefined,
             tools:((req&&req.tools)||[]).concat((built.cut||built.recallable)?[AGENT.READ_RESULT_TOOL]:[]).map(t=>({name:t.name,description:t.description,parameters:t.parameters,promoted:t.promoted?true:undefined})) }));   /* ⚠ (#R493) `_tImgs`: THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */   /* read_result only on a step whose input was cut: the tool list is the start of the cached prefix */
+        if(gen!==_runGen) return null;
         _heldFiles=_o.files.filter(f=>f.window); _heldPhotos=_atlRecallImgs.concat(_heldPhotos).filter(img=>env?.meta?.attachmentReceipt?.images?.some(r=>r.name===img.name)); _atts.recalledFiles.length=0; _atlRecallImgs.length=0; try{ if(env&&env.meta&&Array.isArray(env.meta.docRefs)&&env.meta.docRefs.length) _atts.docRefs=env.meta.docRefs; }catch(_){}   /* (atlas-mainloop-reliability) the turn's later model calls name its documents instead of re-sending them */
         try{ if(env&&env.meta&&env.meta.delegationPolicy&&typeof env.meta.delegationPolicy==='object') _delegationPolicy=Object.assign({},env.meta.delegationPolicy,Array.isArray(env.meta.delegationModels)?{models:env.meta.delegationModels}:{}); }catch(_){}
-        try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; } try{ webEvidence.note(_curPlanCites,{via:'turn',turn:_curTurnKey}); }catch(_){}   /* what this step's own hosted search cited is known to the workers and to web.evidence, so it is opened rather than searched for again */
+        try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; } try{ webEvidence.note(_curPlanCites,{via:'turn',turn:_turnKey}); }catch(_){}   /* what this step's own hosted search cited is known to the workers and to web.evidence, so it is opened rather than searched for again */
         try{ _curPlanCites.forEach(c=>WM.addEvidence({ url:_atlCleanUrl(c.url), title:c.title, publisher:c.publisher||c.host, retrievedAt:new Date().toISOString().slice(0,10), turnId:turn })); }catch(_){}   /* (atlas-working-memory) a source a turn read stays reachable */
         const _r=AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON, env&&env.meta, env&&env.output); _r.contextOutside=!!(built&&built.outside);   /* (atlas-outside-mark) what this reply was written from still carried outside content — js/atlas-agent.js event ④ */ if(built.trim.droppedHistory||built.cut) _r.inputTrim=built.trim; try{ if(_atlasDbg) _atlasDbg.replies.push({ step:req&&req.step, final:!!(req&&req.final), text:String(_r.text||''), turnState:_r.turnState||'', answerMode:_r.answerMode||'', webUsed:!!_r.webUsed, toolCalls:(_r.toolCalls||[]).map(c=>({ id:c.id, name:c.name, arguments:c.arguments })) }); }catch(_){} return _r; };   /* (#R801) THIS call's meta (webUsed/webAttached), not window._aiLastMeta — the #R350 reason, one reader over. (atlas-native-tools) `output` = the provider's items; `inputTrim` = what the composer gave up, recorded in the trace by runTurn */
-      const _mrec=makeTurnRecorder({ question:q, turnKey:_turnKey });
       try{
-        const out=await AGENT.runTurn({ preCalls:_preCalls, model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT), footprint:(c)=>TOOLS.footprintOf(c,_tools), identify:(c)=>TOOLS.identityOf(c,_tools), prefetch:(c)=>TOOLS.prefetchOf(c,_tools,capDeps()), promote:TOOLS.promotionsOf,   /* (atlas-turn-engine) which calls of one reply may run together, and what find_capability makes callable by name — js/atlas-agent.js */ externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
-          system:_sys, messages:[{role:'user',content:q+_imgCtx}], signal:(_abortCtl?_abortCtl.signal:undefined), plan:PLAN, memory:WM, memoryTurn:turn,
-          verify:makeGoalVerify({ observe:((since)=>{ const a=makeTurnObserver(since), b=makeHeldObserver(since); return (ctx)=>a(ctx).concat(b(ctx)); })(Date.now()), ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:(_abortCtl?_abortCtl.signal:undefined) }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
+        const out=await AGENT.runTurn({ runLedger:_ledger, model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT,_runOne), footprint:(c)=>TOOLS.footprintOf(c,_tools), identify:(c)=>TOOLS.identityOf(c,_tools), prefetch:(c)=>TOOLS.prefetchOf(c,_tools,capDeps()), promote:TOOLS.promotionsOf,   /* (atlas-turn-engine) which calls of one reply may run together, and what find_capability makes callable by name — js/atlas-agent.js */ externalContent:!!((_atts.files&&_atts.files.length)||(_atts.docs&&_atts.docs.length)),   /* (#R801) an attachment's text or a document is outside content in the FIRST model input — js/atlas-agent.js `turn` starts true */
+          system:_sys, messages:[{role:'user',content:q+_imgCtx}], signal:_turnSignal, plan:PLAN, memory:WM, memoryTurn:turn, verifierContext:_c0.verifierContext, requestVersion:_turnKey,
+          verify:makeGoalVerify({ observe:((since)=>{ const a=makeTurnObserver(since, undefined, _turnKey, { turn, initial:ASTATE.focusObjects(initialMap.objects), describe:ASTATE.describeMapObject }), b=makeHeldObserver(since); return (ctx)=>a(ctx).concat(b(ctx)); })(ASTATE.turn(turn)?.at ?? Date.now()), ask:askAIJSONEnvelope, system:personaPrompt('checking a request against what an IntMap turn produced',{mode:'internal'})+GOAL_VERIFY_RULES, turnId:_turnKey, signal:_turnSignal }),   /* (atlas-goal-verifier) */   /* (atlas-plan-on-map) the `plan` tool and the step each call serves — js/atlas-agent.js */
           onStep:(s)=>{ try{ _mrec.step(s); }catch(_){} try{ LIVE.stepDone(ai,s); }catch(_){} try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
-        try{ const row=_mrec.recordAnswer(out,_turnKey,{ cites:_curPlanCites }); if(_atlasDbg) _atlasDbg.measurement={ row, effortPolicy:_experiment?options.effortPolicy:null }; }catch(_){}
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.produced=(out.produced||[]).join(',')||'-'; _atlasDbg.outputGate=(out.trace&&out.trace.outputGate)||0; _atlasDbg.inputTrims=(out.trace&&out.trace.inputTrims)||[]; } }catch(_){}   /* (atlas-native-tools) inputTrims: what the composer or the proxy's fence gave up on each step — js/atlas-agent.js */   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */
         /* (#R733) the two stops that are a LIMIT rather than Atlas deciding it was done — _atlCompose
            renders the note. Read off `out.stopped`, which js/atlas-agent.js sets from the guard that
@@ -3208,7 +3241,8 @@ export function atlasConsole(HOST){
         try{ ai.__atlInterim=Array.isArray(out.interim)?out.interim.map(x=>String((x&&x.text)||'')):LIVE.said(ai); }catch(_){}   /* (atlas-interim-kept) the sentences Atlas wrote on the way — js/atlas-agent.js `interim`, else what LIVE narrated */
         ai.__atlSay=out.text||(String(out.stopped||'')==='transport'&&AGENT.transportSay&&AGENT.transportSay(out,L))||((!ai.__atlCut&&String(out.stopped||'')!=='awaiting_user'&&out.results&&out.results.length)?L('No written answer this time — the tool results are below.','今回は回答文がありません——道具の結果は下にあります。','Diesmal keine geschriebene Antwort — die Ergebnisse stehen unten.','В этот раз письменного ответа нет — результаты ниже.','Esta vez no hay respuesta escrita: los resultados están abajo.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been. (atlas-unbounded-execution) NOT on a turn that stopped short: there is no forced final any more, and the stop line (_cutNote) already says what happened */
         ai.__atlQ=q; try{ LIVE.end(ai,'answered'); }catch(_){}   /* (atlas-live-stream) the draft gives way to the answer — compose renders `__atlSay` in its place */
-        _atlCompose(ai); try{ LIVE.answered(ai); }catch(_){}
+        const displayed=_atlCompose(ai); try{ LIVE.answered(ai); }catch(_){}
+        try{ _measure(_mrec.recordAnswer(out,_turnKey,{ cites:_curPlanCites, displayed })); }catch(_){}
         /* ⚠⚠ (atlas-completion) WHAT RAN IS NOT WHAT SUCCEEDED. `_ranActions` is filled BEFORE each call runs and this line used to
            pass `[]` as the failures, so every attempt — a failed or unobserved drawing included — went into the next turn's history
            as `[did: …]`. The verdict is the executor's observation on the action (`__exec`, the record js/atlas-plan.js opState reads
@@ -3221,9 +3255,16 @@ export function atlasConsole(HOST){
 
       }catch(e){
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
-        try{ _mrec.recordFailure(e,_turnKey); }catch(_){}   /* (atlas-verify-metrics) a turn that ended without an answer still cost something: its row is counted against its task */
+        try{ _measure(_mrec.recordFailure(e,_turnKey,_ledger.summary())); }catch(_){}   /* (atlas-verify-metrics) a turn that ended without an answer still cost something: its row is counted against its task */
         try{ ASTATE.endTurn(turn,{status:'error',reply:String((e&&e.message)||''),request:q,error:{ code:(e&&e.code)||null, status:(e&&e.status)||null, retryable:(e&&typeof e.retryable==='boolean')?e.retryable:null }}); }catch(_){}   /* (atlas-completion) the cause as js/ai-core.js reported it — code, HTTP status, whether a retry can help — kept on the turn record, not only as a sentence */ try{ LIVE.end(ai,'error'); }catch(_){} try{ PROG.done(ai); }catch(_){} ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); try{ const _t=ASTATE.turn(turn); if(inEl&&!String(inEl.value||'').trim()&&!(_t&&_t.operations&&_t.operations.length)){ inEl.value=q; try{ inEl.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){} } }catch(_){}   /* ⚠⚠⚠ (#R775) A TURN THAT DIED WITH NOTHING DONE MUST NOT TAKE THE QUESTION WITH IT. Measured on production 2026-09-17: the Supabase session vanished mid-session (auth-js removes it when a refresh is refused, js/ai-core.js:58 asks for it on every AI call), and the next four questions came back in 253-553 ms as 「Please log in to use AI features.」 The login modal opened; the questions were gone. Nothing in this file records them — `recordTurn` is not reached on this path — so the reader retypes. Restoring the composer costs nothing and claims nothing: it is done ONLY when the turn filed no operation at all (so a partially-completed turn is never re-sent) and ONLY when the composer is empty (so what the reader has already typed is never overwritten). It does not re-send by itself: pressing send stays the reader\'s. */ }
-      }finally{ try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){} }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
+      }finally{
+        try{
+          _releaseLedger();
+          const row=_mrec.recordFailure({code:gen===_runGen?'no_answer':'cancelled'},_turnKey,_ledger.summary());
+          _measure(row);
+        }catch(_){}
+        try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){}
+      }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
     /* (atlas-completion) `st` — the turn's completion as runTurn observed it. Its unmet items are written as their OWN history line,

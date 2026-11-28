@@ -216,15 +216,17 @@ test('#R248 ③ the Objects panel closes on a map click, with a listener whose l
   /* EVALUATED: the panel is opened, re-opened, clicked away and closed, and the renderer's own click
      listener list is read after each step. */
   const { O, clicks } = await objectPanel();
+  const observers = clicks.slice();
   O.open();
-  assert.equal(clicks.length, 1, 'the map-click closer exists, and is bound when the panel opens');
+  assert.equal(clicks.length, observers.length + 1, 'opening the panel installs its map-click closer');
+  const closer = clicks.find((fn) => !observers.includes(fn));
+  assert.equal(typeof closer, 'function');
   O.open();
-  assert.equal(clicks.length, 1, 'bind exactly once — an off before every on is what stops a second listener accumulating');
-  clicks[0]();
-  assert.equal(clicks.length, 0, 'a map click closes the panel, and the closer leaves with it');
+  assert.equal(clicks.length, observers.length + 1, 'bind the closer exactly once');
+  closer();
+  assert.deepEqual(clicks, observers, 'a map click closes the panel and removes its closer');
   O.open(); O.close();
-  assert.equal(clicks.length, 0,
-    'and removed when it closes — a listener that outlives what it guards fires for every later map click (#R245)');
+  assert.deepEqual(clicks, observers, 'closing the panel preserves the map’s other click observers');
 });
 
 test('#R248 ③ the Objects panel band is the short one, and it is sized where CSS cannot lose', () => {

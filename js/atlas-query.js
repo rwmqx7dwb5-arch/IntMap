@@ -1764,10 +1764,13 @@ export function atlasQuery(HOST) {
       if (c.id === 'name' || (c.kind && c.kind !== 'number')) continue;
       const src = (res.colSrc && res.colSrc[c.id]) || res.baseSource || '';
       if (!src) continue;
-      const values = [];
-      for (const r of res.rows || []) { const v = r.v[c.id]; if (typeof v === 'number' && isFinite(v)) values.push(v); }
+      const facts = [];
+      for (const r of res.rows || []) {
+        const value = r.v[c.id];
+        if (Number.isFinite(value)) facts.push({ subjectId: r.id, geography: r.name, value });
+      }
       out.push({ kind: 'number', what: c.label, of: TABLES[res.table] ? TABLES[res.table].label : res.table, unit: c.unit || '',
-        source: src, origin: c.origin || 'raw', values });
+        source: src, origin: c.origin || 'raw', values: facts.map((f) => f.value), facts });
     }
     return out;
   }

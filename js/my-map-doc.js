@@ -68,7 +68,7 @@ const KIND_OF_LETTER = Object.freeze(Object.keys(KINDS).reduce((o, k) => { /** @
    正本: this line. */
 export const DENSIFY_DEG = 0.1;
 
-/** @typedef {{ id:string, kind:('pin'|'line'|'area'), name:string, note:string, color:string, coords:number[][] }} Feature */
+/** @typedef {{ id:string, kind:('pin'|'line'|'area'), name:string, note:string, color:string, coords:number[][], provenance?:{author:string,createdAt:number,turnId?:number,transformation?:string}, edited?:{author:string,at:number} }} Feature */
 /** @typedef {{ v:1, id:string, title:string, updated:number, features:Feature[] }} Doc */
 
 const str = (/** @type {any} */ v) => String(v == null ? '' : v);
@@ -156,6 +156,15 @@ export function readDoc(/** @type {any} */ o) {
     const r = makeFeature(f);
     if (!r.ok) { dropped++; return; }
     const ft = /** @type {Feature} */ (r.feature);
+    if (['user', 'atlas', 'unknown'].includes(f.provenance?.author) && finite(f.provenance.createdAt)) {
+      const p = f.provenance;
+      ft.provenance = { author: p.author, createdAt: p.createdAt };
+      if (finite(p.turnId)) ft.provenance.turnId = p.turnId;
+      if (p.transformation === 'manual_drawing') ft.provenance.transformation = p.transformation;
+    }
+    if (['user', 'atlas', 'unknown'].includes(f.edited?.author) && finite(f.edited.at)) {
+      ft.edited = { author: f.edited.author, at: f.edited.at };
+    }
     if (ids.has(ft.id)) ft.id = newId('f');
     ids.add(ft.id); features.push(ft);
   });

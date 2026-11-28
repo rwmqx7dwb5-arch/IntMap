@@ -4029,7 +4029,13 @@ working tree — one new file becoming a capability in the registry, the dispatc
 
 ### 永続ジョブの GIS 成果物
 
+`tests/atlas-job-continuation-smoke-checks.test.mjs` は、実際の runner とサーバ GIS をローカルで動かす。時計・ジョブの永続ストア・入力ファイルの取得を固定し、通常のスライス予算でリースを解放する。2 枠目が分割保存された地物を全件復元して処理し、ブラウザ側で同じ版・地物を 2 回読み戻せることと、破損した部分を検出することを確かめる。モデル要求・予約・課金は発生しない。
+
 `tests/gis-result-handoff-checks.test.mjs` は背景で絞った出力を再度読み、`jobs.status` の成果物 ID から `work.job restore` と `map.drawDataset` を実行する。保存済み ID が再読で変わらず、描画の入口に元の座標が届き、復元したデータセットに出典が残ることを確認する。
+
+`tests/atlas-result-integrity-checks.test.mjs` はブラウザの委譲、サーバーの実行枠をまたぐ委譲、ブラウザでの復元を同じ地物と集計に対して通す。通常は固定の回帰データを使い、`INTMAP_HANDOFF_NATURAL_EARTH` に参照版の GeoJSON を指定したときは、177 地物から 51 地物を抽出した集計も検証する。
+
+`tests/atlas-cited-answers-checks.test.mjs` と `tests/goal-and-evidence-checks.test.mjs` は、数値が等しくても指標・単位・対象・時点が異なる場合と、同一 URL の複数版を読んだ場合を検証する。`tests/gis-chain-audit.spec.js` はブラウザで取り込んだベクタとラスターの取得元とハッシュを確認する。
 
 ### What Atlas can SEE, as distinct from what it can reach (`tests/atlas-capabilities-checks.test.mjs` (#R582))
 

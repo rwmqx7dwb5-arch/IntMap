@@ -57,7 +57,8 @@
  * ==========================================================================*/
 
 /** what an entry may hold — a field outside this list is a typo nothing would ever read */
-const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario', 'ui', 'commands'];
+const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario', 'ui', 'commands', 'independentRead'];
+/* `independentRead` opts a verified, map/session-independent reader into first-arrival scheduling. */
 /* `commands` — the IntMapOS command ids this capability drives (its GUI implementation), held by scripts/atlas-capability-audit.mjs command-declared. */
 /* (feature-inventory) `ui` — where a reader does the same act WITHOUT Atlas, as measured by reading the handlers:
      { at: ['<one CSS selector>', …], login?: true }     the control(s) on the page, or the panel holding a control that has

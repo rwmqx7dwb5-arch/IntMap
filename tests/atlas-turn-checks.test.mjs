@@ -512,7 +512,7 @@ test('R159 #7 composite answer — repair REPLACES, one goal-validated answer, n
      one of the two. #R406 deleted the repair pass along with the planner that needed it: what runs
      now is a loop in which EVERY tool Atlas calls executes into that same bubble, and a retry lands
      in the same goal slot on its own, because the key IS the topic the answer is about. */
-  ok("await runActions(ai,'',[action],gen,turn?.awaitInput);", 'every step of the turn runs into the SAME bubble (js/atlas-console.js _runOne) — no second answer, no divider');
+  ok("await runActions(ai,'',[action],gen,turn?.awaitInput,turn?.readOnly);", 'every step of the turn runs into the SAME bubble (js/atlas-console.js _runOne) — no second answer, no divider');
   gone("const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed", 'the appended divider div is gone');
   // the fail summary no longer leaks internal action names / arg values (e.g. mapReport "Taiwan")
   gone("'実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')", 'the action-label leak in the fail summary is removed');

@@ -138,7 +138,7 @@ test('atlas-native-tools ②: the prefix is byte-identical from one step to the 
   /* the console computes the system text once per turn. (atlas-legacy-protocol-removal) It used to be re-read once
      more where the transport fell back to the one-string envelope; there is no fallback, so it is a constant */
   const con = rd('js/atlas-console.js');
-  assert.match(con, /const _sys=SYS\(_tools\); const _c0=_agentCtx\(\);/, 'SYS and the request context are fixed for the turn');
+  assert.match(con, /const _sys=SYS\(_tools\); const _c0=_agentCtx\(initialMap\);/, 'SYS and the request context are fixed for the turn');
   assert.equal((con.match(/_sys=SYS\(_tools\)/g) || []).length, 1, 'SYS is built once per turn and never rebuilt');
 });
 

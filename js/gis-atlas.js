@@ -615,6 +615,18 @@ export function makeGisAtlas(core) {
        it, and the second one would be a different dataset id from the first for no reason a reader
        could see. */
     function makeCache() { const m = new Map(); m.acquired = []; return m; }
+    function createdReceipt(row) {
+      const version = data.versionOf?.(row.id);
+      return version == null ? [] : [{ id: row.id, version }];
+    }
+    function noteAcquired(cache, row) {
+      if (cache && cache.acquired) cache.acquired.push({ row, receipts: createdReceipt(row) });
+    }
+    function withCreated(out, cache) {
+      const receipts = cache.acquired.flatMap((r) => r.receipts);
+      if (receipts.length) out.datasetsCreated = receipts.concat(out.datasetsCreated || []);
+      return out;
+    }
 
     /* ══ ⚠⚠⚠ (#R759) 取得の条件が、この扉で全部落ちていた ═══════════════════════════════════════
        fromLayer() called `layers.toDataset(id, {})` — an empty object, on every path. js/gis-sources.js
@@ -685,7 +697,7 @@ export function makeGisAtlas(core) {
       return { ok: true, raster: word ? (word === 'raster') : (win.width != null || win.height != null || !!a.sample) };
     }
 
-    async function resolveRef(ref, slot, decl, cache, action) {
+    async function resolveRef(ref, slot, decl, cache, action, readContext) {
       const raw = (ref == null) ? '' : String(ref).trim();
       if (!raw) return fail('missing-input', { slot: slot });
       if (cache.has(raw)) return { ok: true, id: cache.get(raw) };
@@ -719,7 +731,7 @@ export function makeGisAtlas(core) {
          any grid (fromLayer), and only the tiles that window needs are fetched. */
       if (/^(url:)?(https?|s3):\/\//i.test(raw)) {
         if (!wantsRaster) return fail('url-needs-a-grid-slot', { slot: slot, ref: raw, why: 'a URL is read as a GeoTIFF, which is a grid' });
-        const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache);
+        const made = await fromUrl(raw.replace(/^url:/i, ''), action, cache, readContext);
         if (!made.ok) return made;
         cache.set(raw, made.id);
         return made;
@@ -791,7 +803,7 @@ export function makeGisAtlas(core) {
         const row = datasetRow(r.dataset);
         if (r.next != null) row.next = r.next;
         row.acquiredFrom = LAYER_PREFIX + id;
-        if (cache && cache.acquired) cache.acquired.push(row);
+        noteAcquired(cache, row);
         return { ok: true, id: r.dataset.id };
       };
       /* ⚠ (#R763) THE PLANNER TAKES THE DOOR THAT WAITS. js/gis-layers.js acquireDataset goes through
@@ -831,7 +843,7 @@ export function makeGisAtlas(core) {
     /* A COG at a URL becomes a registered raster dataset over the window the planner stated. What
        js/gis-cog.js read, at which level, with how many requests, and what it could not answer
        (`coverage`) travel in the record's provenance — the next op and the planner read them there. */
-    async function fromUrl(url, action, cache) {
+    async function fromUrl(url, action, cache, readContext) {
       const a = acquireOpts(action, true);
       if (!a.ok) return a;
       if (a.opts.bounds == null || a.opts.width == null || a.opts.height == null) {
@@ -841,9 +853,11 @@ export function makeGisAtlas(core) {
       try { C = (await import('./gis-cog.js')).makeGisCog({ warp: core.warp, crs: core.crs }); } catch (_) { C = null; }
       if (!C) return fail('map-unavailable', { needs: 'IntMapGisCog' });
       const P = await pipeline(), key = 'url:' + url;
-      if (P) P.record(key, 'discovered', { status: 'ok', say: 'named by the caller' });
+      const { ledgerKey, observation } = readContext || {};
+      const keys = ledgerKey ? [key, ledgerKey] : [key];
+      if (P) for (const k of keys) P.record(k, 'discovered', { status: 'ok', say: 'named by the caller' });
       const r = await C.readWindow(url, { bounds: a.opts.bounds, width: a.opts.width, height: a.opts.height, band: a.opts.band, signal: a.opts.signal || null });
-      if (!r.ok) { if (P) readFailed(P, key, r.why, r.detail); return fail(r.why, r.detail || { url: url }); }
+      if (!r.ok) { if (P) for (const k of keys) readFailed(P, k, r.why, r.detail); return fail(r.why, r.detail || { url: url }); }
       const ras = r.raster;
       const bn = (a.opts.band && typeof a.opts.band === 'object') ? a.opts.band : {};
       const band = Object.assign({}, ras.bands[0], {
@@ -851,23 +865,31 @@ export function makeGisAtlas(core) {
         unit: a.opts.unit != null ? String(a.opts.unit) : (bn.unit != null ? bn.unit : (r.band.unit != null ? r.band.unit : null)),
       });
       const cells = ras.read(0);
+      const inspection = P?.inspectRaster(cells, { nodata: band.nodata });
+      const epochs = typeof observation?.datetime === 'string' ? observation.datetime.split('/').map(Date.parse) : [];
+      const time = Number.isFinite(epochs[0]) && (epochs.length === 1 || Number.isFinite(epochs[1]))
+        ? { kind: 'constant', start: new Date(epochs[0]).toISOString(), end: epochs.length === 2 ? new Date(epochs[1]).toISOString() : undefined }
+        : null;
       let ds;
       try {
         ds = data.add({
           kind: 'raster', title: (action && action.title) ? String(action.title) : (url.split('/').pop() || url),
           sourceCrs: 'EPSG:4326', width: ras.width, height: ras.height,
           grid: { west: ras.grid.west, north: ras.grid.north, pixelLng: ras.grid.pixelLng, pixelLat: ras.grid.pixelLat },
-          bands: [band], read: () => cells,
-          provenance: { kind: 'url-raster', url: url, bounds: a.opts.bounds, width: ras.width, height: ras.height, at: Date.now(), source: r.source, coverage: r.coverage, resampled: 'nearest' },
+          bands: [band], read: () => cells, time,
+          provenance: { kind: 'url-raster', url: url, bounds: a.opts.bounds, width: ras.width, height: ras.height, at: Date.now(), source: r.source, coverage: r.coverage, resampled: 'nearest',
+            ...(observation ? { observation } : {}), ...(inspection ? { inspection: { ...inspection, ok: inspection.status === 'ok' } } : {}) },
         });
       } catch (e) { return fail('add-failed', { message: e && e.message }); }
-      if (P) readSucceeded(P, key, r.coverage, P.inspectRaster(cells, { nodata: band.nodata }), ds.id);
+      if (P) {
+        for (const k of keys) readSucceeded(P, k, r.coverage, inspection, ds.id);
+      }
       const row = datasetRow(ds);
       row.acquiredFrom = 'url:' + url;
       row.coverage = r.coverage;
       if (P) row.acquisition = stateOf(P, key);
-      if (cache && cache.acquired) cache.acquired.push(row);
-      return { ok: true, id: ds.id };
+      noteAcquired(cache, row);
+      return { ok: true, id: ds.id, version: data.versionOf?.(ds.id) };
     }
 
     /* An OGC API – Features collection becomes a registered vector dataset. The window, the count and
@@ -904,8 +926,8 @@ export function makeGisAtlas(core) {
       row.coverage = r.coverage;
       if (P) row.acquisition = stateOf(P, key);
       if (r.next != null) row.next = r.next;
-      if (cache && cache.acquired) cache.acquired.push(row);
-      return { ok: true, id: ds.id };
+      noteAcquired(cache, row);
+      return { ok: true, id: ds.id, version: data.versionOf?.(ds.id) };
     }
 
     /* ── acquiring, which is a step of its own ───────────────────────────────────────────────── */
@@ -915,7 +937,7 @@ export function makeGisAtlas(core) {
        which rows can be sampled at all
        (`samplable` in mapRows), so a wrong choice is refused BY js/gis-layers.js with the layer's own
        vocabulary rather than pre-judged here out of a list of layer ids. */
-    async function acquireOnly(action) {
+    async function acquireOnly(action, cache = makeCache()) {
       const a = action || {};
       const given = Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]);
       if (!given.length) {
@@ -925,7 +947,6 @@ export function makeGisAtlas(core) {
       if (!asked.ok) return asked;
       const wantsRaster = asked.raster;
       const decl = { kinds: given.map(() => (wantsRaster ? 'raster' : 'vector')) };
-      const cache = makeCache();
       const ids = [];
       for (let i = 0; i < given.length; i++) {
         const r = await resolveRef(given[i], i, decl, cache, a);
@@ -934,7 +955,7 @@ export function makeGisAtlas(core) {
       }
       /* The rows are the answer. A ref that already named a registered dataset is reported as it
          stands — 「取ってきた」 と 「もう在った」 は別の事実なので、`acquiredFrom` が付くのは前者だけ。 */
-      const made = new Map(cache.acquired.map((r) => [r.id, r]));
+      const made = new Map(cache.acquired.map(({ row }) => [row.id, row]));
       const rows = ids.map((id) => made.get(id) || datasetRow(data.get(id)));
       const more = rows.filter((r) => r.next != null);
       return {
@@ -994,7 +1015,7 @@ export function makeGisAtlas(core) {
     }
     async function run(action) {
       const a = action || {}, cache = makeCache();
-      return withReads(await runAction(a, cache), cache, (a.op == null) ? '' : String(a.op));
+      return withCreated(withReads(await runAction(a, cache), cache, (a.op == null) ? '' : String(a.op)), cache);
     }
     async function runAction(action, cache) {
       const a = action || {};
@@ -1014,7 +1035,7 @@ export function makeGisAtlas(core) {
         if (!idsS.length) return fail('input-count', { op: '', needs: 1, got: 0 });
         return semanticDescribe(idsS);
       }
-      if (op === '') return acquireOnly(a);
+      if (op === '') return acquireOnly(a, cache);
       const decl = ops.op(op);
       /* Refused WITH the vocabulary, for the reason the resolver above gives. */
       if (!decl) return fail('op-unknown', { op: op, ops: ops.ops().map((d) => d.id) });
@@ -1052,10 +1073,10 @@ export function makeGisAtlas(core) {
       }
 
       const row = datasetRow(res.dataset);
-      const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null, datasetsRead: res.datasetsRead };
+      const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null, datasetsRead: res.datasetsRead, datasetsCreated: createdReceipt(row) };
       if (semWarn.length) out.semantic = { warnings: semWarn, caution: sem.caution };
       /* (#R759) 何をどこから取ったか、そしてまだ続きがあるか。See fromLayer. */
-      if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.slice();
+      if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.map(({ row }) => row);
       const st = statsText(res.stats);
       out.html = '<div class="atlas-gis-result"><b>' + esc(op) + '</b> → ' + esc(row.title)
         + ' · ' + row.count + ' ' + esc(row.kind === 'raster' ? L('pixels', '画素') : L('rows', '行'))
@@ -1078,7 +1099,7 @@ export function makeGisAtlas(core) {
     async function draw(action) {
       const a = action || {};
       const cache = makeCache();
-      const said = (out) => withReads(out, cache, 'draw', true);   /* (atlas-completion-verdict) see withReads */
+      const said = (out) => withCreated(withReads(out, cache, 'draw', true), cache);   /* (atlas-completion-verdict) see withReads */
       const r = await resolveRef(a.dataset, 0, {}, cache, a);
       if (!r.ok) return said(r);
       const ds = data.get(r.id);
@@ -1185,7 +1206,7 @@ export function makeGisAtlas(core) {
             /* the CRS engine and the warp are looked up by the module itself at call time */
             data: data, raster: core.raster, geometry: core.geometry, sources: SOURCES(), pipeline: P,
             /* the readers acquire() uses are the door's own — a grid or features at an address, through resolveRef */
-            readGrid: (href, w) => resolveRef('url:' + href, 0, { kinds: ['raster'] }, makeCache(), { acquire: { bounds: w.bounds, width: w.width, height: w.height, band: w.band, signal: w.signal || undefined } }),
+            readGrid: (href, w) => resolveRef('url:' + href, 0, { kinds: ['raster'] }, makeCache(), { acquire: { bounds: w.bounds, width: w.width, height: w.height, band: w.band, signal: w.signal || undefined } }, { ledgerKey: w.ledgerKey, observation: w.observation }),
             readFeatures: (url, w) => resolveRef('ogc:' + url, 0, { kinds: ['vector'] }, makeCache(), { acquire: { bounds: w.bounds, limit: w.limit, time: w.time } }),
           });
         } catch (_) { M = null; }
@@ -1198,6 +1219,7 @@ export function makeGisAtlas(core) {
       if (ACTS.indexOf(act) < 0) return fail('bad-param', { param: 'action', actions: ACTS });
       const win = (a.bounds != null) ? a.bounds : a.bbox;
       const give = (r) => (r && r.ok === false) ? fail(r.why, r.detail || null) : r;
+      const registered = (receipts) => [...new Map(receipts.map((r) => [r.id, r])).values()];
       /* what the app's OWN sources can supply — every claim and every silence, asked of nobody */
       if (act === 'sources') {
         const S = SOURCES();
@@ -1275,13 +1297,14 @@ export function makeGisAtlas(core) {
         if (r.ok === false) return r;
         const silent = r.catalogs.filter((c) => !c.answered);
         const earlyHtml = r.early ? '<div class="atlas-gis-detail"><b>' + esc(L('READY NOW (first usable candidate, data read and inspected)', 'すぐ使える候補（データを実際に読んで確認済み）')) + '</b>: <code>' + esc(r.early.ref) + '</code> · ' + esc(r.early.state.analysis) + (r.early.datasets.length ? ' · ' + esc(L('datasets', 'データセット')) + ' <code>' + esc(r.early.datasets.join(', ')) + '</code>' : '') + '<br>' + esc(L('still asking: ', 'まだ問い合わせ中: ')) + esc(r.stillAsking.join(', ') || '-') + ' · ' + esc(L('finished list: search with follow:', '完了後の一覧: follow を指定して search: ')) + '<code>' + esc(r.follow) + '</code></div>' : '';
-        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets matching', '条件に合うデータセット')) + '</b> — ' + (r.total == null ? esc(L('(early, list unfinished)', '（先着・一覧は未完了）')) : r.total) + earlyHtml + '<br>'
+        const newReceipts = handle == null || handle === '' ? r.early?.datasetsCreated || (r.acquisitionAttempts || []).flatMap((hit) => hit.datasetsCreated) : [];
+        return Object.assign({}, r, { datasetsCreated: registered(newReceipts), html: '<div class="atlas-gis-result"><b>' + esc(L('Datasets matching', '条件に合うデータセット')) + '</b> — ' + (r.total == null ? esc(L('(early, list unfinished)', '（先着・一覧は未完了）')) : r.total) + earlyHtml + '<br>'
           + r.entries.map((e) => '<code>' + esc(e.ref) + '</code> ' + esc(e.title) + ' · ' + esc([e.match.spatial, e.match.temporal, e.match.resolution].join('/')) + (e.resolution ? ' · ' + esc(String(e.resolution.min)) + ' m' : '') + ' · ' + esc(e.rights.license == null ? L('licence not stated', 'ライセンス記載なし') : e.rights.license)).join('<br>')
           + (silent.length ? '<div class="atlas-gis-detail">' + esc(L('NOT ANSWERED (this is not "nothing there"): ', '応答なし（「無かった」ではありません）: ')) + esc(silent.map((c) => c.id + ' (' + (c.kind_of_silence || c.why) + ')').join(', ')) + '</div>' : '')
           + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });
       }
       if (act === 'items') {
-        const r = give(await M.items(a.ref, { bbox: win, time: a.time, limit: a.limit, maxCloud: a.maxCloud, signal: a.signal || null }));
+        const r = give(await M.items(a.ref, { bbox: win, time: a.time, limit: a.limit, maxCloud: a.maxCloud, strict: a.strict, signal: a.signal || null }));
         return r.ok === false ? r : Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(a.ref) + '</b> — ' + r.returned + (r.matched != null ? ' / ' + r.matched : '') + (r.continues ? ' (+)' : '') + '<br>'
           + r.items.map((x) => esc(x.id) + ' · ' + esc(String(x.datetime)) + (x.gsd != null ? ' · ' + esc(String(x.gsd)) + ' m' : '') + (x.cloud != null ? ' · cloud ' + esc(String(x.cloud)) + '%' : '')).join('<br>') + '</div>' });
       }
@@ -1302,10 +1325,10 @@ export function makeGisAtlas(core) {
           + '<div class="atlas-gis-next">' + esc(r.note) + '</div></div>' });
       }
       if (act === 'acquire') {
-        const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, width: a.width, height: a.height, limit: a.limit, band: a.band, asset: a.asset, signal: a.signal || null }));
+        const r = give(await M.acquire(a.ref, { bbox: win, time: a.time, width: a.width, height: a.height, limit: a.limit, band: a.band, asset: a.asset, maxCloud: a.maxCloud, maxGsd: a.maxGsd, minGsd: a.minGsd, strict: a.strict, signal: a.signal || null }));
         if (r.ok === false) return r;
         const st = r.state;
-        return Object.assign({}, r, { html: '<div class="atlas-gis-result"><b>' + esc(r.ref) + '</b> · ' + esc(st.analysis) + (st.blockedAt ? ' · ' + esc(L('stopped at', '止まった段')) + ' ' + esc(st.blockedAt) : '') + '<br>' + esc(st.say)
+        return Object.assign({}, r, { datasetsCreated: r.datasetsCreated || [], html: '<div class="atlas-gis-result"><b>' + esc(r.ref) + '</b> · ' + esc(st.analysis) + (st.blockedAt ? ' · ' + esc(L('stopped at', '止まった段')) + ' ' + esc(st.blockedAt) : '') + '<br>' + esc(st.say)
           + (r.parts.length > 1 ? '<br>' + r.parts.map((x) => esc(x.label) + ': ' + esc(x.state ? x.state.analysis + (x.state.blockedAt ? ' @' + x.state.blockedAt : '') : '—')).join(' · ') : '')
           + (r.datasets.length ? '<br>' + esc(L('datasets', 'データセット')) + ': <code>' + esc(r.datasets.join(', ')) + '</code>' : '') + '</div>' });
       }
@@ -1351,7 +1374,7 @@ export function makeGisAtlas(core) {
       const head = '<div class="atlas-gis-result"><b>Overture ' + esc(rd.release) + '</b> — ' + rd.count + ' ' + esc(L('rows', '行'));
       const tail = '<div class="atlas-gis-detail">' + esc(L('read: ', '読み取り: ')) + esc(rd.read.rowGroups.read + '/' + rd.read.rowGroups.total + ' row groups · ' + Math.round(rd.read.bytes / 1e6) + ' MB · ' + Math.round(rd.read.ms / 100) / 10 + ' s')
         + '<br>' + esc(L('licence stated by the rows: ', '行が述べているライセンス: ')) + esc(rd.licences.length ? rd.licences.join('; ') : L('none stated', '記載なし')) + '</div></div>';
-      if (act === 'acquire') return { ok: true, dataset: r0.dataset ? datasetRow(r0.dataset) : { id: r0.id }, id: r0.id, coverage: r0.coverage, result: rd, html: head + ' → <code>' + esc(r0.id) + '</code>' + tail };
+      if (act === 'acquire') return { ok: true, dataset: r0.dataset ? datasetRow(r0.dataset) : { id: r0.id }, datasetsCreated: r0.dataset ? createdReceipt(r0.dataset) : [], id: r0.id, coverage: r0.coverage, result: rd, html: head + ' → <code>' + esc(r0.id) + '</code>' + tail };
       return { ok: true, count: r0.count, read: r0.read, licences: r0.licences, worldCompleteness: r0.worldCompleteness, windowTest: r0.windowTest,
         sample: r0.features.slice(0, 10).map((f) => f.properties), html: head + tail };
     }
@@ -1369,7 +1392,7 @@ export function makeGisAtlas(core) {
       /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
          reader; `describe(ref)` is one source, `catalogue().layers` is all of them. */
       describe,
-      describeDataset: (id) => { const ds = data.get(id); return ds ? datasetRow(ds) : null; },
+      describeDataset: (id) => { const ds = data.get(id); return ds ? { ...datasetRow(ds), version: data.versionOf?.(id) } : null; },
       /* the vocabularies, published from the file that decides them rather than copied into a check
          (the same argument js/gis-sources.js completenessValues/coverageReasons are written for) */
       prefetchSlots: () => PREFETCH_SLOTS.slice(),

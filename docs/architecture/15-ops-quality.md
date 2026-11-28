@@ -102,6 +102,8 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
   コードの確認とどこでも述べる）。ライブの報告（`atlas-eval-report`）とは名前で区別する（`scripts/lib/nightly-status.mjs` `LIVE_REPORT`）。`data/service-status.json` の `atlasEval.offline` が
   件数を状態ページへ運ぶ。
 
+Auto と High 固定を比較する手動試験は、同じフロントエンドのビルド、ai-proxy の設定・モデルの版、アカウント条件、依頼と添付、データの版、成果物の判定条件を揃える。評価 CLI の `--effort-policy auto` と `--effort-policy high-fixed` を用い、画像を送るケースは同じ `--effort-images <file.json>` を両方に渡す。保存した報告は `--compare-effort <auto.json> <high.json>` で照合できる。送信から最初に使える表示と最終成果までの時間、原価の観測状況、実際の達成数を照合する。別に呼ぶ評価用の採点モデルは、回答ターン内の独立検証と区別する。
+
 ### 15.7 上流の死活と、同梱データの鮮度
 
 正本: [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) §4.4〜§4.6（何を・なぜ）、[`docs/MONITORING.md`](../MONITORING.md) §1e（読み方）。

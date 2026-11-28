@@ -237,9 +237,9 @@ test('atlas-eval-harness ⑬ the workflow fails without its secrets, keeps the r
 });
 test('effort samples keep priced failures in the numerator and leave unreported cost unknown', () => {
   const rows = [
-    { effort: { costMicros: 20, firstUsefulMs: 30 }, deliverables: { present: 2 } },
-    { effort: { costMicros: 12, firstUsefulMs: 10 }, deliverables: { present: 0 } },
-    { effort: { costMicros: 8, firstUsefulMs: null }, deliverables: { present: 0 } },
+    { effort: { costMicros: 20, firstUsefulMs: 30 }, deliverables: { present: 2, rows: [{}, {}], unobserved: 0 } },
+    { effort: { costMicros: 12, firstUsefulMs: 10 }, deliverables: { present: 0, rows: [{}], unobserved: 0 } },
+    { effort: { costMicros: 8, firstUsefulMs: null }, deliverables: { present: 0, rows: [{}], unobserved: 1 } },
   ];
   const sample = H.effortSample(rows, 'low-adaptive');
   assert.equal(sample.costPerObservedDeliverableMicros, 20);

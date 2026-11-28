@@ -80,9 +80,10 @@ test('③ the goal verifier is shown what the outputs hold, and an observer that
   /* the turn observer reads the registry and the graph, scoped to the turn */
   const data = makeGisDatasets(); const scope = { IntMapData: data };
   const since = Date.now();
-  data.add({ title: 'Cities', features: cities(4, 1), provenance: { kind: 'layer', layer: 'cities-obs' } });
-  assert.match(makeTurnObserver(since, scope)().join('\n'), /Cities: 4 rows; values present for pop 1\/4/);
-  assert.deepEqual(makeTurnObserver(Date.now() + 60000, scope)(), []);
+  const citiesResult = data.add({ title: 'Cities', features: cities(4, 1), provenance: { kind: 'layer', layer: 'cities-obs' } });
+  const ctx = { results: [{ details: { datasetsCreated: [{ id: citiesResult.id, version: data.versionOf(citiesResult.id) }] } }] };
+  assert.match(makeTurnObserver(since, scope)(ctx).join('\n'), /Cities: 4 rows; values present for pop 1\/4/);
+  assert.deepEqual(makeTurnObserver(Date.now() + 60000, scope)(ctx), []);
 });
 
 test('④ an update to a source names the GIS result, the answer figure and the note it touches', () => {
@@ -164,9 +165,11 @@ test('⑥ news become source nodes (a retrieval clock is no publication date); n
   assert.deepEqual(e.evidenceRefs, ['drv:x:1', '5']);
   assert.deepEqual(normalize({ id: 'nb-abc123-0004', at: 1, question: 'q' }).evidenceRefs, []);
   const data = makeGisDatasets(); const bind = bindGis(g, data);
-  const d = data.add({ title: 'Cities', features: cities(6, 6), provenance: { kind: 'layer', layer: 'cities-y' } });
+  const d = data.add({ title: 'Cities', features: cities(6, 6), time: { kind: 'constant', start: 1873 }, provenance: { kind: 'layer', layer: 'cities-y' } });
   const facts = datasetFacts(data, [d.id, 'ds-missing'], bind.refOf);
   assert.equal(facts.length, 1); assert.equal(facts[0].graphRef, 'src:dataset:cities-y');
+  assert.equal(facts[0].validTime, '1873');
+  assert.ok(facts[0].supportFacts.every((f) => f.period === '1873'));
   assert.ok(facts[0].supportFacts.some((f) => f.concept === 'rows' && f.value === 6));
   assert.ok(facts[0].supportFacts.some((f) => f.concept === 'pop max' && f.value === 1005));
   const reg = makeAtlasEvidence().makeEvidenceRegistry({ callId: 'c', retrievedAt: '2026-11-20' });
@@ -175,4 +178,33 @@ test('⑥ news become source nodes (a retrieval clock is no publication date); n
   const r = recordAnswer(g, { registry: reg, claims: [{ id: 'c', metric: { value: 1005, unit: '', concept: 'pop max' }, evidenceIds: [rec.id] }], callId: 'c' });
   assert.equal(g.get(r.recorded[0]).type, 'answer_number');
   assert.deepEqual(g.trace(r.recorded[0]).sources.map((s) => s.key), ['cities-y']);
+});
+
+test('an imported or fetched version stays pinned when that URL is read again', () => {
+  const graph = makeEvidenceGraph();
+  const data = makeGisDatasets();
+  const binding = bindGis(graph, data);
+  const url = 'https://data.example.com/release.geojson';
+  const old = data.add({ title: 'Archive', features: cities(1, 1), provenance: { kind: 'import', url, sha256: 'a'.repeat(64) } });
+  const recent = data.add({ title: 'Recent', features: cities(2, 2), provenance: { kind: 'import', url, sha256: 'b'.repeat(64) } });
+  const output = data.add({ title: 'Compute on archive', features: cities(1, 1), provenance: { kind: 'op', op: 'filter', inputs: [old.id] } });
+  assert.equal(binding.refOf(old.id), binding.refOf(recent.id));
+  assert.equal(graph.get(binding.refOf(output.id)).inputs[0].version, 'a'.repeat(64));
+  const records = makeAtlasEvidence().makeEvidenceRegistry();
+  const record = (sourceVersion, retrievedAt, title, value) => records.add({
+    originalUrl: url, sourceVersion, retrievedAt, title, supportFacts: [{ concept: 'count', value }],
+  });
+  const a = record('ev1', '2026-04-01T00:00:00Z', 'Old report', 33);
+  const b = record('ev2', '2026-04-02T00:00:00Z', 'New report', 39);
+  const claims = [
+    { id: 'new', evidenceIds: [b.id], metric: { concept: 'count', value: 39 } },
+    { id: 'archive', evidenceIds: [a.id], metric: { concept: 'count', value: 33 } },
+  ];
+  const answer = recordAnswer(graph, { registry: records, claims });
+  const [newAnswer, oldAnswer] = answer.recorded.map((id) => graph.get(id));
+  assert.match(newAnswer.inputs[0].version, /@ev2$/);
+  assert.match(oldAnswer.inputs[0].version, /@ev1$/);
+  const source = graph.get(oldAnswer.inputs[0].id);
+  assert.equal(source.versions.find((v) => v.version === oldAnswer.inputs[0].version).meta.title, 'Old report');
+  assert.equal(source.versions.at(-1).meta.title, 'New report');
 });

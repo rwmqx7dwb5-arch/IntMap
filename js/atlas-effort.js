@@ -19,6 +19,7 @@
 
 /** @returns {{pick:(cplx:boolean)=>(string|undefined), decide:(d:object)=>Promise<string|undefined>, mount:(panel:HTMLElement)=>void, get:()=>string}} */
 export function effortExperiment(mode) {
+  if (mode === 'auto') return { useProductionAuto: true };
   if (mode === 'low-adaptive') return { base: 'low', next: (requested) => requested || 'low' };
   if (mode === 'high-fixed') return { base: 'high', next: () => 'high' };
   return null;
@@ -43,13 +44,14 @@ export function makeAtlasEffort(H) {
   try { const v = localStorage.getItem(KEY); if (MODES.includes(v)) cur = v; } catch (_) { /* private window: auto */ }
 
   /* what an automatic pick falls back to when the sizing call fails: the client's own complexity guess (js/atlas-console.js) */
-  function pick(cplx) { return cur === 'auto' ? (cplx ? 'high' : undefined) : cur; }
+  function pick(cplx, mode = cur) { return mode === 'auto' ? (cplx ? 'high' : undefined) : mode; }
 
   /* AUTO IS A MODEL'S DECISION. The reader's own pick is used as it is; on auto, one small low-effort call reads the request and
      names a tier. Only a failure of that call (an error, a timeout, an answer that is not a tier) falls back — to `fallback`. */
   const TIERS = ['low', 'medium', 'high', 'xhigh'], NL = String.fromCharCode(10);
   async function decide(d) {
-    if (cur !== 'auto') return cur;
+    const mode = d.mode || cur;
+    if (mode !== 'auto') return mode;
     if (typeof d.ask !== 'function' || !String(d.request || '').trim()) return d.fallback;
     let timer = null, ctl = null;
     try { ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (_) { ctl = null; }

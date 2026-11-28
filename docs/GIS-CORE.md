@@ -1058,7 +1058,7 @@ Douglas–Peucker 3。ほぼ全部が生の度で、±180 を跨ぐ形の箱は�
 ## 3. 由来 — `provenance` は札ではなくレシピ
 
 ```
-{kind:'import', file, format, readAt}        取り込み — 再実行するものが無い。バイトが起源
+{kind:'import', file, format, readAt, url?, sha256?}  取り込み — バイトが起源。Web ファイルの登録は取得元 URL と取得時の SHA-256 を保持する。
 {kind:'op', op, inputs:[id…], params:{…}}    処理   — これだけで、もう一度走らせられる
 {kind:'sketch', author, map, title, at, edges} 描いたもの — マイマップ（js/my-map.js）のその時点の写し。
                                              author は 'reader'（このブラウザの読者）か 'shared-link'（リンクで届いた地図）
@@ -2022,6 +2022,8 @@ min/max・単位とその著者・時刻・CRS・バンド・格子・被覆・�
 - **応答しないカタログ**: `discover`/`search` は `kind_of_silence`（unresponsive・unreachable…）と所要 ms を返し、台帳がカタログごとの回数を数える。
 - **先着採用**: `search` に `until:"ready"`＋`bounds`・`width`・`height` を渡すと、全カタログの応答を待たず、**窓を覆うと述べる候補を実際に読み（`acquire`）、値を検査して `ready` になった最初の 1 件**を `early` として返す。残りのカタログへの問い合わせは止めず、`follow` ハンドルで完了後の一覧（後から届いたものを含む）を取れる。判定は記録の文面でなく読んだ値（空・全 nodata は採らない）で、**どれを使うかは Atlas が決める**（早く届いたものは最良とは限らない）。
 - Atlas: `data.gisRemote` の `acquire`（1 つの ref を全段に通して**状態**を返す）・`status`（このセッションが触れたものの状態）。**`ready` / `ready-partial` でないものを分析の入力にしない。**
+
+STAC の取得では、コレクションの条件に加えて、読むシーンと資産の期間・雲量・解像度を照合する。厳格指定では、条件を確認できないシーンを採用しない。範囲は [RFC 7946 §5](https://www.rfc-editor.org/rfc/rfc7946.html#section-5) の 4・6 要素を水平範囲として扱い、日付変更線をまたぐ窓は分けて読む。それぞれのタイルを個別のデータセットとして登録し、実際に読めた範囲の和集合を `coverage` に返す。重複部分は一度だけ数え、残った穴は `missingBounds` に記録する。各 `part` はシーン ID・観測日時・雲量・公称解像度・読取解像度・有効画素率を返す。幾何学的な被覆率と有効画素率は別に示す。
 
 ### メタデータ検索 — `js/gis-catalog-search.js`
 `search` は `discover` に **解像度**（`maxGsd`/`minGsd`・m。STAC の `summaries.gsd`・`raster:bands`・`item_assets` から。名前や数字入りの題名からは読まない）・**雲量**（`eo:cloud_cover`）・**ライセンスの有無**・**種別**・**出所**（カタログ／このセッションが持つもの）を足し、語の置き場所で重みを付けて並べ、**ファセット件数**と**何が何件落ちたか**を返す。述べていない項目は既定で残して「不明」と注記し、`strict:true` で落とす。`items:true` は上位数件の**シーン**（日時・gsd・雲量・資産）を 1 回の STAC `/search` で添える。`items` は 1 コレクションのシーンを窓・期間で列挙する（1 ページ、`continues` は上流の `next` の有無）。

@@ -195,16 +195,16 @@ export function annotations(HOST){
       const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(IntMapLang.t(HOST.lang,"Color","色","Farbe","Цвет","Color"))+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'</button></div></div>';
       popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html));
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
-        const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
-        const co=el.querySelector('.annot-color'); if(co) co.oninput=()=>{ it.color=co.value; refresh(); };
+        const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; it.edited={author:'user',at:Date.now()}; };
+        const co=el.querySelector('.annot-color'); if(co) co.oninput=()=>{ it.color=co.value; it.edited={author:'user',at:Date.now()}; refresh(); };
         const dl=el.querySelector('.annot-del'); if(dl) dl.onclick=()=>remove(id);
       },0);
     }
     /* (#R11) No auto-popup on finalize — the shape just stays on the map; clicking it later opens the
        dismissable popup with the measured value + rename/recolor/delete. */
-    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
+    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,provenance:{author:'user',createdAt:Date.now(),transformation:'manual_drawing'},color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
-    return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items, defaultLineWidth:ANNOT_LINE_W };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
+    return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, source:SRC, _items:items, defaultLineWidth:ANNOT_LINE_W };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
   })();
 }
 

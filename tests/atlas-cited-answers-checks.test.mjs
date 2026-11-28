@@ -52,12 +52,16 @@ test('① a query answer states each printed column’s source and the values it
 test('② a number is marked only when it equals a value a source returned, at the prose’s precision', () => {
   const C = core('jp');
   const items = C.collect([{ ok: true, meta: { provenance: [
-    { kind: 'number', what: ['Population', '人口'], source: 'GeoNames cities1000 (CC BY 4.0)', values: [3124000, 35.6789, 7] },
+    { kind: 'number', what: ['Population', '人口'], source: 'GeoNames cities1000 (CC BY 4.0)', values: [3124000, 35.6789, 7, 42] },
+    { kind: 'number', what: ['Elevation', '標高'], source: 'Survey', unit: 'm', values: [42] },
   ] } }], {});
-  const html = '<p>人口3,124,000人の都市。気温は35.68度、M5.2、上位7件、2026-11-16 14:30 現在。<a href="x">3124000</a> <code>35.68</code> &#39; 12</p>';
+  const html = '<p>人口3,124,000人の都市。気温は35.68度、標高42 m、人口42人、M5.2、上位7件、2026-11-16 14:30 現在。<a href="x">3124000</a> <code>35.68</code> &#39; 12</p>';
   const out = C.linkNumbers(html, items, 't1');
   const marks = out.match(/data-atl-srcn="1"/g) || [];
-  assert.equal(marks.length, 2, 'Japanese-glued 3,124,000 and 35.68 (35.6789 at two places) — and nothing else:\n' + out);
+  assert.equal(marks.length, 2, 'both population values, with no mark on an unrelated equal number:\n' + out);
+  assert.match(out, /標高42 m<sup[^>]*><a[^>]*data-atl-srcn="2"/);
+  assert.match(out, /人口42人<sup[^>]*><a[^>]*data-atl-srcn="1"/);
+  assert.doesNotMatch(out, /35\.68度<sup/);
   assert.match(out, /3,124,000人の都市<sup class="atl-srcn">/, 'the mark follows the phrase the number belongs to, never splits a number from its unit (atlas-result-delivery)');
   assert.doesNotMatch(out, /\d<sup[^>]*>(?:<a[^>]*>\[\d+\]<\/a>)+<\/sup>[^\s、。，．,.;；:：!?！？()（）<]/, 'a mark never sits between a number and the unit glued to it');
   assert.doesNotMatch(out, /上位7<sup/, 'a one-digit count is not read as a measurement');
@@ -69,6 +73,27 @@ test('② a number is marked only when it equals a value a source returned, at t
   assert.equal(C.linkNumbers('<p>about 3,100,000</p>', items, 't1'), '<p>about 3,100,000</p>');
   /* dates and times are not quantities */
   assert.deepEqual(C.numbersIn('2026-11-16 14:30').map((t) => t.value), []);
+});
+
+test('equal values in different places or years are attributed only to the matching observation', () => {
+  const C = core('en');
+  const row = (geography, period, source, value = 29.444) => ({
+    kind: 'number', what: 'Discharge', unit: 'm³/s', source, values: [value],
+    facts: [{ geography, period, value }],
+  });
+  const items = C.collect([{ ok: true, meta: { provenance: [
+    row('Juniper Creek', '1907', 'Volume 1'),
+    row('Juniper Creek', '1917', 'Volume 2'),
+    row('Elm Creek', '1907', 'Volume 3'),
+  ] } }], {});
+  const html = C.linkNumbers('<p>In 1907, Juniper Creek discharge was 29.44 m³/s.</p>', items, 's');
+  assert.match(html, /data-atl-srcn="1"/);
+  assert.match(C.linkNumbers('<p>Juniper Creek discharge in 1907 was <strong>29.44 m³/s</strong>.</p>', items, 's'), /m³\/s<sup[^>]*><a[^>]*data-atl-srcn="1"/);
+  assert.doesNotMatch(html, /data-atl-srcn="[23]"/);
+  const ambiguous = '<p>Discharge was 29.44 m³/s.</p>';
+  assert.equal(C.linkNumbers(ambiguous, items, 's'), ambiguous);
+  const qualified = C.collect([{ ok: true, meta: { provenance: [row('Juniper Creek, Northern Branch', '1907', 'Volume 4')] } }], {});
+  assert.match(C.linkNumbers('In 1907, Juniper Creek, Northern Branch discharge was 29.44 m³/s.', qualified, 's'), /data-atl-srcn="1"/);
 });
 
 test('③ no author, no item — and the map’s credits are listed once, not beside the border records', () => {

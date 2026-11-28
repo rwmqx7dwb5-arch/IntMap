@@ -164,12 +164,13 @@ const { importModule } = await import('./helpers/import-module.mjs');
 test('⑨ a source mark never splits a number from its unit: 全40か国, 11月11日, 1,463,865,525人, 40位', () => {
   const core = makeAtlasAnswerSources({ lang: () => 'jp', esc: (s) => String(s) });
   const items = core.collect([{ ok: true, meta: { provenance: [{ kind: 'number', what: ['Population', '人口'], source: 'World Bank', values: [40, 11, 1463865525, 38980376] }] } }], {});
-  const out = core.linkNumbers('<p>表の1位から40位まで、全40か国の人口は2026年11月11日更新で、1位はインド（1,463,865,525人）です。</p>', items, 't');
+  const out = core.linkNumbers('<p>表の1位から40位まで、全40か国の表は2026年11月11日更新で、1位はインドです。人口は1,463,865,525人です。</p>', items, 't');
   assert.doesNotMatch(out, /\d<sup/, 'no mark directly after a digit');
   assert.doesNotMatch(out, /40<sup[^>]*>.*?<\/sup>(位|か国)/, 'the unit stays with its number');
   const marks = out.match(/data-atl-srcn="1"/g) || [];
   assert.ok(marks.length >= 1 && marks.length <= 4, 'one mark per phrase, not one per digit: ' + marks.length);
-  assert.match(out, /11月11日更新で<sup/, 'a date is cited once, after the phrase it belongs to');
+  assert.doesNotMatch(out, /11月11日更新で<sup/, 'the publication date is not a population measurement');
+  assert.match(out, /1,463,865,525人です<sup/, 'the measurement carries its source');
 });
 
 test('⑩ the table list says a note that several tables share once', async () => {

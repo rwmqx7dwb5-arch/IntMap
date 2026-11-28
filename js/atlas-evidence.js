@@ -130,7 +130,7 @@ export function makeAtlasEvidence() {
       unit: clampText(f.unit || '', 40),
       basis: clampText(f.basis || '', 40),
       geography: clampText(f.geography || '', 80),
-      period: clampText(f.period || '', 40),
+      period: clampText(f.period || '', 56),
     };
   }
 
@@ -144,6 +144,7 @@ export function makeAtlasEvidence() {
     const retrievedAt = String(opts.retrievedAt || '');
     const byId = new Map();
     const byKey = new Map();
+    const byVersion = new Map();
     const rejected = [];
     let seq = 0, dseq = 0;
 
@@ -151,14 +152,16 @@ export function makeAtlasEvidence() {
       rec = rec || {};
       const origin = ORIGINS.indexOf(rec.origin) >= 0 ? rec.origin : 'client_source';
       const needsUrl = (origin === 'hosted_web' || origin === 'client_source');
-      let canon = null;
+      let canon = null, versionKey = null;
+      const sourceVersion = clampText(rec.sourceVersion || '', 80);
       if (rec.originalUrl || needsUrl) {
         canon = canonicalizeUrl(rec.originalUrl);
         if (!canon.ok) {
           rejected.push({ originalUrl: String(rec.originalUrl || ''), reason: canon.reason });
           return null;
         }
-        const dup = byKey.get(canon.key);
+        if (sourceVersion) versionKey = JSON.stringify([canon.key, sourceVersion]);
+        const dup = versionKey ? byVersion.get(versionKey) : byKey.get(canon.key);
         if (dup) return dup;                              /* same document, already registered */
       }
       /* (#732) a DATA block's record is exempt from the cap and numbered apart — see addDataBlock */
@@ -174,11 +177,12 @@ export function makeAtlasEvidence() {
         originalUrl: rec.originalUrl ? String(rec.originalUrl) : null,
         canonicalUrl: canon ? canon.key : null,
         finalUrl: canon ? canon.url : null,
+        ...(sourceVersion ? { sourceVersion } : {}),
         host: canon ? canon.host : '',
         title: clampText(rec.title || (canon ? canon.host : ''), MAX_TITLE),
         publisher: clampText(rec.publisher || (canon ? canon.host : ''), 90),
         publishedAt: rec.publishedAt ? clampText(rec.publishedAt, 32) : null,
-        validTime: rec.validTime ? clampText(rec.validTime, 32) : null,
+        validTime: rec.validTime ? clampText(rec.validTime, 56) : null,
         retrievedAt: clampText(rec.retrievedAt || retrievedAt, 32),
         dateType: DATE_TYPES.indexOf(rec.dateType) >= 0 ? rec.dateType : 'other',
         supportFacts: (Array.isArray(rec.supportFacts) ? rec.supportFacts : [])
@@ -187,10 +191,12 @@ export function makeAtlasEvidence() {
         providerCitation: rec.providerCitation || null,
         /* (evidence-graph) the node a GIS/derived result carries in the lineage graph (js/evidence-graph.js) — an id code minted, never model text */
         graphRef: rec.graphRef ? clampText(rec.graphRef, 400) : null,
+        ...(rec.graphVersion ? { graphVersion: clampText(rec.graphVersion, 120) } : {}),
         callId: rec.callId || callId,
       };
       byId.set(id, out);
-      if (canon) byKey.set(canon.key, out);
+      if (canon && !byKey.has(canon.key)) byKey.set(canon.key, out);
+      if (versionKey) byVersion.set(versionKey, out);
       return out;
     }
 
@@ -299,6 +305,7 @@ export function makeAtlasEvidence() {
         if (r.publishedAt) bits.push('date: ' + r.publishedAt + ' (' + r.dateType + ')');
         if (r.validTime) bits.push('valid_time: ' + r.validTime);
         if (r.retrievedAt) bits.push('retrieved: ' + r.retrievedAt);
+        if (r.sourceVersion) bits.push('session evidence: ' + r.sourceVersion);
         bits.push('origin: ' + r.origin);
         r.supportFacts.forEach((f) => {
           bits.push('fact: ' + [f.seriesId || f.concept, (f.value == null ? '' : f.value), f.unit, f.basis, f.geography, f.period]

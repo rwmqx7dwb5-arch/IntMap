@@ -88,7 +88,7 @@ export function tallyShapes(items) {
 
 export function mapAuthorship(ctx) {
   if (!ctx?.source) return { author: 'unknown', turnId: null };
-  return { author: /^atlas(?:-|$)/.test(ctx.source) ? 'atlas' : 'user', turnId: ctx.turnId ?? null };
+  return { author: /^atlas(?:-|$)/.test(ctx.source) ? 'atlas' : 'user', turnId: ctx.turnId ?? null, createdAt: Date.now() };
 }
 
 /** the first GeoJSON geometry a highlight-ladder answer carries, wherever that rung put it */

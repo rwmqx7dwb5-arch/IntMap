@@ -25,6 +25,7 @@
 //
 //  Deploy:   supabase functions deploy atlas-jobs --no-verify-jwt --use-api --project-ref vpekfwdpurzejrrmacac
 //  Secrets:  ATLAS_JOBS_SECRET=<random>   (REQUIRED for tick — fail-closed; create works without it but cannot continue after a slice)
+//            ATLAS_JOBS_PROBE_USER_ID=<uuid>  (optional dedicated reader authorized to verify two slices with the tick secret)
 //            ATLAS_JOBS=off               (optional stop switch, beside the table's)
 //            ATLAS_JOBS_GLOBAL_PER_DAY=<n>  (optional — moves the project-wide request ceiling below)
 //            AI_PROVIDER / AI_MODEL / ATLAS_DELEGATION_MODEL / OPENAI_API_KEY  (the same as ai-proxy; only openai is run here)
@@ -111,6 +112,26 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function hasTickSecret(req: Request): boolean {
+  const secret = env("ATLAS_JOBS_SECRET");
+  const got = req.headers.get("x-atlas-jobs-secret") || "";
+  return !!secret && !!got && timingSafeEqual(got, secret);
+}
+
+/* The fixed probe plan uses only the GIS read capability and inline input. The first slice has a deliberately tiny inline
+   threshold so the normal artifact code writes several parts and the next lease has to fetch them. */
+function continuationProbeTasks() {
+  const features = [[12.75, 48.125], [13.25, 48.5], [15.25, 48.75]].map((coordinates, index) => ({
+    type: "Feature", properties: { keep: index < 2 }, geometry: { type: "Point", coordinates },
+  }));
+  return [
+    { id: "load", kind: "capability", capability: "data.gis", args: { inputs: [{ type: "FeatureCollection", features }] } },
+    { id: "filter", kind: "capability", capability: "data.gis", inputs: [{ from: "load" }], args: {
+      op: "filter", inputs: ["@load:data.result"], params: { where: [{ field: "keep", op: "==", value: true }] },
+    } },
+  ];
+}
+
 function modelFor(): string {
   const pick = [env("ATLAS_DELEGATION_MODEL"), env("AI_MODEL")].map((m) => m.trim()).find((m) => m && MODEL_ID_OK.test(m) && priceOf(m).known);
   return pick || OPENAI_DEFAULT_MODEL;
@@ -195,7 +216,7 @@ async function callModel(system: string, prompt: string, o: { web: boolean; sign
 function adminClient(): any { return createClient(env("SUPABASE_URL"), secretKey(denoEnv), { auth: { persistSession: false } }); }
 
 /* claim one job and run a slice of it; when work is left, continue with another invocation of this function */
-async function runSlice(jobId: string | null): Promise<string> {
+async function runSlice(jobId: string | null, probe = false): Promise<string> {
   if (env("ATLAS_JOBS").toLowerCase() === "off") return "off";
   const db = adminClient();
   const holder = "edge:" + crypto.randomUUID().slice(0, 12);
@@ -209,6 +230,7 @@ async function runSlice(jobId: string | null): Promise<string> {
       db, job, holder, callModel, money, capabilities: makeServerCaps({ db, gis: makeHeadlessGis({ loadGis, now: () => Date.now() }), fetchGeoJson }), now: () => Date.now(), budgetMs: SLICE_MS, leaseSeconds: LEASE_S,
       heartbeatMs: Math.floor(LEASE_S * 1000 / 3), hardMs: EDGE_WALL_CLOCK_MS - EDGE_SETTLE_MARGIN_MS,
       system: workerSystem(personaPrompt("working here as a research worker: you have been handed ONE piece of a larger request, and the Atlas talking to the reader will integrate your findings with those of other workers", { mode: "internal" })),
+      ...(probe ? { yieldAtTaskBoundary: true, inlineOutputBytes: 128 } : {}),
     });
     outcome = r.outcome;
   } catch (e) {
@@ -245,12 +267,14 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
   const { data: ud } = await userClient.auth.getUser();
   const user = ud?.user;
   if (!user) return json({ error: "auth", message: "Login required." }, 401);
+  const probe = body.probe === true;
+  if (probe && (user.id !== env("ATLAS_JOBS_PROBE_USER_ID") || !hasTickSecret(req))) return json({ error: "unauthorized" }, 401);
   if (env("ATLAS_JOBS").toLowerCase() === "off") return json({ error: "disabled" }, 503);
 
   const idem = String(body.idem || "").trim();
   if (!/^[A-Za-z0-9._:-]{1,120}$/.test(idem)) return json({ error: "bad_request", message: "idem is required (1-120 of A-Z a-z 0-9 . _ : -)." }, 400);
   const caps = makeServerCaps();
-  const plan = planJob(body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
+  const plan = planJob(probe ? continuationProbeTasks() : body.tasks as unknown[], { kinds: ["worker", "capability"], maxOutput: true, images: true, capabilityOk: (id: string) => caps.has(id), datasetSlots: (id: string) => caps.datasetSlots(id), parkable: (id: string) => capClass(id) === "parkable" });
   // a refusal for a capability with no twin says what DOES have one (discovered from the lane, not written here)
   if (!plan.ok) return json({ error: "bad_plan", code: plan.error, at: plan.at, ...(plan.error === "capability_unsupported_on_server" ? { available: caps.catalogue() } : {}) }, 400);
 
@@ -306,8 +330,8 @@ async function create(req: Request, body: Record<string, unknown>): Promise<Resp
     if (e instanceof LedgerUnavailable) return await reject("quota_unavailable", 503);
     throw e;
   }
-  waitUntil(runSlice(row.job_id));
-  return json({ jobId: row.job_id, created: true, status: "queued" }, 202);
+  waitUntil(runSlice(row.job_id, probe));
+  return json({ jobId: row.job_id, created: true, status: "queued", ...(probe ? { probe: true } : {}) }, 202);
 }
 
 /* (gis-result-handoff) op "revise" (a signed-in reader) { jobId, note, tasks?:[contract], keep?:[task id] } → { version } — the reader changed the
@@ -362,8 +386,7 @@ Deno.serve(async (req) => {
     if (op === "tick") {
       const secret = env("ATLAS_JOBS_SECRET");
       if (!secret) return json({ error: "not_configured" }, 503);
-      const got = req.headers.get("x-atlas-jobs-secret") || "";
-      if (!got || !timingSafeEqual(got, secret)) return json({ error: "unauthorized" }, 401);
+      if (!hasTickSecret(req)) return json({ error: "unauthorized" }, 401);
       waitUntil(runSlice(null));
       return json({ ok: true }, 202);
     }

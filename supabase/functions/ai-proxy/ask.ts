@@ -125,21 +125,23 @@ export async function ask(req: Request): Promise<Response> {
      day, and the delegation comparison needs exactly those. Best-effort and off the answer's path (_shared/ai-ledger.js
      recordJournal): a journal that cannot be written never fails the request it describes — the posture of spend
      'unavailable' below. A worker call is a worker call by its HEADER, so even a malformed one is journalled as one; a
-     root turn is known by its task, which is read from the body — so the refusals that happen at the allowance's door
-     BEFORE the body is read (quota 429s of a reader's turn) are not journalled: the door runs first on purpose, and the
-     quota ledger already counts them. `workerKey` is the child's own key, kept before "shared" mode gives the call the
+     Atlas submission's root key also identifies its family before parsing, so pre-provider refusals can report zero.
+     Old clients still identify their family by task after parsing. `workerKey` is the child's own key, kept before "shared" mode gives the call the
      parent's. */
   const reqStart = Date.now();
   const workerKey = parentTurn ? turnId : "";
-  let journalTask = parentTurn ? "atlas_delegate" : "";
-  const journal = (outcome: string, code: string, http: number, o: { model?: string; latencyMs?: number; total?: unknown; costMicros?: number; web?: boolean; webSearches?: number } = {}) =>
-    (parentTurn || journalTask === "atlas_turn" || journalTask === "web_search")   /* (atlas-search-evidence-store) a web.search call is a root call of its own: its time and how many searches ran in it are what the journal must show */
-      ? recordJournal(db, { user: user.id, root: rootTurn, child: workerKey, task: journalTask, outcome, code, http, model: o.model || "", latencyMs: o.latencyMs ?? Date.now() - reqStart, total: o.total, costMicros: o.costMicros, web: o.web, webSearches: o.webSearches })
+  const sentCallId = req.headers.get("x-intmap-call") || "";
+  const callId = /^[a-z0-9-]{1,80}$/i.test(sentCallId) ? sentCallId : "";
+  const atlasRoot = /^atlas-[0-9a-f-]{36}$/i.test(rootTurn);
+  let journalTask = parentTurn ? "atlas_delegate" : atlasRoot ? "atlas_unparsed" : "";
+  const journal = (outcome: string, code: string, http: number, o: { model?: string; latencyMs?: number; total?: unknown; costMicros?: number; costComplete?: boolean; web?: boolean; webSearches?: number } = {}) =>
+    (atlasRoot || parentTurn || ["atlas_turn", "atlas_effort", "atlas_verify", "web_search"].includes(journalTask))
+      ? recordJournal(db, { user: user.id, root: rootTurn, child: workerKey, callId, task: journalTask, outcome, code, http, model: o.model || "", latencyMs: o.latencyMs ?? Date.now() - reqStart, total: o.total, costMicros: o.costMicros, costComplete: o.costComplete, web: o.web, webSearches: o.webSearches })
       : Promise.resolve(false);
   /* a refusal / failure answered before the provider is asked: the same JSON the caller always got, and its row */
   const bail = async (body: Record<string, unknown>, status: number) => {
-    await journal(status >= 500 ? "failed" : "refused", String(body.error || ""), status);
-    return json(body, status);
+    await journal(status >= 500 ? "failed" : "refused", String(body.error || ""), status, { costMicros: 0, costComplete: true });
+    return json(atlasRoot ? { ...body, meta: { costUsd: 0, costComplete: true } } : body, status);
   };
   if (parentTurn) {
     if (delegation.mode === "off") return await bail({ error: "delegation_off", message: "Delegation to worker models is switched off on this server.", delegation }, 409);
@@ -267,7 +269,23 @@ export async function ask(req: Request): Promise<Response> {
   let fellBackTo = "";
   let retries = 0;   /* (atlas-mainloop-reliability) retries after an observed transient failure (provider-call.ts transientRetry) */
   let attempts = 0;   /* (atlas-turn-observability) provider requests this ONE request made — providerCall calls attempt() before each */
-  const meter: Meter & ReturnType<typeof usageMeter> = Object.assign(usageMeter(), {
+  const usage = usageMeter();
+  let meteredCost = 0, priced = true;
+  const meter: Meter & ReturnType<typeof usageMeter> = Object.assign({}, usage, {
+    add(providerKind: string, body: unknown) {
+      const u = usage.add(providerKind, body);
+      if (u) {
+        const reported = body as { model?: string; modelVersion?: string };
+        const requested = fellBackTo || model;
+        const served = typeof reported?.model === 'string' ? reported.model
+          : typeof reported?.modelVersion === 'string' ? reported.modelVersion : requested;
+        // A dated revision of an available model uses its published base rate.
+        const priceKey = priceOf(served).known ? served : served.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+        if (priceOf(priceKey).known) meteredCost += costMicros(priceKey, u, providerKind);
+        else priced = false;
+      }
+      return u;
+    },
     startedAt: Date.now(),   /* the clock every provider request of this reader request shares — providerBudgetMs (_shared/ai-provider.js) */
     attempt() { attempts += 1; },
     retry() { retries += 1; },
@@ -277,7 +295,10 @@ export async function ask(req: Request): Promise<Response> {
   /* (atlas-delegation) …and the money: the reservation this request holds against its turn family (made below,
      once the model is known) is replaced by what the meter read. Once — record() runs on both paths. */
   let spendHold: { micros: number; model: string; provider: string } | null = null;
+  let usageRecorded = false;
   const record = async () => {
+    if (usageRecorded) return;
+    usageRecorded = true;
     await recordUsage(db, user.id, isGloss ? "" : turnId, meter.total());
     if (spendHold) {
       const h = spendHold; spendHold = null;
@@ -726,12 +747,11 @@ export async function ask(req: Request): Promise<Response> {
     if (spec.accept && !spec.accept(out.text)) {
       throw new ProviderError("invalid_structured_output", "The answer did not arrive in the required shape.", 502, true, {});
     }
+    const costComplete = priced && meter.total().unmetered === 0 && meter.total().calls >= attempts;
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await observe("ok", { incomplete: out.incompleteReason || "" });   // (atlas-turn-observability)
-    await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider), web: !!out.webUsed, webSearches: out.webCount || 0 });   // (atlas-delegation)
-    await settle();
-    return { status: 200, body: {
+    const response = { status: 200, body: {
       text: out.text,
       /* /!\ (#R491) A GLOSS RETURNS NO `used`/`limit`, ON PURPOSE. js/ai-core.js mirrors those two
          into the reader's QUESTION counter the moment it sees them (aiSetUsage), so sending the
@@ -769,9 +789,8 @@ export async function ask(req: Request): Promise<Response> {
         streamed: sink ? true : undefined,   /* (atlas-live-stream) this body is the `done` event of a stream */
         maxOutput: maxTokens,   /* (atlas-unbounded-turns) the visible-output budget this request ran with — the task's, or the one Atlas chose */
         ...(outputFitted ? { maxOutputFitted: outputFitted } : {}),   /* …and, when the money fences could not hold the one asked, what was asked and what ran */
-        /* (atlas-delegation) what THIS request cost at the asked model's price (_shared/ai-provider.js costMicros) — the
-           figure js/atlas-delegate.js records per task — and, for a worker's call, the policy that admitted it */
-        costUsd: costMicros(model, meter.total(), provider) / 1e6, priceKnown: priceOf(model).known, spend: spendState || undefined,
+        /* The provider token cost across all observed attempts; costComplete distinguishes a known total from a floor. */
+        costUsd: meteredCost / 1e6, costComplete, priceKnown: priced, spend: spendState || undefined,
         ...(parentTurn ? { delegation: { mode: delegation.mode, parent: parentTurn } } : {}),
         /* (delegation-limits) the worker policy this server runs, on every Atlas turn: Atlas plans within it (js/atlas-console.js
            states it in the turn's context) instead of learning it from a refused worker — measured 2026-11-19: it opened three
@@ -786,25 +805,30 @@ export async function ask(req: Request): Promise<Response> {
       // these as the primary, web-verified sources — separate from the client-gathered headlines.
       citations: Array.isArray(out.citations) ? out.citations : [],
     } };
+    await journal("ok", "", 200, { model: out.served || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: meteredCost, costComplete, web: !!out.webUsed, webSearches: out.webCount || 0 });
+    await settle();
+    return response;
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
     await record();   // (ai-one-ledger) …but what the provider billed before failing is still a cost, and is recorded
     await observe(e instanceof ProviderError ? e.code : "unclassified");   // (atlas-turn-observability)
     /* (atlas-delegation) the row of a failure: what the provider billed before failing is in it. "refused" is IntMap's own
        ceiling saying no (provider-call.ts sets meta.ceiling only for those); everything else the provider or the network did is "failed". */
+    const costComplete = priced && meter.total().unmetered === 0 && meter.total().calls >= attempts;
+    const costMeta = { costUsd: meteredCost / 1e6, costComplete, priceKnown: priced };
     await journal(e instanceof ProviderError && e.code === "provider_quota" && e.meta && e.meta.ceiling ? "refused" : "failed",
       e instanceof ProviderError ? e.code : "unclassified", e instanceof ProviderError ? e.http : 502,
-      { latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: costMicros(model, meter.total(), provider) });
+      { model: fellBackTo || model, latencyMs: Date.now() - startedAt, total: meter.total(), costMicros: meteredCost, costComplete });
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
-      return { status: e.http, body: { error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...(retries ? { retries } : {}), ...e.meta } } };
+      return { status: e.http, body: { error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...(retries ? { retries } : {}), ...e.meta, ...costMeta } } };
     }
     /* ⚠ AN UNCLASSIFIED FAILURE IS STILL NOT A PLACE TO PUT AN EXCEPTION MESSAGE. Anything that
        reaches here came from code that has the prompt, the provider key and the caller's JWT in
        scope, so the message is a generic one and the detail stays in the log line above. */
     try { console.error("ai-proxy unclassified fail", JSON.stringify({ provider, model, task, name: String((e as Error)?.name || "") })); } catch (_) { /* ignore */ }
-    return { status: 502, body: { error: "provider_unavailable", message: "The AI provider could not be reached.", retryable: false, meta: { provider, model, task } } };
+    return { status: 502, body: { error: "provider_unavailable", message: "The AI provider could not be reached.", retryable: false, meta: { provider, model, task, ...costMeta } } };
   }
   };
 

@@ -84,7 +84,7 @@ const optMs = (v) => (v != null && Number.isFinite(Number(v)) && Number(v) >= 0 
 export function buildTurnMetrics(out, timing) {
   const o = out || {}, t = timing || {};
   const run = o.run || {}, tr = o.trace || {};
-  const wall = n0(t.totalMs) || n0(run.wallMs);
+  const wall = optMs(t.totalMs) ?? n0(run.wallMs);
   const tools = Array.isArray(run.tools) ? run.tools.filter((x) => x && x.id !== 'unknown') : [];
   const toolMs = tools.reduce((m, x) => m + n0(x.ms), 0);
   const slow = tools.reduce((b, x) => (!b || n0(x.ms) > n0(b.ms) ? x : b), null);
@@ -95,12 +95,25 @@ export function buildTurnMetrics(out, timing) {
   const ver = verificationOf(o.results);
   const first = optMs(t.firstUsefulMs);
   const marks = t.marks || {};
+  const delegations = new Map();
+  let detachedJob = false;
+  (Array.isArray(o.results) ? o.results : []).forEach((r) => {
+    const job = r?.details?.job;
+    if (job?.created || job?.resumed) detachedJob = true;
+    const d = r?.delegated || r?.meta?.delegated;
+    if (!Array.isArray(d)) return;
+    const group = r.details?.delegationRun || r.details?.resume?.key || r.id;
+    d.forEach((x) => { if (x?.id) delegations.set(group + ':' + x.id, x); });
+  });
+  const delegated = Array.from(delegations.values());
   return {
     total_ms: wall,
     first_useful_ms: first, useful_shown: first !== null,
-    model_calls: n0(run.modelCalls), model_ms: n0(run.modelMs), tool_ms: toolMs,
-    cost_micros: Math.round((Number(run.costUsd) || 0) * 1e6), cost_known: !n0(run.costUnknownCalls),
+    model_calls: n0(run.modelCalls), provider_call_ids: run.providerCallIds || [], model_ms: n0(run.modelMs), tool_ms: toolMs,
+    cost_micros: Math.round((Number(run.costUsd) || 0) * 1e6), cost_known: !n0(run.costUnknownCalls) && !n0(run.unpricedCalls),
+    pending_delegation: detachedJob || t.pendingDelegation === true || delegated.some((x) => x.state === 'running'),
     delegated_cost_micros: Math.round((Number(run.delegatedCostUsd) || 0) * 1e6), delegated_tasks: n0(run.delegatedTasks),
+    delegated_model_tasks: delegated.filter((x) => !x.resumed && n0(x.calls) > 0).length,
     completion: ['complete', 'partial', 'none'].indexOf(o.completion) >= 0 ? o.completion : 'none',
     stopped: String(o.stopped || '').slice(0, 40),
     ops_asked: n0(tr.calls), ops_executed: n0(tr.executed), ops_reused: n0(tr.reused), ops_rejected: n0(tr.rejected), ops_unknown_tool: n0(tr.unknownTool),
@@ -116,9 +129,9 @@ export function buildTurnMetrics(out, timing) {
    ({ ok, meta:{ produced }, drew }): what the kernel observed it PRODUCE (route, map, panel...) or what was seen DRAWN. A refusal, a failure, a note
    (re-read ev1) and a plan produce neither. */
 function isUsefulResult(r) {
-  if (!r || r.ok === false) return false;
+  if (!r || r.ok === false || r.meta?.modelOnly) return false;
   const produced = r.meta && Array.isArray(r.meta.produced) ? r.meta.produced : [];
-  return produced.length > 0 || (Array.isArray(r.drew) && r.drew.length > 0);
+  return produced.length > 0 || (Array.isArray(r.drew) && r.drew.some((d) => d && d.visible !== false));
 }
 
 /* what one SUCCESS cost: every attempt at the same task - the failed and the repeated ones included - over the tasks that succeeded. A row without a
@@ -188,9 +201,9 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
 let active = null;
 /* markTurn(name) - "the evidence arrived" / "the parent began using it": the milliseconds since the turn was sent are kept under `name` the first time only
    (a moment, not a counter). A caller with no turn running changes nothing. The row carries evidence_arrived and evidence_used. */
-export function markTurn(name) { try { if (active) active.mark(name); } catch (_) { /* telemetry */ } }
+export function markTurn(name, turn) { try { if (active && active.turn === String(turn || '')) active.mark(name); } catch (_) { /* telemetry */ } }
 /* reportShown(result) - an operation's record, as the page is about to show it (js/atlas-console.js dispatch) */
-export function reportShown(result) { try { if (active) active.shown(result); } catch (_) { /* telemetry */ } }
+export function reportShown(result, turn) { try { if (active && active.turn === String(turn || '')) active.shown(result); } catch (_) { /* telemetry */ } }
 
 /* the same request, asked again after an unfinished try, is ONE task: its key is the first try's. Held in memory (the question is compared, never stored). */
 const lastTask = { q: '', key: '', done: true };
@@ -204,33 +217,36 @@ export function makeTurnRecorder(opt) {
   const now = typeof o.now === 'function' ? o.now : () => Date.now();
   const emit = typeof o.emit === 'function' ? o.emit
     : (detail) => { try { bus.emit(TURN_METRICS_EVENT, detail); } catch (_) { /* telemetry */ } };
-  const t0 = now();
+  const t0 = o.startedAt ?? now();
   const marks = {};
   let first = null, announced = false;
   const q = String(o.question || '').trim();
   const taskKey = q && !lastTask.done && lastTask.q === q ? lastTask.key : String(o.turnKey || '');
   if (q) { lastTask.q = q; lastTask.key = taskKey; lastTask.done = false; }
   const rec = {
+    turn: String(o.turnKey || ''),
+    useful() { if (first === null) first = Math.max(0, now() - t0); },
     step() { /* a step starting is not a result */ },
-    shown(r) { if (first === null && isUsefulResult(r)) first = Math.max(0, now() - t0); },
+    shown(r) { if (isUsefulResult(r)) rec.useful(); },
     mark(name) { const k = String(name || '').slice(0, 40); if (k && marks[k] === undefined) marks[k] = Math.max(0, now() - t0); },
     row(out, extra) {
       const total = now() - t0;
       const o2 = out || {};
       /* a turn that showed no operation's result but finished with an answer showed the reader that answer */
-      const f = first !== null ? first : (o2.completion === 'complete' && String(o2.text || '').trim() ? total : null);
+      const f = first !== null ? first : (extra?.displayed !== false && o2.completion === 'complete' && String(o2.text || '').trim() ? total : null);
       return buildTurnMetrics(out, { totalMs: total, firstUsefulMs: f, taskKey, marks, cites: extra && extra.cites });
     },
     recordAnswer(out, turnKey, extra) {
       const turn = String(turnKey || '').trim();
       const row = this.row(out, extra);
-      if (q) lastTask.done = row.completion === 'complete';
+      if (q && active === rec) lastTask.done = row.completion === 'complete';
       if (active === rec) active = null;
       if (turn && !announced) { announced = true; emit({ turn, row }); }
       return row;
     },
-    recordFailure(error, turnKey) {
-      const row = this.row({ completion: 'none', stopped: String((error && error.code) || 'error') }, null);
+    recordFailure(error, turnKey, run) {
+      if (announced) return null;
+      const row = this.row({ run, completion: 'none', stopped: String((error && error.code) || 'error') }, null);
       if (active === rec) active = null;
       const turn = String(turnKey || '').trim();
       if (turn && !announced) { announced = true; emit({ turn, row }); }

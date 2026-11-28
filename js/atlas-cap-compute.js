@@ -110,6 +110,7 @@ export default [
          holds. The record is what the NEXT CALL needs and the reader does not — the dataset ids, the interpreter, the packages, what to do
          with the ids — as plain text in `meta.record`, which js/atlas-toolsurface.js hands to the model before the card's text. */
       const ds = r.datasets || [];
+      if (!r.reused && ds.length) meta.datasetsCreated = ds.map(({ id, version }) => ({ id, version }));
       const pk = r.packages && r.packages.length ? r.packages.join(', ') : '';
       const rec = [L('Python run on ' + r.runtime + (pk ? ' with ' + pk : '') + '.', r.runtime + (pk ? '（' + pk + '）' : '') + ' で Python を実行しました。')]
         .concat(ds.map((d) => L('Dataset "' + d.name + '" has id ' + d.id + '.', 'データセット「' + d.name + '」の id は ' + d.id + ' です。')));

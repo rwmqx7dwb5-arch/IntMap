@@ -99,18 +99,28 @@ export function makeEvidenceGraph(opts) {
     const id = 'src:' + type + ':' + key;
     const version = s.version == null || s.version === '' ? UNVERSIONED : clamp(s.version, 120);
     const basis = version === UNVERSIONED ? 'none' : clamp(s.versionBasis || 'stated', 40);
+    const fetched = s.retrievedVersion ? Date.parse(s.meta?.retrievedAt) : NaN;
+    const entry = { version, basis, at: Number.isFinite(fetched) ? fetched : now(), meta: s.meta || null };
     const prev = nodes.get(id);
     if (!prev) {
       nodes.set(id, {
         id, kind: 'source', type, key, label: clamp(s.label || key, 200),
-        versions: [{ version, basis, at: now(), meta: s.meta || null }],
+        versions: [entry],
       });
       touch(id);
       return { ok: true, id, version, changed: false };
     }
     const cur = prev.versions[prev.versions.length - 1];
-    if (cur.version === version) return { ok: true, id, version, changed: false };
-    prev.versions.push({ version, basis, at: now(), meta: s.meta || null });
+    if (cur.version === version || (s.retrievedVersion && prev.versions.some((v) => v.version === version))) {
+      return { ok: true, id, version, changed: false };
+    }
+    if (s.retrievedVersion && cur.meta?.retrievedAt && s.meta.retrievedAt < cur.meta.retrievedAt) {
+      const next = prev.versions.findIndex((v) => v.at > entry.at);
+      prev.versions.splice(next < 0 ? prev.versions.length - 1 : next, 0, entry);
+      touch(id);
+      return { ok: true, id, version, changed: false };
+    }
+    prev.versions.push(entry);
     if (s.label) prev.label = clamp(s.label, 200);
     touch(id);
     /* an update happened: say, now, WHAT it reaches — the report is computed from the graph as it stands
@@ -142,7 +152,12 @@ export function makeEvidenceGraph(opts) {
       const iid = typeof r === 'string' ? r : (r && r.id);
       const n = nodes.get(iid);
       if (!n) return refused('unknown-input', { id: iid == null ? null : String(iid) });
-      if (!inputs.some((x) => x.id === iid)) inputs.push({ id: iid, version: currentVersion(n) });
+      const current = currentVersion(n);
+      const version = r && typeof r === 'object' && r.version ? r.version : current;
+      if (version !== current && (n.kind !== 'source' || !n.versions.some((v) => v.version === version))) {
+        return refused('unknown-input-version', { id: iid, version });
+      }
+      if (!inputs.some((x) => x.id === iid && x.version === version)) inputs.push({ id: iid, version });
     }
     const calc = {
       op: clamp(d.calc && d.calc.op, 80),

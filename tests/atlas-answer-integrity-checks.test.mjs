@@ -171,7 +171,9 @@ test('④ metricResult: subject, data year and one source item per publisher, fr
   assert.equal(items.length, 1);
   assert.equal(items[0].kind, 'number');
   assert.equal(items[0].date, '2022–2023');
-  assert.match(SRC.linkNumbers('Japan has 84.71 years.', items, 'x'), /\[1\]/);
+  assert.match(SRC.linkNumbers('In 2023, life expectancy in Japan was 84.71 years.', items, 'x'), /\[1\]/);
+  const wrongPlace = 'In 2023, life expectancy in Chile was 84.71 years.';
+  assert.equal(SRC.linkNumbers(wrongPlace, items, 'x'), wrongPlace);
   /* a field with no World Bank series is its own subject, cited by the bundled label */
   const h = M.metricResult('hdi', [{ code: 'JPN', name: 'Japan', val: 0.92 }], 'ranking:top');
   assert.equal(h.subject, 'stat:hdi');

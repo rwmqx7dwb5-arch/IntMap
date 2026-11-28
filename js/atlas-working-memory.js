@@ -157,7 +157,7 @@ export function makeAtlasWorkingMemory(o) {
     const text = textOf(rec);
     const numbers = numericLeaves(rec);
     st.results[ref] = { ref: ref, turnId: turnId, callId: String(callId), name: s(name, 80), args: s(textOf(args || {}), 300), size: text.length,
-      shape: s(shapeLine(rec), 200), headline: headlineOf(rec), status: rec.ok === false ? 'failed' : s(rec.status || 'ok', 16), numbers: numbers, text: text, evicted: false };
+      shape: s(shapeLine(rec), 200), headline: headlineOf(rec), status: s(rec.status || (rec.ok === false ? 'failed' : 'ok'), 16), numbers: numbers, text: text, evicted: false };
     st.done.push({ turnId: turnId, callId: String(callId), name: s(name, 80), args: s(textOf(args || {}), 300), status: st.results[ref].status, ref: ref, headline: st.results[ref].headline });
     if (st.done.length > L.done) st.done.splice(0, st.done.length - L.done);
     evict(); later();

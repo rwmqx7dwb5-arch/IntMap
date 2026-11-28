@@ -76,6 +76,31 @@ test('③b turnSources: only this turn\'s pages and cited sources, in the shape 
   assert.deepEqual(ev.turnSources('nope'), []);
 });
 
+test('two versions used in one turn reach the evidence ledger with their own title and retrieval time', async () => {
+  let now = Date.UTC(2026, 4, 2);
+  const ev = makeWebEvidence({ now: () => now });
+  const url = 'https://example.com/observations';
+  const fetcher = (turn, value) => async () => ({ ok: true, url, turn, title: 'release ' + value, text: String(value) });
+  const a = await ev.acquire('page', url, fetcher('first', 42));
+  now += 1000;
+  const b = await ev.acquire('page', url, fetcher('second', 52), { refresh: true });
+  assert.equal(ev.read(url).text, '52');
+  assert.equal(ev.read(a.entry.id, 200, { turn: 'second' }).text, '42');
+  assert.deepEqual(ev.turnSources('first').map((x) => [x.title, x.sourceVersion]), [['release 42', a.entry.id]]);
+  const used = ev.turnSources('second');
+  assert.deepEqual(used.map((x) => [x.title, x.sourceVersion]), [['release 52', b.entry.id], ['release 42', a.entry.id]]);
+  assert.notEqual(used[0].retrievedAt, used[1].retrievedAt);
+  assert.equal(ev.documentForTurn(url, 'first').text, '42');
+  assert.equal(ev.documentForTurn(url, 'second'), null, 'a URL alone is ambiguous if the turn read two versions');
+  assert.equal(ev.documentForTurn(b.entry.id, 'second').text, '52');
+  const { makeAtlasEvidence } = await import('../js/atlas-evidence.js');
+  const registry = makeAtlasEvidence().makeEvidenceRegistry();
+  const records = used.map((x) => registry.add({ originalUrl: x.url, ...x }));
+  assert.equal(new Set(records.map((x) => x.id)).size, 2);
+  assert.equal(registry.get(records[1].id).title, 'release 42');
+  assert.equal(registry.get(records[1].id).sourceVersion, a.entry.id);
+});
+
 /* ── ④ the light reader, against a fake edge function ─────────────────────────────────────────────────────────── */
 async function withDoor(fn) {
   const sent = [];
@@ -201,5 +226,6 @@ test('⑦ the server: web_search is a registered task and a journal row says how
   assert.equal(journalArgs({ user: 'u', root: 'r', outcome: 'ok' }).p_web_searches, 0);
   assert.match(read('supabase/migrations/20261130100000_journal_web_searches.sql'), /add column if not exists web_searches/);
   const ask = read('supabase/functions/ai-proxy/ask.ts');
-  assert.match(ask, /journalTask === "web_search"/); assert.match(ask, /webSearches: out\.webCount/);
+  assert.match(ask, /\[[^\]\n]*"web_search"[^\]\n]*\]\.includes\(journalTask\)/);
+  assert.match(ask, /await journal\("ok"[^\n]*webSearches: out\.webCount/);
 });

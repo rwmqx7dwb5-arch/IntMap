@@ -37,8 +37,8 @@ function datasetKey(rec) {
 /** the shape version of a dataset: rows, columns, geometry — stated by the provenance's own version/etag when it has one */
 function datasetVersion(rec) {
   const p = (rec && rec.provenance) || {};
-  const stated = p.etag || p.version || p.sourceVersion;
-  if (stated) return { version: String(stated), basis: 'stated' };
+  const stated = p.sha256 || p.etag || p.version || p.sourceVersion;
+  if (stated) return { version: String(stated), basis: p.sha256 ? 'sha256' : 'stated' };
   return { version: fingerprint({ n: rec.count, g: rec.geometryType, wg: rec.withGeometry, f: fieldShape(rec), b: p.bounds || null, w: p.width || null, h: p.height || null }), basis: 'content-shape' };
 }
 
@@ -76,13 +76,14 @@ export function bindGis(graph, data, opts) {
       r = graph.putSource({ type: 'dataset', key: datasetKey(rec), label: rec.title || rec.id, version: v.version, versionBasis: v.basis, meta: { dataset: rec.id, kind: p.kind || 'unknown', rights: p.rights || null, at: p.at || p.readAt || p.retrievedAt || null } });
     }
     if (!r || !r.ok) { refused.push({ id: rec.id, why: (r && r.why) || 'failed' }); return null; }
-    ref.set(rec.id, r.id);
-    return r.id;
+    const pin = { id: r.id, version: r.version };
+    ref.set(rec.id, pin);
+    return pin;
   }
 
   if (data && typeof data.list === 'function') for (const rec of data.list()) record(rec);
   if (data && typeof data.subscribe === 'function') off = data.subscribe((what, rec) => { if (what === 'add') record(rec); });
-  return { refOf: (dsId) => ref.get(dsId) || null, unbind: () => { if (off) off(); off = null; }, refused: () => refused.slice() };
+  return { refOf: (dsId) => ref.get(dsId)?.id || null, versionOf: (dsId) => ref.get(dsId)?.version || null, unbind: () => { if (off) off(); off = null; }, refused: () => refused.slice() };
 }
 
 const sameValue = (a, b) => a != null && b != null && isFinite(a) && isFinite(b) && Number(a) === Number(b);
@@ -104,16 +105,17 @@ export function recordAnswer(graph, args) {
     const g = rec.graphRef ? graph.get(rec.graphRef) : null;
     if (g) {
       /* the facts code attached to the record (a GIS result put in front of the model) and the node's own value */
-      res = { id: g.id, values: (Array.isArray(rec.supportFacts) ? rec.supportFacts : []).map((f) => f.value)
+      res = { id: g.id, version: rec.graphVersion || undefined, values: (Array.isArray(rec.supportFacts) ? rec.supportFacts : []).map((f) => f.value)
         .concat(g.kind === 'derived' && g.output && g.output.value != null ? [g.output.value] : []) };
     } else {
       const facts = Array.isArray(rec.supportFacts) ? rec.supportFacts : [];
       const web = !!rec.canonicalUrl;
       const key = web ? rec.canonicalUrl : ((rec.dataBlock ? 'block:' : (rec.origin === 'calculation' ? 'calc:' : 'app:')) + (rec.title || rec.label || rec.publisher || rec.id));
-      const version = rec.publishedAt || rec.validTime || (facts.length ? fingerprint(facts) : '');
-      const basis = rec.publishedAt ? 'published_at' : (rec.validTime ? 'valid_time' : 'content-facts');
-      const s = graph.putSource({ type: web ? 'web_document' : 'app_data', key, label: rec.title || rec.publisher || key, version, versionBasis: basis, meta: { retrievedAt: rec.retrievedAt || null, origin: rec.origin, publisher: rec.publisher || null } });
-      res = s.ok ? { id: s.id, values: facts.map((f) => f.value) } : null;
+      const version = rec.sourceVersion ? [rec.retrievedAt, rec.sourceVersion].join('@') : rec.publishedAt || rec.validTime || (facts.length ? fingerprint(facts) : '');
+      const basis = rec.sourceVersion ? 'retrieved-version' : rec.publishedAt ? 'published_at' : (rec.validTime ? 'valid_time' : 'content-facts');
+      const s = graph.putSource({ type: web ? 'web_document' : 'app_data', key, label: rec.title || rec.publisher || key, version, versionBasis: basis,
+        retrievedVersion: !!rec.sourceVersion, meta: { title: rec.title || null, retrievedAt: rec.retrievedAt || null, origin: rec.origin, publisher: rec.publisher || null } });
+      res = s.ok ? { id: s.id, version: s.version, values: facts.map((f) => f.value) } : null;
     }
     sourceOf.set(rec.id, res);
     return res;
@@ -135,7 +137,7 @@ export function recordAnswer(graph, args) {
     const r = graph.putDerived({
       type: backed ? 'answer_number' : 'ai_inference',
       label: String(m.concept || m.seriesId || c.id || 'figure').slice(0, 120),
-      inputs: used.map((u) => u.id),
+      inputs: used.map(({ id, version }) => ({ id, version })),
       calc: { op: backed ? 'stated_in_record' : 'model_statement', opVersion: 'answer-contract', params: { claimId: String(c.id || '') } },
       output: { value: m.value, unit: m.unit || '', period: m.period || '', geography: m.geography || '', concept: m.concept || '', seriesId: m.seriesId || '' },
       meta: { callId: (args && args.callId) || null, turnId: (args && args.turnId) || null, model: (args && args.model) || null,
@@ -195,21 +197,34 @@ export function recordNote(graph, entry) {
  * column — never a statistic computed here. A dataset the graph has no node for is still offered (no graphRef): the
  * figures are real, the lineage just starts at the answer.
  */
-export function datasetFacts(data, ids, refOf) {
+function datasetPeriod(time) {
+  if (!time || time.kind !== 'constant') return '';
+  const stamp = (ms) => Number.isFinite(ms) ? new Date(ms).toISOString().replace(/\.000Z$/, 'Z') : '';
+  const start = stamp(time.start), end = stamp(time.end);
+  if (start === end) return start;
+  if (/^-?\d{4,6}-01-01T00:00:00Z$/.test(start)) {
+    const year = start.slice(0, -16);
+    if (end === year + '-12-31T23:59:59.999Z') return year;
+  }
+  return (start || '..') + '/' + (end || '..');
+}
+
+export function datasetFacts(data, ids, refOf, versionOf) {
   const out = [];
   for (const id of (Array.isArray(ids) ? ids : [])) {
     const rec = data && typeof data.get === 'function' ? data.get(id) : null;
     if (!rec) continue;
-    const facts = [{ seriesId: 'gis.' + rec.id + '.rows', concept: 'rows', value: +rec.count || 0, unit: 'rows', basis: 'reported', geography: '', period: 'latest' }];
+    const period = datasetPeriod(rec.time);
+    const facts = [{ seriesId: 'gis.' + rec.id + '.rows', concept: 'rows', value: +rec.count || 0, unit: 'rows', basis: 'reported', geography: '', period }];
     for (const c of (Array.isArray(rec.fields) ? rec.fields : [])) {
       if (!c || c.type !== 'number') continue;
-      const mk = (k, v) => ({ seriesId: 'gis.' + rec.id + '.' + c.name + '.' + k, concept: c.name + ' ' + k, value: v, unit: c.unit || '', basis: 'reported', geography: '', period: 'latest' });
+      const mk = (k, v) => ({ seriesId: 'gis.' + rec.id + '.' + c.name + '.' + k, concept: c.name + ' ' + k, value: v, unit: k === 'filled' ? 'rows' : c.unit || '', basis: 'reported', geography: '', period });
       facts.push(mk('filled', c.filled));
-      if (isFinite(c.min)) facts.push(mk('min', +c.min));
-      if (isFinite(c.max)) facts.push(mk('max', +c.max));
+      if (Number.isFinite(c.min)) facts.push(mk('min', c.min));
+      if (Number.isFinite(c.max)) facts.push(mk('max', c.max));
     }
-    out.push({ title: String(rec.title || rec.id), publisher: 'IntMap', validTime: 'latest', dateType: 'valid_time', label: 'GIS', supportFacts: facts,
-      graphRef: typeof refOf === 'function' ? refOf(rec.id) : null });
+    out.push({ title: String(rec.title || rec.id), publisher: 'IntMap', validTime: period, dateType: period ? 'valid_time' : '', label: 'GIS', supportFacts: facts,
+      graphRef: typeof refOf === 'function' ? refOf(rec.id) : null, graphVersion: typeof versionOf === 'function' ? versionOf(rec.id) : null });
   }
   return out;
 }
@@ -235,28 +250,44 @@ export function sharedEvidenceGraph(scope) {
     apply: (updates, o) => dataImpact.applyUpdates(graph, updates, o),
     execute: dataImpact.executePlan,
   };
-  return { graph, refOfDataset: (id) => (SHARED.gis ? SHARED.gis.refOf(id) : null), refresh };
+  return { graph, refOfDataset: (id) => SHARED.gis?.refOf(id) || null, versionOfDataset: (id) => SHARED.gis?.versionOf(id) || null, refresh };
 }
 
 /** datasetFactsOnPage(ids) — datasetFacts over the page's registry, with each figure's graph ref; [] when there is no registry. */
 export function datasetFactsOnPage(ids, scope) {
   const g = scope || (typeof globalThis !== 'undefined' ? globalThis : {});
   const eg = sharedEvidenceGraph(g);
-  return datasetFacts(g.IntMapData || null, Array.isArray(ids) ? ids : [], eg.refOfDataset);
+  return datasetFacts(g.IntMapData || null, Array.isArray(ids) ? ids : [], eg.refOfDataset, eg.versionOfDataset);
 }
 
 /**
- * makeTurnObserver(since, scope) → () → string[] — the lines js/atlas-goal-verify.js shows its reader beside the record
- * of operations: what the datasets created since `since` (a turn's start, ms) hold, and what stands behind each figure
- * recorded since. Facts from the registry and the graph only; empty when the turn made neither.
+ * makeTurnObserver(since, scope, turnId) → (ctx) → string[] — what the exact dataset versions created by
+ * the turn's calls hold, and what stands behind the figures explicitly recorded for this turn.
  */
-export function makeTurnObserver(since, scope) {
-  return () => {
+export function makeTurnObserver(since, scope, turnId, map) {
+  return (ctx) => {
     const g = scope || (typeof globalThis !== 'undefined' ? globalThis : {});
     const eg = sharedEvidenceGraph(g);
     const data = g.IntMapData;
-    const datasets = data && typeof data.list === 'function' ? data.list().filter((r) => (+r.createdAt || 0) >= since) : [];
-    const answerNodes = eg.graph.all().filter((n) => n.kind === 'derived' && (n.type === 'answer_number' || n.type === 'ai_inference') && (Date.parse(n.createdAt) || 0) >= since).map((n) => n.id);
-    return observationLines(assessDeliverable({ graph: eg.graph, datasets, answerNodes }));
+    const created = new Map(), touchedObjects = new Set();
+    for (const result of ctx?.results || []) {
+      if (result?.ok || result?.status === 'partial') for (const id of result.objectIds || []) touchedObjects.add(String(id));
+      for (const receipt of result?.details?.datasetsCreated || []) {
+        if (receipt?.id && receipt.version != null) created.set(String(receipt.id), receipt.version);
+      }
+    }
+    const datasets = data && typeof data.versionOf === 'function' ? data.list().filter((r) =>
+      (+r.createdAt || 0) >= since && created.has(String(r.id)) && created.get(String(r.id)) === data.versionOf(r.id)) : [];
+    const answerNodes = turnId == null ? [] : eg.graph.all().filter((n) =>
+      n.kind === 'derived' && (n.type === 'answer_number' || n.type === 'ai_inference') && n.meta?.turnId === turnId).map((n) => n.id);
+    const lines = observationLines(assessDeliverable({ graph: eg.graph, datasets, answerNodes }));
+    for (const target of map?.initial || []) lines.push('Map reference present at request time: ' + JSON.stringify(target));
+    if (touchedObjects.size && map?.turn != null) for (const row of g.IntMapObjects?.list?.() || []) {
+      const p = row.shape?.provenance;
+      if (touchedObjects.has(String(row.id)) && p?.author === 'atlas' && p.turnId === map.turn) {
+        lines.push('Atlas created and drew this object in this turn: ' + JSON.stringify(map.describe(row)));
+      }
+    }
+    return lines;
   };
 }

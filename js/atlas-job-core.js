@@ -103,11 +103,12 @@ export function resolveArgs(args, inputs, o) {
       if (!m) return v;
       const src = byFrom.get(m[1]);
       if (!src) { why = 'The argument "' + v + '" refers to task "' + m[1] + '", which is not one of its inputs (name it in "inputs").'; return v; }
-      let cur = { data: src.data, summary: src.summary };
+      let cur = { data: src.data, summary: src.summary, findings: src.findings, gaps: src.gaps, sources: src.sources, artifact: src.artifact };
       for (const k of m[2].split('.').filter(Boolean)) {
         if (cur == null || typeof cur !== 'object' || !Object.hasOwn(cur, k)) { why = 'The argument "' + v + '" leads nowhere: task "' + m[1] + '" has no "' + k + '" there.'; return v; }
         cur = cur[k];
       }
+      if (cur === undefined) { why = 'The argument "' + v + '" refers to an output the task did not return.'; return v; }
       return annotate ? annotate(cur, src, m[1]) : cur;
     }
     if (Array.isArray(v)) return v.map(walk);
@@ -217,7 +218,7 @@ export function workerSystem(persona) {
   'Write in the language the piece is written in.',
   'When you may call IntMap capabilities, put every call that does not need another call\'s answer in the SAME request: they are run together and all their answers come back in your next request. When a dependency can be named by reference, you may include both calls in the same request. Wait for a later request when you need to inspect an answer before writing the next call.',
   'You return EVIDENCE, not a conclusion: Atlas weighs what you found against what the other workers found and decides; a verdict of yours would decide for it. Quote rather than paraphrase, and report what you looked for and did not find as plainly as what you found.',
-  'Return ONE JSON object and nothing else: {"summary": string (what you did — what you looked for, where, and what came back; NOT an answer to the question), "findings": [{"claim": string (what the source states, as it states it), "source": string (the URL; the outlet or publication when there is no URL; or the id of the IntMap capability you called), "excerpt": string (the source\'s own words, verbatim, or the raw values the capability returned — the part the claim rests on), "date"?: string (the date the source gives), "place"?: string, "lat"?: number, "lon"?: number, "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "notFound": [{"looked": string (what you looked for), "where": string (the searches, sites or capabilities you looked in)}] (what you looked for and did not find), "gaps": [string] (what you could not establish, and why), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}. A finding without both "source" and "excerpt" is your own statement, and Atlas is told it carries no evidence.',
+  'Return ONE JSON object and nothing else: {"summary": string (what you did — what you looked for, where, and what came back; NOT an answer to the question), "findings": [{"claim": string (what the source states, as it states it), "source": string (the URL; the outlet or publication when there is no URL; or the id of the IntMap capability you called), "excerpt": string (the source\'s own words, verbatim, or the raw values the capability returned — the part the claim rests on), "date"?: string (the date the source gives), "place"?: string, "lat"?: number, "lon"?: number, "verdict"?: "supported"|"unsupported"|"contradicted" (ONLY when you were asked to check a claim another worker made: repeat that claim verbatim in "claim")}], "notFound": [{"looked": string (what you looked for), "where": string (the searches, sites or capabilities you looked in)}] (what you looked for and did not find), "gaps": [string] (what you could not establish, and why), "status"?: "partial" (include this when some required work remains unfinished), "facts"?: [{"subject": {"name"?: string (in the language of your source), "ids"?: {"wikidata"?: "Q…", "osm"?: "node/…"} (ONLY ids you read from a source), "ref"?: string}, "attribute": string, "value": number|string|boolean, "unit"?: string, "at"?: string (the date the value is ABOUT), "source"?: string (URL), "retrievedAt"?: string, "scope"?: "admin-area"|"metro-area"|"radius"|"grid-cell"|"point"|"facility"|"company"|"global" (what the figure is a measurement OF), "basis"?: "present-day"|"as-of-time" (the borders it was counted in), "period"?: {"from": string, "to": string} (the span a total covers), "aggregation"?: "sum"|"mean"|"median"|"min"|"max"}] (the same claims as data, one per figure or stated attribute: Atlas matches them across workers by object and attribute, so state the object by its identifiers when you have them and give the unit exactly as the source does; state scope, basis, period and aggregation ONLY when the source says them: two figures that differ are only a disagreement if they measure the same thing, and a field you leave out is reported as not stated, not as equal)}. A finding without both "source" and "excerpt" is your own statement, and Atlas is told it carries no evidence.',
 ].join('\n');
 }
 
@@ -243,34 +244,83 @@ function tableOf(data) {
   }
   return null;
 }
-export function dataManifest(id, data) {
-  const whole = JSON.stringify(data);
-  const rows = tableOf(data);
-  return { ref: '@' + id + ':data', version: digestOf(whole), chars: whole.length, count: rows?.length };
+export const jobDataVersion = (value) => digestOf(stable(JSON.parse(JSON.stringify(value))));
+
+export function dataManifest(id, value, { taskId = id, path = [], sources = [], provenance, origin } = {}) {
+  const whole = JSON.stringify(value);
+  const rows = tableOf(value);
+  const collection = value?.type === 'FeatureCollection' && Array.isArray(value.features) ? value : null;
+  return {
+    id, kind: collection ? 'geojson' : 'json', ref: '@' + taskId + ':data' + path.map((key) => '.' + key).join('.'), path,
+    version: jobDataVersion(value), chars: whole.length,
+    count: rows?.length ?? (value == null ? 0 : 1),
+    geometryTypes: collection ? jobGeometryTypes(collection.features) : [],
+    sources: [...new Set(sources.concat(provenance || []).map((item) => typeof item === 'string' ? item : item?.url).filter(Boolean))],
+    provenance, origin,
+  };
+}
+
+/* A worker can publish the exact value at any data path of a successful local call. */
+export function selectJobData(output, materials) {
+  const match = typeof output === 'string' && REF_RE.exec(output);
+  if (!match || !/^\d+$/.test(match[1]) || (match[2] !== 'data' && !match[2].startsWith('data.'))) {
+    return { ok: false, why: 'Select a successful call data reference, such as "@2:data.result".' };
+  }
+  const resolved = resolveArgs({ output }, materials);
+  if (!resolved.ok) return resolved;
+  return { ok: true, source: materials.findLast((item) => item.from === match[1]), path: match[2].split('.').slice(1), value: resolved.args.output };
+}
+
+export function atJobDataPath(path, value) {
+  return path.reduceRight((data, key) => ({ [key]: data }), value);
 }
 /* The published output may follow a worker's private transcript parts in the same task. Old outputs start at zero. */
-export async function readJobArtifactFeatures(db, table, jobId, taskId, output) {
+async function artifactParts(db, table, jobId, taskId, output) {
   const first = Number(output.first) || 0;
   let query = db.from(table).select('part,body').eq('job_id', jobId).eq('task_id', taskId);
   if (output.first != null) query = query.gte('part', first).lt('part', first + output.parts);
   const { data, error } = await query.order('part');
   const have = Array.isArray(data) ? data.length : 0;
   const unavailable = { ok: false, code: 'output_incomplete', have, parts: output.parts };
-  if (error || have !== output.parts) return unavailable;
-  const features = [];
+  if (error || have !== output.parts) return { unavailable };
   for (const [i, part] of data.entries()) {
-    if (part.part !== first + i || !Array.isArray(part.body?.features)) return unavailable;
-    if (output.first != null && part.body.version !== output.version) return unavailable;
-    for (const feature of part.body.features) features.push(feature);
+    if (part.part !== first + i || !part.body || (output.first != null && part.body.version !== output.version)) return { unavailable };
   }
-  return features.length === output.count ? { ok: true, features } : unavailable;
+  return { unavailable, data };
+}
+
+export async function readJobArtifactFeatures(db, table, jobId, taskId, output) {
+  const { data, unavailable } = await artifactParts(db, table, jobId, taskId, output);
+  if (!data || data.some(({ body }) => !Array.isArray(body.features))) return unavailable;
+  const features = data.flatMap(({ body }) => body.features);
+  if (features.length !== output.count) return unavailable;
+  if (output.ref && digestOf(stable({ ...output.header, type: 'FeatureCollection', features })) !== output.version) return unavailable;
+  return { ok: true, features };
+}
+
+export async function readJobArtifactValue(db, table, jobId, taskId, { value, output }) {
+  if (output.stored !== 'artifact') return value !== undefined && digestOf(stable(value)) === output.version
+    ? { ok: true, value } : { ok: false, code: 'output_incomplete' };
+  const { data, unavailable } = await artifactParts(db, table, jobId, taskId, output);
+  if (!data) return unavailable;
+  try {
+    const parts = data.map(({ body }) => JSON.parse(body.text));
+    if (parts.some((part) => typeof part !== 'string')) return unavailable;
+    const whole = parts.join('');
+    if (whole.length !== output.chars) return unavailable;
+    const value = JSON.parse(whole);
+    return digestOf(stable(value)) === output.version ? { ok: true, value } : unavailable;
+  } catch (_) {
+    return unavailable;
+  }
 }
 export function inputView(i, o) {
-  const whole = JSON.stringify({ summary: i.summary, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data });
+  const whole = JSON.stringify({ summary: i.summary, artifact: i.artifact, findings: i.findings, gaps: i.gaps, sources: i.sources, data: i.data });
   if (whole.length <= INPUT_SHOW_CHARS) return { text: whole, ref: '', whole: null };
   const ref = 'input:' + String(i.from);
   const rows = tableOf(i.data);
-  const manifest = { task: String(i.from), version: digestOf(whole), chars: whole.length, findings: Array.isArray(i.findings) ? i.findings.length : 0,
+  const artifact = i.artifact ? { id: i.artifact.id, ref: i.artifact.ref, version: i.artifact.version, count: i.artifact.count, geometryTypes: i.artifact.geometryTypes } : undefined;
+  const manifest = { task: String(i.from), artifact, version: digestOf(whole), chars: whole.length, findings: Array.isArray(i.findings) ? i.findings.length : 0,
     rows: rows ? rows.length : undefined, columns: (rows && rows[0] && typeof rows[0] === 'object') ? Object.keys(rows[0]).slice(0, 40) : undefined };
   const room = INPUT_SHOW_CHARS - 600;
   const tail = (o && o.read)
@@ -317,7 +367,7 @@ export function shapeOf(data, normalizeFacts) {
     ? 'None of this worker\'s ' + findings.length + ' finding(s) carries a source together with the excerpt or raw values it rests on: what it says is its own statement, not evidence.'
     : 'This worker returned no finding with a source and an excerpt: its summary is its own statement, not evidence.');
   else if (evidence.unsourced) gaps.push(evidence.unsourced + ' of this worker\'s findings carry no source with an excerpt: those are its own statements, not evidence.');
-  return { ok: true, out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { notFound, evidence, gaps }) };
+  return { ok: true, partial: data.status === 'partial', out: Object.assign({ summary: s(data.summary, 4000), findings }, typeof normalizeFacts === 'function' ? { facts: normalizeFacts(data.facts) } : null, { notFound, evidence, gaps }) };
 }
 
 /* findingBasis(f) — THE ONE JUDGEMENT of whether a finding carries evidence, for the worker's own tally (shapeOf below) and for the turn's measurements

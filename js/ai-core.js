@@ -345,7 +345,12 @@ export function aiCore(HOST){
     return s;
   }
   async function aiCallServerFull(prompt, system, imgs, opts){
-    const callId=(opts&&opts.callId)?String(opts.callId):aiNewCallId();
+    const callId=opts?.callId?String(opts.callId):aiNewCallId();
+    if(!opts?.turnId) return aiCallServerRequest(prompt, system, imgs, opts, callId, false);
+    const { observeAtlasProviderCall } = await import('./atlas-run-ledger.js');
+    return observeAtlasProviderCall(opts, callId, (tracked) => aiCallServerRequest(prompt, system, imgs, opts, callId, tracked));
+  }
+  async function aiCallServerRequest(prompt, system, imgs, opts, callId, tracked){
     const cfg=window.INTMAP_AI_PROXY||{};
     /* Attach the Supabase session JWT + anon apikey so the function can identify the user + enforce quota. */
     const headers=await aiAuthHeaders();
@@ -393,6 +398,7 @@ export function aiCore(HOST){
          the body (so an over-quota caller's body is never parsed). ⚠ AND IT IS NOT TRUSTED: the
          server binds it to the account, caps how many calls one key may carry and expires it. */
       if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
+      if(tracked) headers['x-intmap-call']=callId;
       /* (atlas-delegation) a worker's call names the reader turn that opened it — js/atlas-delegate.js; ai-proxy decides how it is paid for */
       if(opts.parentTurnId) headers['x-intmap-parent-turn']=String(opts.parentTurnId).slice(0,120);
       /* (model-options) the model Atlas asked THIS worker to run on; ai-proxy honours it only when it is one of the offered, priced models */

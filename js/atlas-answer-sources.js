@@ -113,8 +113,13 @@ export function makeAtlasAnswerSources(deps) {
   function collect(results, extra) {
     const items = [], seen = Object.create(null);
     const add = (it) => {
-      const k = it.kind + '|' + say(it.what) + '|' + say(it.of) + '|' + it.source;
-      if (seen[k]) { if (it.values && seen[k].values) seen[k].values = seen[k].values.concat(it.values); return; }
+      const k = JSON.stringify([it.kind, say(it.what), say(it.of), it.source, it.unit, it.url, it.date, it.version]);
+      const old = seen[k];
+      if (old) {
+        if (it.values) old.values.push(...it.values);
+        if (it.facts) old.facts.push(...it.facts);
+        return;
+      }
       const x = Object.assign({}, it, { n: items.length + 1 }); seen[k] = x; items.push(x);
     };
     (results || []).forEach((r) => {
@@ -125,7 +130,8 @@ export function makeAtlasAnswerSources(deps) {
         if (!p || SOURCE_KINDS.indexOf(p.kind) < 0 || !source) return;   /* no author, no item */
         add({ kind: p.kind, what: p.what, of: p.of, unit: p.unit || '', source, licence: p.licence || '', url: p.url || '',
           origin: p.origin || '', values: Array.isArray(p.values) ? p.values.filter((v) => typeof v === 'number' && isFinite(v)) : [],
-          date: p.date || '', at: p.at || null });
+          facts: Array.isArray(p.facts) ? p.facts.filter((f) => f && Number.isFinite(f.value)) : [],
+          date: p.date || '', version: p.version || '', at: p.at || null });
       });
       /* (atlas-float-typography) A FIGURE WHOSE TOOL STATED NO BASIS IS NOT LISTED. It used to get a row 「Drawn by Atlas — no data source was recorded」, one per
          shape («説明の図 1»): a source list line that names no source tells the reader nothing and is not a source. A tool that DOES state one
@@ -150,43 +156,105 @@ export function makeAtlasAnswerSources(deps) {
 
   /* ── marking the prose ────────────────────────────────────────────────────────────────────────── */
   const PHRASE_END = /[\s、。，．,.;；:：!?！？()（）「」『』\[\]]/;
+  const INLINE_STYLE = /^(a|b|code|em|i|mark|s|small|span|strong|sub|sup|u|wbr)$/i;
   const SKIP = { a: 1, code: 1, pre: 1, sup: 1, script: 1, style: 1, textarea: 1, button: 1 };
+  const SENTENCE_END = /[。；;!?！？\n]|\.(?!\d)/g;
+  const CLAUSE_END = /[、。，；;!?！？\n]|,(?!\d)|\.(?!\d)/g;
+  const escapePattern = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const normalized = (s) => String(s || '').normalize('NFKC').toLowerCase();
+  function mentions(text, label) {
+    const name = normalized(label).trim();
+    if (!name) return false;
+    const left = /^[a-z0-9]/i.test(name) ? '(?<![a-z0-9])' : '';
+    const right = /[a-z0-9]$/i.test(name) ? '(?![a-z0-9])' : '';
+    return new RegExp(left + escapePattern(name) + right).test(normalized(text));
+  }
+  function quantityCitation(text, token, items, left) {
+    const before = text.slice(0, token.index);
+    const lastBreak = [...before.matchAll(CLAUSE_END)].at(-1);
+    const clauseStart = lastBreak ? lastBreak.index + 1 : 0;
+    const beforeMeasure = text.slice(Math.max(clauseStart, left), token.index);
+    const after = text.slice(token.index + token.length);
+    const context = text.slice(clauseStart, token.index + token.length) + after.split(CLAUSE_END, 1)[0];
+    const sentence = before.split(SENTENCE_END).at(-1) + token.raw + after.split(SENTENCE_END, 1)[0];
+    const measures = items.filter((item) => mentions(beforeMeasure, say(item.what)));
+    const places = new Set(measures.flatMap((item) => (item.facts || []).map((fact) => fact.geography)).filter(Boolean));
+    const namedPlaces = new Set([...places].filter((place) => mentions(context, place)));
+    if (lastBreak && /[,、]/.test(lastBreak[0])) {
+      const surrounding = normalized(text.slice(0, clauseStart) + context);
+      const boundary = normalized(before.slice(0, clauseStart)).length;
+      for (const place of places) {
+        const name = normalized(place).trim();
+        const start = surrounding.lastIndexOf(name, boundary - 1);
+        // A comma inside the recorded name is not the boundary of the claim.
+        if (start >= 0 && start + name.length > boundary &&
+            mentions(surrounding.slice(Math.max(0, start - 1), start + name.length + 1), place)) namedPlaces.add(place);
+      }
+    }
+    const periods = new Set(measures.flatMap((item) => [item.date, ...(item.facts || []).map((fact) => fact.period)]).filter((period) => mentions(sentence, period)));
+    const matchesPeriod = (period) => !period || mentions(context, period) || (periods.size === 1 && periods.has(period));
+    const matches = [];
+    for (const item of measures) {
+      const unit = say(item.unit).trim();
+      const tail = after.trimStart();
+      if (unit && !(normalized(tail).startsWith(normalized(unit)) &&
+          !/[a-z\d²³]/i.test(tail.slice(unit.length, unit.length + 1)))) continue;
+      const equivalent = item.facts?.length ? item.facts.filter((fact) => sameAt(token, fact.value)) : null;
+      if (equivalent) {
+        const matchingFacts = equivalent.filter((fact) => matchesPeriod(fact.period || item.date) &&
+          (!fact.geography || namedPlaces.has(fact.geography)));
+        if (new Set(matchingFacts.map((fact) => fact.subjectId || fact.geography || '')).size !== 1) continue;
+      } else if (!matchesPeriod(item.date) || !item.values.some((value) => sameAt(token, value))) continue;
+      matches.push({ item, end: token.index + token.length + (unit ? after.length - tail.length + unit.length : 0) });
+    }
+    return matches.length === 1 ? matches[0] : null;
+  }
   /**
-   * linkNumbers(html, items, id) → html with [n] after each number that equals a value of a `number` item.
+   * linkNumbers(html, items, id) adds a mark when the quantity has a unique matching source and named measure.
    * Text inside links, code and existing superscripts is left alone; entities are never read as digits.
    */
   function linkNumbers(html, items, id) {
     const nums = (items || []).filter((i) => i.kind === 'number' && i.values && i.values.length);
     if (!nums.length) return html;
     const parts = String(html || '').split(/(<[^>]*>)/);
-    let skip = 0;
+    let skip = 0, contextBefore = '';
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i];
       if (!p) continue;
       if (p[0] === '<') {
         const m = /^<\s*(\/)?\s*([a-zA-Z0-9]+)/.exec(p);
         if (m && SKIP[m[2].toLowerCase()] && !/\/\s*>$/.test(p)) skip = Math.max(0, skip + (m[1] ? -1 : 1));
+        if (!m || !INLINE_STYLE.test(m[2])) contextBefore = '';
         continue;
       }
       if (skip) continue;
       /* split out entities so `&#39;` is never read as 39 */
       parts[i] = p.split(/(&[#a-zA-Z0-9]+;)/).map((seg) => {
-        if (!seg || seg[0] === '&') return seg;
-        const toks = numbersIn(seg).filter((t) => t.digits >= MIN_DIGITS);
-        if (!toks.length) return seg;
+        if (!seg) return seg;
+        if (seg[0] === '&') {
+          contextBefore += ' ';
+          return seg;
+        }
+        const text = contextBefore + seg, offset = contextBefore.length;
+        contextBefore = text;
+        const toks = numbersIn(text).filter((t) => t.digits >= MIN_DIGITS);
+        if (!toks.length || toks.at(-1).index < offset) return seg;
         /* ⚠ (atlas-result-delivery) THE MARK GOES AFTER THE PHRASE THE NUMBER BELONGS TO, NOT AFTER THE NUMBER. A Japanese quantity is its unit
            («40か国», «11月11日», «1,463,865,525人», «40位»), so a mark written at the digits' last character split the word: 「40[1]か国」. The
            number says which values to cite; the mark is written where the phrase ends (the next space, punctuation or bracket, or the end of
            the text run), once per source for all the numbers of that phrase — «2026年11月11日» cites its source once, not three times. */
         const ends = [];
-        toks.forEach((t) => {
-          const hit = nums.filter((it) => it.values.some((v) => sameAt(t, v)));
-          if (!hit.length) return;
-          let e = t.index + t.length;
+        toks.forEach((t, i) => {
+          if (t.index < offset) return;
+          const previous = toks.slice(0, i).findLast((prior) => nums.some((item) => item.values.some((value) => sameAt(prior, value))));
+          const citation = quantityCitation(text, t, nums, previous ? previous.index + previous.length : 0);
+          if (!citation) return;
+          let e = citation.end - offset;
           while (e < seg.length && !PHRASE_END.test(seg[e])) e++;
           const at = ends.find((x) => x.e === e);
-          if (at) hit.forEach((it) => { if (at.hit.indexOf(it) < 0) at.hit.push(it); });
-          else ends.push({ e: e, hit: hit.slice() });
+          if (at) {
+            if (!at.hit.includes(citation.item)) at.hit.push(citation.item);
+          } else ends.push({ e, hit: [citation.item] });
         });
         if (!ends.length) return seg;
         let out = '', last = 0;

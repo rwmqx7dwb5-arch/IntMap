@@ -48,7 +48,7 @@ export function makeAtlasState(HOST) {
     /* The sections a full snapshot always has. A section with no provider is `null`, which is a
        different statement from `{}` — "nobody owns this" vs "owned, and currently empty". */
     var SECTIONS = ['camera', 'selection', 'pinnedPoint', 'deviceLocation', 'viewport', 'time',
-      'activeLayers', 'panels', 'objects', 'routing', 'simulations', 'comparison', 'settings',
+      'activeLayers', 'panels', 'objects', 'datasets', 'routing', 'simulations', 'comparison', 'settings',
       'pendingOperations', 'capabilityAvailability',
       /* (#R397) subsystems Atlas could already OPERATE and could not SEE (a third, the area
          monitors, was retired with its module) */
@@ -232,7 +232,11 @@ export function makeAtlasState(HOST) {
         var OB = GLOBAL('IntMapObjects');
         if (!OB || typeof OB.list !== 'function') return null;
         var list = OB.list() || [];
-        return { n: list.length, items: list.map(function (o) {
+        var selected = typeof OB.selection === 'function' ? OB.selection() : null;
+        for (var o of list) {
+          if (o.selectedAt > (selected?.at ?? 0)) selected = { id: String(o.id), at: o.selectedAt };
+        }
+        return { n: list.length, selected, items: list.map(function (o) {
           /* what Atlas can read of an object is what it can change: look (colour · width · opacity), what it is (geom, area) and which of those the object takes */
           var it = { id: String(o.id), kind: o.kind, name: String(o.name == null ? '' : o.name) };
           if (o.color) it.color = o.color;
@@ -240,10 +244,17 @@ export function makeAtlasState(HOST) {
           if (o.opacity != null) it.opacity = o.opacity;
           if (o.geom) it.geom = o.geom;
           if (o.areaKm2 != null) it.areaKm2 = o.areaKm2;
+          if (o.edited) it.edited = o.edited;
           if (o.shape) it.shape = o.shape;   /* (atlas-completion-verdict) where it is, so «the same object, restyled» can be told from «another object» */
           if (o.hidden) it.hidden = true;
           if (o.editable && o.editable.length) it.editable = o.editable;
           return it; }) };
+      });
+
+      reg('datasets', function () {
+        var data = GLOBAL('IntMapData'), gis = GLOBAL('IntMapGis');
+        if (!data || !gis || !gis.atlas || typeof gis.atlas.describeDataset !== 'function') return null;
+        return data.list().map(function (ds) { return gis.atlas.describeDataset(ds.id); }).filter(Boolean);
       });
 
       /* ⚠ THESE THREE ARE THREE QUESTIONS AND MUST NEVER BE COLLAPSED INTO ONE (#R299): `hasRoute` is
@@ -676,6 +687,63 @@ export function makeAtlasState(HOST) {
        falsehood in a new shape. A module that begins asserting presence under a THIRD name belongs
        here, and tests/atlas-state-checks.test.mjs (#R534) reads the provider to make that loud instead of silent. */
     var SIM_PRESENT = ['open', 'painted'];
+    function focusObjects(ob) {
+      var rows = (ob && ob.items) || [];
+      var selection = ob && ob.selected;
+      var selected = selection && rows.find(function (o) { return o.id === selection.id; });
+      var touchedAt = function (o) { return o.edited?.at ?? o.shape?.provenance?.createdAt ?? 0; };
+      var recent = rows.reduce(function (latest, o) {
+        return touchedAt(o) > (latest ? touchedAt(latest) : 0) ? o : latest;
+      }, null);
+      return [...new Set([selected, recent].filter(Boolean))].map(function (o) {
+        return API.describeMapObject(o, o === selected ? selection.at : undefined);
+      });
+    }
+
+    API.describeMapObject = function (o, selectedAt) {
+      var shape = o.shape || {}, p = shape.provenance || {};
+      var iso = function (at) { return Number.isFinite(at) && Math.abs(at) <= 8.64e15 ? new Date(at).toISOString() : undefined; };
+      return {
+        id: o.id, name: o.name, kind: o.geom || o.kind, selectedAt: iso(selectedAt),
+        endpoints: shape.endpoints, bounds: shape.bounds || shape.bbox, areaKm2: o.areaKm2, color: o.color,
+        createdBy: p.author || 'unknown', createdAt: iso(p.createdAt), turnId: p.turnId ?? undefined,
+        lastEditedBy: o.edited?.author, lastEditedAt: iso(o.edited?.at),
+        source: p.source, sourceId: p.sourceId, sourceVersion: p.sourceVersion, transformation: p.transformation,
+      };
+    };
+    API.focusObjects = focusObjects;
+
+    function promptDatasets(datasets, focus) {
+      var box = function (b) { return Array.isArray(b) && b.length === 4 && b.every(Number.isFinite); };
+      var spans = function (b) { return b[0] <= b[2] ? [[b[0], b[2]]] : [[b[0], 180], [-180, b[2]]]; };
+      var overlaps = function (b) {
+        return box(b) && box(focus) && b[1] <= focus[3] && focus[1] <= b[3] &&
+          spans(b).some(function (a) { return spans(focus).some(function (z) { return a[0] <= z[1] && z[0] <= a[1]; }); });
+      };
+      var ranked = datasets.slice().sort(function (a, b) { return Number(overlaps(b.bounds)) - Number(overlaps(a.bounds)); });
+      var shown = ranked.slice(0, 12);
+      var rows = shown.map(function (d) {
+        var fields = d.fields || [], bands = d.bands || [];
+        var time = d.time;
+        if (time?.kind === 'constant') {
+          var isoDate = function (value) { return Number.isFinite(value) && Math.abs(value) <= 8.64e15 ? new Date(value).toISOString() : value; };
+          time = { ...time, start: isoDate(time.start), end: isoDate(time.end) };
+        }
+        return {
+          id: d.id, title: d.title, kind: d.kind, count: d.count, bounds: d.bounds || undefined,
+          boundsBasis: d.boundsBasis || undefined, time, timeRefused: d.timeRefused || undefined,
+          bands: bands.length ? bands.slice(0, 8).map(function (b) { return { name: b.name, unit: b.unit, kind: b.kind }; }) : undefined,
+          additionalBands: bands.length > 8 ? bands.length - 8 : undefined,
+          fields: fields.slice(0, 8).map(function (f) { return { name: f.name, type: f.type, unit: f.unit }; }),
+          additionalFields: fields.length > 8 ? fields.length - 8 : undefined,
+          coverage: d.coverage && { completeness: d.coverage.completeness, reason: d.coverage.reason },
+          source: d.source || undefined, stale: d.stale || undefined,
+        };
+      });
+      return 'GIS datasets registered in this session (' + datasets.length + '): ' + JSON.stringify(rows) +
+        (ranked.length > shown.length ? ' — ' + (ranked.length - shown.length) + ' more in the GIS catalogue.' : '');
+    }
+
     API.renderPrompt = function (snap, opts) {
       snap = snap || {};
       var lim = Object.assign({}, RENDER_LIMITS, opts || {});
@@ -822,6 +890,12 @@ export function makeAtlasState(HOST) {
         '. "この比較 / the comparison / それ" refers to THIS (the user may have configured it by hand).');
 
       var ob = snap.objects;
+      var focus = focusObjects(ob);
+      if (focus.length) lines.push('Selected or recently changed map objects (longitude, latitude; bounds west, south, east, north): ' + JSON.stringify(focus));
+      if (snap.datasets?.length) {
+        var v = snap.viewport;
+        lines.push(promptDatasets(snap.datasets, focus[0]?.bounds || (v && [v.west, v.south, v.east, v.north])));
+      }
       if (ob && ob.n) lines.push('Map objects (' + ob.n + ') — target them with the "object" action by id: ' +
         (ob.items || []).map(function (o) {
           return o.kind + ' id=' + o.id + ' "' + str(o.name) + '"'; }).join('; ') + '.');

@@ -15,7 +15,8 @@ export const ATLAS_VERIFY_SCHEMA = {
       type: "ARRAY",
       items: {
         type: "OBJECT",
-        properties: { need: { type: "STRING" }, how: { type: "STRING" } },
+        properties: { need: { type: "STRING" }, how: { type: "STRING" }, prev: { type: "STRING" },
+          supersedes: { type: "ARRAY", items: { type: "STRING" } } },
         required: ["need"],
       },
     },

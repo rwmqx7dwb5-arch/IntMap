@@ -80,7 +80,8 @@ export function myMap(HOST) {
 
   /* ══ WHAT IS ON THE MAP ════════════════════════════════════════════════════════════════════════
      `shown`: null (nothing), 'own' (the current map), 'received' (a map a link carried, read-only). */
-  let shown = null, received = null, sel = null;
+  let shown = null, received = null, sel = null, selectedAt = 0;
+  function selectFeature(id) { sel = id; selectedAt = Date.now(); }
   const shownDoc = () => shown === 'own' ? cur(false) : (shown === 'received' && received ? received.doc : null);
 
   /** what the app's measure tools say about one feature (the same functions, so one answer) */
@@ -159,8 +160,8 @@ export function myMap(HOST) {
     const feats = [], lbls = [];
     if (d) d.features.forEach((f) => {
       const g = D.geometryOf(f, G()); if (!g) return;
-      feats.push({ type: 'Feature', geometry: g, properties: { fid: f.id, color: f.color, kind: f.kind, sel: f.id === sel ? 1 : 0 } });
-      if (f.name) lbls.push({ type: 'Feature', geometry: { type: 'Point', coordinates: D.labelPoint(f, G()) }, properties: { fid: f.id, name: f.name, kind: f.kind } });
+      feats.push({ type: 'Feature', geometry: g, properties: { id: 'mm_' + f.id, fid: f.id, color: f.color, kind: f.kind, sel: f.id === sel ? 1 : 0 } });
+      if (f.name) lbls.push({ type: 'Feature', geometry: { type: 'Point', coordinates: D.labelPoint(f, G()) }, properties: { id: 'mm_' + f.id, fid: f.id, name: f.name, kind: f.kind } });
     });
     try { GE().layers.setSourceData(SRC, fc(feats)); GE().layers.setSourceData(LBL, fc(lbls)); } catch (_) { }
   }
@@ -249,7 +250,7 @@ export function myMap(HOST) {
     if (pts.length < D.KINDS[kind].min) { say(L('Add at least ' + D.KINDS[kind].min + ' points first.', '先に ' + D.KINDS[kind].min + ' 点以上置いてください。')); return { ok: false, reason: 'too-few-vertices' }; }
     stopDraw(false);
     const r = add({ kind, coords: pts });
-    if (r.ok) { sel = r.id; paint(); render(); focusFeature(r.id, true); }
+    if (r.ok) { selectFeature(r.id); paint(); render(); focusFeature(r.id, true); }
     else render();
     return r;
   }
@@ -260,20 +261,24 @@ export function myMap(HOST) {
     save(); paint(); if (shown === 'own') { try { MapState.changed('mymap'); } catch (_) { } }
     try { const O = window.IntMapObjects; if (O && O.refresh) O.refresh(); } catch (_) { }
   }
-  function add(o) {
+  function add(o, actor = { author: 'user' }) {
     if (shown === 'received') return { ok: false, reason: 'received' };
     const m = D.makeFeature(o || {}); if (!m.ok) return { ok: false, reason: m.why, detail: m.detail };
     if (m.feature.color === D.PALETTE[0] && !(o && o.color)) m.feature.color = D.PALETTE[{ pin: 0, line: 4, area: 3 }[m.feature.kind]];
+    m.feature.provenance = { ...actor, createdAt: Date.now(), transformation: actor.author === 'user' ? 'manual_drawing' : undefined };
     const d = cur(true); d.features.push(m.feature); show(); changed(); render();
     return { ok: true, id: m.feature.id, count: d.features.length };
   }
-  function edit(id, o) {
+  function edit(id, o, author = 'user') {
     const d = cur(false), f = d && d.features.find((x) => x.id === id); if (!f) return { ok: false, reason: 'no-feature' };
     o = o || {};
+    let coords;
+    if (o.coords != null) { const c = D.cleanCoords(f.kind, o.coords); if (!c.ok) return { ok: false, reason: c.why, detail: c.detail }; coords = c.coords; }
     if (o.name != null) f.name = MapState.captionText(o.name, MapState.TITLE_MAX);
     if (o.note != null) f.note = MapState.captionText(o.note, MapState.NOTE_MAX);
     if (o.color != null) f.color = D.colorOf(o.color);
-    if (o.coords != null) { const c = D.cleanCoords(f.kind, o.coords); if (!c.ok) return { ok: false, reason: c.why, detail: c.detail }; f.coords = c.coords; }
+    if (coords) f.coords = coords;
+    if (coords || o.name != null || o.note != null || o.color != null) f.edited = { author, at: Date.now() };
     changed();
     return { ok: true, id };
   }
@@ -430,7 +435,7 @@ export function myMap(HOST) {
     const f0 = e && e.features && e.features[0]; const fid = f0 && f0.properties && f0.properties.fid; if (!fid) return;
     const d = shownDoc(), f = d && d.features.find((x) => x.id === fid); if (!f) return;
     try { GE().events.claimClick(e); } catch (_) { }
-    sel = fid; paint(); if (panel) { render(); focusFeature(fid, false); }
+    selectFeature(fid); paint(); if (panel) { render(); focusFeature(fid, false); }
     try { if (popup) popup.remove(); } catch (_) { }
     style();   /* the card's own rules (.mm-pop*) — a restored drawing is pressed on the map before the panel has ever opened (wave2-prod-fixes) */
     const own = shown === 'own';
@@ -606,7 +611,7 @@ export function myMap(HOST) {
   }
   function zoomTo(fid) {
     const d = shownDoc(), f = d && d.features.find((x) => x.id === fid); if (!f) return false;
-    sel = fid; paint();
+    selectFeature(fid); paint();
     try {
       const E = GE();
       if (f.kind === 'pin') E.camera.flyTo({ center: f.coords[0], zoom: Math.max(E.camera.getZoom(), 12), duration: 800 });
@@ -714,7 +719,10 @@ export function myMap(HOST) {
     if (shown !== 'own') return [];
     const d = cur(false); if (!d) return [];
     return d.features.map((f) => ({ id: 'mm_' + f.id, kind: 'mymap', dot: f.color, color: f.color, name: f.name || kindName(f.kind),
-      focus: () => zoomTo(f.id), rename: (v) => { edit(f.id, { name: v }); render(); }, setColor: (c) => { edit(f.id, { color: c }); render(); }, remove: () => remove(f.id) }));
+      geom: f.kind === 'pin' ? 'point' : f.kind, geo: () => D.geometryOf(f, G()), area: () => measure(f).areaKm2,
+      selectedAt: f.id === sel ? selectedAt : undefined, featureIds: true, provenance: f.provenance, edited: f.edited,
+      focus: () => zoomTo(f.id), rename: (v, author) => { edit(f.id, { name: v }, author); render(); },
+      setColor: (c, author) => { edit(f.id, { color: c }, author); render(); }, remove: () => remove(f.id) }));
   }
 
   return {

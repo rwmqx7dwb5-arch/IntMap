@@ -223,6 +223,12 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
   name (`atlas-eval-report`), so this artifact cannot make a run that measured nothing live look «measured».
   The status page shows its counts (`atlasEval.offline` in `data/service-status.json`).
 
+### Atlas durable job continuation
+
+Run `node scripts/atlas-job-continuation-smoke.mjs` from an authorized environment to check the deployed runner without a model request. The probe uses the normal create, claim, continuation and artifact read paths. Its first slice stores a small deterministic collection in parts. A later lease reads those parts and filters the collection. The receipt includes the actual slice holders, both output versions and feature counts, the geometry comparison, and the recorded model calls and cost.
+
+The probe is available only to the Supabase user configured as `ATLAS_JOBS_PROBE_USER_ID` and also requires the current job tick secret. Supply `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ATLAS_JOBS_PROBE_ACCESS_TOKEN`, and `ATLAS_JOBS_SECRET` through the process environment. Use the dedicated test account. The command prints the outcome and the job ID, and normal account access rules apply to the retained job. A normal post-deploy page smoke checks the public entry point separately.
+
 ## 1e. The upstreams the reader's browser talks to, probed nightly
 
 §1 watches IntMap's own site and §1c its own relays. **Nothing watched the third-party hosts the

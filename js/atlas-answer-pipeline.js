@@ -108,7 +108,7 @@ export function makeAtlasAnswerPipeline() {
     (Array.isArray(opts.webSources) ? opts.webSources : []).forEach((w) => {
       if (!w || !w.url) return;
       registry.add({ origin: 'client_source', sourceType: 'secondary', originalUrl: String(w.url), title: String(w.title || ''),
-        publisher: String(w.publisher || ''), label: String(w.label || ''), retrievedAt: String(w.retrievedAt || opts.retrievedAt || ''), dateType: 'retrieval_time' });
+        publisher: String(w.publisher || ''), label: String(w.label || ''), sourceVersion: w.sourceVersion, retrievedAt: String(w.retrievedAt || opts.retrievedAt || ''), dateType: 'retrieval_time' });
     });
     (opts.appFacts || []).forEach((f) => registry.addAppData(f));
     /* ⚠ (#732) `dataBlock` MAY BE A LIST OF PARTS. A string part is prompt text as before; a part
@@ -202,7 +202,7 @@ export function makeAtlasAnswerPipeline() {
        by IntMap or by this call's search, with its id and retrieval time — so the caller can hand it to Atlas
        and to the next call of the turn (opts.webSources) instead of it being forgotten with this registry */
     const retrieved = registry.all().filter((r) => r.finalUrl).map((r) => ({
-      id: r.id, url: r.finalUrl, title: r.title, publisher: r.publisher, origin: r.origin, retrievedAt: r.retrievedAt }));
+      id: r.id, url: r.finalUrl, title: r.title, publisher: r.publisher, origin: r.origin, retrievedAt: r.retrievedAt, sourceVersion: r.sourceVersion }));
     return { env, registry, audit, trace, webUsed: ctx.webUsed, web, finish, retrieved };
   }
 

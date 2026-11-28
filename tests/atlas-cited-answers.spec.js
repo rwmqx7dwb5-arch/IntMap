@@ -28,10 +28,17 @@ const FAKE_SESSION = {
 const INVENTED = '4,321';   /* a number no tool returns: it must stay unmarked */
 let page, diag, turnBodies, echoed;
 
-/* the value a model would repeat: the first four-digit-or-longer figure in what the query tool handed back */
+/* Read the first elevation stated by the query. Coordinates, timestamps and other calls are not evidence for this figure. */
 function valueFrom(body) {
-  const outs = (Array.isArray(body.input) ? body.input : []).filter((it) => it && it.type === 'function_call_output').map((it) => String(it.output || ''));
-  for (const o of outs) { const m = /"(?:observed|facts|text|summary)"[\s\S]*?(\d{1},?\d{3})/.exec(o) || /(\d,\d{3}|\d{4})\s*m\b/.exec(o); if (m) return m[1]; }
+  const query = body.input?.find((item) => item.type === 'function_call_output' && item.call_id === 'c1_0');
+  if (!query) return null;
+  const text = String(query.output || '');
+  try {
+    const result = JSON.parse(text.split('\n').find((line) => line.startsWith('{')) || '');
+    const column = result.details?.provenance?.find((p) => p.kind === 'number' && p.unit === 'm');
+    const fact = column?.facts?.[0];
+    if (fact?.geography && Number.isFinite(fact.value)) return { name: fact.geography, value: fact.value.toLocaleString('en-US') };
+  } catch (_) { /* a different result does not identify the observed volcano */ }
   return null;
 }
 
@@ -51,9 +58,9 @@ test.beforeAll(async ({ browser }) => {
       const n = turnBodies.length;
       let r;
       if (n === 1) r = { turn: 'continuing', final_text: '調べます。', calls: [
-        { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 5 } },
+        { name: 'query_data', arguments: { from: 'volcanoes', where: [{ col: 'elevM', op: '>=', value: 6000 }], show: ['elevM'], order: { col: 'elevM', dir: 'desc' }, limit: 1 } },
         { name: 'set_time', arguments: { year: 1900 } }] };
-      else { echoed = valueFrom(body); r = { turn: 'final', final_text: '最も高い火山の標高は ' + (echoed || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
+      else { echoed = valueFrom(body) || echoed; r = { turn: 'final', final_text: (echoed?.name || '?') + ' の標高は ' + (echoed?.value || '?') + ' m です。参考までに ' + INVENTED + ' という数もあります。 ([apnews.com](https://apnews.com/article/a1))' }; }
       text = JSON.stringify({ turn: r.turn, final_text: r.final_text });
       extra = { citations: [{ url: 'https://apnews.com/article/a1', title: 'Ceasefire talks continue' }], output: (r.calls || []).map((c, i) => ({ type: 'function_call', call_id: 'c' + n + '_' + i, name: c.name, arguments: JSON.stringify(c.arguments) })), meta: { protocol: 2 } };
     }

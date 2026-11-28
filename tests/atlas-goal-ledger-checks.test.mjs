@@ -22,7 +22,7 @@ test('goal-ledger: work done after a finding is read again; unchanged record is 
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: USER,
     verify: async (c) => {
       seen.push({ round: c.round, prev: c.previous });
-      return seen.length === 1 ? { met: [{ need: '10 ports', how: 'listed' }], unmet: [{ need: '残り10港', why: 'only 10 of 20' }] } : { unmet: [] };
+      return seen.length === 1 ? { met: [{ need: '10 ports', how: 'listed' }], unmet: [{ need: '残り10港', why: 'only 10 of 20' }] } : { met: [{ need: '残り10港', how: 'the complete comparison lists all 20 ports' }], unmet: [] };
     } });
   assert.equal(seen.length, 2, 'read once, Atlas worked, read once more');
   assert.equal(seen[0].prev, null);

@@ -16,6 +16,7 @@
 import { test, expect } from './helpers/app.js';
 import area from '@turf/area';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 test('the four GIS chains reach their end through the shipped doors', async ({ app }) => {
   const page = app.page;
@@ -204,7 +205,11 @@ test('a deferred GIS import is inspectable and becomes visible only when request
     ] };
     const file = new File([JSON.stringify(fc)], 'observations.geojson', { type: 'application/geo+json' });
     const before = upload._items.length;
-    const [imported] = await upload.handle([file], { draw: false, inspect: true, source });
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
+    const sourceSha256 = Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    const [imported] = await upload.handle([file], { draw: false, inspect: true, source, sourceSha256 });
+    const derived = await A.run({ op: 'filter', inputs: [imported.datasetId], params: { where: [{ field: 'value', op: '>', value: 5 }] } });
+    const origin = window.IntMapData.lineage(derived.dataset?.id)[0]?.provenance;
     const afterImport = upload._items.length;
     const nearby = await A.remote({ action: 'search', origins: ['held'], bounds: [179, 10, -179, 12] });
     const distant = await A.remote({ action: 'search', origins: ['held'], bounds: [30, 10, 35, 17] });
@@ -212,12 +217,13 @@ test('a deferred GIS import is inspectable and becomes visible only when request
     const read = await A.run({ inputs: [held.ref] });
     const drawn = await window.IntMapOS.execute('map.drawDataset', { dataset: imported.datasetId });
     return {
-      imported: imported.description, before, afterImport, held, analysed: read.dataset?.id,
+      imported: imported.description, before, afterImport, held, analysed: read.dataset?.id, origin, sourceSha256,
       distant: distant.entries.some((e) => e.id === imported.datasetId),
       drawn: drawn.status, afterDraw: upload._items.length,
     };
   });
   expect(result.imported).toMatchObject({ source: 'https://example.test/observations.geojson', format: 'geojson', bounds: [178, 11, -177, 16] });
+  expect(result.origin).toMatchObject({ url: 'https://example.test/observations.geojson', sha256: result.sourceSha256 });
   expect(result.afterImport).toBe(result.before);
   expect(result.held.match.spatial).toBe('overlaps');
   expect(result.held.overlapBounds).toEqual([[179, 11, 180, 12], [-180, 11, -179, 12]]);
@@ -229,13 +235,18 @@ test('a deferred GIS import is inspectable and becomes visible only when request
 
 test('a deferred GeoTIFF import measures raster quality without mounting a layer', async ({ app }) => {
   const fixture = JSON.parse(readFileSync(new URL('./fixtures/worldpop-service.json', import.meta.url), 'utf8'));
-  const result = await app.page.evaluate(async (encoded) => {
+  const source = 'https://example.test/population-grid.tif';
+  const encoded = fixture.exportImage8x8Tokyo2020;
+  const sourceSha256 = createHash('sha256').update(Buffer.from(encoded, 'base64')).digest('hex');
+  const result = await app.page.evaluate(async ({ encoded, source, sourceSha256 }) => {
     const upload = window.GeoJSONUpload;
     const before = upload._items.length;
     const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
-    const [receipt] = await upload.handle([new File([bytes], 'population-grid.tif')], { draw: false, inspect: true });
-    return { before, after: upload._items.length, receipt };
-  }, fixture.exportImage8x8Tokyo2020);
+    const [receipt] = await upload.handle([new File([bytes], 'population-grid.tif')], { draw: false, inspect: true, source, sourceSha256 });
+    const provenance = window.IntMapData.describe(receipt.datasetId)?.provenance;
+    return { before, after: upload._items.length, receipt, provenance };
+  }, { encoded, source, sourceSha256 });
+  expect(result.provenance).toMatchObject({ url: source, sha256: sourceSha256 });
   expect(result.after).toBe(result.before);
   expect(result.receipt).toMatchObject({
     ok: true, grid: true, format: 'geotiff',

@@ -150,9 +150,10 @@ test('④ a plan declared with outside content in front of the model carries the
   assert.equal(P.carriesOutside(), false);
   P.beginTurn(); P.declare({ goal: 'brief Tokyo', steps: ['read', 'answer'] }, { outside: true }); P.endTurn('answered');
   assert.equal(P.carriesOutside(), true);
-  P.beginTurn(); P.declare({ current: 2 }, { outside: false });
+  const planId = P.snapshot().id;
+  P.beginTurn(); assert.equal(P.declare({ action: 'continue', planId, current: 2 }, { outside: false }).ok, true);
   assert.equal(P.carriesOutside(), true, 'moving the current step keeps the marked words');
-  P.declare({ steps: ['read', 'map it'] }, { outside: false });
+  assert.equal(P.declare({ action: 'revise', planId, steps: ['read', 'map it'] }, { outside: false }).ok, true);
   assert.equal(P.carriesOutside(), true, 'a revision that keeps the goal (and a step) keeps the mark');
   P.declare({ goal: 'a new subject', steps: ['one', 'two'] }, { outside: false });
   assert.equal(P.carriesOutside(), false, 'a new plan written clean replaces every marked word');

@@ -251,7 +251,7 @@ test('atlas-quality-lab ⑥ --record writes a cassette from an observed turn, an
   const con = rd('js/atlas-console.js');
   assert.match(con, /_atlasDbg=\{[^}]*replies:\[\], dispatches:\[\] \}/);
   assert.match(con, /_atlasDbg\.replies\.push\(/);
-  assert.match(con, /_atlasDbg\.dispatches\.push\(\{ action:_asked/);
+  assert.match(con, /debug\.dispatches\.push\(\{ action:_asked/);
 });
 
 /* ══ ⑦ THE REPORT OVER TIME ═══════════════════════════════════════════════════════════════════════════ */
