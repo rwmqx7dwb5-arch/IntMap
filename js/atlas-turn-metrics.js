@@ -93,6 +93,8 @@ export function buildTurnMetrics(out, timing) {
   const evidenced = basis.filter((b) => b.evidenced);
   const backing = evidenced.filter((b) => namesSource(b.source, o.text, t.cites)).length;
   const ver = verificationOf(o.results);
+  if (o.visionVerification?.status === 'verified') ver.program += n0(o.visionVerification.passed);
+  if (o.visionVerification?.status === 'unchecked') ver.unchecked++;
   const first = optMs(t.firstUsefulMs);
   const marks = t.marks || {};
   const delegations = new Map();
@@ -250,7 +252,7 @@ export function makeTurnRecorder(opt) {
       if (active === rec) active = null;
       const turn = String(turnKey || '').trim();
       if (turn && !announced) { announced = true; emit({ turn, row }); }
-      return row;
+      return run?.stages?.length ? { ...row, effortStages: run.stages } : row;
     },
   };
   active = rec;

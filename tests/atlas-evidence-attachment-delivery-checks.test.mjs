@@ -167,7 +167,8 @@ test('the vision turn publishes a withdrawal when the reread cannot support the 
   };
   const vision = new Function(...Object.keys(deps), normalized + turn + '\nreturn _atlVisionTurn;')(...Object.values(deps));
   const reply = { innerHTML: '' };
-  await vision(reply, 'What is the total?', ['fixture'], 1, {}, 'test-turn', askAIJSONEnvelope);
+  const reading = await vision(reply, 'What is the total?', ['fixture'], 1, {}, 'test-turn', askAIJSONEnvelope);
+  assert.deepEqual(reading.verification, { status:'failed', passed:0, failed:1 });
   assert.equal(responses.length, 0);
   for (const line of expected) assert.ok(reply.innerHTML.includes(line));
   assert.doesNotMatch(reply.innerHTML, /109|119/);

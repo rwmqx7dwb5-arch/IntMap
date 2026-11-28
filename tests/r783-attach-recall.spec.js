@@ -230,3 +230,76 @@ test('R783 ⑥ この spec は上流を 1 つしか置き換えていない（�
   const bad = (diag.pageErrors || []).slice();
   expect(bad, '送信経路が例外を投げた（#R777 の形）').toEqual([]);
 });
+
+test('vision records a withheld calculation separately from a checked answer', async () => {
+  const pattern = '**/functions/v1/ai-proxy';
+  let retryRuns = 0;
+  let correctRetry = false;
+  const handler = async (route) => {
+    const body = route.request().postDataJSON();
+    if (body.task !== 'vision_read') return route.fallback();
+    const retry = body.prompt.includes('[SELF-CHECK FAILED]');
+    if (retry) retryRuns++;
+    const correct = retry && correctRetry;
+    const text = JSON.stringify({ contentClass:'math', answer:correct?'The mean is 17.':'The mean is 91.',
+      checks:[{ type:'equal', left:17, right:correct?17:91 }] });
+    await route.fulfill({ json:{ text, used:1, limit:100, meta:{ modelServed:'vision-fixture', reasoningEffort:'high' } } });
+  };
+  await page.route(pattern, handler);
+  try {
+    const measure = (png) => page.evaluate(async (dataUrl) => {
+      await window.IntMapConsole.run('Calculate the mean from this image.', [dataUrl], []);
+      return window.IntMapAtlasDebug.lastPlan().measurement.row;
+    }, 'data:image/png;base64,' + png);
+    const withheld = await measure(PNG_B64);
+    expect(withheld).toMatchObject({ completion:'none', stopped:'vision_unverified', useful_shown:false,
+      first_useful_ms:null, verify_program:0, effortStages:Array(2).fill({ task:'vision_read', model:'vision-fixture', effort:'high' }) });
+    await expect(page.locator('#atlas-panel .atl-b.a').last()).toContainText(/could not verify the calculation|画像から計算結果を確認できませんでした/);
+    correctRetry = true;
+    const recovered = await measure(PNG_B64);
+    expect(recovered).toMatchObject({ completion:'complete', stopped:'answered', useful_shown:true, verify_program:1 });
+    expect(retryRuns).toBe(2);
+  } finally {
+    await page.unroute(pattern, handler);
+  }
+});
+
+test('Auto sizing receives image count and remaining work on an image-only turn', async () => {
+  const pattern = '**/functions/v1/ai-proxy';
+  const nextAction = 'Compare the printed field labels against the elevation grid.';
+  const requests = [];
+  const handler = async (route) => {
+    const body = route.request().postDataJSON();
+    requests.push(body);
+    const task = body.task;
+    const result = task === 'vision_read'
+      ? { contentClass:'photo', answer:'The photograph shows numbered fields.', continueWithTools:true, nextAction }
+      : task === 'atlas_effort' ? { effort:'medium' }
+      : { turn:'final', final_text:'The field labels were read from the photograph.' };
+    await route.fulfill({ json:{ text:JSON.stringify(result), output:[], used:1, limit:100,
+      meta:{ protocol:2, modelServed:'fixture-'+task, reasoningEffort:{ vision_read:'high', atlas_effort:'low', atlas_turn:'medium' }[task] } } });
+  };
+  await page.route(pattern, handler);
+  try {
+    const stages = await page.evaluate(async (dataUrl) => {
+      await window.IntMapConsole.run('', [dataUrl], [], { effortPolicy:'auto' });
+      return window.IntMapAtlasDebug.lastPlan().measurement.row.effortStages;
+    }, 'data:image/png;base64,' + PNG_B64);
+    const read = requests.find(r => r.task === 'vision_read');
+    const size = requests.find(r => r.task === 'atlas_effort');
+    const turn = requests.find(r => r.task === 'atlas_turn');
+    expect(read.images).toHaveLength(1);
+    expect(size.prompt).toContain('1 attachment(s), including 1 image(s)');
+    expect(size.prompt).toContain(nextAction);
+    expect(size.images).toHaveLength(0);
+    expect(turn.effortHint).toBe('medium');
+    expect(modelText(turn)).toContain(nextAction);
+    expect(stages).toEqual(expect.arrayContaining([
+      { task:'vision_read', model:'fixture-vision_read', effort:'high' },
+      { task:'atlas_effort', model:'fixture-atlas_effort', effort:'low' },
+      { task:'atlas_turn', model:'fixture-atlas_turn', effort:'medium' },
+    ]));
+  } finally {
+    await page.unroute(pattern, handler);
+  }
+});

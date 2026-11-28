@@ -3042,16 +3042,16 @@ export function atlasConsole(HOST){
        round. The same content class + checks metadata are shared by rendering and mapping — not three separate patches. */
     function _visNorm(d){ if(!d||typeof d!=='object') return {contentClass:'',answer:String(d==null?'':d),checks:[],places:[],uncertain:[],focusPlace:''};
       if(Array.isArray(d)) d=d[0]||{};
-      return { contentClass:d.contentClass||d.class||d.category||'', transcription:String(d.transcription||''), uncertain:Array.isArray(d.uncertain)?d.uncertain:[], answer:String(d.answer||d.text||d.say||''), checks:Array.isArray(d.checks)?d.checks:[], places:Array.isArray(d.places)?d.places:[], focusPlace:String(d.focusPlace||d.focus||''), continueWithTools:d.continueWithTools===true }; }
+      return { contentClass:d.contentClass||d.class||d.category||'', transcription:String(d.transcription||''), uncertain:Array.isArray(d.uncertain)?d.uncertain:[], answer:String(d.answer||d.text||d.say||''), checks:Array.isArray(d.checks)?d.checks:[], places:Array.isArray(d.places)?d.places:[], focusPlace:String(d.focusPlace||d.focus||''), continueWithTools:d.continueWithTools===true, nextAction:typeof d.nextAction==='string'?d.nextAction.trim().slice(0,500):'' }; }
     function _visionSYS(){ const lang=_langLine();
-      return personaPrompt('reading images here as the rigorous multimodal reader of IntMap')/* (#R285) was "Atlas Vision" — a second name for the same assistant, which the persona's NAME clause rules out; the reading pipeline itself is unchanged */+'One or more IMAGES are attached. Read them with maximum care and OUTPUT ONE STRICT JSON OBJECT ONLY — no prose, no markdown fence. Schema: {"contentClass":string,"transcription"?:string,"uncertain"?:[string],"answer":string,"checks"?:object[],"places"?:[{"n":string,"c":string,"k":string}],"focusPlace"?:string,"continueWithTools"?:boolean}.\n'
-        +'STEP 1 — CLASSIFY the dominant content into exactly one "contentClass": "math" (equations/matrices/proofs/physics/chemistry/statistics), "document" (text/table/form/receipt/handwriting), "code" (source code/terminal), "language" (grammar/translation/writing), "geographic" (real places/maps/landscapes/landmarks/facilities/street scenes/addresses), "photo" (general photo/screenshot/UI/diagram/chart/artwork), or "conceptual" (a general-knowledge question about the image). This class is AUTHORITATIVE — IntMap maps ONLY when it is "geographic".\n'
-        +'STEP 2 — For math/document/code: TRANSCRIBE first, EXACTLY, BEFORE solving, into "transcription". Preserve every matrix, fraction, subscript, superscript, bracket and sign. If ANY digit/symbol is ambiguous (1 vs 7, 0 vs O, a vs α, a faint minus, a fraction bar), LIST it in "uncertain" and state the assumption you made — never silently treat an unreadable glyph as certain, and never invent a value you cannot see.\n'
-        +'STEP 3 — SOLVE / ANALYZE from the transcription and show the working. Use STANDARD LaTeX for EVERY formula: inline as \\( … \\); display, multi-line and matrices as \\[ … \\] with pmatrix/bmatrix, \\frac, ^ and _ — NEVER bare ASCII like V^{-1}U or [x]_V. Use Markdown for structure: "## " section headings, "- " bullets, "| a | b |" pipe tables for tabular data, and ``` fenced blocks for code.\n'
-        +'STEP 4 — VERIFY. Whenever the problem contains an independently checkable numeric/matrix identity, EMIT it in "checks" so IntMap recomputes it EXACTLY on the client and confirms your work. Each check is {"type":"matmul","label":"V·P = U","a":<matrix>,"b":<matrix>,"expect":<matrix>} (asserts a·b equals expect) or {"type":"equal","label":"…","left":<num-or-fraction-string>,"right":<…>}. Matrices are arrays of rows; entries are integers, decimals, or EXACT fraction strings like "1/22" or "-5/22" (prefer exact fractions — never rounded decimals). For a transition-, inverse- or change-of-basis-matrix problem you MUST include the product check (e.g. V·P = U). Emit ONLY checks you believe pass; if your own check would fail, fix the transcription/solution FIRST.\n'
-        +'MAPPING (STRICT — the user was angry that math answers produced map pins): ONLY when contentClass is "geographic" may you fill "places" with the real, mappable spots the image shows/implies, as [{"n":"place name","c":"country","k":"kind"}], plus optionally "focusPlace" (the single main place to fly to). For EVERY other class you MUST OMIT "places" and "focusPlace" entirely — a math problem, document, code, UI screenshot or abstract photo has NO map value. NEVER turn a word like "Problem", "Thus", "Let", "Figure", "Theorem" or a person\'s name into a place.\n'
+      return personaPrompt('reading images here as the rigorous multimodal reader of IntMap')+'Return one strict JSON object, without prose or fences. Schema: {"contentClass":string,"transcription"?:string,"uncertain"?:[string],"answer":string,"checks"?:object[],"places"?:[{"n":string,"c":string,"k":string}],"focusPlace"?:string,"continueWithTools"?:boolean,"nextAction"?:string}.\n'
+        +'STEP 1 — CLASSIFY the dominant content: "math" (maths/science), "document" (text/tables/forms), "code" (source/terminal), "language" (grammar/translation/writing), "geographic" (real places, maps or landscapes), "photo" (other imagery, screenshots, diagrams, artwork), or "conceptual" (general knowledge).\n'
+        +'STEP 2 — For math/document/code, TRANSCRIBE exactly before solving. Preserve matrices, fractions, subscripts, superscripts, brackets and signs. List ambiguous glyphs in "uncertain" and state assumptions. Never invent unreadable values.\n'
+        +'STEP 3 — SOLVE / ANALYZE from the transcription and show the work. Use LaTeX \\(…\\) or \\[…\\] for all formulas, pmatrix/bmatrix for matrices and \\frac for fractions. Use Markdown headings, lists, pipe tables and fenced code.\n'
+        +'STEP 4 — VERIFY independently checkable identities with {"type":"matmul","label":"V·P = U","a":<matrix>,"b":<matrix>,"expect":<matrix>} or {"type":"equal","label":"…","left":<value>,"right":<value>}. Matrices are arrays of rows. Use integers, decimals or exact fractions (e.g. "-5/22"), never rounded approximations. Always include the product check for transition, inverse or change-of-basis matrices. Correct the work before emitting any check likely to fail.\n'
+        +'MAPPING: ONLY "geographic" may include real places (n: name, c: country, k: kind) and one optional "focusPlace". Omit both fields for every other class. Never treat ordinary words or people as places.\n'
         +VISION_CONTINUE_RULE
-        +'HONESTY: if you cannot read the image confidently, SAY SO plainly in "answer" and reflect it in "uncertain" — never fabricate a confident solution, and never claim a verification you did not emit as a check. Write "answer" and its headings in '+lang+'. Numbers, code, LaTeX and place names stay canonical.'; }
+        +'Say when reading is uncertain. Claim verification only for checks you emitted. Write the answer and headings in '+lang+'. Keep numbers, code, LaTeX and place names canonical.'; }
     function _visionPrompt(q){ q=String(q||'').trim();
       /* (#R157) IMAGE-ONLY: when the user attached an image with NO text, the model still needs a default instruction —
          but it is supplied HERE, at the API boundary ONLY, as a hidden internal instruction. It is NEVER written into
@@ -3065,7 +3065,7 @@ export function atlasConsole(HOST){
       let env=null; try{ env=await ask(_visionPrompt(q),_visionSYS(),imgs,opts); }
       catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
       if(gen!==_runGen){ _markCancelled(ai); return; }
-      let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks);
+      let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks); let withdrew=false;
       /* ONE image RE-EXAMINATION round when a deterministic recompute failed (the work order's "検算失敗時は回答をそのまま
          返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
       if(vr.ran && vr.failed.length){ try{ if(gen===_runGen){ ai.innerHTML=stageDots('verify'); PROG.phase(ai,'verify'); }
@@ -3073,18 +3073,23 @@ export function atlasConsole(HOST){
         const env2=await ask(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
         if(gen!==_runGen){ _markCancelled(ai); return; }
         if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
-          if(d2.answer.trim() && !vr2.failed.length && (vr2.ran || !d2.checks.length)){ d=d2; vr=vr2; env=env2; } }
+          if(d2.answer.trim() && vr2.passed && !vr2.failed.length){ d=d2; vr=vr2; env=env2; }
+          else if(d2.answer.trim() && !d2.checks.length && d2.uncertain.some(value=>String(value||'').trim())){
+            d={...d2,continueWithTools:false}; withdrew=true;
+          } }
       }catch(_){} }
       if(gen!==_runGen) return;
-      if(vr.failed.length) d=_visNorm({answer:L('I could not verify the calculation from the image.','画像から計算結果を確認できませんでした。')}); let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
+      const verification={status:vr.failed.length?'failed':vr.passed?'verified':'unchecked',passed:vr.passed,failed:vr.failed.length};
+      if(verification.status==='failed'&&!withdrew) d=_visNorm({answer:L('I could not verify the calculation from the image.','画像から計算結果を確認できませんでした。')});
+      let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
       if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
       if(!vr.failed.length) try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);
-      if(_atlShouldMap(cls)){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
+      if(_atlShouldMap(cls)&&verification.status!=='failed'){ const cites=(env&&Array.isArray(env.citations))?env.citations:[];
         try{ html+=await _pinReplyPlaces(d.places||[],{text:String(d.answer||''),citations:cites,contentClass:cls,isCurrent:()=>gen===_runGen}); }catch(_){}
         if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) GE().camera.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:900}); } }catch(_){} } }
-      if(gen===_runGen){ ai.innerHTML=html; if(!wantsContinue(d)) recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
-      return d;
+      if(gen===_runGen) ai.innerHTML=html;
+      return { ...d, contentClass:cls, verification };
     }
     async function run(q,imgs,files,options={}){ const sentAt=options?.sentAt ?? Date.now(); q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
       files=(Array.isArray(files)?files:[]).filter(f=>f&&(f.kind==='doc'?typeof f.b64==='string':typeof f.text==='string')).slice(0,ATL_FILE.LIMITS.files+ATL_FILE.LIMITS.docs);   /* (#R158/#R540) text attachments AND provider-native documents */
@@ -3148,27 +3153,39 @@ export function atlasConsole(HOST){
       }
       /* (#R156) IMAGE → the dedicated vision pipeline, which is its own reader and not this loop. */
       _imgCtx='';   /* what the image reader concluded, when it asked for tools (js/atlas-image-continue.js) */
+      let imageFollowUp='';
       const _turnPhotos=imgs.length?ATTACH_LOG.earlier(turn+1).filter(f=>f.kind==='image').slice(0,imgs.length).reverse():[];
       if(imgs.length){
         const aiv=_pend(bubble('a',stageDots('read')),'read');
         const reading=await _atlVisionTurn(aiv,q,turnAttachmentImages(null,_turnPhotos),gen,_atts,_turnKey,askAIJSONEnvelope);
         if(gen!==_runGen) return;
         try{ PROG.done(aiv); }catch(_){} msgTools(aiv,q);
-        if(!reading){ _measure(_mrec.recordFailure({code:'vision_failed'},_turnKey,_ledger.summary())); return; }
+        if(!reading){
+          _measure(_mrec.recordFailure({code:'vision_failed'},_turnKey,_ledger.summary()));
+          ASTATE.endTurn(turn,{status:'vision_failed',completion:'none',request:q,aiCalls:_ledger.summary().modelCalls});
+          return;
+        }
         if(!wantsContinue(reading)){
-          const completion=String(reading.answer||'').trim()?'complete':'none';
-          _measure(_mrec.recordAnswer({completion,text:reading.answer,stopped:'answered',run:_ledger.summary()},_turnKey));
-          ASTATE.endTurn(turn,{reply:reading.answer,status:'answered',completion,request:q,aiCalls:_ledger.summary().modelCalls});
+          const withheld=reading.verification.status==='failed';
+          const completion=!withheld&&reading.answer.trim()?'complete':'none';
+          const stopped=withheld?'vision_unverified':completion==='complete'?'answered':'no_answer';
+          const summary=_ledger.summary();
+          const answerAction={type:'answer',contentClass:reading.contentClass};
+          recordTurn(q,withheld?reading.answer:'',[answerAction],completion==='none'?[answerAction]:[]);
+          _measure(_mrec.recordAnswer({completion,text:reading.answer,stopped,run:summary,visionVerification:reading.verification},_turnKey));
+          ASTATE.endTurn(turn,{reply:reading.answer,status:stopped,completion,request:q,aiCalls:summary.modelCalls,visionVerification:reading.verification});
           return;
         }
         _imgCtx=agentContext(reading);
+        imageFollowUp=reading.nextAction||'The image reader found that the request still needs tools after reading the image.';
       }
       const ai=_pend(bubble('a',stageDots('think')),'think'); try{ LIVE.watch(EXEC); LIVE.begin(ai); }catch(_){}   /* (atlas-live-stream) the clock the measured wait is read from starts with the reply */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));   /* (#R117) reasoning budget, not meaning: it picks an effort tier and decides nothing about the request */
       let _effort=_experiment?.base||EFFORT.pick(_cplx,_mode);   /* how hard this turn thinks: the reader's pick, or — on auto — what one small low-effort call decides about THIS request (js/atlas-effort.js); only a failed call falls back to the complexity guess above */
       /* (atlas-orchestration-efficiency) A SHORT, PLAIN REQUEST IS NOT SIZED BY A SEPARATE MODEL CALL. The sizing call is a full round trip the reader waits through before step 1 (8 s at most; measured one extra call per turn), and for a request this short with one clause the answer is the server's default effort — which Atlas raises itself, on the step that needs it, with `next_effort`. Long or multi-clause requests (`_cplx`) and anything carrying an attachment keep the sizing call. */
-      const _sizeIt=(_effort!==undefined)||(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length+(imgs&&imgs.length||0))>0;
-      if(!_experiment?.base&&_mode==='auto'&&_sizeIt){ try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, mode:_mode, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:(((_atts&&_atts.files)||[]).length+((_atts&&_atts.docs)||[]).length), turnId:_turnKey, signal:_turnSignal, fallback:_effort }); }catch(_){} }
+      const attachmentCount=_atts.files.length+_atts.docs.length+imgs.length;
+      const _sizeIt=(_effort!==undefined)||attachmentCount>0;
+      if(!_experiment?.base&&_mode==='auto'&&_sizeIt){ try{ _effort=await EFFORT.decide({ ask:askAIJSONEnvelope, mode:_mode, system:personaPrompt('sizing how much thinking a request needs',{mode:'internal'})+EFFORT_RULES, request:q, attachments:attachmentCount, images:imgs.length, imageFollowUp, turnId:_turnKey, signal:_turnSignal, fallback:_effort }); }catch(_){} }
       if(gen!==_runGen) return;
       /* ⚠ ONE TOOL CALL BECOMES THE SAME ACTION OBJECT THE DISPATCH HAS ALWAYS RUN, so every pin,
          overlay, panel and rendering behaviour is the one that shipped — and its MECHANICAL result

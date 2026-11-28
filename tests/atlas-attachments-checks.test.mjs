@@ -241,10 +241,12 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
      BYTE FOR BYTE — `const aiv=bubble('a',stageDots('read'))` — so wrapping that bubble to open a
      work trace failed a routing test while the routing was untouched. What #R540 states is a
      property with three parts, and each is asked for on its own below. */
-  const visionBranch = /if\(imgs\.length\)\{(?:(?!AGENT\.runTurn)[\s\S])*?_imgCtx=agentContext\(reading\);\s*\}/.exec(html);
+  const visionBranch = /if\(imgs\.length\)\{(?:(?!AGENT\.runTurn)[\s\S])*?_imgCtx=agentContext\(reading\);/.exec(html);
   assert.ok(visionBranch, 'run() has a branch for an attached image that returns');
   assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*turnAttachmentImages\(null,_turnPhotos\)\s*,\s*gen\s*,\s*_atts,_turnKey,askAIJSONEnvelope\s*\)/,
     'it hands the image to the vision pipeline, with the files/docs channels riding along (R540)');
+  assert.match(visionBranch[0], /if\(!wantsContinue\(reading\)\)\{[\s\S]*?return;/,
+    'a self-contained image answer ends the turn before the planner');
   assert.ok(html.indexOf(visionBranch[0]) < html.indexOf('AGENT.runTurn('),
     'and it does so BEFORE the planner, which is what 「routes to the vision turn, not the generic planner」 means');
   // ONE image re-examination round when a deterministic check fails
@@ -253,5 +255,6 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
   assert.ok(!/Describe and analyze this image, and map any real places/.test(html), 'the old forced-mapping default image prompt is gone');
   assert.match(html, /Read and analyze this image\. If it is a document, a maths\/science problem/, 'neutral default image prompt (classify first, map only if geographic)');
   // the vision prompt STRICTLY forbids places for non-geographic content
-  assert.match(html, /NEVER turn a word like "Problem", "Thus", "Let", "Figure", "Theorem" or a person/, 'vision prompt forbids non-geo place fabrication');
+  assert.match(html, /MAPPING: ONLY "geographic" may include real places/, 'vision prompt allows mapping only the geographic class');
+  assert.match(html, /Never treat ordinary words or people as places/, 'vision prompt forbids place fabrication');
 });
